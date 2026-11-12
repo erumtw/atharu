@@ -1,5 +1,6 @@
 //! atharu: a personal work log served on localhost. Library crate so `tests/` can drive the router.
 pub mod app;
+pub mod calendar;
 pub mod cli;
 pub mod config;
 pub mod db;

@@ -1,0 +1,27 @@
+{#- The `#cal` section (view::Cal as `cal`); add / delete / refresh swap it whole. -#}
+<section id="cal">
+{%- if let Some(n) = cal.notice %}
+<p class="small {% if n.error %}err{% else %}muted{% endif %}" role="status">{{ n.text }}</p>
+{%- endif %}
+<div class="tw"><div class="cal{% if cal.month %} month{% endif %}" style="min-width: 760px">
+{%- if cal.month %}
+<div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div><div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div><div class="dh">Sun</div>
+{%- else %}
+{%- for d in cal.days %}<div class="dh{% if d.now %} now{% endif %}"><a href="/?day={{ d.iso }}">{{ d.head }}{% if d.now %} · today{% endif %}</a></div>{% endfor %}
+{%- endif %}
+{% for d in cal.days %}
+<div class="dc{% if d.now %} now{% endif %}{% if d.outside %} out{% endif %}">
+{%- if cal.month %}<a class="dn{% if d.now %} now{% endif %}" href="/?day={{ d.iso }}">{{ d.head }}</a>{% endif %}
+{%- if d.logged > 0 %}<a class="logdot" href="/?day={{ d.iso }}">● {{ d.logged }} line{% if d.logged != 1 %}s{% endif %}</a>{% endif %}
+{%- for i in d.items %}
+{%- if let Some(h) = i.href %}
+<a class="ev {{ i.class }}" href="{{ h }}"{% if i.late %} style="color: #b3261e"{% endif %}>{{ i.text }}{% if let Some(s) = i.sub %}<br><span class="muted">{{ s }}</span>{% endif %}</a>
+{%- else %}
+<div class="ev {{ i.class }} evrow"><form class="inline" method="post" action="/meetings"><input type="hidden" name="name" value="{{ i.text }}"><input type="hidden" name="back" value="/"><button class="evbtn" type="submit" title="Start meeting mode">{% if let Some(t) = i.time %}{{ t }} {% endif %}{{ i.text }}</button></form>
+{%- if let Some(id) = i.own_id %}<form class="inline" method="post" action="/calendar/events/{{ id }}/delete" hx-post="/calendar/events/{{ id }}/delete" hx-target="#cal" hx-swap="outerHTML"><input type="hidden" name="week" value="{{ cal.week }}"><input type="hidden" name="view" value="{{ cal.view() }}"><button class="x" type="submit" title="Delete event" aria-label="Delete event">×</button></form>{% endif %}</div>
+{%- endif %}
+{%- endfor %}
+</div>
+{%- endfor %}
+</div></div>
+</section>

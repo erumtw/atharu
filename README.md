@@ -16,6 +16,8 @@ Docker: `docker compose up -d --build` → http://localhost:7070 (published on 1
 
 Env: `ATHARU_HOST` (127.0.0.1) · `ATHARU_PORT` (7070) · `ATHARU_DB` (data/atharu.db) · `ATHARU_AGENT` (CLI writer, e.g. claude).
 
+Optional `data/config.toml` (next to the DB, read at start): `ical_url = "…"` = Google Calendar's secret iCal address, shown read-only on `/calendar` and refreshed every 15 min. It is a credential: keep it out of git and logs.
+
 Notes editor bundle: `cd editor && npm ci && node build.mjs` rebuilds the committed `static/js/editor.js`.
 `data/` is gitignored: it holds work data, never commit it.
 

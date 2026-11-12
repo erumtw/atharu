@@ -55,3 +55,31 @@ impl Config {
             .unwrap_or(Path::new("."))
     }
 }
+
+/// `data/config.toml`: optional integrations. Every key is optional; a missing file = all off.
+/// Values are credentials (secret iCal address, later Jira token): never `Debug`, never logged.
+#[derive(Default, serde::Deserialize)]
+pub struct FileConfig {
+    /// Google Calendar → Settings → your calendar → "Secret address in iCal format".
+    pub ical_url: Option<String>,
+}
+
+impl FileConfig {
+    /// A broken file must not stop the server: say which file and why, carry on with everything off.
+    /// `message()`, not Display: Display quotes the offending source line, which may hold the URL.
+    pub fn load(path: &Path) -> FileConfig {
+        let Ok(text) = std::fs::read_to_string(path) else {
+            return FileConfig::default();
+        };
+        match toml::from_str::<FileConfig>(&text) {
+            Ok(mut c) => {
+                c.ical_url = c.ical_url.filter(|u| !u.trim().is_empty());
+                c
+            }
+            Err(e) => {
+                eprintln!("{}: ignored, {}", path.display(), e.message());
+                FileConfig::default()
+            }
+        }
+    }
+}
