@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.4 — 2026-11-12
+
+### Features
+
+- motion, To-dos Due|Tag switch, Tag view and dropdown fixes (0.1.4)
+
+### Other
+
+- Merge pull request #5 from erumtw/feat/worklog
+
 ## v0.1.3 — 2026-11-12
 
 ### Fixes
