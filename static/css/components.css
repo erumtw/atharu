@@ -528,3 +528,54 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* Notes list: the first linked line's kind square before the title. */
 .blk.ink>.k{margin-right:-2px}
 @media (prefers-contrast: more){.lnh{border-color:var(--ink)}.ib.note:not(.has),.lnh :is(.day,.gone-text,h2){color:var(--muted-hc)}}
+
+/* Meeting recording (T53, DESIGN.md §6, boards Meeting.*): banner, start switch, transcript, permission steps. */
+/* The only red: --rec-on-dark on --dark (4.90:1). Pulses; still under reduced motion. Shared with the quick popover. */
+.dot.rec{background:var(--rec-on-dark);animation:rec 1.6s ease-in-out infinite}
+@keyframes rec{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.dot.rec{animation:none}}
+.callout.dark.recb{flex-wrap:wrap;row-gap:8px}
+.recbtns{margin-left:auto;display:inline-flex;gap:8px}
+.rect{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;font-variant-numeric:tabular-nums;letter-spacing:0}
+/* One meter per stream: a silent mic or a silent call shows before the meeting is lost. */
+.lvl{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--on-dark-muted)} /* 9.3:1 on --dark */
+.lvl b{display:inline-flex;align-items:flex-end;gap:2px;height:14px}
+/* Unlit --ctl-edge 4.6:1 and lit --accent-on-dark 4.9:1 on --dark (non-text floor 3:1); lit vs unlit differ in hue, not only in lightness. */
+.lvl i{width:3px;border-radius:2px;background:var(--ctl-edge)}
+.lvl i:nth-child(1){height:5px}.lvl i:nth-child(2){height:9px}.lvl i:nth-child(3){height:13px}
+.lvl i:nth-child(4){height:8px}.lvl i:nth-child(5){height:11px}.lvl i:nth-child(6){height:6px}
+.lvl i.on{background:var(--accent-on-dark)}
+.recsep{width:1px;align-self:stretch;background:var(--ctl-edge)} /* decoration only */
+/* Start: the switch sits under the field; consent is ink, not muted, so it gets read. Swapped by :checked, no JS. */
+.recopt{display:flex;align-items:center;gap:10px;padding:0 18px;font-size:13px;flex-wrap:wrap}
+.recopt label{display:inline-flex;align-items:center;gap:8px;font-weight:500;cursor:pointer}
+.recopt .consent{display:none;color:var(--ink)} /* 14.77:1 on the sheet */
+.recopt:has(.sw:checked) .consent{display:inline}
+.recopt:has(.sw:checked) .off{display:none}
+.recopt .ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8}
+.recopt:has(:disabled) label{opacity:.45;cursor:not-allowed}
+/* Transcript: content, so white sheet + line border, no glass (§9). */
+.tx{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;margin-top:8px}
+.txhead{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.txhead .fld.s{width:220px}
+.txbody{max-height:440px;overflow:auto;padding:6px 16px 10px}
+.txrow{display:grid;grid-template-columns:62px 52px 1fr;gap:10px;padding:5px 0;align-items:baseline}
+.txrow+.txrow{border-top:1px solid var(--sep)}
+.txrow time{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--muted);letter-spacing:0}
+.who{font-size:12px;font-weight:600;color:var(--ink-2)} /* 11.09:1 on white */
+.txrow.cont .who{visibility:hidden}
+.tx mark{background:var(--accent-wash);color:inherit;border-radius:3px;padding:0 1px} /* ink on --accent-wash: 14.8:1 */
+.txlive{display:flex;align-items:center;gap:8px;padding:10px 0 4px;font-size:13px;color:var(--muted)}
+.txlive .dot{background:var(--muted)}
+.txfin{padding:12px 0 6px;display:flex;flex-direction:column;gap:8px}
+/* Native <progress>, accent on --sep (4.6:1). */
+progress.prog{-webkit-appearance:none;appearance:none;display:block;width:100%;height:6px;border:0;border-radius:9999px;background:var(--sep);overflow:hidden}
+progress.prog::-webkit-progress-bar{background:var(--sep)}
+progress.prog::-webkit-progress-value{background:var(--accent);border-radius:9999px}
+progress.prog::-moz-progress-bar{background:var(--accent)}
+.steps{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;counter-increment:s}
+.steps li::before{content:counter(s);width:22px;height:22px;border-radius:9999px;background:#fff;border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.steps li.ok::before{content:"✓";background:var(--ink);color:#fff;border-color:var(--ink)}
+.path{font-weight:500}
+@media (max-width:639px){.txhead .fld.s{width:100%}.txrow{grid-template-columns:56px 1fr}.txrow .who{grid-row:1;grid-column:2}.txrow>span:last-child{grid-column:1/-1}}

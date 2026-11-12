@@ -4,24 +4,27 @@ use crate::{
     domain::{dates, entry::Kind, entry::slugify},
     error::{AppError, AppResult},
     layout::{Layout, crumb},
+    recording::{self, Rec},
     web,
 };
 use axum::{
     extract::{Form, Path, Query, State},
     http::{HeaderMap, StatusCode},
-    response::Response,
+    response::{IntoResponse, Response},
 };
 use chrono::NaiveDate;
 use rusqlite::Connection;
 use serde::Deserialize;
 
 fn banner(
+    st: &AppState,
     conn: &Connection,
     back: String,
     name: String,
     error: Option<String>,
 ) -> rusqlite::Result<view::Banner> {
     Ok(view::Banner {
+        rec: Rec::load(conn, st.mac.as_deref())?,
         active: queries::active(conn)?.map(|(id, name)| view::Active { id, name }),
         series: queries::series(conn)?.into_iter().map(|(n, _)| n).collect(),
         name,
@@ -106,7 +109,7 @@ fn render_list(st: &AppState, filter: Option<String>, b: view::Banner) -> AppRes
 }
 
 pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> AppResult<Response> {
-    let b = banner(&st.conn(), "/meetings".into(), String::new(), None)?;
+    let b = banner(&st, &st.conn(), "/meetings".into(), String::new(), None)?;
     let filter = q.name.filter(|n| !n.is_empty());
     web::html(&render_list(&st, filter, b)?)
 }
@@ -115,6 +118,8 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
 pub struct StartForm {
     name: String,
     back: Option<String>,
+    /// The Record audio switch (Mac app only); off unless ticked, every time.
+    record: Option<String>,
 }
 
 pub async fn start(
@@ -128,9 +133,17 @@ pub async fn start(
         // Not on the States board; same voice as the line box's "Type what you did first."
         Some("Type a meeting name first.".to_string())
     } else {
-        queries::start(&st.conn(), &dates::iso(st.today()), &slug)?
-            .err()
-            .map(|running| format!("End {running} first."))
+        // Bound first: a guard in the match head would live through record_audio's own lock.
+        let started = queries::start(&st.conn(), &dates::iso(st.today()), &slug)?;
+        match started {
+            Ok(id) => {
+                if f.record.is_some() {
+                    record_audio(&st, id)?;
+                }
+                None
+            }
+            Err(running) => Some(format!("End {running} first.")),
+        }
     };
     if error.is_none() && !web::is_htmx(&headers) {
         return Ok(web::back(&back));
@@ -145,7 +158,7 @@ pub async fn start(
     } else {
         String::new()
     };
-    let b = banner(&st.conn(), back, kept, error)?;
+    let b = banner(&st, &st.conn(), back, kept, error)?;
     if web::is_htmx(&headers) {
         return web::html_status(status, &view::BannerSwap { banner: b });
     }
@@ -170,14 +183,268 @@ pub async fn end(
     if !queries::end(&st.conn(), id, &at)? && queries::meeting(&st.conn(), id)?.is_none() {
         return Err(AppError::NotFound);
     }
-    if !web::is_htmx(&headers) {
+    // End also stops the recorder; the tail keeps transcribing after the meeting is over.
+    queries::stop_transcript(&st.conn(), id, &at)?;
+    swap_banner(&st, &headers, back)
+}
+
+fn swap_banner(st: &AppState, headers: &HeaderMap, back: String) -> AppResult<Response> {
+    if !web::is_htmx(headers) {
         return Ok(web::back(&back));
     }
-    let b = banner(&st.conn(), back, String::new(), None)?;
+    let b = banner(st, &st.conn(), back, String::new(), None)?;
     web::html(&view::BannerSwap { banner: b })
 }
 
-pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
+/// Only the Mac app records, and only with the model on disk; a browser's `record=1` is ignored.
+fn record_audio(st: &AppState, id: i64) -> rusqlite::Result<()> {
+    if !st.mac.as_deref().is_some_and(recording::Mac::ready) {
+        return Ok(());
+    }
+    let conn = st.conn();
+    let lang = recording::lang(&conn)?;
+    queries::start_transcript(&conn, id, &recording::now(), recording::MODEL_NAME, &lang)?;
+    Ok(())
+}
+
+#[derive(Deserialize)]
+pub struct BannerQuery {
+    back: Option<String>,
+}
+
+/// The recording banner polls this every second: elapsed time and the two level meters.
+pub async fn banner_get(
+    State(st): State<AppState>,
+    Query(q): Query<BannerQuery>,
+) -> AppResult<Response> {
+    let back = web::safe_back(q.back.as_deref(), "/meetings").to_string();
+    let b = banner(&st, &st.conn(), back, String::new(), None)?;
+    web::html(&view::BannerSwap { banner: b })
+}
+
+/// Record a running meeting that isn't recording (after Stop, or after Quit & Reopen for a permission).
+pub async fn record(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Form(f): Form<BackForm>,
+) -> AppResult<Response> {
+    queries::meeting(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    record_audio(&st, id)?;
+    swap_banner(
+        &st,
+        &headers,
+        web::safe_back(f.back.as_deref(), "/meetings").to_string(),
+    )
+}
+
+/// Stop recording; the meeting keeps running.
+pub async fn stop(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Form(f): Form<BackForm>,
+) -> AppResult<Response> {
+    queries::meeting(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    queries::stop_transcript(&st.conn(), id, &recording::now())?;
+    swap_banner(
+        &st,
+        &headers,
+        web::safe_back(f.back.as_deref(), "/meetings").to_string(),
+    )
+}
+
+#[derive(Deserialize)]
+pub struct Segment {
+    t: f64,
+    speaker: String,
+    text: String,
+}
+
+#[derive(Deserialize)]
+pub struct Segments {
+    #[serde(default)]
+    segments: Vec<Segment>,
+    /// The recorder finished the tail (or gave up): close the recording.
+    #[serde(default)]
+    done: bool,
+}
+
+/// The Mac app's recorder posts each window's lines here as soon as whisper returns them, so a crash
+/// keeps everything up to the last window. JSON in, 204 out; not a form, nobody browses to it.
+pub async fn segments(
+    State(st): State<AppState>,
+    Path(tid): Path<i64>,
+    axum::Json(b): axum::Json<Segments>,
+) -> AppResult<Response> {
+    let segs: Vec<(f64, String, String)> = b
+        .segments
+        .into_iter()
+        .filter(|s| matches!(s.speaker.as_str(), "me" | "others") && !s.text.trim().is_empty())
+        // Tenths: the dedupe compares t for equality, so both sides must round the same way.
+        .map(|s| {
+            (
+                (s.t * 10.0).round() / 10.0,
+                s.speaker,
+                s.text.trim().to_string(),
+            )
+        })
+        .collect();
+    let res = queries::append_segments(&st.conn(), tid, &segs, b.done, &recording::now())?;
+    Ok(match res {
+        queries::Append::Saved => StatusCode::NO_CONTENT.into_response(),
+        queries::Append::NotFound => return Err(AppError::NotFound),
+        queries::Append::Closed => StatusCode::CONFLICT.into_response(),
+    })
+}
+
+#[derive(Deserialize)]
+pub struct TxQuery {
+    #[serde(default)]
+    q: String,
+}
+
+/// The Transcript section alone: polled while live / finishing.
+pub async fn transcript(
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+    Query(q): Query<TxQuery>,
+) -> AppResult<Response> {
+    let conn = st.conn();
+    queries::meeting(&conn, id)?.ok_or(AppError::NotFound)?;
+    web::html(&tx_section(&conn, st.mac.is_some(), id, q.q)?)
+}
+
+fn tx_section(
+    conn: &Connection,
+    mac: bool,
+    id: i64,
+    q: String,
+) -> rusqlite::Result<view::TxSection> {
+    let list: Vec<view::TxView> = queries::transcripts(conn, id)?
+        .into_iter()
+        .map(|t| tx_view(t, mac, q.trim()))
+        .collect();
+    Ok(view::TxSection {
+        meeting: id,
+        polling: list.iter().any(|t| t.live || t.finishing.is_some()),
+        q,
+        mac,
+        list,
+    })
+}
+
+fn who(speaker: &str) -> &'static str {
+    if speaker == "me" { "Me" } else { "Others" }
+}
+
+/// `text` cut around case-insensitive hits of `q` (ASCII folding keeps byte offsets; Thai has no case).
+fn marks(text: &str, q: &str) -> Vec<(String, bool)> {
+    if q.is_empty() {
+        return vec![(text.to_string(), false)];
+    }
+    let (hay, needle) = (text.to_ascii_lowercase(), q.to_ascii_lowercase());
+    let mut parts = Vec::new();
+    let mut at = 0;
+    while let Some(i) = hay[at..].find(&needle) {
+        let (s, e) = (at + i, at + i + needle.len());
+        if s > at {
+            parts.push((text[at..s].to_string(), false));
+        }
+        parts.push((text[s..e].to_string(), true));
+        at = e;
+    }
+    if at < text.len() {
+        parts.push((text[at..].to_string(), false));
+    }
+    parts
+}
+
+fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
+    let lines = t.segments.len();
+    let last = t.segments.iter().map(|s| s.0).fold(0.0, f64::max);
+    let ran = t
+        .ended_at
+        .as_deref()
+        .map(|e| recording::secs_between(&t.started_at, e));
+    let copy = t
+        .segments
+        .iter()
+        .map(|(at, sp, text)| format!("{} {}: {text}", recording::clock(*at), who(sp)))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut rows = Vec::new();
+    let mut prev = "";
+    for (at, sp, text) in &t.segments {
+        let parts = marks(text, q);
+        if !q.is_empty() && !parts.iter().any(|p| p.1) {
+            continue;
+        }
+        rows.push(view::TxRow {
+            time: recording::clock(*at),
+            who: who(sp),
+            cont: prev == sp,
+            parts,
+        });
+        prev = sp;
+    }
+    let recorded = || recording::span(ran.unwrap_or(0));
+    let (meta, finishing) = match t.status.as_str() {
+        "live" if mac => (
+            format!("Live · about 30 s behind · {} · {lines} lines", t.lang),
+            None,
+        ),
+        "live" => (format!("Live · {}", t.lang), None),
+        "finishing" => {
+            let total = ran.unwrap_or(0).max(1) as f64;
+            let pct = (last / total * 100.0).clamp(0.0, 99.0) as u8;
+            (
+                format!(
+                    "Recorded {} · transcribed up to {}",
+                    recorded(),
+                    recording::clock(last)
+                ),
+                // RTF ≈ 0.1 on the M5 (D27): the rest of the audio takes about a tenth of its length.
+                Some((pct, recording::about((total - last).max(0.0) * 0.1))),
+            )
+        }
+        _ => (
+            format!(
+                "Recorded {} · {lines} lines · {} · {}",
+                recorded(),
+                t.model,
+                t.lang
+            ),
+            None,
+        ),
+    };
+    view::TxView {
+        id: t.id,
+        meta,
+        rows,
+        copy,
+        lines,
+        live: t.status == "live",
+        finishing,
+        interrupted: (t.status == "interrupted").then(|| recording::clock(last)),
+        done: t.status == "done",
+    }
+}
+
+pub async fn page(
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+    Query(q): Query<TxQuery>,
+) -> AppResult<Response> {
+    let b = banner(
+        &st,
+        &st.conn(),
+        format!("/meetings/{id}"),
+        String::new(),
+        None,
+    )?;
+    let recording_here =
+        b.active.as_ref().is_some_and(|a| a.id == id) && (b.rec.live.is_some() || b.rec.finishing);
     let conn = st.conn();
     let m = queries::meeting(&conn, id)?.ok_or(AppError::NotFound)?;
     let siblings = queries::siblings(&conn, &m.name, id)?;
@@ -238,6 +505,8 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
         ended: m.ended_at.map(|t| t.get(11..16).unwrap_or(&t).to_string()),
         mentions: queries::mentions(&conn, &m.name)?,
         field: tag_field(&conn, &m.name)?,
+        banner: recording_here.then_some(b),
+        tx: tx_section(&conn, st.mac.is_some(), id, q.q)?,
         name: m.name,
         notes: m.notes,
         today: st.today(),

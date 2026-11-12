@@ -12,6 +12,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/006_tags.sql"),
     include_str!("../migrations/007_meeting_start.sql"),
     include_str!("../migrations/008_line_notes.sql"),
+    include_str!("../migrations/009_meeting_transcripts.sql"),
 ];
 
 /// `user_version` after 006: the step that also fills `taggings` from text written before tags existed.

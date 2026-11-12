@@ -68,7 +68,7 @@ fn migration_006_backfills_existing_text() {
         .pragma_query_value(None, "user_version", |r| r.get(0))
         .unwrap();
     // Latest migration: bump with each new one.
-    assert_eq!(v, 8);
+    assert_eq!(v, 9);
     // No meeting_series table under D36 option A: series tags live in taggings only.
     let series: i64 = conn
         .query_row(

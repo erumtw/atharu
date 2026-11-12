@@ -212,6 +212,9 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   `prefers-reduced-motion`) · **Recording** + elapsed in tabular mono · two level meters, **Me** (mic) and **Others** (system audio),
   lit bars `--accent-on-dark`, so a muted mic shows in the first seconds · **Stop recording** (meeting keeps running) · **End meeting**
   (also stops). The word "Recording" carries the state; the dot is decoration.
+  Meter bars: unlit `--ctl-edge` (4.6:1 on `--dark`), lit `--accent-on-dark` (4.9:1); the separator is `--ctl-edge` too (T53).
+- **Not recording** (Mac app, model ready, meeting running: after Stop, or after Quit & Reopen for a permission): the plain
+  banner gets a ghost **Record audio** next to End meeting (T53); the consent reminder is its tooltip.
 - **Transcript** section on the meeting page, after Notes: `.tx` with a head (meta in muted: "Live · about 30 s behind · th · N
   lines" / "Recorded 1 h 02 min · 812 lines · large-v3-turbo · th"), search (`GET ?q=`, server filters rows and wraps hits in
   `<mark>` on `--accent-wash`; works without JS) and **Copy** (clipboard; a `.toast` "Copied N lines"). Rows: mono timestamp ·

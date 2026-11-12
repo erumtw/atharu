@@ -12,8 +12,21 @@ axum = "0.8.9"
 tauri = { version = "2", default-features = false, features = ["wry", "tray-icon", "macos-private-api", "image-png"] }
 tauri-plugin-global-shortcut = "2"
 tokio = { version = "1.54.1", features = ["net"] }
+serde_json = { version = "1.0.154", default-features = false, features = ["std"] }
+
+# Meeting recording (T53): Mac app only; the server, CLI and Docker image never build these.
+[features]
+default = ["recording"]
+recording = ["dep:whisper-rs", "dep:screencapturekit"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSImage", "NSResponder", "NSWorkspace"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData", "NSString"] }
+# D27: whisper.cpp with Metal (+1.75 MB, ggml static); SCK system audio + mic as two streams (+0.30 MB).
+whisper-rs = { version = "=0.16.0", features = ["metal"], optional = true }
+screencapturekit = { version = "=11.1.2", features = ["macos_15_0"], optional = true }
+
+[dev-dependencies]
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "net"] }
+

@@ -236,6 +236,7 @@ fn render_page(
             name: String::new(),
             error: None,
             back: format!("/?day={}", dates::iso(day)),
+            rec: crate::recording::Rec::load(&conn, st.mac.as_deref())?,
         },
         today: st.today(),
         needs: needs(&conn, &plans, st.today())?,

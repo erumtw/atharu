@@ -19,6 +19,7 @@ pub struct Banner {
     pub error: Option<String>,
     /// Page a plain POST returns to.
     pub back: String,
+    pub rec: crate::recording::Rec,
 }
 
 /// htmx answer to start / end.
@@ -96,6 +97,9 @@ pub struct Page {
     pub mentions: Vec<(i64, String)>,
     /// The series' Tags prop.
     pub field: crate::layout::TagField,
+    /// Shown on top while this meeting is recording (D31), so Stop is where you are.
+    pub banner: Option<Banner>,
+    pub tx: TxSection,
 }
 
 #[derive(Template)]
@@ -108,3 +112,41 @@ pub struct Tags {
 #[derive(Template)]
 #[template(path = "meetings/saved.html")]
 pub struct Saved;
+
+pub struct TxRow {
+    /// `00:01:02` from the start of the recording.
+    pub time: String,
+    pub who: &'static str,
+    /// Same speaker as the row above: the name is hidden.
+    pub cont: bool,
+    /// Text split around `?q=` hits: (text, is a hit).
+    pub parts: Vec<(String, bool)>,
+}
+
+pub struct TxView {
+    pub id: i64,
+    /// Muted head line: `Live · about 30 s behind · th · 8 lines`.
+    pub meta: String,
+    pub rows: Vec<TxRow>,
+    /// Plain text for Copy: `00:00:04 Me: …` per line, the search ignored.
+    pub copy: String,
+    pub lines: usize,
+    pub live: bool,
+    /// Tail still transcribing: (percent done, `about 3 min`).
+    pub finishing: Option<(u8, String)>,
+    /// Closed while recording: transcribed up to `hh:mm:ss`.
+    pub interrupted: Option<String>,
+    pub done: bool,
+}
+
+/// The Transcript section of a meeting page; polled while a recording is live or finishing.
+#[derive(Template)]
+#[template(path = "meetings/transcript.html")]
+pub struct TxSection {
+    pub meeting: i64,
+    pub q: String,
+    /// Inside Atharu.app (else the view-only browser copy).
+    pub mac: bool,
+    pub list: Vec<TxView>,
+    pub polling: bool,
+}

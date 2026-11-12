@@ -29,6 +29,8 @@ pub struct AppState {
     /// Lines deleted while they had a note: the note's header offers their Undo for a while (D49).
     /// In memory, like the Undo toast itself: a restart ends the window.
     gone: Arc<Mutex<Vec<GoneLine>>>,
+    /// Set only inside Atharu.app (feature `recording`): it can record meetings. `None` = a browser view.
+    pub mac: Option<Arc<crate::recording::Mac>>,
 }
 
 /// A deleted line as its note's header shows it: the text, and the snapshot Undo posts back.
@@ -53,6 +55,7 @@ impl AppState {
             settings: Arc::default(),
             bind_host: "127.0.0.1".into(),
             gone: Arc::default(),
+            mac: None,
         }
     }
 

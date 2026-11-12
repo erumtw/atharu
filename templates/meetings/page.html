@@ -3,6 +3,9 @@
 {% block content %}
 {%- let full = false %}{% let pin_error = false %}
 <main class="doc">
+{%- if let Some(banner) = banner %}
+<section id="meeting">{% include "partials/meeting_banner.html" %}</section>
+{%- endif %}
 <h1 class="ptitle">{{ name }}</h1>
 <dl class="props">
 <dt>Day</dt><dd>{{ day }}</dd>
@@ -39,6 +42,7 @@
 <textarea id="mnotes" name="notes" class="ta" rows="5">{{ notes }}</textarea>
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
+{{ tx|safe }}
 {% include "partials/backlinks.html" %}
 <form method="post" action="/meetings/{{ id }}/delete" hx-post="/meetings/{{ id }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Its lines stay on their days">Delete meeting</button></form>
 </main>
