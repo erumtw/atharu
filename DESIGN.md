@@ -144,7 +144,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Save status | `.saved` | 12 px muted in the crumb: "Changes save as you type · ✓ saved"; `.err` on failure |
 | Error | `.err` | 13 px `--err` text under the field it explains |
 | Line kind square | `.k` | 22px mono square: `!` `x` `+` `?` `>`; impact = blue (`.k.imp`), blocker = ink (`.k.bl`) |
-| Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.llm` = ink outline badge for agent-written rows |
+| Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.llm` = ink outline badge for agent-written rows; `.chip.tag` (`.inh`, `.fl`) = see "Tag chip" below |
 | Link chip | `.lchip` | source link on a line; the only blue chip |
 | Flag | `.flag.stale/.risk/.over` | pill; ink weight, no colour |
 | Due | `.due`, `.due.late` | muted / red bold |
@@ -232,6 +232,46 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   failed `.err` + Try again) · Language `.seg.mac` Auto | Thai | English (Thai default; help says Auto can translate) · Vocabulary
   `.pill` Automatic (meeting name + active epics as hints) · Permissions `.pill.ok` On · Audio "Deleted as soon as it's text".
 - RT / IC: the banner is already opaque `--dark`; `.tx` is content; glass bits (search field, Copy pill, crumb) follow the usual rules.
+
+### Tag chip (canvas row "Tags · one grouping layer", T70; D29)
+
+- **`.chip.tag`** = the `.chip` family (`--fill-2`, 6 radius, 12px, `1px 8px`), text `--ink-2` (11.09:1); a `::before` **`#`** in
+  `--accent` is the only colour (4.88:1 on `--fill-2`; Tinted `--accent` #0055b3 = 6.25). The fill is opaque, so the numbers hold on
+  every look, over glass and in menus. Hover = `--sep` fill, and the `#` steps to `--accent-2` (`--accent` is 4.35 on `--sep`, fails;
+  `--accent-2` 5.57, text 9.88). Focus = 2px accent ring. Increase Contrast: text `--ink` (14.77), `#` `--accent-2`.
+- Not to be confused with its siblings: `.chip.key` = mono epic key, `.lchip` = the blue-outline source link (still the only blue chip),
+  plain `.chip` = meeting name / Google label.
+- **In the text**: a line's `#expense` renders as the chip where it was typed. The line text is split into `.ltext` segments: plain
+  runs stay the `.edit-line` link, each tag is its own `<a class="chip tag">` to the hub (no link inside a link). Phone: `.blk>.ltext`
+  takes the row (`flex:1 1 0`), like `.edit-line`.
+- **Inherited** (`.chip.tag.inh`): white + 1px dashed `--ctl-edge` ring (3.3:1, non-text floor): the tag comes from the line's epic or
+  meeting series and is not in its text. **Active filter** (`.chip.tag.fl`): `--accent-wash` fill (= selected, as in menus; text
+  11.07, `#` 4.88) + a × link that removes it.
+- **Capture bar**: `#` opens tag suggestions in the `.menu`, upward from the bar (`.menu.up`), most used first, count right in
+  `--muted` (menus take `--muted-tint`), last option "New tag #ex", footer "↑↓ pick · Tab or ↵ insert · Esc close"; the input is a
+  combobox (`aria-activedescendant`). A typed word that is already a tag (case-insensitive, plural) gets an offer in the hint row:
+  `.tagask` = white 28px pill, dashed `--ctl-edge` ring, "Tag as `#expense`? `Tab`" + × (not a tag). Never applied by itself.
+- **Make tag**: selecting one word in a line edit shows a small `.menu` "Make tag `#expense`"; the toast then offers
+  "Tagged `#expense` · 4 older lines mention ‘expense’ · **Tag them** · Undo"; Tag them is one POST, one Undo.
+
+### Tag hub (canvas "Tags.Hub", "Tags.HubMerged", "Tags.List")
+
+- **`/tags/<tag>`** is a page like any other: crumb Tags / #tag with ⋯ (Rename… · Merge into another tag… · Delete tag… in `--err`;
+  rename/merge rewrite the `#word` in the sources, delete keeps the word and drops the `#`). Title `.ptitle` with the `#` in `--accent`
+  (`.hash`), props: Used (counts, last used) · Tagged by (epics, series, topics whose tag field holds it).
+- Sections in this order, each `h3` + muted count: Open to-dos · **Decisions, blockers, impact** (the highlighted block: `--fill`
+  12-radius panel, `.hi`) · Recent lines (newest first, `details` for older) · Epics | Notes and Meetings | Topics (two columns
+  `.cols`, one on phone) · Coming up (own events with the tag; Google events matched by a title word, marked "matched by word" in
+  `--muted`, never stored). Inherited lines carry "via `OPS-140`" (`.via`).
+- **One name, one hub**: a tag, topic and meeting series with the same name share the page; a `.callout` says so and the topic
+  (depth meter, own words) and series rows sit in the props. `[[X]]` resolves epic → topic → series → tag.
+- **Tags list** under Track (sidebar `#` icon after Report): Find field, `.seg` Most used | Recent | A–Z, table Tag · Lines · Open
+  to-dos · Last used · Tagged by; counts include inherited lines.
+- **Filter row** (GET `?tag=`, any-of for a comma list) on To-dos, Today, Notes, Calendar, Report: "Tag" label + `.chip.tag.fl` chips +
+  a `.fld.s` "+ tag"; Today and Report add **Group by** `.seg` Epic | Tag (a line with two tags shows under both; Report copies
+  `## #tag` headings).
+- Epics, meeting series and topics have a **Tags** prop: chips + an inline `.pin` with a datalist; comma / Enter adds, Backspace on
+  empty removes; autosaves.
 
 ## 7. UX patterns (from Notion)
 
