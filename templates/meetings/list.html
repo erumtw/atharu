@@ -16,9 +16,9 @@
 <details open>
 <summary>{{ g.name }} <span class="muted normal">· {{ g.rows.len() }}</span></summary>
 <div class="tw"><table>
-<tr><th>Day</th><th>Decisions</th><th>Action items</th><th>Learned</th><th>Notes</th></tr>
+<tr><th>When</th><th>Transcript</th><th>Decisions</th><th>Action items</th><th>Learned</th><th>Notes</th></tr>
 {%- for r in g.rows %}
-<tr><td><a class="ink" href="/meetings/{{ r.id }}"><b>{{ r.day }}</b></a>{% if r.running %} <span class="chip">running</span>{% endif %}</td><td>{{ r.decisions }}</td><td>{{ r.actions }}</td><td>{{ r.learned }}</td><td class="muted">{{ r.notes }}</td></tr>
+<tr><td><a class="ink" href="/meetings/{{ r.id }}"><b>{{ r.day }}</b>{% if !r.time.is_empty() %} <span class="mono small">{{ r.time }}</span>{% endif %}</a>{% if r.running && r.time.is_empty() %} <span class="chip">running</span>{% endif %}</td><td>{% if r.transcript.is_empty() %}<span class="muted">—</span>{% else %}<a href="/meetings/{{ r.id }}#tx">{{ r.transcript }}</a>{% endif %}</td><td>{{ r.decisions }}</td><td>{{ r.actions }}</td><td>{{ r.learned }}</td><td class="muted">{{ r.notes }}</td></tr>
 {%- endfor %}
 </table></div>
 </details>

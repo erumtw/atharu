@@ -84,6 +84,12 @@ fn render_list(st: &AppState, filter: Option<String>, b: view::Banner) -> AppRes
         let row = view::ListRow {
             id: m.id,
             day: label(&m.day),
+            time: span_label(m.started_at.as_deref(), m.ended_at.as_deref()),
+            transcript: match m.tx_lines {
+                0 => String::new(),
+                1 => "1 line".into(),
+                n => format!("{n} lines"),
+            },
             decisions: m.decisions,
             learned: m.learned,
             actions: actions(m.open, m.done, m.dropped),
@@ -231,6 +237,16 @@ pub async fn permissions(State(st): State<AppState>) -> AppResult<Response> {
         .and_then(|m| m.ask_screen.get())
         .is_none_or(|ask| ask());
     web::html(&view::Permission { needed: !allowed })
+}
+
+/// `HH:MM–HH:MM` from `YYYY-MM-DD HH:MM:SS` stamps; `HH:MM · running` while it runs; empty without a start.
+fn span_label(start: Option<&str>, end: Option<&str>) -> String {
+    let hm = |s: &str| s.get(11..16).unwrap_or_default().to_string();
+    match (start, end) {
+        (Some(s), Some(e)) => format!("{}–{}", hm(s), hm(e)),
+        (Some(s), None) => format!("{} · running", hm(s)),
+        _ => String::new(),
+    }
 }
 
 /// Record a running meeting that isn't recording (after Stop, or after Quit & Reopen for a permission).
