@@ -68,6 +68,10 @@ Glass surfaces, and nothing else: **sidebar `.side`, sticky breadcrumb `.crumb`,
 plus the controls that sit on them or float like them (canvas "Controls", T28): glass pills `.btn.ghost`, fields `.fld`, day nav `.dnav`,
 text boxes `.ta`/`.note-md`. On the solid sheet (Glass everywhere off) those controls render white with a `--line` border.
 
+Text boxes come two ways (D25, Settings › Appearance › **Blur text boxes**): **off** (default) = tint only, no backdrop filter;
+**on** (`<html data-blur=text>`) = they take `--lg-filter` like the chrome. AA with it on, each look at its floor over its darkest
+wallpaper: ink ≥ 13.61, placeholder ≥ 7.35 (Glass Tinted; T33). Reduce Transparency drops the blur either way.
+
 - Recipe (T30, D22; canvas "Liquid Glass"): Apple's three layers, all plain CSS so WebKit gets the whole look. Tokens in `looks.css`:
   - **Material**: `--lg-filter` = `blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.04)`. **Clear** (default) = 4px / 140%, so what is
     behind stays readable; **Tinted** (`data-tint=tinted`) = Apple's Regular: 12px / 180%, look-tinted glass, darker text set. The Settings
@@ -109,7 +113,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 
 ### Control rules (canvas "Controls" + "Components · every state", T28)
 
-- **One height per context**: 32 in chrome (`.crumb`), 36 in the page, 44 on phone (< 640). An action inside a field is one step smaller than the field. Labels are centred with flex + `line-height:1`, never padding guesswork.
+- **One height per context**: 32 in chrome (`.crumb`), 36 in the page, 44 on phone (< 640). An action inside a field is one step smaller than the field: an action inside a 36 field is 28 (a 44 field holds 36). Labels are centred with flex + `line-height:1`, never padding guesswork.
 - **One blue primary** per view (`.btn`): Log ↵, Add ↵, Copy as markdown. Everything else is a **glass pill** (`.btn.ghost`); `.s` = the 32 size for row actions (Pin, Drop, Save, Delete).
 - **Single-line fields are glass pills with their action inside** on the right (`.fld`): meeting start, search, add evidence; the capture bar `.newline` is the 52 px version holding the primary. Inputs that stand alone (dates, event form) take `.fld` on the input itself.
 - **Day nav** = one glass capsule `.dnav`: Today | ‹ | date ▾ | ›. The date is a native `<input type=date>` laid over its label, so a click opens the OS picker (no JS picker). Today shows only when not on today. Calendar uses the same capsule with the range as its label.
@@ -187,7 +191,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 
 ## 7. UX patterns (from Notion)
 
-1. **Sidebar** = page list grouped by the user's loops (D18): an unlabelled daily block Today · To-dos · Calendar · Meetings, then **Track** Epics · Report, then **Grow** Learn · Notes, then the active epics, and Settings pinned to the bottom (spacer). Same order in the phone drawer; the rail draws the section labels as thin dividers. Breadcrumbs on top.
+1. **Sidebar** = page list, each row icon + label (icon `--muted`, `--ink` on the selected `.on` row; 16 px desktop, 20 px rail/drawer) grouped by the user's loops (D18): an unlabelled daily block Today · To-dos · Calendar · Meetings, then **Track** Epics · Report, then **Grow** Learn · Notes, then the active epics, and Settings pinned to the bottom (spacer). Same order in the phone drawer; the rail draws the section labels as thin dividers. Breadcrumbs on top.
 2. **Every thing is a page**: epic, meeting, topic, note → big title + inline properties, autosaved. No Save buttons anywhere.
 3. **One input**: the floating "Type a line…" bar takes the line grammar; a live hint underneath says what it will save as.
 4. **Feedback**: toast above the bar, "Saved as impact on OPS-101 · Undo", `role=status`.

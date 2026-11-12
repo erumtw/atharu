@@ -6,7 +6,8 @@
 :where(.m-pop){position:static;inset:auto;width:auto;height:auto;margin:0;padding:0;border:0;overflow:visible;color:inherit;background:none}
 .acts{display:contents}
 .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.side a .ic{display:none}
+/* Desktop sidebar: 16 px icon + label (Components.Navigation board); rail and drawer keep the 20 px icon. */
+@media (min-width:1024px){.side a .ic{width:16px;height:16px}}
 .tw>.cal{min-width:760px}
 .cal:not(.month) .dc>.dn{display:none}
 pre{max-width:100%;overflow-x:auto}
@@ -22,7 +23,6 @@ pre{max-width:100%;overflow-x:auto}
   .side{flex:none;width:64px;padding:10px 8px;position:sticky;top:12px;align-items:center}
   .side .ws,.side .lb,.side .lbl,.side a.sub,.side .cnt{display:none}
   .side a{justify-content:center;padding:0;width:44px;min-height:44px;border-radius:12px}
-  .side a .ic{display:block}
   /* Section labels become thin dividers; the screen reader still reads the label text. */
   .side .lbl.nh{display:block;font-size:0;width:32px;height:1px;padding:0;margin:6px 0;background:var(--line)}
   .pg{flex:1 1 0}
