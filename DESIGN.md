@@ -384,7 +384,8 @@ the log scrolls under it.
   stays open. **`#` and `by ` menus open down** inside the window over the sections below (the window can't grow up into the menu
   bar), opaque white (`--lg-min:100%`, no blur: a blurred menu over the glass panel would be glass on glass), same options, footers and
   keys as the capture bar (T70, T80).
-- **Note tile** (T86, D53; board Quick.Note): a 7th tile **note** after the six (the `note` glyph in the key square), not a kind:
+- **Note tile** (T86, D53; board Quick.Note): a 7th tile **note** after the six (`n` in the key square, a letter like `!` `x`:
+  the `note` icon via `<use>` drew an empty square in WKWebView), not a kind:
   a submit button (`aria-pressed`) that without JS GETs `/quick?mode=note` with the line form's fields, and quick.ts switches in
   place. Tile widths are fixed weights by word length (`1 1.25 1.1 1 1.1 1 .9`, gap 3: decision 54, note 39), so "decision" at 600
   fits and a pick never reflows the row. Picked = the selected recipe; the kind radio keeps its check (not drawn as picked), so after
@@ -393,6 +394,9 @@ the log scrolls under it.
   markdown body (empty ok), saved as the owner via `POST /notes/new` (htmx even in the app: a plain POST would be a navigation);
   `#tags` anywhere, title line included, tag it (D54). Enter saves, Shift+Enter = new line. Saved → hint "✓ Saved note · **Open**" (opens
   `/notes/<id>` in the main window). Only whitespace → "Nothing to save. Type the note’s title first." in the hint, the text stays.
+  **By typing (T87, D55):** `n ` (n + space) at the start of the line box switches to note mode in place, the rest moves into
+  the note box with the caret at its end (`nginx fixed` stays a line, like `x `); ⌘N anywhere in the popover does the same. Without
+  JS the line form's `n …` POST to `/entries` is re-sent (307) to `/notes/new` and saved as a note. Popover only: on Today `n …` is a line.
   AA: same surfaces and tokens as the line field and the tiles, nothing new.
 - **Meeting**: not running → "Start a meeting", the three most recent series as `.btn.ghost.s` pills (submit buttons: one click
   starts) + a `.fld.m` name box with a ghost **Start** (28). Running → the banner's opaque `.callout.dark`: dot · name (link) ·

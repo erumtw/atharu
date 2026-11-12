@@ -4,6 +4,7 @@ use crate::{
     domain::{
         dates,
         flags::{self, Flag},
+        markdown,
         parse::{by_as_text, parse, with_kind},
         tags,
     },
@@ -13,7 +14,7 @@ use crate::{
 };
 use axum::{
     extract::{Form, Path, Query, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, header},
     response::{IntoResponse, Response},
 };
 use chrono::NaiveDate;
@@ -389,6 +390,17 @@ pub async fn create(
     headers: HeaderMap,
     Form(f): Form<LineForm>,
 ) -> AppResult<Response> {
+    // `n …` in the popover's box is a quick note (D55); quick.ts switches in place, so this is the no-JS path. A 307
+    // re-sends the same POST to the notes slice, which owns note saving (features don't import each other).
+    if f.back.as_deref().is_some_and(|b| b.starts_with("/quick"))
+        && markdown::quick_note(&f.line).is_some()
+    {
+        return Ok((
+            StatusCode::TEMPORARY_REDIRECT,
+            [(header::LOCATION, "/notes/new")],
+        )
+            .into_response());
+    }
     let today = st.today();
     let day = pick_day(f.day.as_deref(), today);
     let entry = match parse(&with_kind(&f.line, f.kind.as_deref()), today) {

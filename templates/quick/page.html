@@ -20,7 +20,7 @@
 </head>
 <body>
 <div class="menu quick" role="dialog" aria-label="Atharu quick capture">
-<header class="qh"><svg class="mark" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><path d="M7.3 2.6A6.5 6.5 0 1 0 14.4 6.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="26 1.6 3 1.4 2"/><circle cx="9.9" cy="8.1" r="2.2"/></svg><b>Atharu</b><span class="small muted">{{ date }}</span><a class="ib" href="/" aria-label="Open Atharu" title="Open Atharu"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#open"/></svg></a></header>
+<header class="qh"><svg class="mark" viewBox="0 0 18 18" aria-hidden="true"><use href="/static/icon/ui.svg#mark"/></svg><b>Atharu</b><span class="small muted">{{ date }}</span><a class="ib" href="/" aria-label="Open Atharu" title="Open Atharu"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#open"/></svg></a></header>
 
 {#- Saving answers with a 303 back here (back=/quick); htmx follows it and takes only the hint and the to-dos, so the
     form, its focus and capture.js stay. A rejected line answers 422 into #hint (the form keeps its text).
@@ -29,7 +29,7 @@
 <section class="qsec qcap" aria-label="Log a line" data-mode="{% if note_mode %}note{% else %}line{% endif %}">
 <fieldset class="kinds"><legend class="vh">Line kind</legend>
 {%- for (v, mark, class, word) in kinds %}<label class="kc"><input type="radio" name="kind" value="{{ v }}" form="qline"{% if loop.index0 == kind %} checked{% endif %}><span class="{{ class }}">{{ mark }}</span>{{ word }}</label>{% endfor -%}
-<button class="kc nt" type="submit" form="qline" formmethod="get" formaction="/quick" formnovalidate name="mode" value="{% if !note_mode %}note{% endif %}" aria-pressed="{{ note_mode }}"><span class="k"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#note"/></svg></span>note</button>
+<button class="kc nt" type="submit" form="qline" formmethod="get" formaction="/quick" formnovalidate name="mode" value="{% if !note_mode %}note{% endif %}" aria-pressed="{{ note_mode }}"><span class="k">n</span>note</button>
 </fieldset>
 <form id="qline" method="post" action="/entries" hx-post="/entries" hx-swap="none" hx-select-oob="#hint,#qtodo" hx-disinherit="*" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) this.reset()">
 <input type="hidden" name="back" value="/quick"><input type="hidden" name="notag" id="notag" value="">

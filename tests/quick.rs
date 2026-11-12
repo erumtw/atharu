@@ -257,3 +257,43 @@ async fn a_tag_on_the_title_line_tags_the_note() {
         1
     );
 }
+
+#[tokio::test]
+async fn n_space_in_the_line_box_saves_a_note_without_js() {
+    // D55: the browser re-sends a 307 with the same body, so the test posts it twice by hand.
+    let st = state();
+    let body = form(&[
+        ("line", "n vendor call #ops"),
+        ("kind", "!"),
+        ("back", "/quick"),
+    ]);
+    let r = post(&st, "/entries", &body, false).await;
+    assert_eq!(r.status, 307);
+    assert_eq!(r.headers["location"], "/notes/new");
+    let r = post(&st, "/notes/new", &body, false).await;
+    assert_eq!(r.headers["location"], "/quick?note=1");
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE title = 'vendor call #ops' AND author = 'me'"
+        ),
+        1
+    );
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM entries"), 0);
+
+    // Needs the space, like `x `; and only the popover's box: on Today `n …` stays a line.
+    let r = post(
+        &st,
+        "/entries",
+        &form(&[("line", "nginx fixed"), ("back", "/quick")]),
+        false,
+    )
+    .await;
+    assert_eq!(r.status, 303);
+    post(&st, "/entries", &form(&[("line", "n plain")]), false).await;
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM entries WHERE kind = 'done'"),
+        2
+    );
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM notes"), 1);
+}
