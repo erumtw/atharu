@@ -465,8 +465,8 @@ and it lists its lines at the top.
   - **Has a note**: `<a class="ib note has" href="/notes/12" aria-label="Open note: <title>" title="Open note">`, always shown
     (it tells you the line has more): `--accent` fill with white lines (a link, so the one blue); hover `--accent-2` + the `.ib` tint.
   - **No note**: `<form method="post" action="/entries/<id>/note"><button class="ib note" aria-label="Add a note to this line"
-    title="Add a note">`: `--muted` outline, hidden like × until the row is hovered or holds focus (Tab still reaches it; touch
-    without hover shows it always). One POST creates the note (title = the line text without prefix and key, author me),
+    title="Add a note">`: `--muted` outline at 35% opacity, full on row hover / focus (never fully hidden: the owner
+    couldn't find a hover-only icon); the icon is inline SVG, not the sprite (WKWebView drew the sprite's version blank). One POST creates the note (title = the line text without prefix and key, author me),
     links it and 303s to `/notes/<id>`. Plain form, no JS needed.
   - **Phone (< 640)**: the add button leaves the row; the ⋯ sheet gets **Add a note** (or **Open note**) above Edit line. A
     line that has a note keeps its filled button in the row at 44.
