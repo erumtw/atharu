@@ -97,7 +97,7 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .qlist{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;margin:0 -12px;padding:0 12px}
 .qt{display:flex;align-items:center;gap:10px;min-height:32px;flex:none}
 .qt form{display:contents}
-.qt .tx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qt .qtx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qt .due{flex:none}
 .qt .done-text{color:var(--muted)}
 .qmore{font-size:13px;padding:6px 0 0;flex:none}

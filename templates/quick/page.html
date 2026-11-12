@@ -88,7 +88,7 @@
 <div class="qlist" role="list">
 {%- for t in todos %}
 {#- Ticking posts at once; the row stays (struck) until the popover reloads, so a mis-tick can be unticked = reopened. #}
-<div class="qt" role="listitem"><form method="post" action="/plans/{{ t.id }}" hx-post="/plans/{{ t.id }}" hx-trigger="change" hx-swap="none"><input type="hidden" name="back" value="/quick"><input type="hidden" name="state" value="done"><input class="check" type="checkbox" aria-label="Mark done: {{ t.text }}" hx-on:change="this.form.elements.state.value = this.checked ? 'done' : 'open'; this.closest('.qt').querySelector('.tx').classList.toggle('done-text', this.checked)"><noscript><button class="btn ghost s" type="submit">Done</button></noscript></form><span class="tx">{{ t.text }}</span><span class="due{% if t.late %} late{% endif %}">due {{ t.due }}</span>
+<div class="qt" role="listitem"><form method="post" action="/plans/{{ t.id }}" hx-post="/plans/{{ t.id }}" hx-trigger="change" hx-swap="none"><input type="hidden" name="back" value="/quick"><input type="hidden" name="state" value="done"><input class="check" type="checkbox" aria-label="Mark done: {{ t.text }}" hx-on:change="this.form.elements.state.value = this.checked ? 'done' : 'open'; this.closest('.qt').querySelector('.qtx').classList.toggle('done-text', this.checked)"><noscript><button class="btn ghost s" type="submit">Done</button></noscript></form><span class="qtx">{{ t.text }}</span><span class="due{% if t.late %} late{% endif %}">due {{ t.due }}</span>
 {#- A link opens the main window (the app's navigation hook); the add form is fetched by quick.ts, then the same. #}
 {%- let line_id = t.id %}{% let note_ref = t.note.as_ref() %}{% include "partials/note_btn.html" %}</div>
 {%- endfor %}
