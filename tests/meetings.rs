@@ -159,3 +159,66 @@ async fn series_filter_and_report_numbers() {
     assert!(b.contains(r#"<span class="small muted">Meetings</span><b>2</b>"#));
     assert!(b.contains("- **Decision** keep sync path (oms-sync)"));
 }
+
+#[tokio::test]
+async fn rename_moves_the_whole_series_and_its_tags() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO meetings(id, day, name, ended_at) VALUES
+           (1, '2026-11-10', 'comps-add-on-cs-hub-from-comops', '2026-11-10 10:00:00'),
+           (2, '2026-11-11', 'comps-add-on-cs-hub-from-comops', '2026-11-11 10:00:00'),
+           (3, '2026-11-11', 'oms-sync', '2026-11-11 11:00:00');",
+    );
+    exec(
+        &st,
+        "INSERT INTO taggings(tag, item_type, item_id) VALUES ('cshub', 'series', 'comps-add-on-cs-hub-from-comops')",
+    );
+
+    let r = post(
+        &st,
+        "/meetings/1/rename",
+        &form(&[("name", "CS Hub sync")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.headers["hx-redirect"], "/meetings/1");
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM meetings WHERE name = 'cs-hub-sync'"
+        ),
+        2
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM taggings WHERE item_type = 'series' AND item_id = 'cs-hub-sync'"
+        ),
+        1
+    );
+
+    // Taken by another series, or nothing usable: refused, nothing moves.
+    let r = post(
+        &st,
+        "/meetings/1/rename",
+        &form(&[("name", "oms-sync")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 422);
+    assert!(r.body.contains("another series"));
+    assert_eq!(
+        post(&st, "/meetings/1/rename", &form(&[("name", " ?! ")]), true)
+            .await
+            .status,
+        422
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM meetings WHERE name = 'cs-hub-sync'"
+        ),
+        2
+    );
+}

@@ -261,6 +261,43 @@ fn span_label(start: Option<&str>, end: Option<&str>) -> String {
     }
 }
 
+#[derive(Deserialize)]
+pub struct SeriesNameForm {
+    name: String,
+}
+
+/// Rename the meeting's series from its title (T92). The page reloads after (htmx `HX-Redirect`), since the
+/// crumb, sidebar and every list name it; a refusal comes back as a hint under the title.
+pub async fn rename(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Form(f): Form<SeriesNameForm>,
+) -> AppResult<Response> {
+    let m = queries::meeting(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    let new = slugify(&f.name);
+    let error = if new.is_empty() {
+        Some("Type a name with letters or digits, e.g. cs-hub-sync.".to_string())
+    } else if !queries::rename_series(&mut st.conn(), &m.name, &new)? {
+        Some(format!(
+            "“{new}” is another series already. Pick a different name."
+        ))
+    } else {
+        None
+    };
+    let to = format!("/meetings/{id}");
+    match error {
+        None if web::is_htmx(&headers) => {
+            Ok(([("HX-Redirect", to)], StatusCode::OK).into_response())
+        }
+        None => Ok(web::back(&to)),
+        Some(e) if web::is_htmx(&headers) => {
+            Ok((StatusCode::UNPROCESSABLE_ENTITY, e).into_response())
+        }
+        Some(e) => Ok((StatusCode::UNPROCESSABLE_ENTITY, e).into_response()),
+    }
+}
+
 /// Record a running meeting that isn't recording (after Stop, or after Quit & Reopen for a permission).
 pub async fn record(
     State(st): State<AppState>,

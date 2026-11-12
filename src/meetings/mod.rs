@@ -16,6 +16,7 @@ pub fn routes() -> Router<AppState> {
         .route("/meetings", get(handlers::list).post(handlers::start))
         .route("/meetings/{id}", get(handlers::page))
         .route("/meetings/{id}/end", post(handlers::end))
+        .route("/meetings/{id}/rename", post(handlers::rename))
         .route("/meetings/banner", get(handlers::banner_get))
         .route("/meetings/permissions", post(handlers::permissions))
         .route("/meetings/{id}/record", post(handlers::record))
