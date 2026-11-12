@@ -76,8 +76,6 @@ pub struct EpicView {
     pub done_on: String,
     /// Jira `summary · status`, shown while `title` is empty.
     pub jira: Option<String>,
-    /// `expense, hiring`: the Tags field as typed back to the user.
-    pub tags: String,
 }
 
 pub struct Evidence {
@@ -118,6 +116,7 @@ pub struct DayGroup {
 #[template(path = "epics/page.html")]
 pub struct Page {
     pub layout: Layout,
+    pub field: crate::layout::TagField,
     pub epic: EpicView,
     pub flag: Option<Flag>,
     /// Entries per week, last 8 weeks, as % of the busiest.
@@ -138,4 +137,6 @@ pub struct Page {
 pub struct Swap {
     pub live: Live,
     pub save_error: bool,
+    /// The Tags prop, swapped out-of-band: a chip edit changes it.
+    pub field: Option<crate::layout::TagField>,
 }

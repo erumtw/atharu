@@ -1,0 +1,2 @@
+{#- Hidden params a range form carries so a new range keeps the grouping and the tag filter. -#}
+{%- if group == "tag" %}<input type="hidden" name="group" value="tag">{% endif %}{% if !filter.tags.is_empty() %}<input type="hidden" name="tag" value="{{ filter.joined() }}">{% endif %}

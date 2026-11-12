@@ -9,6 +9,7 @@
 <dt>State</dt><dd>{% if let Some(t) = ended %}<span class="chip">ended {{ t }}</span>{% else %}<span class="chip">running</span><form class="inline" method="post" action="/meetings/{{ id }}/end"><input type="hidden" name="back" value="{{ back }}"><button class="btn ghost s" type="submit">End meeting</button></form>{% endif %}</dd>
 <dt>Series</dt><dd class="small">{% for (i, l) in siblings %}<a href="/meetings/{{ i }}">{{ l }}</a>·{% endfor %}<a href="/meetings?name={{ name }}">all {{ series_count }}</a></dd>
 </dl>
+{% include "meetings/tags.html" %}
 <hr class="hr">
 {%- if plans.is_empty() && groups.is_empty() %}
 <p class="small muted" style="margin: 0">Nothing logged in this meeting.</p>

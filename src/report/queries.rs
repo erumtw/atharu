@@ -44,19 +44,33 @@ pub struct Notable {
     /// Meeting it was logged in, shown as `(oms-sync)`.
     pub meeting: Option<String>,
     pub author: String,
+    /// Its tags, typed or inherited, by name (D29).
+    pub tags: Vec<String>,
 }
 
 /// Impact, decisions, blockers in range: epics by key then unfiled; inside an epic impact → decision → blocker, oldest first.
-pub fn notable(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<Notable>> {
+/// `filter` = only lines carrying any of these tags (typed or inherited); empty = all.
+pub fn notable(
+    conn: &Connection,
+    from: &str,
+    to: &str,
+    filter: &[String],
+) -> rusqlite::Result<Vec<Notable>> {
     let mut stmt = conn.prepare(
-        "SELECT e.epic_key, COALESCE(ep.title, ''), e.kind, e.text, m.name, e.author
+        "SELECT e.epic_key, COALESCE(ep.title, ''), e.kind, e.text, m.name, e.author,
+                (SELECT json_group_array(tag) FROM
+                   (SELECT DISTINCT tag FROM entry_tags WHERE entry_id = e.id ORDER BY tag))
          FROM entries e LEFT JOIN epics ep ON ep.key = e.epic_key
          LEFT JOIN meetings m ON m.id = e.meeting_id
          WHERE e.day BETWEEN ?1 AND ?2 AND e.kind IN ('impact', 'decision', 'blocker')
+           AND (json_array_length(?3) = 0 OR EXISTS (SELECT 1 FROM entry_tags et
+                 WHERE et.entry_id = e.id AND et.tag IN (SELECT value FROM json_each(?3))))
          ORDER BY e.epic_key IS NULL, e.epic_key,
                   CASE e.kind WHEN 'impact' THEN 0 WHEN 'decision' THEN 1 ELSE 2 END, e.day, e.id",
     )?;
-    stmt.query_map(params![from, to], |r| {
+    let filter = serde_json::to_string(filter).unwrap_or_else(|_| "[]".into());
+    stmt.query_map(params![from, to, filter], |r| {
+        let tags: String = r.get(6)?;
         Ok(Notable {
             epic_key: r.get(0)?,
             epic_title: r.get(1)?,
@@ -64,9 +78,17 @@ pub fn notable(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<
             text: r.get(3)?,
             meeting: r.get(4)?,
             author: r.get(5)?,
+            tags: serde_json::from_str(&tags).unwrap_or_default(),
         })
     })?
     .collect()
+}
+
+/// Tags in use, most used first: the filter box's suggestions.
+pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
 }
 
 /// Days of impact entries in range, for the per-week bars.

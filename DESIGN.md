@@ -264,16 +264,21 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   `.cols`, one on phone) · Coming up (own events with the tag; Google events matched by a title word, marked "matched by word" in
   `--muted`, never stored). Inherited lines carry "via `OPS-140`" (`.via`).
 - **One name, one hub**: a tag, topic and meeting series with the same name share the page; a `.callout` says so and the topic
-  (depth meter, own words) and series rows sit in the props. `[[X]]` resolves epic → topic → series → tag.
+  (depth meter, own words) and series rows sit in the props. `[[X]]` resolves epic → topic → series → tag (so a shared name lands
+  on the topic first; the hub's callout says where).
 - **Tags list** under Track (sidebar `#` icon after Report): Find field, `.seg` Most used | Recent | A–Z, table Tag · Lines · Open
   to-dos · Last used · Tagged by; counts include inherited lines.
 - **Filter row** (GET `?tag=`, any-of for a comma list) on To-dos, Today, Notes, Calendar, Report: "Tag" label + `.chip.tag.fl` chips +
   a `.fld.s` "+ tag"; Today and Report add **Group by** `.seg` Epic | Tag (a line with two tags shows under both; Report copies
   `## #tag` headings).
-- Epics, meeting series and topics have a **Tags** prop: chips + an inline `.pin` with a datalist; comma / Enter adds, Backspace on
-  empty removes; autosaves.
-  Step 1 (T72) ships the epic prop as one plain comma `.pin` (`expense, hiring`, folded on save, autosaves, no JS); the chip
-  editor comes with the series / topic fields (T73).
+- Epics, meeting series and topics have a **Tags** prop (`partials/tag_field.html`, `.tagf`): chips + an inline `.pin` with a
+  datalist; comma / Enter adds, Backspace on empty removes; autosaves. Each chip carries a small × (a submit button, as on the
+  `.fl` filter chip) so removing works without JS; an off-screen first submit button keeps Enter from ever hitting a ×.
+  Series tags sit on the meeting page ("Series tags", one field for every meeting of the series), topic tags under its title.
+- **Hub ⋯ menu**: a native popover anchored under the crumb's ⋯ (`.acts-menu`, CSS anchor positioning); each item opens its confirm
+  step on the hub itself (`?act=rename|merge|delete`, a `.callout` form), so it works as plain GET + POST. Done = the `<main>` becomes
+  the toast "Renamed #a to #b · N places rewritten · Undo · Open #b" (one transaction, one Undo, like a deleted page).
+- Report: Group by `.seg` Epic | Tag sits at the right of the filter row (the range row already holds the from/to dates).
 
 ## 7. UX patterns (from Notion)
 

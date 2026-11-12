@@ -1,0 +1,3 @@
+{#- Body of the capture bar's #toast after "Tag them" or its Undo; the toast stays until the next action. -#}
+<span class="tick">✓</span><span>{{ text }}{% if let Some(t) = tag %} <span class="chip tag">{{ t }}</span>{% endif %}</span>
+{%- if let Some(s) = snap %}<form class="inline" method="post" action="/tags-undo" hx-post="/tags-undo" hx-target="#toast" hx-swap="innerHTML"><input type="hidden" name="snap" value="{{ s }}"><input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="inplace" value="1"><button class="linkbtn" type="submit">Undo</button></form>{% endif %}

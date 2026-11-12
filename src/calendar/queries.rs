@@ -1,27 +1,51 @@
 use rusqlite::{Connection, params};
 
+// Every read below takes `?3` = the tag filter as a JSON array (D29); `[]` = everything. Any of the
+// tags counts, typed or inherited, as on To-dos.
+const ANY: &str = "(SELECT value FROM json_each(?3))";
+
+fn json(tags: &[String]) -> String {
+    serde_json::to_string(tags).unwrap_or_else(|_| "[]".into())
+}
+
 /// Open to-dos due in [from, to]: (day, text).
 pub fn due_plans(
     conn: &Connection,
     from: &str,
     to: &str,
+    tags: &[String],
 ) -> rusqlite::Result<Vec<(String, String)>> {
-    let mut stmt = conn.prepare(
+    let mut stmt = conn.prepare(&format!(
         "SELECT due, text FROM entries
-         WHERE plan_state = 'open' AND due BETWEEN ?1 AND ?2 ORDER BY due, id",
-    )?;
-    stmt.query_map(params![from, to], |r| Ok((r.get(0)?, r.get(1)?)))?
-        .collect()
+         WHERE plan_state = 'open' AND due BETWEEN ?1 AND ?2
+           AND (json_array_length(?3) = 0 OR EXISTS (SELECT 1 FROM entry_tags et
+                 WHERE et.entry_id = entries.id AND et.tag IN {ANY}))
+         ORDER BY due, id"
+    ))?;
+    stmt.query_map(params![from, to, json(tags)], |r| {
+        Ok((r.get(0)?, r.get(1)?))
+    })?
+    .collect()
 }
 
 /// Active epics whose target falls in [from, to]: (day, key).
-pub fn targets(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<(String, String)>> {
-    let mut stmt = conn.prepare(
+pub fn targets(
+    conn: &Connection,
+    from: &str,
+    to: &str,
+    tags: &[String],
+) -> rusqlite::Result<Vec<(String, String)>> {
+    let mut stmt = conn.prepare(&format!(
         "SELECT target, key FROM epics
-         WHERE status = 'active' AND target BETWEEN ?1 AND ?2 ORDER BY target, key",
-    )?;
-    stmt.query_map(params![from, to], |r| Ok((r.get(0)?, r.get(1)?)))?
-        .collect()
+         WHERE status = 'active' AND target BETWEEN ?1 AND ?2
+           AND (json_array_length(?3) = 0 OR EXISTS (SELECT 1 FROM taggings t
+                 WHERE t.item_type = 'epic' AND t.item_id = epics.key AND t.tag IN {ANY}))
+         ORDER BY target, key"
+    ))?;
+    stmt.query_map(params![from, to, json(tags)], |r| {
+        Ok((r.get(0)?, r.get(1)?))
+    })?
+    .collect()
 }
 
 pub struct MeetingRow {
@@ -31,11 +55,20 @@ pub struct MeetingRow {
     pub ended_at: Option<String>,
 }
 
-pub fn meetings(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<MeetingRow>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, day, name, ended_at FROM meetings WHERE day BETWEEN ?1 AND ?2 ORDER BY day, id",
-    )?;
-    stmt.query_map(params![from, to], |r| {
+/// Filtered: a series tagged with it, or named it (one name, one hub).
+pub fn meetings(
+    conn: &Connection,
+    from: &str,
+    to: &str,
+    tags: &[String],
+) -> rusqlite::Result<Vec<MeetingRow>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT id, day, name, ended_at FROM meetings WHERE day BETWEEN ?1 AND ?2
+           AND (json_array_length(?3) = 0 OR name IN {ANY} OR EXISTS (SELECT 1 FROM taggings t
+                 WHERE t.item_type = 'series' AND t.item_id = meetings.name AND t.tag IN {ANY}))
+         ORDER BY day, id"
+    ))?;
+    stmt.query_map(params![from, to, json(tags)], |r| {
         Ok(MeetingRow {
             id: r.get(0)?,
             day: r.get(1)?,
@@ -47,11 +80,22 @@ pub fn meetings(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec
 }
 
 /// Lines logged per day in [from, to]: (day, count).
-pub fn logged(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<(String, i64)>> {
-    let mut stmt =
-        conn.prepare("SELECT day, COUNT(*) FROM entries WHERE day BETWEEN ?1 AND ?2 GROUP BY day")?;
-    stmt.query_map(params![from, to], |r| Ok((r.get(0)?, r.get(1)?)))?
-        .collect()
+pub fn logged(
+    conn: &Connection,
+    from: &str,
+    to: &str,
+    tags: &[String],
+) -> rusqlite::Result<Vec<(String, i64)>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT day, COUNT(*) FROM entries WHERE day BETWEEN ?1 AND ?2
+           AND (json_array_length(?3) = 0 OR EXISTS (SELECT 1 FROM entry_tags et
+                 WHERE et.entry_id = entries.id AND et.tag IN {ANY}))
+         GROUP BY day"
+    ))?;
+    stmt.query_map(params![from, to, json(tags)], |r| {
+        Ok((r.get(0)?, r.get(1)?))
+    })?
+    .collect()
 }
 
 pub struct EventRow {
@@ -60,40 +104,64 @@ pub struct EventRow {
     pub title: String,
     /// `YYYY-MM-DD` (all day) or `YYYY-MM-DDTHH:MM`.
     pub starts_at: String,
+    /// Own event whose title has one of the filter's tags (Google events are matched by word instead).
+    pub tagged: bool,
 }
 
 /// Events starting in [from, to]. Text compare works for both stored forms: `2026-11-11` and
 /// `2026-11-11T10:00` both sort before `2026-11-12`, so `< to + 1 day` keeps the index usable.
-pub fn events(conn: &Connection, from: &str, to_excl: &str) -> rusqlite::Result<Vec<EventRow>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, source, title, starts_at FROM events
-         WHERE starts_at >= ?1 AND starts_at < ?2 ORDER BY starts_at, id",
-    )?;
-    stmt.query_map(params![from, to_excl], |r| {
+pub fn events(
+    conn: &Connection,
+    from: &str,
+    to_excl: &str,
+    tags: &[String],
+) -> rusqlite::Result<Vec<EventRow>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT id, source, title, starts_at, EXISTS (SELECT 1 FROM taggings t
+                  WHERE t.item_type = 'event' AND t.item_id = CAST(events.id AS TEXT) AND t.tag IN {ANY})
+         FROM events WHERE starts_at >= ?1 AND starts_at < ?2 ORDER BY starts_at, id"
+    ))?;
+    stmt.query_map(params![from, to_excl, json(tags)], |r| {
         Ok(EventRow {
             id: r.get(0)?,
             source: r.get(1)?,
             title: r.get(2)?,
             starts_at: r.get(3)?,
+            tagged: r.get(4)?,
         })
     })?
     .collect()
 }
 
+/// Own events only take `#tag`s from their title (D29); Google ones are matched by word on the hub, never stored.
 pub fn add_own(conn: &Connection, title: &str, starts_at: &str) -> rusqlite::Result<i64> {
-    conn.execute(
+    let tx = conn.unchecked_transaction()?;
+    tx.execute(
         "INSERT INTO events(source, title, starts_at) VALUES ('own', ?1, ?2)",
         params![title, starts_at],
     )?;
-    Ok(conn.last_insert_rowid())
+    let id = tx.last_insert_rowid();
+    crate::db::retag(
+        &tx,
+        "event",
+        &id.to_string(),
+        &crate::domain::tags::tags(title),
+    )?;
+    tx.commit()?;
+    Ok(id)
 }
 
 /// Only own events: Google ones come back on the next fetch anyway, and we never write back.
 pub fn delete_own(conn: &Connection, id: i64) -> rusqlite::Result<bool> {
-    Ok(conn.execute(
+    let tx = conn.unchecked_transaction()?;
+    let gone = tx.execute(
         "DELETE FROM events WHERE id = ?1 AND source = 'own'",
         params![id],
-    )? > 0)
+    )? > 0;
+    // events has no untag trigger (006 shipped without one), so the delete clears its rows itself.
+    crate::db::retag(&tx, "event", &id.to_string(), &[])?;
+    tx.commit()?;
+    Ok(gone)
 }
 
 pub struct GoogleEvent {
@@ -126,4 +194,11 @@ pub fn sync_google(conn: &mut Connection, events: &[GoogleEvent]) -> rusqlite::R
         params![seen.to_string()],
     )?;
     tx.commit()
+}
+
+/// Tags in use, most used first: the filter box's suggestions.
+pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
 }

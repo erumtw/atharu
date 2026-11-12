@@ -243,13 +243,21 @@ fn render_page(
             start: e.start.unwrap_or_default(),
             target: e.target.unwrap_or_default(),
             done_on: e.done_on.unwrap_or_default(),
-            tags: epic_tags.join(", "),
         },
+        field: tag_field(&conn, epic_tags)?,
         mentions: queries::mentions(&conn, key)?,
         live,
         timeline,
         save_error,
         delete_error: None,
+    })
+}
+
+fn tag_field(conn: &Connection, tags: Vec<String>) -> rusqlite::Result<crate::layout::TagField> {
+    Ok(crate::layout::TagField {
+        id: "tags",
+        tags,
+        known: queries::tag_names(conn)?,
     })
 }
 
@@ -285,8 +293,18 @@ pub async fn update(
     State(st): State<AppState>,
     headers: HeaderMap,
     Path(key): Path<String>,
-    Form(form): Form<HashMap<String, String>>,
+    Form(mut form): Form<HashMap<String, String>>,
 ) -> AppResult<Response> {
+    // A chip edit (× or the add box) folds into the plain `tags` field before validation.
+    if form.contains_key("tags_add") || form.contains_key("tags_drop") {
+        let cur = form.get("tags").cloned().unwrap_or_default();
+        let list = tags::edit_list(
+            &cur,
+            form.get("tags_add").map(String::as_str),
+            form.get("tags_drop").map(String::as_str),
+        );
+        form.insert("tags".into(), list.join(","));
+    }
     let ok = match fields(&form) {
         Some(f) => {
             if !queries::update_fields(&st.conn(), &key, &f)? {
@@ -314,6 +332,7 @@ pub async fn update(
         &view::Swap {
             live: live(&conn, &e, String::new(), None)?,
             save_error: !ok,
+            field: Some(tag_field(&conn, tags::parse_list(&e.tags))?),
         },
     )
 }
@@ -353,6 +372,7 @@ pub async fn add_evidence(
         &view::Swap {
             live: live(&conn, &e, kept, error)?,
             save_error: false,
+            field: None,
         },
     )
 }
@@ -373,6 +393,7 @@ pub async fn delete_evidence(
     web::html(&view::Swap {
         live: live(&conn, &e, String::new(), None)?,
         save_error: false,
+        field: None,
     })
 }
 

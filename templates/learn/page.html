@@ -4,6 +4,7 @@
 {% block content %}
 <main class="doc">
 <h1 class="ptitle mono t36">{{ slug }}</h1>
+{% include "learn/tags.html" %}
 {#- Two autosave forms (the rate buttons sit between them); each posts only its own fields. #}
 <form method="post" action="/learn/{{ slug }}" hx-post="/learn/{{ slug }}" hx-trigger="input changed delay:1s, change, submit" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
 <dl class="props">

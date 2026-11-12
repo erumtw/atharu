@@ -1,0 +1,2 @@
+{#- Series Tags prop (D29): one field for every meeting of the series; lines logged in them inherit it. -#}
+<form id="series-tags-form" method="post" action="/meetings/{{ id }}/tags" hx-post="/meetings/{{ id }}/tags" hx-trigger="change, submit" hx-target="this" hx-swap="outerHTML"><dl class="props"><dt><label for="series-tags">Series tags</label></dt><dd class="tagf">{% include "partials/tag_field.html" %}<span class="small muted">lines logged in this series count under these tags</span></dd></dl></form>

@@ -130,6 +130,7 @@ pub async fn page(State(st): State<AppState>, Path(slug): Path<String>) -> AppRe
         resources: t.resources,
         mentions: queries::mentions(&conn, &slug)?,
         lines,
+        field: tag_field(&conn, &slug)?,
         slug,
     })
 }
@@ -152,6 +153,46 @@ pub async fn update(
         return Ok(web::back(&format!("/learn/{slug}")));
     }
     web::html(&view::Saved)
+}
+
+fn tag_field(conn: &rusqlite::Connection, slug: &str) -> rusqlite::Result<crate::layout::TagField> {
+    Ok(crate::layout::TagField {
+        id: "topic-tags",
+        tags: crate::domain::tags::parse_list(&queries::tags(conn, slug)?),
+        known: queries::tag_names(conn)?,
+    })
+}
+
+#[derive(Deserialize)]
+pub struct TagsForm {
+    tags: Option<String>,
+    tags_add: Option<String>,
+    tags_drop: Option<String>,
+}
+
+/// The Tags prop: a chip edit saves at once and answers with the prop (htmx) or the page.
+pub async fn set_tags(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(slug): Path<String>,
+    Form(f): Form<TagsForm>,
+) -> AppResult<Response> {
+    let list = crate::domain::tags::edit_list(
+        f.tags.as_deref().unwrap_or(""),
+        f.tags_add.as_deref(),
+        f.tags_drop.as_deref(),
+    );
+    let conn = st.conn();
+    if !queries::set_tags(&conn, &slug, &list)? {
+        return Err(AppError::NotFound);
+    }
+    if !web::is_htmx(&headers) {
+        return Ok(web::back(&format!("/learn/{slug}")));
+    }
+    web::html(&view::Tags {
+        field: tag_field(&conn, &slug)?,
+        slug,
+    })
 }
 
 #[derive(Deserialize)]

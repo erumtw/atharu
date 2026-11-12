@@ -279,3 +279,10 @@ pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<Str
     tx.commit()?;
     Ok(Ok(key))
 }
+
+/// Tags in use, most used first: the Tags prop's suggestions.
+pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
+}

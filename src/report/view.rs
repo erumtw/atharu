@@ -5,6 +5,8 @@ pub struct Item {
     /// `Impact` / `Decision` / `Blocker`.
     pub label: &'static str,
     pub text: String,
+    /// Grouped by tag: the line's epic key, shown in brackets like the meeting.
+    pub epic: Option<String>,
     pub meeting: Option<String>,
     /// Agent that filed the line: shown `(via claude)` so the copy stays honest.
     pub via: Option<String>,
@@ -75,6 +77,9 @@ pub struct Page {
     /// Empty-range nudge: (preset, label) of the next wider range; none past a quarter.
     pub wider: Option<(&'static str, &'static str)>,
     pub okrs: Vec<OkrBar>,
+    /// `epic` · `tag`: what the note's sections are.
+    pub group: &'static str,
+    pub filter: crate::layout::TagFilter,
     pub weeks: WeekBars,
     /// `Sep`, one per month touching the range.
     pub heat_months: Vec<String>,

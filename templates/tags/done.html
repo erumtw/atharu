@@ -1,0 +1,4 @@
+{#- Replaces the hub's <main> after rename / merge / delete; Undo posts the snapshot back (queries::undo). -#}
+<main class="doc">
+<div class="toast row small" role="status"><span class="tick">✓</span><span>{{ what }} · {{ changed }} place{% if changed != 1 %}s{% endif %} rewritten ·</span><form class="inline" method="post" action="/tags-undo" hx-post="/tags-undo" hx-target="closest main" hx-swap="outerHTML"><input type="hidden" name="snap" value="{{ snap }}"><input type="hidden" name="back" value="{{ back }}"><button class="linkbtn" type="submit">Undo</button></form>{% if let Some(t) = open %}<span>·</span><a href="/tags/{{ t }}">Open <span class="chip tag">{{ t }}</span></a>{% else %}<span>·</span><a href="/tags">All tags</a>{% endif %}</div>
+</main>

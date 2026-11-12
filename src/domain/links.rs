@@ -40,12 +40,13 @@ fn targets(body: &str) -> impl Iterator<Item = (usize, &str, usize)> {
     })
 }
 
-/// Where `[[X]]` points: epic key → epic, else an existing topic, else an existing meeting series.
-/// `None` = renders as plain text (and is a dead link the page can point out).
+/// Where `[[X]]` points: epic key → epic, else an existing topic, else an existing meeting series,
+/// else a tag in use → its hub (D29). `None` = renders as plain text (a dead link the page can point out).
 pub fn href(
     x: &str,
     is_topic: impl Fn(&str) -> bool,
     is_meeting: impl Fn(&str) -> bool,
+    is_tag: impl Fn(&str) -> bool,
 ) -> Option<String> {
     if is_epic_key(x) {
         Some(format!("/epics/{x}"))
@@ -53,6 +54,8 @@ pub fn href(
         Some(format!("/learn/{x}"))
     } else if is_meeting(x) {
         Some(format!("/meetings?name={x}"))
+    } else if is_tag(x) {
+        Some(format!("/tags/{x}"))
     } else {
         None
     }
@@ -79,11 +82,12 @@ mod tests {
     use super::*;
 
     fn resolve(x: &str) -> Option<String> {
-        // `oms-sync` is both a topic and a meeting: the topic wins.
+        // `oms-sync` is both a topic and a meeting: the topic wins; a tag only when nothing else is.
         href(
             x,
             |s| ["vector-search", "oms-sync"].contains(&s),
             |s| ["oms-sync", "standup"].contains(&s),
+            |s| ["expense", "standup"].contains(&s),
         )
     }
 
@@ -94,6 +98,7 @@ mod tests {
             ("vector-search", Some("/learn/vector-search")),
             ("oms-sync", Some("/learn/oms-sync")),
             ("standup", Some("/meetings?name=standup")),
+            ("expense", Some("/tags/expense")),
             ("chekout", None),
             ("ops-101", None),
         ] {

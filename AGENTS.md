@@ -24,7 +24,8 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 | `entry_tags` (view) | a line's tags incl. inherited from its epic / meeting series | `entry_id`, `tag`, `via` (NULL = in the text) |
 
 `[[X]]` in a note resolves in this order: epic key (`OPS-101`) → `/epics/X`, existing topic slug → `/learn/X`,
-existing meeting name → `/meetings?name=X`, else nothing (a dead link).
+existing meeting name → `/meetings?name=X`, a tag in use → `/tags/X` (its hub, which also shows the topic and
+series of the same name), else nothing (a dead link).
 
 ## Line grammar (what `atharu log` and the capture bar accept)
 

@@ -10,3 +10,8 @@
 {%- if let Some(d) = deleted -%}
 <span>Line deleted ·</span><form class="inline" method="post" action="/entries/restore" hx-post="/entries/restore" hx-target="#log" hx-swap="outerHTML"><input type="hidden" name="snap" value="{{ d.snap }}"><button class="linkbtn" type="submit">Undo</button></form>
 {%- endif -%}
+{%- if let Some(m) = made -%}
+<span class="tick">✓</span><span>Tagged <span class="chip tag">{{ m.tag }}</span>{% if m.older > 0 %} · {{ m.older }} older line{% if m.older != 1 %}s{% endif %} mention{% if m.older == 1 %}s{% endif %} ‘{{ m.word }}’{% endif %}</span>
+{%- if m.older > 0 %}<form class="inline" method="post" action="/tags/{{ m.tag }}/older" hx-post="/tags/{{ m.tag }}/older" hx-target="#toast" hx-swap="innerHTML"><input type="hidden" name="except" value="{{ m.id }}"><input type="hidden" name="back" value="/?day={{ m.day }}"><button class="linkbtn" type="submit"><b>Tag them</b></button></form><span class="muted">·</span>{% endif -%}
+<form class="inline" method="post" action="/entries/{{ m.id }}" hx-post="/entries/{{ m.id }}" hx-target="#log" hx-swap="outerHTML"><input type="hidden" name="line" value="{{ m.undo_line }}"><button class="linkbtn" type="submit">Undo</button></form>
+{%- endif -%}

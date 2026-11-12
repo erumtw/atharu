@@ -3,7 +3,7 @@ use crate::{
     app::AppState,
     domain::{links, markdown},
     error::{AppError, AppResult},
-    layout::{Layout, crumb},
+    layout::{Layout, TagFilter, crumb},
     web,
 };
 use axum::{
@@ -100,17 +100,34 @@ fn side(rows: &[queries::NoteRow], on: i64) -> view::Side {
     side
 }
 
+/// Percent-encodes a query value (the search box) for the filter row's links.
+fn encode(v: &str) -> String {
+    v.bytes()
+        .map(|b| {
+            if b.is_ascii_alphanumeric() || b"-_.~".contains(&b) {
+                (b as char).to_string()
+            } else {
+                format!("%{b:02X}")
+            }
+        })
+        .collect()
+}
+
 #[derive(Deserialize)]
 pub struct ListQuery {
     q: Option<String>,
+    /// Tag filter, comma list (any of them); `add` = the filter row's add box.
+    tag: Option<String>,
+    add: Option<String>,
 }
 
 pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> AppResult<Response> {
     let q = lq.q.unwrap_or_default().trim().to_string();
     let conn = st.conn();
-    let all = queries::list(&conn, "")?;
+    let all = queries::list(&conn, "", &[])?;
+    let tags = TagFilter::pick(lq.tag.as_deref(), lq.add.as_deref());
     let (mut mine, mut agents) = (Vec::new(), Vec::new());
-    for n in queries::list(&conn, &q)? {
+    for n in queries::list(&conn, &q, &tags)? {
         let (before, hit, after) = snippet(&markdown::to_text(&n.body), &q);
         let row = view::ListRow {
             id: n.id,
@@ -130,6 +147,20 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
     web::html(&view::List {
         layout: Layout::load(&conn, "notes", "Notes", vec![])?,
         side: side(&all, 0),
+        filter: TagFilter {
+            tags,
+            path: if q.is_empty() {
+                "/notes?".into()
+            } else {
+                format!("/notes?q={}&", encode(&q))
+            },
+            keep: if q.is_empty() {
+                Vec::new()
+            } else {
+                vec![("q", q.clone())]
+            },
+            known: queries::tag_names(&conn)?,
+        },
         q,
         mine,
         agents,
@@ -143,8 +174,15 @@ pub async fn create(State(st): State<AppState>) -> AppResult<Response> {
 }
 
 fn resolver(conn: &Connection) -> rusqlite::Result<impl Fn(&str) -> Option<String>> {
-    let (topics, meetings) = queries::known_pages(conn)?;
-    Ok(move |x: &str| links::href(x, |s| topics.contains(s), |s| meetings.contains(s)))
+    let (topics, meetings, tags) = queries::known_pages(conn)?;
+    Ok(move |x: &str| {
+        links::href(
+            x,
+            |s| topics.contains(s),
+            |s| meetings.contains(s),
+            |s| tags.contains(s),
+        )
+    })
 }
 
 pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
@@ -161,7 +199,7 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
     let title = title_or_untitled(&n.title);
     web::html(&view::Page {
         layout: Layout::load(&conn, "notes", title, vec![crumb("Notes", "/notes")])?,
-        side: side(&queries::list(&conn, "")?, id),
+        side: side(&queries::list(&conn, "", &[])?, id),
         html: markdown::to_html(&links::rewrite(&n.body, &resolve)),
         agent: agent(&n.author),
         ago: ago(&n.updated_at),

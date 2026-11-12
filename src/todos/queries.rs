@@ -135,3 +135,15 @@ pub fn set_due(conn: &Connection, id: i64, due: Option<&str>) -> rusqlite::Resul
     )?;
     Ok(())
 }
+
+/// Every open plan's tags: (plan id, tag, `Some(source)` when inherited from its epic / series).
+pub fn open_plan_tags(conn: &Connection) -> rusqlite::Result<Vec<(i64, String, Option<String>)>> {
+    let mut stmt = conn.prepare(
+        "SELECT et.entry_id, et.tag, CASE WHEN MIN(et.via IS NOT NULL) = 1 THEN MAX(et.via) END
+           FROM entry_tags et JOIN entries e ON e.id = et.entry_id
+          WHERE e.plan_state = 'open'
+          GROUP BY et.entry_id, et.tag ORDER BY et.tag",
+    )?;
+    stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+        .collect()
+}

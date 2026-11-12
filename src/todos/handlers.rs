@@ -3,7 +3,7 @@ use crate::{
     app::AppState,
     domain::{
         dates,
-        plan::{Bucket, PIN_CAP, link_label, parse_plan},
+        plan::{Bucket, PIN_CAP, Plan, link_label, parse_plan},
     },
     error::{AppError, AppResult},
     layout::{Layout, TagFilter},
@@ -20,21 +20,33 @@ use serde::Deserialize;
 
 const PIN_FULL: &str = "Top 3 is full. Unpin one first.";
 
-fn lists(conn: &Connection, today: NaiveDate, tags: &[String]) -> rusqlite::Result<view::Lists> {
-    let mut groups: Vec<view::Group> = Bucket::ALL
-        .iter()
-        .map(|b| view::Group {
-            title: b.title(),
-            plans: Vec::new(),
-        })
-        .collect();
-    for p in queries::open_plans(conn, tags)? {
-        let i = Bucket::ALL
+fn lists(
+    conn: &Connection,
+    today: NaiveDate,
+    tags: &[String],
+    by_tag: bool,
+) -> rusqlite::Result<view::Lists> {
+    let plans = queries::open_plans(conn, tags)?;
+    let mut groups: Vec<view::Group> = if by_tag {
+        by_tag_groups(conn, plans)?
+    } else {
+        let mut groups: Vec<view::Group> = Bucket::ALL
             .iter()
-            .position(|b| *b == Bucket::of(p.due, today))
-            .unwrap_or(0);
-        groups[i].plans.push(p);
-    }
+            .map(|b| view::Group {
+                title: b.title().into(),
+                tag: None,
+                plans: Vec::new(),
+            })
+            .collect();
+        for p in plans {
+            let i = Bucket::ALL
+                .iter()
+                .position(|b| *b == Bucket::of(p.due, today))
+                .unwrap_or(0);
+            groups[i].plans.push(p);
+        }
+        groups
+    };
     groups.retain(|g| !g.plans.is_empty());
     let week = dates::week_start(today);
     // Filtered: "Done this week" would mix tagged and untagged, so it waits for the full list.
@@ -46,26 +58,78 @@ fn lists(conn: &Connection, today: NaiveDate, tags: &[String]) -> rusqlite::Resu
     Ok(view::Lists { groups, done })
 }
 
+/// Group by tag (D29): one group per tag, biggest first, "No tag" last; a to-do with two tags shows
+/// under both, inherited ones say where from.
+fn by_tag_groups(conn: &Connection, plans: Vec<Plan>) -> rusqlite::Result<Vec<view::Group>> {
+    let tagged = queries::open_plan_tags(conn)?;
+    let mut out: Vec<view::Group> = Vec::new();
+    for p in plans {
+        let mine: Vec<&(i64, String, Option<String>)> =
+            tagged.iter().filter(|(id, _, _)| *id == p.id).collect();
+        let names: Vec<(Option<String>, Option<String>)> = if mine.is_empty() {
+            vec![(None, None)]
+        } else {
+            mine.iter()
+                .map(|(_, t, v)| (Some(t.clone()), v.clone()))
+                .collect()
+        };
+        for (tag, via) in names {
+            let plan = Plan { via, ..p.clone() };
+            match out.iter_mut().find(|g| g.tag == tag) {
+                Some(g) => g.plans.push(plan),
+                None => out.push(view::Group {
+                    title: if tag.is_none() {
+                        "No tag".into()
+                    } else {
+                        String::new()
+                    },
+                    tag,
+                    plans: vec![plan],
+                }),
+            }
+        }
+    }
+    out.sort_by(|a, b| {
+        (a.tag.is_none(), std::cmp::Reverse(a.plans.len()), &a.tag).cmp(&(
+            b.tag.is_none(),
+            std::cmp::Reverse(b.plans.len()),
+            &b.tag,
+        ))
+    });
+    Ok(out)
+}
+
 fn render_page(
     st: &AppState,
     tags: Vec<String>,
+    by_tag: bool,
     line: String,
     error: Option<String>,
     notice: Option<String>,
 ) -> AppResult<view::Page> {
     let today = st.today();
     let conn = st.conn();
-    let lists = lists(&conn, today, &tags)?;
-    let shown: usize = lists.groups.iter().map(|g| g.plans.len()).sum();
+    let lists = lists(&conn, today, &tags, by_tag)?;
+    let shown = queries::open_plans(&conn, &tags)?.len();
     Ok(view::Page {
         layout: Layout::load(&conn, "todos", "To-dos", vec![])?,
         today,
         open_total: queries::open_plans(&conn, &[])?.len(),
         shown,
+        by_tag,
         filter: TagFilter {
             tags,
-            path: "/todos?".into(),
-            keep: Vec::new(),
+            path: if by_tag {
+                "/todos?group=tag&"
+            } else {
+                "/todos?"
+            }
+            .into(),
+            keep: if by_tag {
+                vec![("group", "tag".into())]
+            } else {
+                Vec::new()
+            },
             known: queries::tag_names(&conn)?,
         },
         lists,
@@ -78,6 +142,8 @@ fn render_page(
 
 #[derive(Deserialize)]
 pub struct PageQuery {
+    /// `tag` = one group per tag instead of by due date.
+    group: Option<String>,
     /// Tag filter, comma list (any of them); `add` = the filter row's add box.
     tag: Option<String>,
     add: Option<String>,
@@ -85,7 +151,8 @@ pub struct PageQuery {
 
 pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> AppResult<Response> {
     let tags = TagFilter::pick(q.tag.as_deref(), q.add.as_deref());
-    web::html(&render_page(&st, tags, String::new(), None, None)?)
+    let by_tag = q.group.as_deref() == Some("tag");
+    web::html(&render_page(&st, tags, by_tag, String::new(), None, None)?)
 }
 
 #[derive(Deserialize)]
@@ -114,7 +181,7 @@ pub async fn create(
                 .into_response());
         }
         Err(e) => {
-            let page = render_page(&st, Vec::new(), f.line, Some(e.to_string()), None)?;
+            let page = render_page(&st, Vec::new(), false, f.line, Some(e.to_string()), None)?;
             return web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &page);
         }
     };
@@ -124,9 +191,10 @@ pub async fn create(
         return Ok(web::back("/todos"));
     }
     let tags = TagFilter::pick(web::page_param(&headers, "tag").as_deref(), None);
+    let by_tag = web::page_param(&headers, "group").as_deref() == Some("tag");
     web::html(&view::ListsSwap {
         today,
-        lists: lists(&st.conn(), today, &tags)?,
+        lists: lists(&st.conn(), today, &tags, by_tag)?,
     })
 }
 
@@ -208,7 +276,14 @@ pub async fn update(
     if !web::is_htmx(&headers) {
         if pin_full {
             drop(conn);
-            let page = render_page(&st, Vec::new(), String::new(), None, Some(PIN_FULL.into()))?;
+            let page = render_page(
+                &st,
+                Vec::new(),
+                false,
+                String::new(),
+                None,
+                Some(PIN_FULL.into()),
+            )?;
             return web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &page);
         }
         return Ok(web::back(&back));

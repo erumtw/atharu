@@ -21,9 +21,10 @@ fn note_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
     })
 }
 
-/// Newest first; `q` non-empty = substring match on title + body (case-insensitive for ASCII).
+/// Newest first; `q` non-empty = substring match on title + body (case-insensitive for ASCII);
+/// `tags` non-empty = only notes with any of them (D29).
 // ponytail: LIKE scans every note, FTS5 when search gets slow.
-pub fn list(conn: &Connection, q: &str) -> rusqlite::Result<Vec<NoteRow>> {
+pub fn list(conn: &Connection, q: &str, tags: &[String]) -> rusqlite::Result<Vec<NoteRow>> {
     let pat = format!(
         "%{}%",
         q.replace('\\', "\\\\")
@@ -32,10 +33,14 @@ pub fn list(conn: &Connection, q: &str) -> rusqlite::Result<Vec<NoteRow>> {
     );
     let mut stmt = conn.prepare(
         "SELECT id, title, body, author, updated_at FROM notes
-         WHERE ?1 = '' OR title LIKE ?2 ESCAPE '\\' OR body LIKE ?2 ESCAPE '\\'
+         WHERE (?1 = '' OR title LIKE ?2 ESCAPE '\\' OR body LIKE ?2 ESCAPE '\\')
+           AND (json_array_length(?3) = 0 OR EXISTS (SELECT 1 FROM taggings t
+                 WHERE t.item_type = 'note' AND t.item_id = CAST(notes.id AS TEXT)
+                   AND t.tag IN (SELECT value FROM json_each(?3))))
          ORDER BY updated_at DESC, id DESC",
     )?;
-    stmt.query_map(params![q, pat], note_row)?.collect()
+    let tags = serde_json::to_string(tags).unwrap_or_else(|_| "[]".into());
+    stmt.query_map(params![q, pat, tags], note_row)?.collect()
 }
 
 pub fn note(conn: &Connection, id: i64) -> rusqlite::Result<Option<NoteRow>> {
@@ -115,8 +120,10 @@ pub fn update_fields(conn: &Connection, id: i64, f: &[(&str, &str)]) -> rusqlite
     Ok(true)
 }
 
-/// Existing topic slugs and meeting series, for resolving `[[X]]`.
-pub fn known_pages(conn: &Connection) -> rusqlite::Result<(HashSet<String>, HashSet<String>)> {
+/// Existing topic slugs, meeting series and tags in use, for resolving `[[X]]`.
+type Known = (HashSet<String>, HashSet<String>, HashSet<String>);
+
+pub fn known_pages(conn: &Connection) -> rusqlite::Result<Known> {
     let topics = conn
         .prepare("SELECT slug FROM topics")?
         .query_map([], |r| r.get(0))?
@@ -125,7 +132,11 @@ pub fn known_pages(conn: &Connection) -> rusqlite::Result<(HashSet<String>, Hash
         .prepare("SELECT DISTINCT name FROM meetings")?
         .query_map([], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
-    Ok((topics, meetings))
+    let tags = conn
+        .prepare("SELECT DISTINCT tag FROM taggings")?
+        .query_map([], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
+    Ok((topics, meetings, tags))
 }
 
 pub struct PageRow {
@@ -207,4 +218,11 @@ fn retag(conn: &Connection, id: i64, body: &str) -> rusqlite::Result<()> {
         &id.to_string(),
         &crate::domain::tags::tags(body),
     )
+}
+
+/// Tags in use, most used first: the filter box's suggestions.
+pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
 }

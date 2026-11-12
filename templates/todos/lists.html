@@ -5,7 +5,11 @@
 <p class="small muted" style="margin: 0">No open plans. Log a line starting with &gt;.</p>
 {%- endif %}
 {%- for g in lists.groups %}
-<h3>{{ g.title }}{% if g.title == "Overdue" %} <span class="small muted normal">· {{ g.plans.len() }}</span>{% endif %}</h3>
+{%- if let Some(t) = g.tag %}
+<h3><a class="chip tag" href="/tags/{{ t }}">{{ t }}</a> <span class="small muted normal">· {{ g.plans.len() }}</span></h3>
+{%- else %}
+<h3>{{ g.title }}{% if g.title == "Overdue" || g.title == "No tag" %} <span class="small muted normal">· {{ g.plans.len() }}</span>{% endif %}</h3>
+{%- endif %}
 <div class="blocks">
 {%- for p in g.plans %}
 {% include "partials/plan_row.html" %}

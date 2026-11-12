@@ -102,3 +102,19 @@ impl TagFilter {
         self.tags.join(",")
     }
 }
+
+/// The Tags prop on an epic, meeting series or topic (D29): chips + an add box. Posts `tags` (the
+/// list as shown) + `tags_add` / `tags_drop`; the slice folds them with `domain::tags::edit_list`.
+pub struct TagField {
+    /// The add box's id (its `<label for>`).
+    pub id: &'static str,
+    pub tags: Vec<String>,
+    /// Known tags, for the add box's datalist.
+    pub known: Vec<String>,
+}
+
+impl TagField {
+    pub fn joined(&self) -> String {
+        self.tags.join(",")
+    }
+}
