@@ -124,11 +124,11 @@ pub fn ratings(conn: &Connection, slug: &str) -> rusqlite::Result<Vec<Rating>> {
     Ok(out)
 }
 
-/// Appends today's rating; re-rating the same day replaces it (board: one rating per day).
+/// Appends today's rating; re-rating the same day replaces it (UNIQUE(topic, day), migration 005).
 pub fn rate(conn: &Connection, slug: &str, day: &str, depth: u8) -> rusqlite::Result<()> {
-    unrate(conn, slug, day)?;
     conn.execute(
-        "INSERT INTO depth_ratings(topic, day, depth) VALUES (?1, ?2, ?3)",
+        "INSERT INTO depth_ratings(topic, day, depth) VALUES (?1, ?2, ?3)
+         ON CONFLICT(topic, day) DO UPDATE SET depth = excluded.depth",
         params![slug, day, depth],
     )?;
     Ok(())
@@ -172,4 +172,45 @@ pub fn mentions(conn: &Connection, x: &str) -> rusqlite::Result<Vec<(i64, String
     )?;
     stmt.query_map([x], |r| Ok((r.get(0)?, r.get(1)?)))?
         .collect()
+}
+
+/// Deletes a topic page and its ratings (FK cascade). Its `?` lines stay and, with no topics row,
+/// show in the Learn inbox again. Hands back a JSON snapshot incl. ratings for Undo.
+pub fn delete(conn: &mut Connection, slug: &str) -> rusqlite::Result<Option<String>> {
+    let tx = conn.transaction()?;
+    let snap = tx
+        .query_row(
+            "SELECT json_object('slug', slug, 'summary', summary, 'own_words', own_words,
+               'resources', resources,
+               'ratings', json((SELECT json_group_array(json_array(d.day, d.depth))
+                                FROM depth_ratings d WHERE d.topic = t.slug)))
+             FROM topics t WHERE slug = ?1",
+            [slug],
+            |r| r.get(0),
+        )
+        .optional()?;
+    tx.execute("DELETE FROM topics WHERE slug = ?1", [slug])?;
+    tx.commit()?;
+    Ok(snap)
+}
+
+/// Undo. `Ok(Err(slug))` = a topic with that slug was made again meanwhile; nothing restored.
+pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<String, String>> {
+    let tx = conn.transaction()?;
+    let slug: String = tx.query_row("SELECT ?1 ->> 'slug'", [snap], |r| r.get(0))?;
+    if topic(&tx, &slug)?.is_some() {
+        return Ok(Err(slug));
+    }
+    tx.execute(
+        "INSERT INTO topics(slug, summary, own_words, resources)
+         VALUES (?1 ->> 'slug', ?1 ->> 'summary', ?1 ->> 'own_words', ?1 ->> 'resources')",
+        [snap],
+    )?;
+    tx.execute(
+        "INSERT INTO depth_ratings(topic, day, depth)
+         SELECT ?1 ->> 'slug', value ->> 0, value ->> 1 FROM json_each(?1, '$.ratings')",
+        [snap],
+    )?;
+    tx.commit()?;
+    Ok(Ok(slug))
 }

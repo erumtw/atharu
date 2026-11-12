@@ -15,4 +15,6 @@ pub fn routes() -> Router<AppState> {
         .route("/learn/{slug}", get(handlers::page).post(handlers::update))
         .route("/learn/{slug}/rate", post(handlers::rate))
         .route("/learn/{slug}/unrate", post(handlers::unrate))
+        .route("/learn/{slug}/delete", post(handlers::delete))
+        .route("/learn/{slug}/restore", post(handlers::restore))
 }

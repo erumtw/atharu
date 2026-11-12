@@ -39,7 +39,7 @@ impl Config {
                 "-db" | "--db" => cfg.db = args.next().ok_or("--db needs a path")?.into(),
                 other => {
                     return Err(format!(
-                        "unknown argument {other:?}; usage: atharu [--db PATH] [dump | log | epic | today | show]"
+                        "unknown argument {other:?}; usage: atharu [--db PATH] [dump | log | epic | note | evidence | today | show]"
                     ));
                 }
             }
@@ -57,11 +57,22 @@ impl Config {
 }
 
 /// `data/config.toml`: optional integrations. Every key is optional; a missing file = all off.
-/// Values are credentials (secret iCal address, later Jira token): never `Debug`, never logged.
+/// Values are credentials (secret iCal address, Jira API token): never `Debug`, never logged.
 #[derive(Default, serde::Deserialize)]
 pub struct FileConfig {
     /// Google Calendar → Settings → your calendar → "Secret address in iCal format".
     pub ical_url: Option<String>,
+    /// Jira Cloud, e.g. `https://acme.atlassian.net`. With `jira_email` + `jira_token` (API token).
+    pub jira_base_url: Option<String>,
+    pub jira_email: Option<String>,
+    pub jira_token: Option<String>,
+}
+
+/// All three Jira keys, or none: a half-filled config is "off", not an error.
+pub struct Jira<'a> {
+    pub base_url: &'a str,
+    pub email: &'a str,
+    pub token: &'a str,
 }
 
 impl FileConfig {
@@ -73,7 +84,14 @@ impl FileConfig {
         };
         match toml::from_str::<FileConfig>(&text) {
             Ok(mut c) => {
-                c.ical_url = c.ical_url.filter(|u| !u.trim().is_empty());
+                for v in [
+                    &mut c.ical_url,
+                    &mut c.jira_base_url,
+                    &mut c.jira_email,
+                    &mut c.jira_token,
+                ] {
+                    *v = v.take().filter(|u| !u.trim().is_empty());
+                }
                 c
             }
             Err(e) => {
@@ -81,5 +99,15 @@ impl FileConfig {
                 FileConfig::default()
             }
         }
+    }
+}
+
+impl FileConfig {
+    pub fn jira(&self) -> Option<Jira<'_>> {
+        Some(Jira {
+            base_url: self.jira_base_url.as_deref()?.trim_end_matches('/'),
+            email: self.jira_email.as_deref()?,
+            token: self.jira_token.as_deref()?,
+        })
     }
 }

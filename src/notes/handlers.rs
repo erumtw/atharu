@@ -216,3 +216,37 @@ pub async fn pages(
     })
     .into_response())
 }
+
+/// Delete + Undo toast (htmx) or back to the list (plain form).
+pub async fn delete(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> AppResult<Response> {
+    let (title, snap) = queries::delete(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    if !web::is_htmx(&headers) {
+        return Ok(web::back("/notes"));
+    }
+    web::html(&web::Deleted {
+        what: format!("Note “{}”", title_or_untitled(&title)),
+        restore: "/notes/restore".into(),
+        snap,
+        back: "/notes",
+        back_label: "All notes",
+        error: None,
+    })
+}
+
+#[derive(Deserialize)]
+pub struct SnapForm {
+    snap: String,
+}
+
+pub async fn restore(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<SnapForm>,
+) -> AppResult<Response> {
+    let id = queries::restore(&st.conn(), &f.snap)?;
+    Ok(web::restored(&headers, &format!("/notes/{id}")))
+}

@@ -1,25 +1,33 @@
-//! Agent CLI (spec "Agent access", D8): `atharu log | epic | today | show`, JSON on stdout.
+//! Agent CLI (spec "Agent access", D8): `atharu log | epic | note | evidence | today | show`,
+//! JSON on stdout. No delete or edit commands (D14): those stay with the user, on the web.
 //! An entry point like app.rs: it calls the slices' own queries and `domain::parse`, so a line
 //! filed by an agent goes through exactly the validation the capture bar uses.
 use crate::{
     domain::{
         dates,
         entry::{is_epic_key, is_slug},
+        links,
         parse::{ParseError, parse},
     },
     epics::queries as epics,
+    notes::queries as notes,
     today::queries as today,
 };
 use chrono::NaiveDate;
 use rusqlite::Connection;
 use serde_json::{Value, json};
-use std::{collections::HashMap, io::Write};
+use std::{
+    collections::HashMap,
+    io::{Read, Write},
+};
 
-pub const COMMANDS: [&str; 4] = ["log", "epic", "today", "show"];
+pub const COMMANDS: [&str; 6] = ["log", "epic", "note", "evidence", "today", "show"];
 
 const USAGE: &str = "usage:
   atharu log \"<line>\" [--day YYYY-MM-DD] --as <agent>
   atharu epic <KEY|jira-url> [--title …] [--okr …] --as <agent>
+  atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
+  atharu evidence <KEY|jira-url> <url> [--label …] --as <agent>
   atharu today [--day YYYY-MM-DD]
   atharu show <KEY|jira-url>
 --as can come from ATHARU_AGENT instead.";
@@ -32,11 +40,13 @@ fn usage(msg: impl Into<String>) -> Fail {
 }
 
 /// Runs one command. Exit code 0 prints one JSON document on `out`; anything else prints to `err`.
+/// `input` is read only by `note` without `--file`.
 pub fn run(
     conn: &mut Connection,
     today: NaiveDate,
     args: &[String],
     env_agent: Option<&str>,
+    input: &mut dyn Read,
     out: &mut dyn Write,
     err: &mut dyn Write,
 ) -> i32 {
@@ -46,6 +56,8 @@ pub fn run(
         let allowed: &[&str] = match cmd.as_str() {
             "log" => &["as", "day"],
             "epic" => &["as", "title", "okr"],
+            "note" => &["as", "file", "links", "id"],
+            "evidence" => &["as", "label"],
             "today" => &["day"],
             "show" => &[],
             other => return Err(usage(format!("unknown command {other:?}"))),
@@ -67,6 +79,21 @@ pub fn run(
                 &pos,
                 flag("title").unwrap_or(""),
                 flag("okr").unwrap_or(""),
+                agent(flag("as"), env_agent)?,
+            ),
+            "note" => note(
+                conn,
+                &pos,
+                flag("file"),
+                flag("links"),
+                flag("id"),
+                input,
+                agent(flag("as"), env_agent)?,
+            ),
+            "evidence" => evidence(
+                conn,
+                &pos,
+                flag("label").unwrap_or(""),
                 agent(flag("as"), env_agent)?,
             ),
             "today" => day(conn, today, &pos, flag("day")),
@@ -219,6 +246,87 @@ fn epic(
     let mut v = epic_json(&load(conn, &key)?);
     v["created"] = created.into();
     Ok(v)
+}
+
+fn note(
+    conn: &Connection,
+    pos: &[String],
+    file: Option<&str>,
+    links: Option<&str>,
+    id: Option<&str>,
+    input: &mut dyn Read,
+    author: &str,
+) -> Result<Value, Fail> {
+    let title = one(pos, "note title (quote it)")?.trim().to_string();
+    if title.is_empty() {
+        return Err(Fail(1, "Give the note a title.".into()));
+    }
+    let id = id
+        .map(|i| {
+            i.parse::<i64>()
+                .map_err(|_| usage(format!("--id takes a note number, got ‘{i}’")))
+        })
+        .transpose()?;
+    let mut body = String::new();
+    match file {
+        Some(path) => {
+            body = std::fs::read_to_string(path)
+                .map_err(|e| Fail(1, format!("Can't read ‘{path}’: {e}")))?
+        }
+        None => {
+            input
+                .read_to_string(&mut body)
+                .map_err(|e| Fail(1, format!("Can't read the note body from stdin: {e}")))?;
+        }
+    }
+    let mut body = body.trim_end().to_string();
+    // `--links vector-search,OPS-101` → a closing `[[…]]` line, the same links the editor makes.
+    let extra: Vec<String> = links
+        .unwrap_or("")
+        .split(',')
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .map(|l| format!("[[{l}]]"))
+        .collect();
+    if !extra.is_empty() {
+        if !body.is_empty() {
+            body.push_str("\n\n");
+        }
+        body.push_str(&format!("Links: {}", extra.join(" · ")));
+    }
+    let (id, updated) = match id {
+        None => (
+            notes::agent_create(conn, &title, &body, author).map_err(db)?,
+            false,
+        ),
+        Some(id) => {
+            if !notes::agent_update(conn, id, &title, &body, author).map_err(db)? {
+                return Err(Fail(
+                    1,
+                    format!(
+                        "Note {id} isn't one {author} wrote, so it stays as it is. Leave out --id to write a new note."
+                    ),
+                ));
+            }
+            (id, true)
+        }
+    };
+    Ok(
+        json!({"id": id, "title": title, "author": author, "updated": updated, "path": format!("/notes/{id}")}),
+    )
+}
+
+fn evidence(conn: &Connection, pos: &[String], label: &str, author: &str) -> Result<Value, Fail> {
+    let [key, url] = pos else {
+        return Err(usage("give an epic key and one link"));
+    };
+    let key = epic_key(key)?;
+    if !links::is_http(url) {
+        return Err(Fail(1, links::NOT_HTTP.into()));
+    }
+    load(conn, &key)?;
+    let id = epics::add_evidence(conn, &key, url, label.trim(), author).map_err(db)?;
+    Ok(json!({"id": id, "epic": {"key": key}, "url": url, "note": label.trim(), "author": author}))
 }
 
 fn day(

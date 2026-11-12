@@ -22,6 +22,8 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct DayQuery {
     day: Option<String>,
+    /// No-JS inline edit: this line shows as its edit box.
+    edit: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -144,12 +146,86 @@ fn render_page(
         preview: None,
         saved: None,
         deleted: None,
+        edit: None,
     })
 }
 
 pub async fn page(State(st): State<AppState>, Query(q): Query<DayQuery>) -> AppResult<Response> {
     let day = pick_day(q.day.as_deref(), st.today());
-    web::html(&render_page(&st, day, String::new(), None)?)
+    let mut page = render_page(&st, day, String::new(), None)?;
+    if let Some(id) = q.edit {
+        page.edit = edit_box(&st.conn(), id, None, None)?;
+    }
+    web::html(&page)
+}
+
+/// The edit box for line `id`: its current text, or `kept` (rejected input) with `error`.
+fn edit_box(
+    conn: &Connection,
+    id: i64,
+    kept: Option<String>,
+    error: Option<String>,
+) -> AppResult<Option<view::Edit>> {
+    Ok(
+        queries::entry_line(conn, id)?.map(|(day, line)| view::Edit {
+            id,
+            day,
+            line: kept.unwrap_or(line),
+            error,
+        }),
+    )
+}
+
+/// `GET /entries/{id}/edit`: htmx swaps the row for its edit box.
+pub async fn edit_form(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
+    let e = edit_box(&st.conn(), id, None, None)?.ok_or(AppError::NotFound)?;
+    web::html(&e)
+}
+
+/// Save an inline edit: same parser and error copy as the capture bar.
+pub async fn edit(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Form(f): Form<LineForm>,
+) -> AppResult<Response> {
+    let today = st.today();
+    let entry = match parse(&f.line, today) {
+        Ok(e) => e,
+        Err(err) => {
+            let msg = Some(err.to_string());
+            if web::is_htmx(&headers) {
+                let e = edit_box(&st.conn(), id, Some(f.line), msg)?.ok_or(AppError::NotFound)?;
+                let target = format!("#entry-{id}");
+                let retarget = [("hx-retarget", target.as_str()), ("hx-reswap", "outerHTML")];
+                return Ok((
+                    retarget,
+                    web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &e)?,
+                )
+                    .into_response());
+            }
+            let e = edit_box(&st.conn(), id, Some(f.line), msg)?.ok_or(AppError::NotFound)?;
+            let day = pick_day(Some(&e.day), today);
+            let mut page = render_page(&st, day, String::new(), None)?;
+            page.edit = Some(e);
+            return web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &page);
+        }
+    };
+    let day = queries::update_entry(&mut st.conn(), id, &entry)?.ok_or(AppError::NotFound)?;
+    if !web::is_htmx(&headers) {
+        return Ok(web::back(&format!("/?day={day}")));
+    }
+    let d = pick_day(Some(&day), today);
+    let conn = st.conn();
+    web::html(&view::Swap {
+        today,
+        plans: plans(&conn, today)?,
+        day: view::Day::new(d, today),
+        groups: groups(&conn, d)?,
+        saved: None,
+        deleted: None,
+        edit: None,
+    })
 }
 
 pub async fn create(
@@ -198,6 +274,7 @@ pub async fn create(
             new_epic,
         }),
         deleted: None,
+        edit: None,
     };
     web::html(&swap)
 }
@@ -224,6 +301,7 @@ pub async fn delete(
             line: entry.to_line(),
             day,
         }),
+        edit: None,
     };
     web::html(&swap)
 }

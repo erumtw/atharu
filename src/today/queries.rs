@@ -130,6 +130,61 @@ pub fn delete_entry(conn: &Connection, id: i64) -> rusqlite::Result<Option<(Stri
     .optional()
 }
 
+/// The line as grammar text, for the inline edit box: (day, line).
+pub fn entry_line(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String, String)>> {
+    conn.query_row(
+        "SELECT day, epic_key, kind, topic, text, due, link FROM entries WHERE id = ?1",
+        [id],
+        |r| {
+            let kind: String = r.get(2)?;
+            let e = Entry {
+                epic_key: r.get(1)?,
+                kind: Kind::parse(&kind).unwrap_or(Kind::Done),
+                topic: r.get(3)?,
+                text: r.get(4)?,
+                due: date(r.get(5)?),
+                link: r.get(6)?,
+            };
+            Ok((r.get(0)?, e.to_line()))
+        },
+    )
+    .optional()
+}
+
+/// Inline edit: rewrite what the line says (kind, epic, topic, text, due, link), keep id, day,
+/// created_at, author and meeting. A plan staying a plan keeps its state/pin; leaving or becoming
+/// one resets them, as the CHECK needs. Unknown key → stub epic, as on capture. Returns the day.
+pub fn update_entry(conn: &mut Connection, id: i64, e: &Entry) -> rusqlite::Result<Option<String>> {
+    let tx = conn.transaction()?;
+    if let Some(key) = &e.epic_key {
+        tx.execute("INSERT OR IGNORE INTO epics(key) VALUES (?1)", [key])?;
+    }
+    let plan = e.kind == Kind::Plan;
+    // SET expressions read the old row, so `plan_state` here is the value before the edit.
+    let day = tx
+        .query_row(
+            "UPDATE entries SET epic_key = ?2, kind = ?3, topic = ?4, text = ?5, due = ?6, link = ?7,
+               plan_state = CASE WHEN ?8 THEN COALESCE(plan_state, 'open') END,
+               pinned = CASE WHEN ?8 AND plan_state IS NOT NULL THEN pinned ELSE 0 END,
+               closed_day = CASE WHEN ?8 THEN closed_day END
+             WHERE id = ?1 RETURNING day",
+            params![
+                id,
+                e.epic_key,
+                e.kind.as_str(),
+                e.topic,
+                e.text,
+                e.due.map(|d| d.format("%Y-%m-%d").to_string()),
+                e.link,
+                plan,
+            ],
+            |r| r.get(0),
+        )
+        .optional()?;
+    tx.commit()?;
+    Ok(day)
+}
+
 fn date(s: Option<String>) -> Option<NaiveDate> {
     s.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok())
 }
@@ -138,7 +193,10 @@ fn date(s: Option<String>) -> Option<NaiveDate> {
 /// Pinned first, then oldest.
 pub fn plans(conn: &Connection, week_start: &str) -> rusqlite::Result<Vec<Plan>> {
     let mut stmt = conn.prepare(
-        "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day FROM entries
+        "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
+         (SELECT j.key || ' · ' || j.summary FROM jira_issues j
+           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1)
+         FROM entries
          WHERE plan_state = 'open' OR (pinned = 1 AND plan_state = 'done' AND closed_day >= ?1)
          ORDER BY pinned DESC, day, id",
     )?;
@@ -153,6 +211,7 @@ pub fn plans(conn: &Connection, week_start: &str) -> rusqlite::Result<Vec<Plan>>
             pinned: r.get(6)?,
             state: r.get(7)?,
             closed_day: date(r.get(8)?),
+            jira: r.get(9)?,
         })
     })?
     .collect()

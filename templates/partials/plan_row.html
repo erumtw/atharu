@@ -14,8 +14,11 @@
 <span class="row" style="margin-left: auto; gap: 6px">
 {%- if pin_error %}<span class="err">Top 3 is full. Unpin one first.</span>{% endif %}
 {%- if full && p.state == "done" %}<span class="muted">{{ p.closed_label() }}</span>{% endif %}
+{%- if full && p.is_open() && p.is_late(today) %}<span class="due late">due {{ p.due_label() }}</span>{% endif %}
+{%- if p.is_open() || p.pinned || p.state == "dropped" %}
+<button class="ib more m-only" type="button" popovertarget="more-p{{ p.id }}" aria-label="More actions for this plan"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#more"/></svg></button>
+<span class="acts m-pop" id="more-p{{ p.id }}" popover>
 {%- if full && p.is_open() %}
-{%- if p.is_late(today) %}<span class="due late">due {{ p.due_label() }}</span>{% endif %}
 <form class="inline" method="post" action="/plans/{{ p.id }}" hx-post="/plans/{{ p.id }}" hx-trigger="change" hx-target="#plan-{{ p.id }}" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ back }}"><input class="util" type="date" name="due" value="{{ p.due_iso() }}" aria-label="Due date" title="Set a due date"><noscript><button class="util" type="submit">Set</button></noscript></form>
 {%- endif %}
 {%- if p.is_open() || p.pinned %}
@@ -25,6 +28,8 @@
 <form class="inline" method="post" action="/plans/{{ p.id }}" hx-post="/plans/{{ p.id }}" hx-target="#plan-{{ p.id }}" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="state" value="dropped"><button class="util" type="submit" title="Drop: not doing it">Drop</button></form>
 {%- else if p.state == "dropped" %}
 <form class="inline" method="post" action="/plans/{{ p.id }}" hx-post="/plans/{{ p.id }}" hx-target="#plan-{{ p.id }}" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="state" value="open"><button class="linkbtn small" type="submit">Undo</button></form>
+{%- endif %}
+</span>
 {%- endif %}
 </span>
 </div>

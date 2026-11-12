@@ -7,6 +7,16 @@ fn cli(
     args: &[&str],
     env_agent: Option<&str>,
 ) -> (i32, String, String) {
+    cli_in(st, args, env_agent, "")
+}
+
+/// Same, with `stdin` piped in.
+fn cli_in(
+    st: &atharu::app::AppState,
+    args: &[&str],
+    env_agent: Option<&str>,
+    stdin: &str,
+) -> (i32, String, String) {
     let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
     let (mut out, mut err) = (Vec::new(), Vec::new());
     let code = atharu::cli::run(
@@ -14,6 +24,7 @@ fn cli(
         TODAY.parse().unwrap(),
         &args,
         env_agent,
+        &mut stdin.as_bytes(),
         &mut out,
         &mut err,
     );
@@ -211,4 +222,140 @@ async fn epic_upsert_never_overwrites_and_reads_back() {
         "unknown flag for a read"
     );
     assert_eq!(cli(&st, &["nope"], None).0, 2);
+}
+
+#[tokio::test]
+async fn note_and_evidence_write_only_as_the_agent() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO epics(key) VALUES ('OPS-101');
+         INSERT INTO notes(id, title, body) VALUES (1, 'Mine', 'my words');",
+    );
+    let (code, out, _) = cli_in(
+        &st,
+        &[
+            "note",
+            "Vector search primer",
+            "--links",
+            "vector-search, OPS-101",
+            "--as",
+            "claude",
+        ],
+        None,
+        "Summary of the post.\n",
+    );
+    assert_eq!(code, 0);
+    let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    let id = v["id"].as_i64().unwrap();
+    let (author, body): (String, String) = st
+        .conn()
+        .query_row("SELECT author, body FROM notes WHERE id = ?1", [id], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .unwrap();
+    assert_eq!(author, "claude");
+    assert_eq!(
+        body,
+        "Summary of the post.\n\nLinks: [[vector-search]] · [[OPS-101]]"
+    );
+
+    // --file + --id rewrites its own note; my note and another agent's stay untouched.
+    let path = std::env::temp_dir().join(format!("atharu-note-{}.md", std::process::id()));
+    std::fs::write(&path, "v2").unwrap();
+    let file = path.to_str().unwrap();
+    let ids = id.to_string();
+    let (code, out, _) = cli(
+        &st,
+        &[
+            "note",
+            "Primer v2",
+            "--file",
+            file,
+            "--id",
+            &ids,
+            "--as",
+            "claude",
+        ],
+        None,
+    );
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        count(
+            &st,
+            &format!("SELECT COUNT(*) FROM notes WHERE id = {id} AND body = 'v2'")
+        ),
+        1
+    );
+    let (code, _, err) = cli(
+        &st,
+        &[
+            "note", "Hijack", "--file", file, "--id", "1", "--as", "claude",
+        ],
+        None,
+    );
+    assert_eq!(code, 1);
+    assert!(err.contains("Note 1 isn't one claude wrote"), "{err}");
+    let (code, _, _) = cli(
+        &st,
+        &["note", "X", "--file", file, "--id", &ids, "--as", "codex"],
+        None,
+    );
+    assert_eq!(code, 1, "codex can't rewrite claude's note");
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE id = 1 AND body = 'my words'"
+        ),
+        1
+    );
+    assert_eq!(cli(&st, &["note", "No agent"], None).0, 2);
+
+    // Evidence: http(s) only (web copy), known epic only, badge on the epic page.
+    let (code, _, err) = cli(
+        &st,
+        &[
+            "evidence",
+            "OPS-101",
+            "javascript:alert(1)",
+            "--as",
+            "claude",
+        ],
+        None,
+    );
+    assert_eq!(
+        (code, err.trim()),
+        (1, "Paste a link that starts with http:// or https://.")
+    );
+    let (code, _, err) = cli(
+        &st,
+        &["evidence", "OPS-999", "https://x.io/pr/1", "--as", "claude"],
+        None,
+    );
+    assert_eq!(code, 1);
+    assert!(err.contains("No epic OPS-999 yet"));
+    let (code, out, _) = cli(
+        &st,
+        &[
+            "evidence",
+            "https://acme.atlassian.net/browse/OPS-101",
+            "https://github.com/acme/pr/7",
+            "--label",
+            "the PR",
+            "--as",
+            "claude",
+        ],
+        None,
+    );
+    assert_eq!(code, 0);
+    let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(
+        (v["epic"]["key"].as_str(), v["author"].as_str()),
+        (Some("OPS-101"), Some("claude"))
+    );
+    let page = get(&st, "/epics/OPS-101").await.body;
+    assert!(
+        page.contains("https://github.com/acme/pr/7") && page.contains("title=\"Filed by claude\"")
+    );
 }

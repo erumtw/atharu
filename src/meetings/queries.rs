@@ -161,7 +161,10 @@ pub fn lines(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Line>> {
 /// Action items: plans logged in the meeting, any state.
 pub fn plans(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Plan>> {
     let mut stmt = conn.prepare(
-        "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day FROM entries
+        "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
+         (SELECT j.key || ' · ' || j.summary FROM jira_issues j
+           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1)
+         FROM entries
          WHERE meeting_id = ?1 AND kind = 'plan' ORDER BY id",
     )?;
     stmt.query_map([id], |r| {
@@ -175,6 +178,7 @@ pub fn plans(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Plan>> {
             pinned: r.get(6)?,
             state: r.get(7)?,
             closed_day: date(r.get(8)?),
+            jira: r.get(9)?,
         })
     })?
     .collect()
@@ -188,4 +192,49 @@ pub fn mentions(conn: &Connection, x: &str) -> rusqlite::Result<Vec<(i64, String
     )?;
     stmt.query_map([x], |r| Ok((r.get(0)?, r.get(1)?)))?
         .collect()
+}
+
+/// Deletes a meeting; its lines stay (FK sets their meeting_id to NULL). Hands back
+/// (name, JSON snapshot incl. the line ids) so Undo can re-attach them.
+pub fn delete(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<(String, String)>> {
+    let tx = conn.transaction()?;
+    let snap = tx
+        .query_row(
+            "SELECT name, json_object('id', id, 'day', day, 'name', name, 'notes', notes,
+               'ended_at', ended_at,
+               'entries', json((SELECT json_group_array(e.id) FROM entries e WHERE e.meeting_id = m.id)))
+             FROM meetings m WHERE id = ?1",
+            [id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .optional()?;
+    tx.execute("DELETE FROM meetings WHERE id = ?1", [id])?;
+    tx.commit()?;
+    Ok(snap)
+}
+
+/// Undo. `Ok(Err(name))` = the snapshot was running and `name` runs now (one active at a time).
+/// Lines are re-attached only if nothing claimed them meanwhile.
+pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<i64, String>> {
+    let tx = conn.transaction()?;
+    let running: bool = tx.query_row("SELECT (?1 ->> 'ended_at') IS NULL", [snap], |r| r.get(0))?;
+    if running && let Some((_, name)) = active(&tx)? {
+        return Ok(Err(name));
+    }
+    tx.execute(
+        "INSERT INTO meetings(id, day, name, notes, ended_at)
+         SELECT CASE WHEN EXISTS (SELECT 1 FROM meetings WHERE id = j.id) THEN NULL ELSE j.id END,
+                j.day, j.name, j.notes, j.ended_at
+         FROM (SELECT ?1 ->> 'id' AS id, ?1 ->> 'day' AS day, ?1 ->> 'name' AS name,
+                      ?1 ->> 'notes' AS notes, ?1 ->> 'ended_at' AS ended_at) j",
+        [snap],
+    )?;
+    let id = tx.last_insert_rowid();
+    tx.execute(
+        "UPDATE entries SET meeting_id = ?2 WHERE meeting_id IS NULL
+           AND id IN (SELECT value FROM json_each(?1, '$.entries'))",
+        params![snap, id],
+    )?;
+    tx.commit()?;
+    Ok(Ok(id))
 }

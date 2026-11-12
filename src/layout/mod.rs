@@ -25,6 +25,14 @@ pub struct Layout {
     /// Parent pages; the page's own title is the last, unlinked crumb.
     pub crumbs: Vec<Crumb>,
     pub epics: Vec<SideEpic>,
+    /// `data-look` + favicon (spec "Looks").
+    pub look: &'static str,
+    /// `data-glass="all"`: the sheet and its cards are glass too (D17, off by default).
+    pub glass_all: bool,
+    /// `data-tint="tinted"`: the Tinted preset's colour + contrast tokens.
+    pub tinted: bool,
+    /// `--glass-a` in %, already clamped to the look's AA floor.
+    pub glass_a: u8,
 }
 
 impl Layout {
@@ -34,11 +42,18 @@ impl Layout {
         title: impl Into<String>,
         crumbs: Vec<Crumb>,
     ) -> rusqlite::Result<Layout> {
+        let s = queries::looks(conn)?;
+        let get = |k: &str| s.iter().find(|(key, _)| key == k).map(|(_, v)| v.as_str());
+        let look = crate::domain::look::pick(get("look"));
         Ok(Layout {
             title: title.into(),
             nav,
             crumbs,
             epics: queries::active_epics(conn)?,
+            look: look.slug,
+            glass_all: get("glass_all") == Some("1"),
+            tinted: get("glass_tint") == Some("tinted"),
+            glass_a: crate::domain::look::glass_alpha(look, get("glass_opacity")),
         })
     }
 }

@@ -18,7 +18,8 @@ Env: `ATHARU_HOST` (127.0.0.1) · `ATHARU_PORT` (7070) · `ATHARU_DB` (data/atha
 
 Optional `data/config.toml` (next to the DB, read at start): `ical_url = "…"` = Google Calendar's secret iCal address, shown read-only on `/calendar` and refreshed every 15 min. It is a credential: keep it out of git and logs.
 
-Notes editor bundle: `cd editor && npm ci && node build.mjs` rebuilds the committed `static/js/editor.js`.
+Frontend sources are strict TypeScript in `editor/src/*.ts`; `cd editor && npm ci && npm run check && node build.mjs`
+type-checks them and rebuilds the committed `static/js/{editor,copy}.js` (browsers load the .js; `htmx.min.js` is vendored).
 `data/` is gitignored: it holds work data, never commit it.
 
 ## Check

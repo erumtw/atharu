@@ -3,7 +3,7 @@
 {%- if let Some(n) = cal.notice %}
 <p class="small {% if n.error %}err{% else %}muted{% endif %}" role="status">{{ n.text }}</p>
 {%- endif %}
-<div class="tw"><div class="cal{% if cal.month %} month{% endif %}" style="min-width: 760px">
+<div class="tw"><div class="cal{% if cal.month %} month{% endif %}">
 {%- if cal.month %}
 <div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div><div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div><div class="dh">Sun</div>
 {%- else %}
@@ -11,7 +11,7 @@
 {%- endif %}
 {% for d in cal.days %}
 <div class="dc{% if d.now %} now{% endif %}{% if d.outside %} out{% endif %}">
-{%- if cal.month %}<a class="dn{% if d.now %} now{% endif %}" href="/?day={{ d.iso }}">{{ d.head }}</a>{% endif %}
+<a class="dn{% if d.now %} now{% endif %}" href="/?day={{ d.iso }}">{{ d.head }}{% if d.now && !cal.month %} · today{% endif %}</a>
 {%- if d.logged > 0 %}<a class="logdot" href="/?day={{ d.iso }}">● {{ d.logged }} line{% if d.logged != 1 %}s{% endif %}</a>{% endif %}
 {%- for i in d.items %}
 {%- if let Some(h) = i.href %}

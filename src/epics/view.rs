@@ -40,13 +40,18 @@ pub struct Closed {
     pub done: bool,
     /// `done 20 Oct` or `dropped`.
     pub chip: String,
+    pub jira: Option<String>,
 }
 
 #[derive(Template)]
 #[template(path = "epics/list.html")]
 pub struct List {
     pub layout: Layout,
-    pub untitled: Vec<String>,
+    /// (key, Jira `summary · status` if cached).
+    pub untitled: Vec<(String, Option<String>)>,
+    /// Jira configured: show the Refresh button.
+    pub jira_on: bool,
+    pub jira_failed: bool,
     pub groups: Vec<OkrGroup>,
     pub closed: Vec<Closed>,
 }
@@ -69,6 +74,8 @@ pub struct EpicView {
     pub start: String,
     pub target: String,
     pub done_on: String,
+    /// Jira `summary · status`, shown while `title` is empty.
+    pub jira: Option<String>,
 }
 
 pub struct Evidence {
@@ -117,6 +124,8 @@ pub struct Page {
     pub save_error: bool,
     /// Notes linking here with `[[…]]`: (id, title).
     pub mentions: Vec<(i64, String)>,
+    /// A plain (no-JS) delete was refused.
+    pub delete_error: Option<&'static str>,
 }
 
 /// htmx answer to a property / evidence change: the live block, plus the top-bar status out-of-band.

@@ -1,0 +1,112 @@
+/* Responsive (canvas row "Responsive · phone", D16): ≥1024 desktop as drawn · 640–1023 64 px icon rail ·
+   <640 glass top bar + pages drawer, capture bar pinned bottom. Same templates; the hooks are .m-pop, .m-only, .ib, .ic. */
+
+/* .m-pop = a native popover on phones, plain inline content everywhere else. Author styles beat the UA's [popover]
+   box at any specificity, so :where() resets it without outranking each element's own rules (.side keeps its glass). */
+:where(.m-pop){position:static;inset:auto;width:auto;height:auto;margin:0;padding:0;border:0;overflow:visible;color:inherit;background:none}
+.acts{display:contents}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side a .ic{display:none}
+.ib{width:44px;height:44px;border:0;background:transparent;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;flex:none;padding:0}
+.ib:hover{background:rgba(0,0,0,.05)}
+.ib:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tw>.cal{min-width:760px}
+.cal:not(.month) .dc>.dn{display:none}
+pre{max-width:100%;overflow-x:auto}
+
+@media (min-width:640px){.m-only{display:none !important}}
+
+/* Touch screens have no hover: the hover-only × is always shown. */
+@media (hover:none){.x{opacity:1}}
+
+/* Rail: labels become tooltips (title attr); sub-lists live on their pages. */
+@media (min-width:640px) and (max-width:1023px){
+  .wl{flex-wrap:nowrap}
+  .side{flex:none;width:64px;padding:10px 8px;position:sticky;top:12px;align-items:center}
+  .side .ws,.side .lb,.side .lbl,.side a.sub{display:none}
+  .side a{justify-content:center;padding:0;width:44px;min-height:44px;border-radius:12px}
+  .side a .ic{display:block}
+  .pg{flex:1 1 0}
+  .doc{padding:24px 32px 72px}
+}
+
+@media (max-width:639px){
+  .m-pop:not(:popover-open){display:none}
+  /* iOS zooms into inputs under 16 px; max() keeps bigger ones (the title input) as they are. */
+  .wl :is(input,select,textarea){font-size:max(16px,1em)}
+  .wl{display:block;padding:8px 0 0}
+  .pg{border-radius:22px 22px 0 0;border-bottom:0;min-height:calc(100vh - 8px)}
+  .doc,.doc.wide{padding:16px 16px 48px}
+  .ptitle{font-size:30px}
+
+  /* Top bar: the crumb, minus the trail (the drawer covers navigation). */
+  .crumb{padding:8px;gap:4px;min-height:60px}
+  .crumb .trail{display:none}
+  .crumb>b{font-size:17px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .crumb>span,.crumb>form{max-width:100%}
+  .crumb .m-hide,.m-hide{display:none}
+  .crumb>span>a{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+
+  /* Drawer: the sidebar in the top layer. */
+  .side:popover-open{position:fixed;inset:8px auto 8px 8px;width:min(300px,calc(100vw - 32px));max-width:none;overflow-y:auto;z-index:5;padding:8px;display:flex;
+    --s:12%;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 20px 50px rgba(0,0,0,.18)}
+  .side::backdrop{background:rgba(20,20,30,.28)}
+  .side .ws{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px 12px;font-size:17px}
+  .side a{min-height:48px;padding:0 12px;border-radius:12px;font-size:16px}
+  .side a.sub{min-height:44px;font-size:14px;padding-left:24px}
+
+  /* ⋯ menu: the row's actions as a bottom action sheet. */
+  .acts:popover-open{position:fixed;inset:auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;z-index:6;display:flex;flex-direction:column;gap:6px;padding:10px;
+    border-radius:22px;border:1px solid rgba(255,255,255,.8);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:0 20px 50px rgba(0,0,0,.18)}
+  .acts::backdrop{background:rgba(20,20,30,.2)}
+  /* !important: the forms carry an inline margin-left:auto for the desktop row. */
+  .acts>*{margin:0 !important;display:flex}
+  .acts *{box-sizing:border-box}
+  .blk .acts .x,.acts .util,.acts .linkbtn,.acts input{flex:1;min-height:48px;width:100%;justify-content:center;align-items:center;border-radius:14px;opacity:1}
+  .acts .x{gap:6px;background:#fff;border:1px solid var(--line);color:var(--err);font-size:16px;height:auto}
+  .blk{min-height:44px;flex-wrap:wrap}
+  .blk .x{opacity:1;width:44px;height:44px}
+  .blk label.row{flex-wrap:nowrap;align-items:flex-start}
+  .blk label.row>span{min-width:0;overflow-wrap:anywhere}
+  .blk>.edit-line,.blk>form:first-child,.blk>span:not([class]){flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+  .util{min-height:36px}
+
+  /* Capture bar: pinned to the bottom, clear of the home indicator; the grammar legend opens from ?. */
+  .doc:has(>.capture){padding-bottom:180px}
+  .capture{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top,rgba(255,255,255,.95) 55%,rgba(255,255,255,0))}
+  .newline{margin:0;padding:4px 4px 4px 6px}
+  .newline .util{min-height:44px;padding:0 14px}
+  .legend:popover-open{position:fixed;inset:auto 8px calc(120px + env(safe-area-inset-bottom)) 8px;margin:0;padding:14px !important;display:flex;
+    border-radius:18px;background:rgba(250,250,252,.95);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.18);color:var(--ink-2)}
+
+  /* Props stack label over value. */
+  .props{grid-template-columns:minmax(0,1fr);gap:2px}
+  .props dt{padding:8px 10px 0;font-size:12px}
+  .props dd{padding:0 10px 8px;min-height:24px}
+
+  /* Tables scroll inside their own box; grids go one column. */
+  table{display:block;overflow-x:auto}
+  .sgrid{grid-template-columns:minmax(0,1fr)}
+
+  /* Calendar: week = agenda list, month = 7 columns of day numbers with a dot. */
+  .tw>.cal{min-width:0}
+  .cal:not(.month){display:flex;flex-direction:column;gap:6px;border:0;border-radius:0}
+  .cal:not(.month) .dh{display:none}
+  .cal:not(.month) .dc{min-height:0;border:1px solid var(--fill-2);border-radius:12px;padding:10px 12px}
+  .cal:not(.month) .dc>.dn{display:block;font-size:14px;color:var(--ink)}
+  .cal:not(.month) .dc:not(:has(.ev,.logdot)){padding:8px 12px}
+  .cal .ev{font-size:14px;padding:8px 10px}
+  .cal.month{gap:2px;border:0}
+  .cal.month .dh{padding:4px 0;text-align:center;border:0;background:none;font-size:11px}
+  .cal.month .dc{min-height:44px;padding:0;border:0;align-items:center;justify-content:center;gap:2px;border-radius:10px}
+  .cal.month .dc>:not(.dn){display:none}
+  .cal.month .dn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:44px;font-size:13px;color:var(--ink)}
+  .cal.month .dc:has(.ev,.logdot) .dn::after{content:"";width:5px;height:5px;border-radius:9999px;background:var(--accent)}
+  .cal.month .dc.now{background:var(--accent)}
+  .cal.month .dc.now .dn{color:#fff}
+  .cal.month .dc.now .dn::after{background:#fff}
+  .cal.month .dc.out .dn{color:#b0b0b5}
+}
+
+@media (prefers-reduced-transparency: reduce){.side:popover-open,.acts:popover-open{backdrop-filter:none;-webkit-backdrop-filter:none}}

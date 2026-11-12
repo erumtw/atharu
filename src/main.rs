@@ -16,6 +16,7 @@ async fn main() -> anyhow::Result<()> {
                 today,
                 &args,
                 agent.as_deref(),
+                &mut std::io::stdin(),
                 &mut std::io::stdout(),
                 &mut std::io::stderr(),
             );

@@ -1,15 +1,15 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, flags, impact::impact_line},
+    domain::{dates, flags, impact::impact_line, links},
     error::{AppError, AppResult},
     layout::{Layout, crumb},
     web,
 };
 use axum::{
-    extract::{Form, Path, State},
+    extract::{Form, Path, Query, State},
     http::{HeaderMap, StatusCode},
-    response::Response,
+    response::{IntoResponse, Response},
 };
 use chrono::NaiveDate;
 use rusqlite::Connection;
@@ -65,7 +65,13 @@ fn list_row(e: queries::EpicRow, today: NaiveDate) -> view::ListRow {
     }
 }
 
-pub async fn list(State(st): State<AppState>) -> AppResult<Response> {
+#[derive(Deserialize)]
+pub struct ListQuery {
+    /// `failed` after the Jira Refresh button couldn't reach Jira.
+    jira: Option<String>,
+}
+
+pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> AppResult<Response> {
     let today = st.today();
     let conn = st.conn();
     let (mut untitled, mut groups, mut closed) =
@@ -79,11 +85,12 @@ pub async fn list(State(st): State<AppState>) -> AppResult<Response> {
                     _ => e.status.clone(),
                 },
                 key: e.key,
+                jira: e.jira.filter(|_| e.title.is_empty()),
                 title: e.title,
                 done,
             });
         } else if e.title.is_empty() {
-            untitled.push(e.key);
+            untitled.push((e.key, e.jira));
         } else {
             let okr = if e.okr.is_empty() {
                 "No OKR".to_string()
@@ -106,6 +113,8 @@ pub async fn list(State(st): State<AppState>) -> AppResult<Response> {
         untitled,
         groups,
         closed,
+        jira_on: st.settings.jira().is_some(),
+        jira_failed: q.jira.as_deref() == Some("failed"),
     })
 }
 
@@ -219,6 +228,7 @@ fn render_page(
         activity: weeks.iter().map(|n| n * 100 / max).collect(),
         epic: view::EpicView {
             key: e.key,
+            jira: e.jira.filter(|_| e.title.is_empty()),
             title: e.title,
             role: e.role,
             okr: e.okr,
@@ -231,6 +241,7 @@ fn render_page(
         live,
         timeline,
         save_error,
+        delete_error: None,
     })
 }
 
@@ -311,11 +322,9 @@ pub async fn add_evidence(
 ) -> AppResult<Response> {
     let line = f.line.trim();
     let (url, note) = line.split_once(char::is_whitespace).unwrap_or((line, ""));
-    // Only http(s): the url becomes an href, so `javascript:` must never get stored.
-    let error = (!(url.starts_with("http://") || url.starts_with("https://")))
-        .then(|| "Paste a link that starts with http:// or https://.".to_string());
+    let error = (!links::is_http(url)).then(|| links::NOT_HTTP.to_string());
     if error.is_none() {
-        queries::add_evidence(&st.conn(), &key, url, note.trim())?;
+        queries::add_evidence(&st.conn(), &key, url, note.trim(), "me")?;
     }
     let (status, kept) = match &error {
         Some(_) => (StatusCode::UNPROCESSABLE_ENTITY, line.to_string()),
@@ -355,4 +364,68 @@ pub async fn delete_evidence(
         live: live(&conn, &e, String::new(), None)?,
         save_error: false,
     })
+}
+
+const HAS_LINES: &str = "Mark it Done or Dropped instead.";
+
+/// Only an epic with no lines can go (lines need their key); evidence goes with it, Undo brings both back.
+pub async fn delete(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(key): Path<String>,
+) -> AppResult<Response> {
+    let res = queries::delete(&mut st.conn(), &key)?;
+    match res {
+        queries::Deleted::Missing => Err(AppError::NotFound),
+        queries::Deleted::HasLines if web::is_htmx(&headers) => Ok((
+            StatusCode::UNPROCESSABLE_ENTITY,
+            [("hx-retarget", "#epic-del"), ("hx-reswap", "innerHTML")],
+            HAS_LINES,
+        )
+            .into_response()),
+        queries::Deleted::HasLines => {
+            let mut page = render_page(&st, &key, false, String::new(), None)?;
+            page.delete_error = Some(HAS_LINES);
+            web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &page)
+        }
+        queries::Deleted::Gone(_) if !web::is_htmx(&headers) => Ok(web::back("/epics")),
+        queries::Deleted::Gone(snap) => web::html(&deleted(&key, snap, None)),
+    }
+}
+
+fn deleted(key: &str, snap: String, error: Option<String>) -> web::Deleted {
+    web::Deleted {
+        what: format!("Epic {key}"),
+        restore: format!("/epics/{key}/restore"),
+        snap,
+        back: "/epics",
+        back_label: "All epics",
+        error,
+    }
+}
+
+#[derive(Deserialize)]
+pub struct SnapForm {
+    snap: String,
+}
+
+pub async fn restore(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<SnapForm>,
+) -> AppResult<Response> {
+    let res = queries::restore(&mut st.conn(), &f.snap)?;
+    match res {
+        Ok(key) => Ok(web::restored(&headers, &format!("/epics/{key}"))),
+        Err(key) => web::html_status(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            &deleted(
+                &key,
+                f.snap,
+                Some(format!(
+                    "{key} is back from a new line, so the old one can't return."
+                )),
+            ),
+        ),
+    }
 }

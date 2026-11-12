@@ -1,6 +1,14 @@
 //! `[[X]]` page links in note bodies: find them and resolve them (spec Phase 4 order).
 use super::entry::is_epic_key;
 
+/// Copy when an evidence link isn't http(s); the web form and the CLI say the same thing.
+pub const NOT_HTTP: &str = "Paste a link that starts with http:// or https://.";
+
+/// Only http(s): the url becomes an href, so `javascript:` must never get stored.
+pub fn is_http(url: &str) -> bool {
+    url.starts_with("http://") || url.starts_with("https://")
+}
+
 /// Each `[[X]]` target once, in order of first appearance.
 pub fn mentions(body: &str) -> Vec<&str> {
     let mut out: Vec<&str> = Vec::new();

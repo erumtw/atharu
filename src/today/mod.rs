@@ -14,7 +14,11 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(handlers::page))
         .route("/entries", post(handlers::create))
-        .route("/entries/{id}", delete(handlers::delete))
+        .route(
+            "/entries/{id}",
+            delete(handlers::delete).post(handlers::edit),
+        )
+        .route("/entries/{id}/edit", get(handlers::edit_form))
         .route("/entries/{id}/delete", post(handlers::delete))
         .route("/parse-preview", post(handlers::preview))
 }

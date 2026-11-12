@@ -2,8 +2,12 @@ use crate::domain::{entry::Entry, plan::Plan};
 use chrono::NaiveDate;
 use rusqlite::{Connection, OptionalExtension, Row, params};
 
+// Last column: Jira chip label, the cached issue whose key ends a path/param segment of the link.
 const SELECT_PLAN: &str =
-    "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day FROM entries";
+    "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
+         (SELECT j.key || ' · ' || j.summary FROM jira_issues j
+           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1)
+         FROM entries";
 
 fn date(s: Option<String>) -> Option<NaiveDate> {
     s.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok())
@@ -20,6 +24,7 @@ fn plan(r: &Row) -> rusqlite::Result<Plan> {
         pinned: r.get(6)?,
         state: r.get(7)?,
         closed_day: date(r.get(8)?),
+        jira: r.get(9)?,
     })
 }
 

@@ -192,3 +192,54 @@ pub async fn unrate(
     queries::unrate(&st.conn(), &slug, &dates::iso(st.today()))?;
     rate_answer(&st, &headers, &slug)
 }
+
+/// Delete + Undo toast; the topic's `?` lines stay and show in the Learn inbox again.
+pub async fn delete(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(slug): Path<String>,
+) -> AppResult<Response> {
+    let snap = queries::delete(&mut st.conn(), &slug)?.ok_or(AppError::NotFound)?;
+    if !web::is_htmx(&headers) {
+        return Ok(web::back("/learn"));
+    }
+    web::html(&deleted(&slug, snap, None))
+}
+
+fn deleted(slug: &str, snap: String, error: Option<String>) -> web::Deleted {
+    web::Deleted {
+        what: format!("Topic {slug}"),
+        // Under the slug, so a topic named "restore" can't collide with a `/learn/{slug}` route.
+        restore: format!("/learn/{slug}/restore"),
+        snap,
+        back: "/learn",
+        back_label: "All topics",
+        error,
+    }
+}
+
+#[derive(Deserialize)]
+pub struct SnapForm {
+    snap: String,
+}
+
+pub async fn restore(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<SnapForm>,
+) -> AppResult<Response> {
+    let res = queries::restore(&mut st.conn(), &f.snap)?;
+    match res {
+        Ok(slug) => Ok(web::restored(&headers, &format!("/learn/{slug}"))),
+        Err(slug) => web::html_status(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            &deleted(
+                &slug,
+                f.snap,
+                Some(format!(
+                    "There's a {slug} topic again, so the old one can't come back."
+                )),
+            ),
+        ),
+    }
+}

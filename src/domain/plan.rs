@@ -20,6 +20,8 @@ pub struct Plan {
     /// `open` / `done` / `dropped`.
     pub state: String,
     pub closed_day: Option<NaiveDate>,
+    /// `OPS-101 · summary` from the Jira cache when `link` is a Jira issue we've fetched.
+    pub jira: Option<String>,
 }
 
 impl Plan {
@@ -28,7 +30,11 @@ impl Plan {
     }
 
     pub fn link_label(&self) -> String {
-        self.link.as_deref().map(link_label).unwrap_or_default()
+        match (&self.jira, self.link.as_deref()) {
+            (Some(j), _) => j.clone(),
+            (None, Some(l)) => link_label(l),
+            (None, None) => String::new(),
+        }
     }
 
     pub fn due_iso(&self) -> String {
@@ -133,6 +139,15 @@ pub fn link_label(url: &str) -> String {
     }
 }
 
+/// Issue key in a Jira link (`…/browse/OPS-101`, `?selectedIssue=OPS-101`); `None` for other hosts.
+pub fn jira_key(url: &str) -> Option<&str> {
+    if link_label(url) != "Jira" {
+        return None;
+    }
+    url.split(['/', '?', '&', '=', '#'])
+        .find(|p| is_epic_key(p))
+}
+
 /// Plan hit rate in whole percent (done ÷ total, rounded half up); `None` with no plans.
 pub fn hit_rate(done: i64, total: i64) -> Option<i64> {
     (total > 0).then(|| (done * 200 + total) / (2 * total))
@@ -172,6 +187,21 @@ mod tests {
         ] {
             assert_eq!(Bucket::of(due.map(d), today), want, "{due:?}");
         }
+    }
+
+    #[test]
+    fn jira_keys() {
+        assert_eq!(
+            jira_key("https://acme.atlassian.net/browse/OPS-12?x=1"),
+            Some("OPS-12")
+        );
+        assert_eq!(
+            jira_key(
+                "https://acme.atlassian.net/jira/software/projects/OPS/boards/1?selectedIssue=OPS-7"
+            ),
+            Some("OPS-7")
+        );
+        assert_eq!(jira_key("https://github.com/acme/OPS-12"), None);
     }
 
     #[test]
