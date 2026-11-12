@@ -115,3 +115,5 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
   .quick .check{border-color:var(--ink)}
   .kc[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--accent)}
   .qcap[data-mode=note] .kc:has(:checked){box-shadow:inset 0 0 0 1px var(--ink)}}
+/* Record audio switch under Start: the shared .recopt, at the popover's inset. */
+.qrec{padding:2px 2px 0;font-size:12px;gap:8px}

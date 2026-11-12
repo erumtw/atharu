@@ -55,6 +55,9 @@ pub struct Page {
     /// Just saved: "✓ Saved note · Open".
     pub saved_note: Option<i64>,
     pub running: Option<Running>,
+    /// Start section's Record audio switch: shown in the app only, enabled once the model is on disk.
+    pub rec_app: bool,
+    pub model_ready: bool,
     pub series: Vec<String>,
     pub todos: Vec<Todo>,
     pub overdue: usize,

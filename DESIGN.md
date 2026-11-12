@@ -412,10 +412,14 @@ the log scrolls under it.
   menu, else hides the popover; blur hides it; Ctrl+Opt+Space toggles it. Any link opens in the main window and hides the popover.
 - **Menu-bar icon states**: idle = the Dry brush mark (template, macOS tints it) · meeting running = the mark with a solid badge
   dot bottom-right, cut out of the ring (template) · recording = the same in `#ff3b30` (not a template: red has to stay red; reads on
-  light and dark bars). Tooltip names the state and meeting. The app polls every 2 s, so a browser start/end shows too.
+  light and dark bars), with the recording's elapsed time (`04:12`) as the item's title beside it. Tooltip names the state and
+  meeting. The app polls every second, so a browser start/end shows too.
 - **Recording in the meeting card** (app only, same rules as the banner): model ready + not recording → **Record** ghost pill
   before End meeting; live → the card's dot turns `.dot.rec`, the line reads "Recording · 0:42", **Stop** (meeting keeps running);
   finishing → "Transcribing…". The browser shows none of it.
+- **Record audio on start** (app only): the shared `.recopt` switch under the Start row, off every time; on → "Tell people
+  you're recording." in ink. One switch serves both the series pills and the name box (pills carry a hidden `record` the switch
+  enables). No model → disabled + "Needs the speech model. Settings".
 - **Right-click menu** (native NSMenu, follows system light/dark): **Open Atharu** · **Start meeting ›** the 3 recent series ·
   while one runs, **End meeting · name** instead · separator · **Quit Atharu ⌘Q**. "Quick capture" goes (left click is it now).
 - **RT / IC**: Reduce Transparency → panel 100% white + `--line` hairline, no blur (the OS drops the material too). Increase Contrast →

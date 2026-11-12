@@ -113,11 +113,11 @@ pub fn run() {
             tray(app.handle())?;
             tray_state(app.handle());
             // Meetings also start / end / record from a browser on the shared DB (D52), with no request
-            // through this app, so the icon polls too (one cheap query every 2 s).
+            // through this app, so the icon polls too (one cheap query a second: the recording clock ticks).
             let h = app.handle().clone();
             std::thread::spawn(move || {
                 loop {
-                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    std::thread::sleep(std::time::Duration::from_secs(1));
                     let h2 = h.clone();
                     let _ = h.run_on_main_thread(move || tray_state(&h2));
                 }
@@ -328,24 +328,37 @@ fn refresh_menu(h: &AppHandle) {
 /// Tray icon state: 0 idle, 1 meeting running, 2 recording. Only a change touches the icon.
 static TRAY_STATE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
-/// Menu-bar icon shows the meeting state: a badge dot while a meeting runs, the whole mark red while recording.
-/// Red can't be a template image (macOS would tint it), so that one is drawn in #ff3b30, readable on light and dark bars.
+/// Menu-bar icon shows the meeting state: a badge dot while a meeting runs, the whole mark red while recording,
+/// with the recording's elapsed time as the item's title. Red can't be a template image (macOS would tint it), so
+/// that one is drawn in #ff3b30, readable on light and dark bars.
 fn tray_state(h: &AppHandle) {
-    let (state, tip) = {
+    let (state, tip, title) = {
         let st = h.state::<app::AppState>();
         let m = atharu::quick::tray_menu(&st.conn()).unwrap_or_default();
-        match m.running {
-            Some((_, name)) if m.recording => (2, format!("Atharu · Recording · {name}")),
-            Some((_, name)) => (1, format!("Atharu · Meeting · {name}")),
-            None => (0, "Atharu".to_string()),
+        match (m.running, m.recording) {
+            (Some((_, name)), Some(started)) => {
+                let secs = atharu::recording::secs_between(&started, &atharu::recording::now());
+                (
+                    2,
+                    format!("Atharu · Recording · {name}"),
+                    Some(atharu::recording::elapsed(secs)),
+                )
+            }
+            (Some((_, name)), None) => (1, format!("Atharu · Meeting · {name}"), None),
+            (None, _) => (0, "Atharu".to_string(), None),
         }
     };
-    if TRAY_STATE.swap(state, std::sync::atomic::Ordering::Relaxed) == state {
-        return;
-    }
     let Some(tray) = h.tray_by_id("main") else {
         return;
     };
+    // Every tick while recording (the clock moves); otherwise only on a change of state.
+    let changed = TRAY_STATE.swap(state, std::sync::atomic::Ordering::Relaxed) != state;
+    if changed || title.is_some() {
+        let _ = tray.set_title(title.as_deref());
+    }
+    if !changed {
+        return;
+    }
     let bytes: &[u8] = match state {
         2 => include_bytes!("../icons/tray-rec.png"),
         1 => include_bytes!("../icons/tray-meeting.png"),

@@ -49,6 +49,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
     };
     let now = chrono::Local::now().naive_local();
     let rec = crate::recording::Rec::load(&conn, st.mac.as_deref())?;
+    let (rec_app, model_ready) = (rec.mac, rec.model_ready);
     let running = queries::running(&conn)?.map(|r| view::Running {
         since: r
             .started_at
@@ -90,6 +91,8 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         saved_note: q.note,
         saved,
         running,
+        rec_app,
+        model_ready,
         series: queries::recent_series(&conn, SERIES)?,
         overdue,
         due_today: all.len() - overdue,
