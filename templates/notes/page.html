@@ -10,7 +10,7 @@
 {#- The title sits outside #note (form="note") so the line header between them can hold its own forms: forms don't nest.
     Its events don't bubble into #note, hence the `from:#note-title` triggers. #}
 <div style="display: flex; flex-direction: column; gap: 12px">
-<h1 class="ptitle" style="margin-top: 0"><input class="pin" id="note-title" form="note" name="title" value="{{ title }}" placeholder="Untitled" aria-label="Title"></h1>
+<h1 class="ptitle" style="margin-top: 0"><textarea class="pin" id="note-title" form="note" name="title" rows="1" placeholder="Untitled" aria-label="Title" onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }" oninput="if (this.value.includes('\n')) this.value = this.value.replace(/\n/g, ' '); this.style.height = ''; this.style.height = this.scrollHeight + 'px'">{{ title }}</textarea></h1>
 {{ head|safe }}
 <form id="note" method="post" action="/notes/{{ id }}" hx-post="/notes/{{ id }}" hx-trigger="input delay:1s, change, submit, input delay:1s from:#note-title, change from:#note-title" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
 <dl class="props">
