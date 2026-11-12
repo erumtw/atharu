@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.1.1 — 2026-11-12
+
+### Features
+
+- a meeting's notes are a real note (T90, migration 010)
+- rename a meeting from its title (T92)
+- Names list so transcripts and /meeting get people right
+- atharu edit lets an agent fix lines it wrote
+- screenshots into a meeting from the banner or popover (T89)
+
+### Fixes
+
+- agent badge and epic key chips never clip
+- long meeting / tag names end in … instead of breaking rows
+- popover clips a long meeting name instead of running under Stop
+
+### Other
+
+- Merge pull request #2 from erumtw/feat/worklog
+- merge: T56 speaker split for Others (0.1.1)
+- wip: T56 speaker split for "Others"
+- test: popover meeting link carries its full name as title
+
 ## v0.1.0 — 2026-11-12
 
 ### Features
