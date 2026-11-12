@@ -19,8 +19,9 @@
 {%- endmatch %}
 <form class="gi" method="post" action="/settings/transcription/lang" hx-post="/settings/transcription/lang" hx-target="#transcription" hx-swap="outerHTML"><div class="t"><b>Language</b><span>Thai keeps English terms in English. Auto guesses per 30 s and can turn Thai into an English translation.</span></div>
 <div class="seg mac" role="group" aria-label="Transcript language">{% for (v, l) in langs %}<button type="submit" name="lang" value="{{ v }}" aria-pressed="{% if lang == **v %}true{% else %}false{% endif %}">{{ l }}</button>{% endfor %}</div></form>
+<div class="gi"><div class="t"><b>Speakers</b><span>After Stop, Others is split by voice into Speaker 1, 2, … on this Mac; name them on the meeting page. The voice models (30 MB) come with the first recording. Voices are never kept or matched across meetings.</span></div><span class="pill">Automatic</span></div>
 <div class="gi"><div class="t"><b>Vocabulary</b><span>The meeting name and your active epics{% if !hint.is_empty() %} ({{ hint }}, …){% endif %} are passed as hints, so keys and terms come out spelled right.</span></div><span class="pill">Automatic</span></div>
 <div class="gi"><div class="t"><b>Permissions</b><span>Microphone for you, Screen &amp; System Audio Recording for the other side.</span></div>{% if perms %}<span class="pill ok">On</span>{% else %}<span class="pill">Asked on the first recording</span>{% endif %}</div>
-<div class="gi"><div class="t"><b>Audio</b><span>Deleted as soon as it’s text. Only the transcript is kept.</span></div></div>
+<div class="gi"><div class="t"><b>Audio</b><span>Deleted as soon as it’s text and its speakers are told apart. Only the transcript is kept.</span></div></div>
 {%- endif %}
 </div>

@@ -5,8 +5,9 @@ Write up meeting $ARGUMENTS (a meeting number, or `latest` when empty) in atharu
 
 1. Read `CLAUDE.md` (grammar, write rules, CLI). Run `cargo run -q -- meeting ${ARGUMENTS:-latest}` (or
    `atharu meeting …`). You get the meeting (`name` is its series), what I already logged in it (`lines`,
-   `plans`), my own `notes`, and `transcripts[].segments` in time order: `speaker` is `me` (my mic) or `others`
-   (the call), `t` seconds from the recording's start. Speech-to-text is imperfect, Thai and English are mixed,
+   `plans`), my own `notes`, and `transcripts[].segments` in time order: `speaker` is `me` (my mic), `others`
+   (the call), or one of the transcript's `speakers` (the call split by voice: `Speaker 2`, or the name I gave
+   it; a split voice can still be two people or one person cut in two), `t` seconds from the recording's start. Speech-to-text is imperfect, Thai and English are mixed,
    and names / epic keys may be misheard: prefer what I logged and the active epics (`cargo run -q -- show <KEY>`)
    when they disagree. No transcript → work from `lines` + `notes` only and say so.
 2. Summary note → `cargo run -q -- note "<series> · <day> notes" --file <tmp.md> --links <series> --as claude`.

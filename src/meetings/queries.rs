@@ -331,12 +331,14 @@ pub enum Append {
 }
 
 /// The app's segments, one recording. A (speaker, t) already there is skipped, so a retried post
-/// (or an overlap window repeating a line) never doubles it. `done` closes the recording; one that
+/// (or an overlap window repeating a line) never doubles it. `split` (the speaker split, T56) replaces
+/// every line that isn't "me". `done` closes the recording; one that
 /// ends with no lines at all is dropped, there is nothing to show.
 pub fn append_segments(
     conn: &Connection,
     tid: i64,
     segs: &[(f64, String, String)],
+    split: Option<&[(f64, String, String)]>,
     done: bool,
     at: &str,
 ) -> rusqlite::Result<Append> {
@@ -363,6 +365,17 @@ pub fn append_segments(
     for (t, speaker, text) in segs {
         add.execute(params![tid, t, speaker, text])?;
     }
+    if let Some(split) = split {
+        tx.execute(
+            "UPDATE meeting_transcripts SET segments = (SELECT json_group_array(json(value))
+               FROM json_each(segments) WHERE value ->> 'speaker' = 'me')
+             WHERE id = ?1",
+            [tid],
+        )?;
+        for (t, speaker, text) in split {
+            add.execute(params![tid, t, speaker, text])?;
+        }
+    }
     drop(add);
     if done {
         tx.execute(
@@ -379,6 +392,25 @@ pub fn append_segments(
     Ok(Append::Saved)
 }
 
+/// Names a split speaker on one finished recording: every line of `from` becomes `to` (T56). The name lives
+/// in each line's `speaker`, so renaming two speakers to one name merges a voice the split cut in two.
+pub fn rename_speaker(
+    conn: &Connection,
+    meeting: i64,
+    tid: i64,
+    from: &str,
+    to: &str,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE meeting_transcripts SET segments = (SELECT json_group_array(
+             CASE WHEN value ->> 'speaker' = ?3 THEN json_set(value, '$.speaker', ?4) ELSE json(value) END)
+           FROM json_each(segments))
+         WHERE id = ?1 AND meeting_id = ?2 AND status IN ('done', 'interrupted')",
+        params![tid, meeting, from, to],
+    )?;
+    Ok(())
+}
+
 pub struct Transcript {
     pub id: i64,
     pub started_at: String,
@@ -388,6 +420,19 @@ pub struct Transcript {
     pub lang: String,
     /// (t, speaker, text), in time order.
     pub segments: Vec<(f64, String, String)>,
+}
+
+impl Transcript {
+    /// The split voices (T56; not Me, not the unsplit Others), in order of first line.
+    pub fn speakers(&self) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        for (_, sp, _) in &self.segments {
+            if sp != "me" && sp != "others" && !out.contains(sp) {
+                out.push(sp.clone());
+            }
+        }
+        out
+    }
 }
 
 /// A meeting's recordings, oldest first, each with its segments sorted by time, mic echo of the call hidden.
