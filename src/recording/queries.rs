@@ -1,5 +1,28 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
+/// The meeting with no `ended_at`, if any.
+pub fn running_meeting(conn: &Connection) -> rusqlite::Result<Option<super::state::Running>> {
+    conn.query_row(
+        "SELECT id, name, started_at FROM meetings WHERE ended_at IS NULL",
+        [],
+        |r| {
+            Ok(super::state::Running {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                started_at: r.get(2)?,
+            })
+        },
+    )
+    .optional()
+}
+
+/// Series names, most recently met first; same day → the newer meeting (ids only grow).
+pub fn series(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn
+        .prepare("SELECT name FROM meetings GROUP BY name ORDER BY MAX(day) DESC, MAX(id) DESC")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
+}
+
 /// The running meeting's recording that is still live or finishing: (status, started_at).
 pub fn running(conn: &Connection) -> rusqlite::Result<Option<(String, String)>> {
     conn.query_row(

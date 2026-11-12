@@ -1,32 +1,14 @@
 use crate::{
-    domain::{
-        dates,
-        entry::{Kind, NoteRef},
-        plan::Plan,
-    },
+    domain::{dates, entry::LineRow, plan::Plan},
     layout::{Layout, TagFilter},
 };
 use askama::Template;
 use chrono::NaiveDate;
 
-pub struct Row {
-    pub id: i64,
-    pub kind: Kind,
-    pub topic: Option<String>,
-    pub text: String,
-    pub meeting: Option<String>,
-    pub author: String,
-    /// Grouped by tag: where this group's tag comes from when the text doesn't have it.
-    pub via: Option<String>,
-    /// Grouped by tag: the line's epic, shown on the row since no epic header says it.
-    pub epic: Option<String>,
-    pub note: Option<NoteRef>,
-}
-
 pub struct Group {
     pub key: Option<String>,
     pub title: String,
-    pub rows: Vec<Row>,
+    pub rows: Vec<LineRow>,
     /// Group by tag (D29): `tag` heads the group, `None` = "No tag".
     pub by_tag: bool,
     /// Group by type: `title` is the kind's plural ("Decisions").
@@ -115,23 +97,6 @@ pub struct Plans {
     pub other: Vec<Plan>,
 }
 
-pub struct ActiveMeeting {
-    pub id: i64,
-    pub name: String,
-}
-
-/// Fields `partials/meeting_banner.html` reads; start/end themselves live in the meetings slice.
-pub struct Banner {
-    pub active: Option<ActiveMeeting>,
-    pub series: Vec<String>,
-    pub name: String,
-    pub error: Option<String>,
-    pub back: String,
-    pub rec: crate::recording::Rec,
-    /// Only End's own answer sets it (meetings slice); a page load never shows "Ended".
-    pub ended: Option<ActiveMeeting>,
-}
-
 /// One "Needs you" line: a flagged epic or an overdue to-do.
 pub struct Need {
     /// `flag over` / `flag risk` / `flag stale`.
@@ -147,7 +112,7 @@ pub struct Need {
 #[template(path = "today/page.html")]
 pub struct Page {
     pub layout: Layout,
-    pub banner: Banner,
+    pub banner: crate::recording::Banner,
     pub today: NaiveDate,
     pub plans: Plans,
     pub needs: Vec<Need>,

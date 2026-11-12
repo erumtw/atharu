@@ -1,5 +1,5 @@
 use super::{queries, view};
-use crate::domain::entry::Kind;
+use crate::domain::entry::{Kind, LineRow};
 use crate::{
     app::AppState,
     domain::{
@@ -11,6 +11,7 @@ use crate::{
     },
     error::{AppError, AppResult},
     layout::{Layout, TagFilter},
+    recording::{Banner, MeetingState},
     web,
 };
 use axum::{
@@ -84,26 +85,17 @@ fn pick_day(day: Option<&str>, today: NaiveDate) -> NaiveDate {
 }
 
 fn groups(conn: &Connection, day: NaiveDate, o: &Opts) -> rusqlite::Result<Vec<view::Group>> {
-    let rows = queries::day_entries(conn, &dates::iso(day), &o.tags)?;
+    let iso = dates::iso(day);
+    let rows = queries::day_entries(conn, &iso, &o.tags)?;
     if o.group == "tag" {
-        return Ok(by_tag(rows));
+        return Ok(by_tag(rows, &iso));
     }
     if o.group == "type" {
-        return Ok(by_type(rows));
+        return Ok(by_type(rows, &iso));
     }
     let mut out: Vec<view::Group> = Vec::new();
     for r in rows {
-        let row = view::Row {
-            id: r.id,
-            kind: r.kind,
-            topic: r.topic,
-            text: r.text,
-            meeting: r.meeting,
-            author: r.author,
-            via: None,
-            epic: None,
-            note: r.note,
-        };
+        let row = line(&r, &iso);
         // Rows arrive sorted by group, so a new key always means a new group.
         match out.last_mut() {
             Some(g) if g.key == r.epic_key => g.rows.push(row),
@@ -122,7 +114,22 @@ fn groups(conn: &Connection, day: NaiveDate, o: &Opts) -> rusqlite::Result<Vec<v
 
 /// One group per kind of line, in reading order for a day's review: what was decided, what's stuck, what's
 /// next, what it achieved, what was learned, then the rest. Each row keeps its epic chip (the grouping dropped it).
-fn by_type(rows: Vec<queries::LoggedRow>) -> Vec<view::Group> {
+/// The log row as `entry_row.html` draws it; the grouping decides `epic` / `via`.
+fn line(r: &queries::LoggedRow, day: &str) -> LineRow {
+    LineRow {
+        id: r.id,
+        day: day.to_string(),
+        kind: r.kind,
+        topic: r.topic.clone(),
+        text: r.text.clone(),
+        meeting: r.meeting.clone(),
+        author: r.author.clone(),
+        note: r.note.clone(),
+        ..LineRow::default()
+    }
+}
+
+fn by_type(rows: Vec<queries::LoggedRow>, day: &str) -> Vec<view::Group> {
     const ORDER: [(Kind, &str); 6] = [
         (Kind::Decision, "Decisions"),
         (Kind::Blocker, "Blockers"),
@@ -144,16 +151,9 @@ fn by_type(rows: Vec<queries::LoggedRow>) -> Vec<view::Group> {
         .collect();
     for r in rows {
         let i = ORDER.iter().position(|(k, _)| *k == r.kind).unwrap_or(5);
-        out[i].rows.push(view::Row {
-            id: r.id,
-            kind: r.kind,
-            topic: r.topic,
-            text: r.text,
-            meeting: r.meeting,
-            author: r.author,
-            via: None,
-            epic: r.epic_key,
-            note: r.note,
+        out[i].rows.push(LineRow {
+            epic: r.epic_key.clone(),
+            ..line(&r, day)
         });
     }
     out.retain(|g| !g.rows.is_empty());
@@ -161,7 +161,7 @@ fn by_type(rows: Vec<queries::LoggedRow>) -> Vec<view::Group> {
 }
 
 /// One group per tag, biggest first, "No tag" last; a line with two tags shows under both.
-fn by_tag(rows: Vec<queries::LoggedRow>) -> Vec<view::Group> {
+fn by_tag(rows: Vec<queries::LoggedRow>, day: &str) -> Vec<view::Group> {
     let mut out: Vec<view::Group> = Vec::new();
     for r in rows {
         let mut names: Vec<(Option<String>, Option<String>)> = r
@@ -173,17 +173,11 @@ fn by_tag(rows: Vec<queries::LoggedRow>) -> Vec<view::Group> {
             names.push((None, None));
         }
         for (tag, via) in names {
-            let row = view::Row {
-                id: r.id,
-                kind: r.kind,
-                topic: r.topic.clone(),
-                text: r.text.clone(),
-                meeting: r.meeting.clone(),
-                author: r.author.clone(),
+            let row = LineRow {
                 // The epic chip already says where an epic-inherited tag comes from.
                 epic: r.epic_key.clone().filter(|k| via.as_ref() != Some(k)),
                 via,
-                note: r.note.clone(),
+                ..line(&r, day)
             };
             match out.iter_mut().find(|g| g.tag == tag) {
                 Some(g) => g.rows.push(row),
@@ -280,16 +274,10 @@ fn render_page(
     }
     Ok(view::Page {
         layout: Layout::load(&conn, "today", "Today", vec![])?,
-        banner: view::Banner {
-            active: queries::active_meeting(&conn)?
-                .map(|(id, name)| view::ActiveMeeting { id, name }),
-            series: queries::meeting_series(&conn)?,
-            name: String::new(),
-            error: None,
-            back: format!("/?day={}", dates::iso(day)),
-            rec: crate::recording::Rec::load(&conn, st.mac.as_deref())?,
-            ended: None,
-        },
+        banner: Banner::new(
+            MeetingState::load(&conn, st.mac.as_deref())?,
+            format!("/?day={}", dates::iso(day)),
+        ),
         today: st.today(),
         needs: needs(&conn, &plans, st.today())?,
         plans,

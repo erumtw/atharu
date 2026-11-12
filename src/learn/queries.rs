@@ -1,4 +1,7 @@
-use crate::domain::depth::Rating;
+use crate::domain::{
+    depth::Rating,
+    entry::{Kind, LineRow, NoteRef},
+};
 use chrono::NaiveDate;
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -142,23 +145,23 @@ pub fn unrate(conn: &Connection, slug: &str, day: &str) -> rusqlite::Result<()> 
     Ok(())
 }
 
-pub struct Line {
-    pub day: String,
-    pub text: String,
-    pub epic_key: Option<String>,
-}
-
-/// `? slug: …` lines, newest first.
-pub fn lines(conn: &Connection, slug: &str) -> rusqlite::Result<Vec<Line>> {
+/// `? slug: …` lines, newest first. The topic is the page itself, so the row leaves it out.
+pub fn lines(conn: &Connection, slug: &str) -> rusqlite::Result<Vec<LineRow>> {
     let mut stmt = conn.prepare(
-        "SELECT day, text, epic_key FROM entries WHERE kind = 'learn' AND topic = ?1
-         ORDER BY day DESC, id DESC",
+        "SELECT e.id, e.day, e.text, e.epic_key, e.author, n.id, n.title
+         FROM entries e LEFT JOIN notes n ON n.id = e.note_id
+         WHERE e.kind = 'learn' AND e.topic = ?1 ORDER BY e.day DESC, e.id DESC",
     )?;
     stmt.query_map([slug], |r| {
-        Ok(Line {
-            day: r.get(0)?,
-            text: r.get(1)?,
-            epic_key: r.get(2)?,
+        Ok(LineRow {
+            id: r.get(0)?,
+            day: r.get(1)?,
+            kind: Kind::Learn,
+            text: r.get(2)?,
+            epic: r.get(3)?,
+            author: r.get(4)?,
+            note: NoteRef::from_cols(r.get(5)?, r.get(6)?),
+            ..LineRow::default()
         })
     })?
     .collect()

@@ -388,3 +388,39 @@ async fn cli_tags_from_text_and_lists_them() {
     assert!(list.contains(r#"<a class="chip tag" href="/tags/expense">expense</a>"#));
     assert!(list.contains("3 tags."));
 }
+
+#[tokio::test]
+async fn every_list_draws_a_todo_with_the_one_plan_row() {
+    // The tag hub and the epic timeline used to draw their own to-do markup, while Pin / Drop / Undo answer
+    // `plan_row.html`: a swapped row then looked unlike its neighbours. Now every list draws plan_row.html.
+    let st = state();
+    post(
+        &st,
+        "/entries",
+        &form(&[("line", "OPS-1 > ship it #infra")]),
+        false,
+    )
+    .await;
+    post(
+        &st,
+        "/entries",
+        &form(&[("line", "OPS-1 ! no queue #infra")]),
+        false,
+    )
+    .await;
+    for page in ["/tags/infra", "/epics/OPS-1", "/todos"] {
+        let b = get(&st, page).await.body;
+        assert!(
+            b.contains(r#"hx-post="/plans/1" hx-trigger="change""#),
+            "{page}"
+        );
+        assert!(b.contains("Pin to This week"), "{page}");
+    }
+    // Other lines draw read-only through entry_row.html everywhere but Today.
+    let hub = get(&st, "/tags/infra").await.body;
+    assert!(
+        hub.contains(r#"<span class="ltext">no queue <a class="chip tag" href="/tags/infra">"#)
+    );
+    assert!(!hub.contains(r#"id="entry-2""#));
+    assert!(get(&st, "/").await.body.contains(r#"id="entry-2""#));
+}

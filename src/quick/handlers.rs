@@ -4,6 +4,7 @@ use crate::{
     domain::{dates, markdown},
     error::AppResult,
     layout::Layout,
+    recording::MeetingState,
     web,
 };
 use axum::{
@@ -52,17 +53,13 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         None => None,
     };
     let now = chrono::Local::now().naive_local();
-    let rec = crate::recording::Rec::load(&conn, st.mac.as_deref())?;
-    let (rec_app, model_ready) = (rec.mac, rec.model_ready);
-    let running = queries::running(&conn)?.map(|r| view::Running {
-        since: r
-            .started_at
-            .as_deref()
-            .map_or_else(String::new, |s| since(s, now)),
-        id: r.id,
-        name: r.name,
-        rec,
-    });
+    let mut meeting = MeetingState::load(&conn, st.mac.as_deref())?;
+    meeting.series.truncate(MENU_SERIES);
+    let since = meeting
+        .running
+        .as_ref()
+        .and_then(|r| r.started_at.as_deref())
+        .map_or_else(String::new, |s| since(s, now));
     let all = queries::due_plans(&conn, &dates::iso(today))?;
     let overdue = all.iter().filter(|p| p.due < dates::iso(today)).count();
     let layout = Layout::load(&conn, "quick", "Quick", vec![])?;
@@ -94,14 +91,12 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         error: q.err.is_some().then_some(markdown::NO_TITLE),
         saved_note: q.note,
         saved,
-        running,
-        rec_app,
-        model_ready,
+        meeting,
+        since,
         ended: match q.ended {
             Some(id) => queries::meeting_name(&conn, id)?.map(|n| (id, n)),
             None => None,
         },
-        series: queries::recent_series(&conn, MENU_SERIES)?,
         overdue,
         due_today: all.len() - overdue,
         more: layout.open_plans - todos.len() as i64,

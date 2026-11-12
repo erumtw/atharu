@@ -1,7 +1,9 @@
 //! Reads over `taggings` + the `entry_tags` view (migration 006). Inheritance (epic / series → line)
 //! is the view's job, so every count here already includes inherited lines.
+use crate::db::SELECT_PLAN;
 use crate::domain::{
     entry::{Kind, NoteRef},
+    plan::Plan,
     tags,
 };
 use rusqlite::{Connection, OptionalExtension, params};
@@ -77,11 +79,8 @@ pub struct HubLine {
     pub topic: Option<String>,
     pub text: String,
     pub plan_state: Option<String>,
-    pub due: Option<String>,
     /// Set when the tag is not in the text: the epic key or meeting series it comes from.
     pub via: Option<String>,
-    /// True when `via` is the line's epic (else a meeting series).
-    pub via_epic: bool,
     pub author: String,
     /// On a merged hub, why an untagged line is here: `topic line` / `in cms-profile`.
     pub note: Option<String>,
@@ -89,12 +88,20 @@ pub struct HubLine {
     pub note_ref: Option<NoteRef>,
 }
 
+/// Plans by id, for the hub's open to-dos (drawn by `plan_row.html`); order is the caller's.
+pub fn plans(conn: &Connection, ids: &[i64]) -> rusqlite::Result<Vec<Plan>> {
+    let ids = serde_json::to_string(ids).unwrap_or_else(|_| "[]".into());
+    let mut stmt = conn.prepare(&format!(
+        "{SELECT_PLAN} WHERE id IN (SELECT value FROM json_each(?1))"
+    ))?;
+    stmt.query_map([ids], crate::db::plan)?.collect()
+}
+
 /// Every line carrying `tag`, newest first. A tag both typed and inherited counts as typed.
 pub fn lines(conn: &Connection, tag: &str) -> rusqlite::Result<Vec<HubLine>> {
     let mut stmt = conn.prepare(
-        "SELECT e.id, e.day, e.kind, e.topic, e.text, e.plan_state, e.due,
-                CASE WHEN MIN(et.via IS NOT NULL) = 1 THEN MAX(et.via) END, e.epic_key, e.author,
-                n.id, n.title
+        "SELECT e.id, e.day, e.kind, e.topic, e.text, e.plan_state,
+                CASE WHEN MIN(et.via IS NOT NULL) = 1 THEN MAX(et.via) END, e.author, n.id, n.title
            FROM entry_tags et JOIN entries e ON e.id = et.entry_id LEFT JOIN notes n ON n.id = e.note_id
           WHERE et.tag = ?1
           GROUP BY e.id
@@ -102,8 +109,6 @@ pub fn lines(conn: &Connection, tag: &str) -> rusqlite::Result<Vec<HubLine>> {
     )?;
     stmt.query_map([tag], |r| {
         let kind: String = r.get(2)?;
-        let via: Option<String> = r.get(7)?;
-        let key: Option<String> = r.get(8)?;
         Ok(HubLine {
             id: r.get(0)?,
             day: r.get(1)?,
@@ -111,12 +116,10 @@ pub fn lines(conn: &Connection, tag: &str) -> rusqlite::Result<Vec<HubLine>> {
             topic: r.get(3)?,
             text: r.get(4)?,
             plan_state: r.get(5)?,
-            due: r.get(6)?,
-            via_epic: via.is_some() && via == key,
-            via,
-            author: r.get(9)?,
+            via: r.get(6)?,
+            author: r.get(7)?,
             note: None,
-            note_ref: NoteRef::from_cols(r.get(10)?, r.get(11)?),
+            note_ref: NoteRef::from_cols(r.get(8)?, r.get(9)?),
         })
     })?
     .collect()
@@ -241,7 +244,7 @@ pub fn series(conn: &Connection, tag: &str) -> rusqlite::Result<Vec<(String, i64
 /// tagged ones: `?` lines on the topic and lines logged in the series' meetings.
 pub fn merged_lines(conn: &Connection, name: &str) -> rusqlite::Result<Vec<HubLine>> {
     let mut stmt = conn.prepare(
-        "SELECT e.id, e.day, e.kind, e.topic, e.text, e.plan_state, e.due,
+        "SELECT e.id, e.day, e.kind, e.topic, e.text, e.plan_state,
                 CASE WHEN e.kind = 'learn' AND e.topic = ?1 THEN 'topic line' ELSE 'in ' || m.name END,
                 e.author, n.id, n.title
            FROM entries e LEFT JOIN meetings m ON m.id = e.meeting_id LEFT JOIN notes n ON n.id = e.note_id
@@ -256,12 +259,10 @@ pub fn merged_lines(conn: &Connection, name: &str) -> rusqlite::Result<Vec<HubLi
             topic: r.get(3)?,
             text: r.get(4)?,
             plan_state: r.get(5)?,
-            due: r.get(6)?,
             via: None,
-            via_epic: false,
-            author: r.get(8)?,
-            note: r.get(7)?,
-            note_ref: NoteRef::from_cols(r.get(9)?, r.get(10)?),
+            author: r.get(7)?,
+            note: r.get(6)?,
+            note_ref: NoteRef::from_cols(r.get(8)?, r.get(9)?),
         })
     })?
     .collect()

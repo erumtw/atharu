@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, flags, impact::impact_line, links, tags},
+    domain::{dates, entry::LineRow, flags, impact::impact_line, links, plan::Plan, tags},
     error::{AppError, AppResult},
     layout::{Layout, crumb},
     web,
@@ -188,6 +188,19 @@ fn render_page(
     let epic_tags = tags::parse_list(&e.tags);
     let mut timeline: Vec<view::DayGroup> = Vec::new();
     let mut last_day = String::new();
+    let mut plans: HashMap<i64, Plan> = queries::plans(&conn, key)?
+        .into_iter()
+        // The page is the epic: its chip on every to-do says nothing.
+        .map(|p| {
+            (
+                p.id,
+                Plan {
+                    epic_key: None,
+                    ..p
+                },
+            )
+        })
+        .collect();
     for r in queries::timeline(&conn, key)? {
         if r.day != last_day {
             let label = match date(Some(&r.day)) {
@@ -202,20 +215,17 @@ fn render_page(
             last_day = r.day.clone();
         }
         if let Some(g) = timeline.last_mut() {
-            let own = tags::tags(&r.text);
-            g.rows.push(view::TimelineRow {
-                id: r.id,
-                day: r.day.clone(),
-                kind: r.kind,
-                topic: r.topic,
-                inh: epic_tags
-                    .iter()
-                    .filter(|t| !own.contains(t))
-                    .cloned()
-                    .collect(),
-                text: r.text,
-                author: r.author,
-                note: r.note,
+            g.rows.push(match plans.remove(&r.id) {
+                Some(p) => view::Item::Plan(p),
+                None => {
+                    let own = tags::tags(&r.text);
+                    let inh = epic_tags
+                        .iter()
+                        .filter(|t| !own.contains(t))
+                        .cloned()
+                        .collect();
+                    view::Item::Line(LineRow { inh, ..r })
+                }
             });
         }
     }
@@ -251,6 +261,7 @@ fn render_page(
         mentions: queries::mentions(&conn, key)?,
         live,
         timeline,
+        today,
         save_error,
         delete_error: None,
     })

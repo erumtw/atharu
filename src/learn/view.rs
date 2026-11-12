@@ -69,12 +69,6 @@ pub struct RateSwap {
     pub rate: Rate,
 }
 
-pub struct Line {
-    pub day: String,
-    pub text: String,
-    pub epic_key: Option<String>,
-}
-
 #[derive(Template)]
 #[template(path = "learn/page.html")]
 pub struct Page {
@@ -86,7 +80,7 @@ pub struct Page {
     pub own_words: String,
     pub resources: String,
     pub rate: Rate,
-    pub lines: Vec<Line>,
+    pub lines: Vec<crate::domain::entry::LineRow>,
     /// Notes linking here with `[[…]]`: (id, title).
     pub mentions: Vec<(i64, String)>,
 }

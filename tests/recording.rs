@@ -566,3 +566,27 @@ async fn screenshots_are_served_listed_and_path_checked() {
     assert!(!page.contains("/app/screenshot"));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[tokio::test]
+async fn popover_shows_a_blocked_recording_like_the_banner() {
+    let (st, mac) = mac_state("blocked", true);
+    exec(
+        &st,
+        "INSERT INTO meetings(id, day, name, started_at) VALUES (1, '2026-11-11', 'oms-sync', '2026-11-11 10:00:00');
+         INSERT INTO meeting_transcripts(meeting_id, started_at, model, lang) VALUES (1, '2026-11-11 10:00:00', 'm', 'th');",
+    );
+    *mac.blocked.lock().unwrap() = true;
+    let q = get(&st, "/quick").await.body;
+    // Not red, no Stop: the steps are on the meeting page (main window), as in Today's banner.
+    assert!(
+        q.contains(r#"Not recording yet · <a href="/meetings/1">"#),
+        "{q}"
+    );
+    assert!(!q.contains("dot rec") && !q.contains("/record/stop"));
+    assert!(get(&st, "/").await.body.contains("not recording yet"));
+    *mac.blocked.lock().unwrap() = false;
+    let q = get(&st, "/quick").await.body;
+    assert!(
+        q.contains("dot rec") && q.contains("/record/stop") && !q.contains("Not recording yet")
+    );
+}

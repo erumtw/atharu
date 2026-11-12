@@ -250,6 +250,9 @@ html:not([data-glass=all]) .pg .capture :is(.toast,.hint){border-color:var(--lin
 .menu{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:var(--ink);line-height:1.47;letter-spacing:-.2px;position:absolute;width:260px;box-sizing:border-box;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px;z-index:3}
 /* display:flex above would beat the UA rule that hides a closed popover (it once left the hub ⋯ menu open on load). */
 .menu[popover]:not(:popover-open){display:none}
+/* Same trap for the `hidden` attribute (.menu{display:flex} outranks the UA rule): the popover's series menu stayed
+   open for good (owner screenshot). */
+.menu[hidden]{display:none}
 .menu [role=option]{padding:0 10px;min-height:32px;display:flex;align-items:center;gap:10px;border-radius:8px;cursor:pointer}
 .menu [role=option]:hover{background:rgba(0,0,0,.04)}
 .menu [aria-selected=true]{background:var(--accent-wash)}

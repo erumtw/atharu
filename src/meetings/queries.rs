@@ -1,23 +1,9 @@
+use crate::db::SELECT_PLAN;
 use crate::domain::{
-    entry::{Kind, NoteRef},
+    entry::{Kind, LineRow, NoteRef},
     plan::Plan,
 };
-use chrono::NaiveDate;
 use rusqlite::{Connection, OptionalExtension, params};
-
-fn date(s: Option<String>) -> Option<NaiveDate> {
-    s.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok())
-}
-
-/// The running meeting, if any: (id, name).
-pub fn active(conn: &Connection) -> rusqlite::Result<Option<(i64, String)>> {
-    conn.query_row(
-        "SELECT id, name FROM meetings WHERE ended_at IS NULL",
-        [],
-        |r| Ok((r.get(0)?, r.get(1)?)),
-    )
-    .optional()
-}
 
 /// (name, meetings) per series, most recently met first.
 pub fn series(conn: &Connection) -> rusqlite::Result<Vec<(String, i64)>> {
@@ -28,10 +14,20 @@ pub fn series(conn: &Connection) -> rusqlite::Result<Vec<(String, i64)>> {
         .collect()
 }
 
+/// The one-running-meeting guard of start / restore, read inside their write; pages read `recording::MeetingState`.
+fn running_name(conn: &Connection) -> rusqlite::Result<Option<String>> {
+    conn.query_row(
+        "SELECT name FROM meetings WHERE ended_at IS NULL",
+        [],
+        |r| r.get(0),
+    )
+    .optional()
+}
+
 /// `Err(name)` = another meeting is still running. Checked first so the copy can name it;
 /// the unique partial index is the backstop.
 pub fn start(conn: &Connection, day: &str, name: &str) -> rusqlite::Result<Result<i64, String>> {
-    if let Some((_, running)) = active(conn)? {
+    if let Some(running) = running_name(conn)? {
         return Ok(Err(running));
     }
     conn.execute(
@@ -217,26 +213,25 @@ pub fn siblings(
         .collect()
 }
 
-pub struct Line {
-    pub kind: Kind,
-    pub epic_key: Option<String>,
-    pub topic: Option<String>,
-    pub text: String,
-}
-
 /// Non-plan lines logged in the meeting, oldest first (plans come from `plans`).
-pub fn lines(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Line>> {
+pub fn lines(conn: &Connection, id: i64) -> rusqlite::Result<Vec<LineRow>> {
     let mut stmt = conn.prepare(
-        "SELECT kind, epic_key, topic, text FROM entries
-         WHERE meeting_id = ?1 AND kind != 'plan' ORDER BY id",
+        "SELECT e.id, e.day, e.kind, e.epic_key, e.topic, e.text, e.author, n.id, n.title
+         FROM entries e LEFT JOIN notes n ON n.id = e.note_id
+         WHERE e.meeting_id = ?1 AND e.kind != 'plan' ORDER BY e.id",
     )?;
     stmt.query_map([id], |r| {
-        let kind: String = r.get(0)?;
-        Ok(Line {
+        let kind: String = r.get(2)?;
+        Ok(LineRow {
+            id: r.get(0)?,
+            day: r.get(1)?,
             kind: Kind::parse(&kind).unwrap_or(Kind::Done),
-            epic_key: r.get(1)?,
-            topic: r.get(2)?,
-            text: r.get(3)?,
+            epic: r.get(3)?,
+            topic: r.get(4)?,
+            text: r.get(5)?,
+            author: r.get(6)?,
+            note: NoteRef::from_cols(r.get(7)?, r.get(8)?),
+            ..LineRow::default()
         })
     })?
     .collect()
@@ -244,31 +239,10 @@ pub fn lines(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Line>> {
 
 /// Action items: plans logged in the meeting, any state.
 pub fn plans(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Plan>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
-         (SELECT j.key || ' · ' || j.summary FROM jira_issues j
-           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1),
-         note_id, (SELECT title FROM notes WHERE notes.id = entries.note_id)
-         FROM entries
-         WHERE meeting_id = ?1 AND kind = 'plan' ORDER BY id",
-    )?;
-    stmt.query_map([id], |r| {
-        Ok(Plan {
-            id: r.get(0)?,
-            day: date(r.get(1)?).unwrap_or_default(),
-            epic_key: r.get(2)?,
-            text: r.get(3)?,
-            link: r.get(4)?,
-            due: date(r.get(5)?),
-            pinned: r.get(6)?,
-            state: r.get(7)?,
-            closed_day: date(r.get(8)?),
-            jira: r.get(9)?,
-            via: None,
-            note: NoteRef::from_cols(r.get(10)?, r.get(11)?),
-        })
-    })?
-    .collect()
+    let mut stmt = conn.prepare(&format!(
+        "{SELECT_PLAN} WHERE meeting_id = ?1 AND kind = 'plan' ORDER BY id"
+    ))?;
+    stmt.query_map([id], crate::db::plan)?.collect()
 }
 
 /// Notes whose body has `[[name]]`, newest first: (id, title) for "Mentioned in N notes".
@@ -309,7 +283,7 @@ pub fn delete(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<(String
 pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<i64, String>> {
     let tx = conn.transaction()?;
     let running: bool = tx.query_row("SELECT (?1 ->> 'ended_at') IS NULL", [snap], |r| r.get(0))?;
-    if running && let Some((_, name)) = active(&tx)? {
+    if running && let Some(name) = running_name(&tx)? {
         return Ok(Err(name));
     }
     tx.execute(

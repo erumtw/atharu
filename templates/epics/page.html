@@ -33,18 +33,16 @@
 {%- endif %}
 {#- To-do lines edit and delete like log lines (D51); their edit / Undo answers `plans-changed`, which re-fetches the timeline. #}
 <div hidden hx-get="/epics/{{ epic.key }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#timeline" hx-select="#timeline" hx-swap="outerHTML"></div>
-<div id="timeline">
+<div id="timeline">{% let back = "/epics/{}"|format(epic.key) %}{% let (full, pin_error, editable) = (false, false, false) %}
 {%- for g in timeline %}
 <h4 class="muted small">{{ g.label }}</h4>
 <div class="blocks">
 {%- for r in g.rows %}
-{%- let line_id = r.id %}{% let note_ref = r.note.as_ref() %}
-{%- if r.kind == crate::domain::entry::Kind::Plan %}
-{%- let edit_href = "/?day={}&edit={}"|format(r.day, r.id) %}
-<div class="blk ln" id="plan-{{ r.id }}"><span class="{{ r.kind.badge_class() }}" title="{{ r.kind.tooltip() }}">{{ r.kind.mark() }}</span><span class="ltext">{% for s in crate::domain::tags::segments(r.text) %}{% if let Some(t) = s.tag %}<a class="chip tag" href="/tags/{{ t }}">{{ t }}</a>{% else %}<a class="edit-line" href="{{ edit_href }}" hx-get="/entries/{{ r.id }}/edit?plan=1" hx-target="#plan-{{ r.id }}" hx-swap="outerHTML" title="Click to edit">{{ s.text }}</a>{% endif %}{% endfor %}</span>{% for t in r.inh %}<a class="chip tag inh" href="/tags/{{ t }}" title="From this epic">{{ t }}</a>{% endfor %}{% let row = r %}{% include "partials/author.html" %}<span class="end">{% include "partials/note_btn.html" %}<button class="ib more m-only" type="button" popovertarget="more-t{{ r.id }}" aria-label="More actions for this to-do"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#more"/></svg></button><span class="acts m-pop" id="more-t{{ r.id }}" popover>{% include "partials/note_sheet.html" %}<a class="btn ghost s m-only" href="{{ edit_href }}" hx-get="/entries/{{ r.id }}/edit?plan=1" hx-target="#plan-{{ r.id }}" hx-swap="outerHTML">Edit line</a><form class="inline" method="post" action="/entries/{{ r.id }}/delete?back=%2Fepics%2F{{ epic.key }}" hx-delete="/entries/{{ r.id }}?plan=1" hx-target="#plan-{{ r.id }}" hx-swap="outerHTML"><button class="x" type="submit" title="Delete line" aria-label="Delete line">×<span class="m-only"> Delete line</span></button></form></span></span></div>
-{%- else %}
-<div class="blk ln"><span class="{{ r.kind.badge_class() }}" title="{{ r.kind.tooltip() }}">{{ r.kind.mark() }}</span><span>{% if let Some(t) = r.topic %}<span class="mono">{{ t }}</span> {% endif %}{% let text = r.text.as_str() %}{% include "partials/tag_text.html" %}</span>{% for t in r.inh %}<a class="chip tag inh" href="/tags/{{ t }}" title="From this epic">{{ t }}</a>{% endfor %}{% let row = r %}{% include "partials/author.html" %}<span class="end">{% include "partials/note_btn.html" %}</span></div>
-{%- endif %}
+{%- match r %}{% when Item::Plan(p) %}
+{%- include "partials/plan_row.html" %}
+{%- when Item::Line(row) %}
+{%- include "partials/entry_row.html" %}
+{%- endmatch %}
 {%- endfor %}
 </div>
 {%- endfor %}

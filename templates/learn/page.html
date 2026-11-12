@@ -33,9 +33,9 @@
 {%- if lines.is_empty() %}
 <p class="small muted" style="margin: 0">No lines yet. Log <span class="mono">? {{ slug }}: what you learned</span> on <a href="/">Today</a>.</p>
 {%- else %}
-<div class="blocks small">
-{%- for l in lines %}
-<div class="blk"><span class="muted mono">{{ l.day }}</span><span>{{ l.text }}</span>{% if let Some(k) = l.epic_key %}<a href="/epics/{{ k }}"><span class="chip key">{{ k }}</span></a>{% endif %}</div>
+<div class="blocks">
+{%- for row in lines %}{% let editable = false %}
+{%- include "partials/entry_row.html" %}
 {%- endfor %}
 </div>
 {%- endif %}
