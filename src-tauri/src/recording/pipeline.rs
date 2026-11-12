@@ -131,10 +131,10 @@ impl Pipeline {
     }
 }
 
-/// The prompt's own words echoed at a window start (`Glossary: …`, a leading `-`) are not speech.
+/// The prompt's own words echoed at a window start (`Glossary: …`, a made-up `word:`, a leading `-`) are not speech.
 fn clean(t: &str) -> String {
-    let t = t.trim();
-    let t = t.strip_prefix("Glossary:").unwrap_or(t);
+    // Any one-word `label:` whisper made up (`Glossary:`, and on Thai `เมื่อ:` / `กลับ:`), same rule as on read.
+    let t = atharu::domain::echo::strip_label(t.trim());
     t.trim_start_matches(['-', ':', ' ']).trim().to_string()
 }
 
