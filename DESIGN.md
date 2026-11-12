@@ -431,6 +431,10 @@ the log scrolls under it.
 - **Recording in the meeting card** (app only, same rules as the banner): model ready + not recording → **Record** ghost pill
   before End meeting; live → the card's dot turns `.dot.rec`, the line reads "Recording · 0:42", **Stop** (meeting keeps running);
   finishing → "Transcribing…". The browser shows none of it.
+- **Series menu** (T93): the start box opens the capture bar's opaque menu below it on focus, "Recent series" (up to 12),
+  filtered as you type; ↑↓ selects (nothing preselected, so ↵ on a typed new name starts that name), ↵ / Tab / click picks
+  and starts at once; names clip with the full one on hover. Replaced the 3 series pills (a long name took a row and pushed
+  the to-dos out of the window). No JS: a `<datalist>`.
 - **Record audio on start** (app only): the shared `.recopt` switch under the Start row, off every time; on → "Tell people
   you're recording." in ink. One switch serves both the series pills and the name box (pills carry a hidden `record` the switch
   enables). No model → disabled + "Needs the speech model. Settings".

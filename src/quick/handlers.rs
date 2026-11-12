@@ -15,6 +15,8 @@ use serde::Deserialize;
 
 /// Recent series offered as one-click pills (and in the tray menu).
 pub const SERIES: usize = 3;
+/// The start box's series menu (T93): enough to find last month's, few enough to scan.
+const MENU_SERIES: usize = 12;
 /// To-do rows before "+ N more"; the rest of the 480 px window scrolls, but past 8 it's a list for /todos.
 const TODOS: usize = 8;
 
@@ -99,7 +101,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
             Some(id) => queries::meeting_name(&conn, id)?.map(|n| (id, n)),
             None => None,
         },
-        series: queries::recent_series(&conn, SERIES)?,
+        series: queries::recent_series(&conn, MENU_SERIES)?,
         overdue,
         due_today: all.len() - overdue,
         more: layout.open_plans - todos.len() as i64,

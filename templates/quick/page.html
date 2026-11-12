@@ -71,13 +71,20 @@
 <p class="small" role="status" style="margin: 0"><span class="tick" aria-hidden="true">✓</span> Ended <b>{{ ename }}</b> · <a href="/meetings/{{ eid }}">Open meeting</a></p>
 {%- endif %}
 <h2 class="qlbl" id="qm">Start a meeting</h2>
+{#- Existing series come from a menu under the box (the capture bar's `#` menu, T93): it opens on focus with the recent
+    ones, filters as you type, ↑↓ + ↵ / Tab or a click picks and starts. Without JS the datalist offers the same names. #}
+<div class="qfield qser">
+<form method="post" action="/meetings" class="fld m" id="qstart"><input type="hidden" name="back" value="/quick"><input id="qname" name="name" value="" placeholder="{% if series.is_empty() %}Name it, e.g. oms-sync{% else %}Pick a series or name a new one{% endif %}" aria-label="Meeting name" autocomplete="off" required list="qseries" role="combobox" aria-expanded="false" aria-controls="qsermenu" aria-autocomplete="list"><button class="btn ghost" type="submit">Start</button></form>
+<datalist id="qseries">{% for s in series %}<option value="{{ s }}"></option>{% endfor %}</datalist>
 {%- if !series.is_empty() %}
-<form method="post" action="/meetings" class="qpills"><input type="hidden" name="back" value="/quick">{#- Mirrors the switch below (one switch, two forms): disabled = not sent, since the server records on any `record`. #}<input type="hidden" id="qrec-p" name="record" value="1" disabled>{% for s in series %}<button class="btn ghost s" type="submit" name="name" value="{{ s }}">{{ s }}</button>{% endfor %}</form>
+<div id="qsermenu" class="menu" role="listbox" aria-label="Recent series" hidden><div class="mh" role="presentation">Recent series</div>
+{%- for s in series %}<div role="option" id="qser-{{ loop.index0 }}" aria-selected="false" data-name="{{ s }}" title="{{ s }}"><span class="ell">{{ s }}</span></div>{% endfor %}
+<div class="mf" role="presentation">↑↓ pick · ↵ start · Esc close</div></div>
 {%- endif %}
-<form method="post" action="/meetings" class="fld m" id="qstart"><input type="hidden" name="back" value="/quick"><input name="name" value="" placeholder="{% if series.is_empty() %}Name it, e.g. oms-sync{% else %}or a new name, e.g. vendor-call{% endif %}" aria-label="Meeting name" autocomplete="off" required><button class="btn ghost" type="submit">Start</button></form>
+</div>
 {%- if rec_app %}
 {#- Same switch as Today's start (D31): off every time, consent line in ink once on. #}
-<div class="recopt qrec"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="qstart" autocomplete="off"{% if !model_ready %} disabled{% endif %} onchange="document.getElementById('qrec-p').disabled = !this.checked" hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#qrecperm" hx-swap="innerHTML" hx-include="this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
+<div class="recopt qrec"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="qstart" autocomplete="off"{% if !model_ready %} disabled{% endif %} hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#qrecperm" hx-swap="innerHTML" hx-include="this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
 {%- if model_ready %}<span class="consent">Tell people you’re recording.</span>{% else %}<span class="muted">Needs the speech model.</span> <a href="/settings#transcription">Settings</a>{% endif %}</div>
 <div id="qrecperm"></div>
 {%- endif %}

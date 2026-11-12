@@ -22,12 +22,20 @@ async fn renders_the_three_sections_without_the_app_chrome() {
     ] {
         assert!(b.contains(want), "{want}");
     }
-    // Recent series by last use, three of them.
-    let pills: Vec<&str> = b
-        .match_indices("type=\"submit\" name=\"name\" value=\"")
-        .map(|(i, m)| b[i + m.len()..].split('"').next().unwrap())
+    // Recent series by last use, in the start box's menu (T93); four exist here, all listed.
+    let menu: Vec<&str> = b
+        .match_indices("role=\"option\" id=\"qser-")
+        .map(|(i, _)| {
+            b[i..]
+                .split("data-name=\"")
+                .nth(1)
+                .unwrap()
+                .split('"')
+                .next()
+                .unwrap()
+        })
         .collect();
-    assert_eq!(pills, ["1-on-1", "weekly-ops", "hiring"]);
+    assert_eq!(&menu[..3], ["1-on-1", "weekly-ops", "hiring"]);
     assert!(!b.contains("class=\"side"));
     assert!(!b.contains("responsive.css"));
 }
