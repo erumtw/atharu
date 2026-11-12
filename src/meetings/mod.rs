@@ -1,7 +1,7 @@
 //! Meeting mode: start/end (one at a time), `/meetings` by series, `/meetings/{id}` with its lines and notes,
 //! and the recordings the Mac app transcribes into it (T53).
 mod handlers;
-mod queries;
+pub(crate) mod queries;
 mod view;
 
 use crate::app::AppState;

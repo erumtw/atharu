@@ -11,6 +11,7 @@ use crate::{
         tags::{parse_list, tags as tags_in},
     },
     epics::queries as epics,
+    meetings::queries as meetings,
     notes::queries as notes,
     tags::queries as tags,
     today::queries as today,
@@ -26,19 +27,20 @@ use std::{
 pub mod update;
 
 /// `version` and `update` need no DB: main hands them to `update::run` before opening one.
-pub const COMMANDS: [&str; 9] = [
-    "log", "epic", "note", "evidence", "today", "show", "tags", "version", "update",
+pub const COMMANDS: [&str; 10] = [
+    "log", "epic", "note", "evidence", "today", "show", "meeting", "tags", "version", "update",
 ];
 
 /// The command table for `atharu help` and every usage error (CLI and `config`), so they can't drift.
 pub const HELP: &str = "usage: atharu [--db PATH] [command]
   atharu                                   serve http://127.0.0.1:7070 (ATHARU_HOST / ATHARU_PORT)
-  atharu log \"<line>\" [--day YYYY-MM-DD] [--note N] --as <agent>
+  atharu log \"<line>\" [--day YYYY-MM-DD] [--note N] [--meeting N] --as <agent>
   atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as <agent>
   atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
   atharu evidence <KEY|jira-url> <url> [--label …] --as <agent>
   atharu today [--day YYYY-MM-DD]
   atharu show <KEY|jira-url>
+  atharu meeting <N|latest>                meeting + its lines + transcript (for /meeting notes)
   atharu tags
   atharu dump                              write dump.sql next to the DB
   atharu version                           {version, tag, sha, built}
@@ -68,12 +70,12 @@ pub fn run(
         let (cmd, rest) = args.split_first().ok_or_else(|| usage("no command"))?;
         let (pos, flags) = split_args(rest)?;
         let allowed: &[&str] = match cmd.as_str() {
-            "log" => &["as", "day", "note"],
+            "log" => &["as", "day", "note", "meeting"],
             "epic" => &["as", "title", "okr", "tags"],
             "note" => &["as", "file", "links", "id"],
             "evidence" => &["as", "label"],
             "today" => &["day"],
-            "show" | "tags" => &[],
+            "show" | "tags" | "meeting" => &[],
             other => return Err(usage(format!("unknown command {other:?}"))),
         };
         if let Some(f) = flags.keys().find(|f| !allowed.contains(&f.as_str())) {
@@ -87,6 +89,7 @@ pub fn run(
                 &pos,
                 flag("day"),
                 flag("note"),
+                flag("meeting"),
                 agent(flag("as"), env_agent)?,
             ),
             "epic" => epic(
@@ -114,6 +117,7 @@ pub fn run(
             ),
             "today" => day(conn, today, &pos, flag("day")),
             "tags" => tag_list(conn, &pos),
+            "meeting" => meeting(conn, &pos),
             _ => show(conn, &pos),
         }
     })();
@@ -204,6 +208,7 @@ fn log(
     pos: &[String],
     day: Option<&str>,
     note: Option<&str>,
+    meeting: Option<&str>,
     author: &str,
 ) -> Result<Value, Fail> {
     // Unquoted words are one line, like typing them into the capture bar.
@@ -226,9 +231,16 @@ fn log(
             Some(json!({"id": id, "title": row.title}))
         }
     };
+    let meeting = match meeting {
+        None => None,
+        Some(m) => Some(meeting_id(conn, m)?),
+    };
     let (id, new_epic) = today::insert_entry(conn, &day, &e, author).map_err(db)?;
     if let Some(n) = &note {
         today::set_note(conn, id, n["id"].as_i64()).map_err(db)?;
+    }
+    if let Some(m) = meeting {
+        today::set_meeting(conn, id, m).map_err(db)?;
     }
     Ok(json!({
         "id": id,
@@ -241,7 +253,66 @@ fn log(
         "tags": tags_in(&e.text),
         "epic": e.epic_key.map(|k| json!({"key": k, "isNew": new_epic})),
         "note": note,
+        "meeting": meeting.map(|m| json!({"id": m})),
         "author": author,
+    }))
+}
+
+/// `N` or `latest` → an existing meeting's id (checked before anything is written).
+fn meeting_id(conn: &Connection, arg: &str) -> Result<i64, Fail> {
+    let id = if arg == "latest" {
+        meetings::latest(conn)
+            .map_err(db)?
+            .ok_or_else(|| Fail(1, "No meetings yet.".into()))?
+    } else {
+        arg.parse::<i64>()
+            .map_err(|_| usage(format!("meeting takes a number or ‘latest’, got ‘{arg}’")))?
+    };
+    meetings::meeting(conn, id)
+        .map_err(db)?
+        .ok_or_else(|| Fail(1, format!("No meeting {id}.")))?;
+    Ok(id)
+}
+
+/// One meeting for an LLM to write notes from: the meeting, what was logged in it, and its transcript(s), segments
+/// in time order with the mic's echo of the call already dropped. Read-only.
+fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
+    let id = meeting_id(conn, &one(pos, "meeting number or ‘latest’")?)?;
+    let m = meetings::meeting(conn, id).map_err(db)?.expect("checked");
+    let lines: Vec<Value> = meetings::lines(conn, id)
+        .map_err(db)?
+        .into_iter()
+        .map(|l| json!({"kind": l.kind.as_str(), "topic": l.topic, "text": l.text, "epic": l.epic_key.map(|k| json!({"key": k}))}))
+        .collect();
+    let plans: Vec<Value> = meetings::plans(conn, id)
+        .map_err(db)?
+        .into_iter()
+        .map(|p| json!({"id": p.id, "text": p.text, "state": p.state, "due": p.due.map(dates::iso), "epic": p.epic_key.map(|k| json!({"key": k}))}))
+        .collect();
+    let transcripts: Vec<Value> = meetings::transcripts(conn, id)
+        .map_err(db)?
+        .into_iter()
+        .map(|t| {
+            json!({
+                "id": t.id,
+                "startedAt": t.started_at,
+                "endedAt": t.ended_at,
+                "status": t.status,
+                "model": t.model,
+                "lang": t.lang,
+                "segments": t.segments.into_iter().map(|(t, speaker, text)| json!({"t": t, "speaker": speaker, "text": text})).collect::<Vec<_>>(),
+            })
+        })
+        .collect();
+    Ok(json!({
+        "id": id,
+        "day": m.day,
+        "name": m.name,
+        "notes": m.notes,
+        "endedAt": m.ended_at,
+        "lines": lines,
+        "plans": plans,
+        "transcripts": transcripts,
     }))
 }
 

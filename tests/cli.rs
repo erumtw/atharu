@@ -359,3 +359,71 @@ async fn note_and_evidence_write_only_as_the_agent() {
         page.contains("https://github.com/acme/pr/7") && page.contains("title=\"Filed by claude\"")
     );
 }
+
+#[tokio::test]
+async fn meeting_reads_the_transcript_and_log_files_under_it() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO meetings(id, day, name, ended_at) VALUES (1, '2026-11-11', 'oms-sync', '2026-11-11 10:30:00');
+         INSERT INTO meetings(id, day, name) VALUES (2, '2026-11-11', 'vendor-call');
+         INSERT INTO meeting_transcripts(meeting_id, started_at, ended_at, status, model, lang, segments)
+         VALUES (1, '2026-11-11 10:00:00', '2026-11-11 10:30:00', 'done', 'large-v3-turbo', 'th',
+           '[{\"t\":20,\"speaker\":\"me\",\"text\":\"we ship on friday then\"},
+             {\"t\":3,\"speaker\":\"others\",\"text\":\"we ship on friday then\"},
+             {\"t\":9,\"speaker\":\"me\",\"text\":\"sounds good\"}]');",
+    );
+    let (code, out, _) = cli(&st, &["meeting", "1"], None);
+    assert_eq!(code, 0);
+    let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(v["name"], "oms-sync");
+    // Time order, and the mic's copy of the call's line is gone.
+    let segs: Vec<(&str, &str)> = v["transcripts"][0]["segments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| (s["speaker"].as_str().unwrap(), s["text"].as_str().unwrap()))
+        .collect();
+    assert_eq!(
+        segs,
+        [("others", "we ship on friday then"), ("me", "sounds good")]
+    );
+    assert_eq!(cli(&st, &["meeting", "latest"], None).0, 0);
+    assert_eq!(cli(&st, &["meeting", "9"], None).0, 1);
+
+    // Meeting 2 is running, but --meeting 1 files the decision under the ended one.
+    let (code, out, _) = cli(
+        &st,
+        &[
+            "log",
+            "! ship on friday",
+            "--meeting",
+            "1",
+            "--as",
+            "claude",
+        ],
+        None,
+    );
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM entries WHERE meeting_id = 1 AND kind = 'decision' AND author = 'claude'"
+        ),
+        1
+    );
+    // A missing meeting files nothing.
+    assert_eq!(
+        cli(
+            &st,
+            &["log", "! nope", "--meeting", "9", "--as", "claude"],
+            None
+        )
+        .0,
+        1
+    );
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM entries WHERE text = 'nope'"),
+        0
+    );
+}

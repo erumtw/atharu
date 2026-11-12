@@ -196,6 +196,16 @@ pub fn set_note(conn: &Connection, id: i64, note: Option<i64>) -> rusqlite::Resu
     Ok(())
 }
 
+/// Files a line under meeting `meeting` (CLI `log --meeting`: /meeting notes for a meeting that already ended,
+/// or while another one runs; insert_entry alone takes the running one).
+pub fn set_meeting(conn: &Connection, id: i64, meeting: i64) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE entries SET meeting_id = ?1 WHERE id = ?2",
+        params![meeting, id],
+    )?;
+    Ok(())
+}
+
 /// The line as grammar text, for the inline edit box: (day, line).
 pub fn entry_line(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String, String)>> {
     conn.query_row(

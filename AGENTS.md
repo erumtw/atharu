@@ -69,12 +69,13 @@ Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No serv
 `data/atharu.db` (`--db PATH` before the command, or `ATHARU_DB`, picks another file).
 
 ```sh
-atharu log "<line>" [--day YYYY-MM-DD] [--note N] --as claude  # one line, same grammar as above
+atharu log "<line>" [--day YYYY-MM-DD] [--note N] [--meeting N] --as claude  # one line, same grammar as above
 atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as claude  # upsert; key from …/browse/ABC-123
 atharu note "<title>" [--file PATH] [--links a,b] [--id N] --as claude  # agent note; body from stdin without --file
 atharu evidence <KEY|jira-url> <url> [--label …] --as claude  # impact link on an existing epic, http(s) only
 atharu today [--day YYYY-MM-DD]                             # that day's lines + open plans
 atharu show <KEY|jira-url>                                  # epic + evidence + timeline
+atharu meeting <N|latest>                                   # meeting + its lines/plans + transcript segments (read-only)
 atharu tags                                                 # {tags: [{tag, count, lastUsed}]}, most used first
 atharu version                                              # {version, tag, sha, built}; tag null on a dev build; no DB
 atharu update [--app] [--docker]                            # owner's tool: newest release tag vX.Y.Z via scripts/install.sh, else {upToDate}
@@ -85,6 +86,8 @@ atharu help                                                 # this table (also -
 - Every write needs `--as <agent>` or `ATHARU_AGENT=<agent>`: a lowercase slug (`claude`, `codex`). `me` is refused.
 - `epic` never overwrites a field the owner set: it only fills an empty title / OKR / tags.
 - `log` / `note` tag from their text (`#tag`); the JSON echoes `tags`. A line also counts under its epic's tags.
+- `log --meeting N` files the line under meeting N (refused with exit 1 if none); without it a line goes to the
+  running meeting, if any. `/meeting` uses it to write up a recording after the meeting ended.
 - `log --note N` links the line to existing note N (its detail page; refused with exit 1 if there is no such note).
 - `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`.
   `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
@@ -96,7 +99,7 @@ atharu help                                                 # this table (also -
   (`Say who is writing: --as claude`).
 - What you file shows in the app with your name as a badge, and the report marks it `(via claude)`.
 
-Prompts for the common jobs: `.claude/commands/{log,query,lint,ingest}.md`.
+Prompts for the common jobs: `.claude/commands/{log,query,lint,ingest,meeting}.md`.
 
 ## UI work: always DESIGN.md
 
