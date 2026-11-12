@@ -19,11 +19,18 @@ pub struct TrayMenu {
     pub running: Option<(i64, String)>,
     /// Else the recent series to start.
     pub series: Vec<String>,
+    /// The running meeting is being recorded (tray icon state).
+    pub recording: bool,
 }
 
 pub fn tray_menu(conn: &Connection) -> rusqlite::Result<TrayMenu> {
+    let running = queries::running(conn)?.map(|r| (r.id, r.name));
     Ok(TrayMenu {
-        running: queries::running(conn)?.map(|r| (r.id, r.name)),
+        recording: match &running {
+            Some((id, _)) => queries::recording(conn, *id)?,
+            None => false,
+        },
+        running,
         series: queries::recent_series(conn, handlers::SERIES)?,
     })
 }

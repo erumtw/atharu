@@ -111,6 +111,17 @@ pub fn run() {
             });
             quick(app.handle(), &url)?;
             tray(app.handle())?;
+            tray_state(app.handle());
+            // Meetings also start / end / record from a browser on the shared DB (D52), with no request
+            // through this app, so the icon polls too (one cheap query every 2 s).
+            let h = app.handle().clone();
+            std::thread::spawn(move || {
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    let h2 = h.clone();
+                    let _ = h.run_on_main_thread(move || tray_state(&h2));
+                }
+            });
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -285,7 +296,9 @@ fn tray(handle: &AppHandle) -> tauri::Result<()> {
 
 /// Right-click menu: Open Atharu · Start meeting › recent series (or End meeting · name) · Quit.
 fn tray_menu(h: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
-    let atharu::quick::TrayMenu { running, series } = {
+    let atharu::quick::TrayMenu {
+        running, series, ..
+    } = {
         let st = h.state::<app::AppState>();
         let conn = st.conn();
         atharu::quick::tray_menu(&conn).unwrap_or_default()
@@ -309,6 +322,40 @@ fn refresh_menu(h: &AppHandle) {
     if let (Some(tray), Ok(menu)) = (h.tray_by_id("main"), tray_menu(h)) {
         let _ = tray.set_menu(Some(menu));
     }
+    tray_state(h);
+}
+
+/// Tray icon state: 0 idle, 1 meeting running, 2 recording. Only a change touches the icon.
+static TRAY_STATE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+/// Menu-bar icon shows the meeting state: a badge dot while a meeting runs, the whole mark red while recording.
+/// Red can't be a template image (macOS would tint it), so that one is drawn in #ff3b30, readable on light and dark bars.
+fn tray_state(h: &AppHandle) {
+    let (state, tip) = {
+        let st = h.state::<app::AppState>();
+        let m = atharu::quick::tray_menu(&st.conn()).unwrap_or_default();
+        match m.running {
+            Some((_, name)) if m.recording => (2, format!("Atharu · Recording · {name}")),
+            Some((_, name)) => (1, format!("Atharu · Meeting · {name}")),
+            None => (0, "Atharu".to_string()),
+        }
+    };
+    if TRAY_STATE.swap(state, std::sync::atomic::Ordering::Relaxed) == state {
+        return;
+    }
+    let Some(tray) = h.tray_by_id("main") else {
+        return;
+    };
+    let bytes: &[u8] = match state {
+        2 => include_bytes!("../icons/tray-rec.png"),
+        1 => include_bytes!("../icons/tray-meeting.png"),
+        _ => include_bytes!("../icons/tray.png"),
+    };
+    if let Ok(img) = Image::from_bytes(bytes) {
+        let _ = tray.set_icon(Some(img));
+        let _ = tray.set_icon_as_template(state != 2);
+    }
+    let _ = tray.set_tooltip(Some(tip));
 }
 
 fn show(app: &AppHandle) {
