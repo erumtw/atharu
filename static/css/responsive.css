@@ -129,3 +129,20 @@ pre{max-width:100%;overflow-x:auto}
 }
 
 @media (prefers-reduced-transparency: reduce){.side:popover-open,.acts:popover-open{backdrop-filter:none;-webkit-backdrop-filter:none}}
+
+/* Phone (< 640): a bottom sheet like the ⋯ sheet: grabber, 44 px days, 17 px type, Done commits (a tap only selects). */
+@media (max-width:639px){
+  .dp{position:fixed;inset:auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;margin:0;z-index:6;border-radius:22px;padding:8px 12px 12px;gap:8px;
+    box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
+  .dp::backdrop{background:rgba(20,20,30,.24)}
+  /* Grabber: decoration (the sheet also closes on a backdrop tap, Esc, or a swipe down). */
+  .dp::before{content:"";align-self:center;width:36px;height:5px;border-radius:9999px;background:rgba(0,0,0,.2);margin-bottom:2px}
+  .dp .dph h2{font-size:17px}
+  /* display:table: responsive.css makes phone tables scroll blocks. */
+  .dp table{display:table;width:calc(100% + 4px);table-layout:fixed}
+  .dp th{font-size:12px}
+  .dp td.d{width:auto;height:44px;font-size:17px}
+  .dp .dpf{font-size:16px;padding:8px 4px 0}
+  .dp .dpf .today{margin-left:0}
+  .dp .dpf .done{display:inline-flex;height:44px;margin-left:auto}
+}

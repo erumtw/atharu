@@ -147,7 +147,7 @@ input[list]::-webkit-calendar-picker-indicator{display:none !important}
 /* display:block above beats the UA [hidden] rule, so the mounted editor's textarea stayed visible. */
 .note-md[hidden]{display:none}
 /* Day nav: one glass capsule, Today | ‹ | date ▾ | ›, hairlines between. The date is a native date input laid over
-   its label, so a click opens the OS picker and the keyboard still types a date. */
+   its label, so a click opens the date popover (.dp; no JS: the OS picker). */
 .dnav{--s:10%;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;border-radius:9999px;border:1px solid var(--glass-edge);overflow:hidden;font-size:13px;flex:none;
   backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06)}
 .dnav>*{display:inline-flex;align-items:center;gap:6px;height:100%;padding:0 12px;margin:0;line-height:1;text-decoration:none;position:relative;box-sizing:border-box}
@@ -404,3 +404,46 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* Rendered but off-screen: a form's default (Enter) button must be laid out to count. */
 .vh{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 @media (prefers-contrast: more){.chip.tag{color:var(--ink)}.tagask,.chip.tag.inh{border-color:var(--ink)}.chip.tag::before{color:var(--accent-2)}}
+
+/* Date picker (D38, DESIGN.md §6): one shared popover for every input[type=date], built by datepicker.js; the input stays the
+   value carrier. "menu" brings the whole Liquid Glass recipe (rim, light, shadow, lens, RT/IC, --muted-tint), so looks.css needs no
+   edit. A top-layer popover: fixed to the viewport, placed by the script (phone: the sheet below). */
+.dp{position:fixed;inset:auto;margin:0}
+/* Floor 85%, not the menus' 60%: a month is 42 small numbers plus an accent ring and accent links. Measured (T75, half-covered ink
+   pixel behind / darkest veiled wallpaper, each look at its glass floor): ink ≥ 13.58, --muted-tint ≥ 7.34, --accent ≥ 4.57 (Sumi,
+   phone sheet over the backdrop dim), white on --accent 5.57 (7.12 tinted). At 60% --accent fell to 3.18. */
+.dp{--lg-min:85%;width:auto;padding:10px;border-radius:18px;gap:6px;font-variant-numeric:tabular-nums}
+.dp .dph{display:flex;align-items:center;gap:2px;padding-left:8px}
+.dp .dph h2{margin:0 auto 0 0;font-size:15px;font-weight:600;letter-spacing:-.2px;line-height:1}
+/* Hover = the .ib tint, not .dnav's white lift: at the 85% floor a white .6 lift is invisible (measured on the board). */
+.dp td.d:not([aria-disabled=true],[aria-selected=true]):hover{background:rgba(0,0,0,.05)}
+.dp table{border-collapse:separate;border-spacing:2px;margin:0 -2px;width:auto}
+/* Undo base.css table rules: row hairlines and the whole-row hover. */
+.dp :is(th,td){border:0;white-space:nowrap}.dp tr:hover td{background:none}
+/* Weekday row 11/600 in --muted (= --muted-tint on glass, 7.34). */
+.dp th{height:24px;padding:0;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0;text-align:center}
+.dp td.d{width:36px;height:36px;padding:0;border-radius:9999px;text-align:center;vertical-align:middle;font-size:14px;line-height:1;color:var(--ink);cursor:pointer}
+/* Out of month: --muted, not --faint (--faint is 1.74 here). Clickable: picks the day and flips the month. */
+.dp td.d.out{color:var(--muted)}
+/* Today = accent ring (non-text 4.57 ≥ 3) + accent number; the input's value = accent fill, white 600. Selected wins over today. */
+.dp td.d[aria-current=date]{color:var(--accent);font-weight:600;box-shadow:inset 0 0 0 1.5px var(--accent)}
+/* --accent on the hover tint is 4.10: today's number steps to --accent-2 (5.15) while hovered. */
+.dp td.d[aria-current=date]:hover{color:var(--accent-2)}
+/* td.d[…] outranks .menu [aria-selected=true] (the menus' --accent-wash). */
+.dp td.d[aria-selected=true]{background:var(--accent);color:#fff;font-weight:600;box-shadow:none}
+.dp td.d[aria-selected=true]:hover{background:var(--accent-2)}
+/* Roving tabindex: one cell has tabindex=0. Ring outside the circle, so it also shows on the accent fill. */
+.dp td.d:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* Out of range (e.g. an epic target before its start): the control rule's disabled look; AA exempt (inactive). */
+.dp td.d[aria-disabled=true]{opacity:.45;cursor:not-allowed}
+.dp .dpf{display:flex;align-items:center;gap:16px;padding:8px 8px 2px;border-top:1px solid rgba(0,0,0,.06);font-size:13px}
+.dp .dpf .today{margin-left:auto}
+.dp .dpf .done{display:none}
+/* Month switch: the new month slides 8px in from the side it came from. */
+.dp tbody.nx{animation:dp-nx .16s ease-out}.dp tbody.pv{animation:dp-pv .16s ease-out}
+@keyframes dp-nx{from{opacity:0;transform:translateX(8px)}}
+@keyframes dp-pv{from{opacity:0;transform:translateX(-8px)}}
+@media (prefers-reduced-motion: reduce){.dp tbody{animation:none}}
+/* Reduce Transparency needs nothing here: looks.css turns .menu solid white + hairline. Increase Contrast: */
+@media (prefers-contrast: more){.dp th,.dp td.d.out{color:var(--muted-hc)}
+  .dp td.d[aria-current=date]{box-shadow:inset 0 0 0 2px var(--accent)}}
