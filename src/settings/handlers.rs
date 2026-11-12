@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    build_info,
+    build_info, config,
     domain::look::{self, LOOKS},
     error::AppResult,
     layout::Layout,
@@ -13,11 +13,17 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Deserialize;
+use std::path::PathBuf;
 
 pub async fn page(State(st): State<AppState>) -> AppResult<Response> {
     let conn = st.conn();
-    let layout = Layout::load(&conn, "settings", "Settings", vec![])?;
-    web::html(&view::Page {
+    let db = db_row(&conn, None, None)?;
+    web::html(&full(&st, &conn, db)?)
+}
+
+fn full(st: &AppState, conn: &rusqlite::Connection, db: view::Db) -> AppResult<view::Page> {
+    let layout = Layout::load(conn, "settings", "Settings", vec![])?;
+    Ok(view::Page {
         cur: look::pick(Some(layout.look)),
         layout,
         looks: &LOOKS,
@@ -29,6 +35,93 @@ pub async fn page(State(st): State<AppState>) -> AppResult<Response> {
         ),
         sha: build_info::SHA,
         built: build_info::BUILT,
+        db,
+    })
+}
+
+/// Settings key set once the "old Mac DB isn't merged" note is dismissed.
+const DB_NOTE_SEEN: &str = "db_note_seen";
+
+fn pointer() -> Option<PathBuf> {
+    std::env::var_os(config::DB_POINTER_ENV).map(PathBuf::from)
+}
+
+fn home() -> Option<PathBuf> {
+    std::env::var_os("HOME").map(PathBuf::from)
+}
+
+/// The Database file rows; `input` + `error` carry a rejected path back into the field.
+fn db_row(
+    conn: &rusqlite::Connection,
+    input: Option<String>,
+    error: Option<String>,
+) -> AppResult<view::Db> {
+    let path = queries::db_file(conn)?;
+    let path = if path.is_empty() {
+        "In memory".into()
+    } else {
+        path
+    };
+    let pointer = pointer();
+    let next = pointer
+        .as_ref()
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+    Ok(view::Db {
+        change: pointer.is_some(),
+        pending: next.as_ref().is_some_and(|n| *n != path),
+        note: pointer.is_some() && queries::get(conn, DB_NOTE_SEEN)?.is_none(),
+        input: input.or(next).unwrap_or_else(|| path.clone()),
+        path,
+        error,
+    })
+}
+
+#[derive(Deserialize)]
+pub struct DbForm {
+    path: String,
+}
+
+/// Mac app only (the pointer env): check the path, write the pointer, show "Restart Atharu to switch".
+/// The open connection stays: switching under live requests is what the restart avoids.
+pub async fn save_db(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<DbForm>,
+) -> AppResult<Response> {
+    let Some(ptr) = pointer() else {
+        return Ok((
+            StatusCode::NOT_FOUND,
+            "Only the Mac app can change its database.",
+        )
+            .into_response());
+    };
+    let checked = config::check_db_path(&f.path, home().as_deref()).and_then(|db| {
+        config::write_db_pointer(&ptr, &db).map_err(|e| format!("Couldn't save the path: {e}."))
+    });
+    let conn = st.conn();
+    let Err(e) = checked else {
+        return if web::is_htmx(&headers) {
+            web::html(&db_row(&conn, None, None)?)
+        } else {
+            Ok(web::back("/settings"))
+        };
+    };
+    let row = db_row(&conn, Some(f.path), Some(e))?;
+    if web::is_htmx(&headers) {
+        return web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &row);
+    }
+    web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &full(&st, &conn, row)?)
+}
+
+/// "Got it" on the one-time note: htmx drops the row (empty 200), a plain form goes back.
+pub async fn db_note_seen(State(st): State<AppState>, headers: HeaderMap) -> AppResult<Response> {
+    queries::set(&st.conn(), DB_NOTE_SEEN, "1")?;
+    Ok(if web::is_htmx(&headers) {
+        "".into_response()
+    } else {
+        web::back("/settings")
     })
 }
 

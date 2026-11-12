@@ -1,6 +1,11 @@
 //! Atharu.app (T18, D7): a Tauri 2 shell that runs the same axum router in-process and points one
 //! system-WebView window at it. No Tauri IPC: the pages stay plain HTTP + htmx, like `cargo run`.
-use atharu::{app, config::FileConfig, db, layout::Layout};
+use atharu::{
+    app,
+    config::{self, FileConfig},
+    db,
+    layout::Layout,
+};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
@@ -71,7 +76,20 @@ pub fn run() {
                 )
                 .initialization_script("document.documentElement.dataset.app = 'mac'")
                 // Jira / PR / Slack links belong in the real browser, not inside the app window.
-                .on_navigation(|url| !to_browser(url))
+                // Settings › About's Restart links here after a DB change: the new DB opens only at start.
+                .on_navigation({
+                    let h = app.handle().clone();
+                    move |url| {
+                        if to_browser(url) {
+                            return false;
+                        }
+                        if url.path() == "/app/restart" {
+                            h.request_restart();
+                            return false;
+                        }
+                        true
+                    }
+                })
                 .on_new_window(|url, _| {
                     if to_browser(&url) {
                         tauri::webview::NewWindowResponse::Deny
@@ -117,12 +135,17 @@ fn to_browser(url: &tauri::Url) -> bool {
 
 /// Open the DB, start axum on a free 127.0.0.1 port, set the Dock icon; returns the window URL.
 fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
-    // Same precedence as `cargo run`: ATHARU_DB wins, else the app's own folder (not ./data, which is
-    // wherever Finder launched us from).
-    let db_path = match std::env::var_os("ATHARU_DB") {
-        Some(p) => PathBuf::from(p),
-        None => handle.path().app_data_dir()?.join("atharu.db"),
-    };
+    // Not ./data like `cargo run` (that is wherever Finder launched us from): see config::resolve_db (D52).
+    let app_dir = handle.path().app_data_dir()?;
+    let pointer = app_dir.join(config::DB_POINTER);
+    let db_path = config::resolve_db(
+        std::env::var_os("ATHARU_DB").map(PathBuf::from),
+        &app_dir,
+        handle.path().home_dir().ok().as_deref(),
+    );
+    // SAFETY: setup runs on the main thread before the server starts; nothing of ours reads the env yet.
+    // A restart inherits it unchanged, which is the same path again.
+    unsafe { std::env::set_var(config::DB_POINTER_ENV, &pointer) };
     let conn = db::open(&db_path)?;
     let mut state = app::AppState::new(conn);
     if let Some(dir) = db_path.parent() {
