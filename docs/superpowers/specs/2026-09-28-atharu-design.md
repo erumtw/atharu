@@ -1,4 +1,4 @@
-# Athar (أثر) — design
+# Atharu (أثر) — design
 
 2026-09-28 · status: approved in chat, pending spec review
 
@@ -42,19 +42,19 @@ Phase 1 grammar already parses all prefixes (`>` and `?` saved as entries); thei
 
 2026-11-11: Go → Rust (owner's choice: learning Rust is part of the point). Same shape: one binary, server-rendered.
 
-- one Rust binary `athar`, serves `http://localhost:7070`
+- one Rust binary `atharu`, serves `http://localhost:7070`
 - crates: `axum` (HTTP) · `askama` (Jinja-style templates, checked at compile time) · `rusqlite` with `bundled` (SQLite compiled in) · `rust-embed` (templates + CSS + htmx in the binary) · `pulldown-cmark` (phase 4 only, raw HTML off)
 - frontend = the wireframe canvas's own HTML/CSS ported to askama templates → design parity by construction; no CSS framework, no JS build
 - `htmx` (one vendored file, ~14 KB) for no-reload actions: log line, delete/undo, plan check/pin/drop, property autosave (`hx-trigger="change"`, Notion-style, no Save button); every action still works as a plain `<form>` POST without JS
 - other JS: copy-to-clipboard · `editor.js` (Tiptap, notes page only, P4)
 - heatmap / sparkline = CSS, no chart lib
 - design: canvas https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ (Apple DESIGN.md look + Liquid Glass on floating chrome, Notion UX patterns)
-- DB path: `./data/athar.db` (flag `-db` overrides), created + migrated on start
+- DB path: `./data/atharu.db` (flag `-db` overrides), created + migrated on start
 - `data/` gitignored — DB holds Freshket work data (epic keys, metrics); never pushed
 
 Subcommands:
-- `athar` → serve
-- `athar dump` → SQL dump to `data/dump.sql` (backup; stays local unless user opts in)
+- `atharu` → serve
+- `atharu dump` → SQL dump to `data/dump.sql` (backup; stays local unless user opts in)
 
 ## Data model
 
@@ -241,13 +241,13 @@ Report adds: heatmap topics × months (cell = latest depth as of month end, blan
 Borrowed from Karpathy's LLM Wiki pattern (LLM maintains a linked wiki from sources, guided by a schema file), with one inversion: **the LLM never writes my understanding.** Depth tracking only means something if `topics.summary`, `own_words` and `depth_ratings` are mine.
 
 - LLM = a Claude Code session in this repo, not an API call from the binary → no key, no new dep, no code
-- `CLAUDE.md` in repo = the schema file: tables, grammar, and the write rules below; LLM reads the DB with `sqlite3 data/athar.db`
+- `CLAUDE.md` in repo = the schema file: tables, grammar, and the write rules below; LLM reads the DB with `sqlite3 data/atharu.db`
 - write rules:
 
 | LLM may | LLM must not |
 |---|---|
 | read everything | write `topics`, `depth_ratings` |
-| write `entries`, `epics` **only through the `athar` CLI**, tagged with its own name (see Agent access) | write any table with raw SQL |
+| write `entries`, `epics` **only through the `atharu` CLI**, tagged with its own name (see Agent access) | write any table with raw SQL |
 | insert/update `notes` with `author=<its name>` | edit or delete `author='me'` rows |
 | suggest `[[X]]` links in chat for my notes | rate depth or write "own words" |
 
@@ -262,15 +262,15 @@ Operations (each = a `.claude/commands/*.md` prompt, no app code):
 
 **Agent access (P4, added 2026-11-11 by user)** — so Claude, Codex or any coding agent can file work for me, e.g. I paste an epic link and it does the rest
 - CLI subcommands on the same binary, same parser + queries as the web (one validation path), no server needed, no new crate:
-  - `athar log "<line>" [--day YYYY-MM-DD]` → same grammar as the capture bar; prints the saved row as one JSON line
-  - `athar epic <KEY|jira-url> [--title …] [--okr …]` → upsert epic (key from `…/browse/ABC-123`); never overwrites a field I set
-  - `athar today [--day]` · `athar show <KEY>` → JSON on stdout for reading
-  - core set only (2026-11-11): `log` already covers to-dos (`>`), learn (`?`) and every line kind via the grammar. Not in the CLI yet: evidence, to-do done/pin/drop, meetings, topics, notes, events, report. An agent asked for one of those says "athar has no command for that yet" and suggests the command; it never falls back to raw SQL writes. Add a command when an instruction actually needs it.
+  - `atharu log "<line>" [--day YYYY-MM-DD]` → same grammar as the capture bar; prints the saved row as one JSON line
+  - `atharu epic <KEY|jira-url> [--title …] [--okr …]` → upsert epic (key from `…/browse/ABC-123`); never overwrites a field I set
+  - `atharu today [--day]` · `atharu show <KEY>` → JSON on stdout for reading
+  - core set only (2026-11-11): `log` already covers to-dos (`>`), learn (`?`) and every line kind via the grammar. Not in the CLI yet: evidence, to-do done/pin/drop, meetings, topics, notes, events, report. An agent asked for one of those says "atharu has no command for that yet" and suggests the command; it never falls back to raw SQL writes. Add a command when an instruction actually needs it.
   - errors → exit 1 + the same copy as the States board on stderr
-- every write needs `--as <agent>` (or env `ATHAR_AGENT`), lowercase slug (`claude`, `codex`, …); missing → exit 2 "Say who is writing: --as claude". `me` is refused from the CLI's agent flag so an agent can't pose as me.
+- every write needs `--as <agent>` (or env `ATHARU_AGENT`), lowercase slug (`claude`, `codex`, …); missing → exit 2 "Say who is writing: --as claude". `me` is refused from the CLI's agent flag so an agent can't pose as me.
 - migration 002: `author TEXT NOT NULL DEFAULT 'me'` on `entries`, `epics`, `evidence`; `notes.author` CHECK widened to `'me'` or a slug (rebuild the empty table)
 - UI: small badge with the agent name on its rows (Today, epic timeline, evidence); report note marks agent-filed lines `(via claude)` so the copy stays honest
-- `CLAUDE.md` + `AGENTS.md` (same content, for Codex) document the commands; `.claude/commands/log.md` = "paste anything → turn it into `athar log/epic/evidence` calls, show what was saved"
+- `CLAUDE.md` + `AGENTS.md` (same content, for Codex) document the commands; `.claude/commands/log.md` = "paste anything → turn it into `atharu log/epic/evidence` calls, show what was saved"
 
 Deterministic checks (stale topic, unrated topic, dead `[[X]]`) stay in Rust on `/learn` + `/notes`; the LLM only does what needs judgment (duplicates, contradictions).
 
@@ -354,5 +354,5 @@ personal-tracker/
   tests/               HTTP tests per feature, in-memory SQLite
   CLAUDE.md            schema + LLM write rules (P4)
   .claude/commands/{query,lint,ingest}.md   (P4)
-  data/                gitignored: athar.db, config.toml
+  data/                gitignored: atharu.db, config.toml
 ```

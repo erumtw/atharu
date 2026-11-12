@@ -1,7 +1,7 @@
 mod common;
 use common::*;
 
-fn seed(st: &athar::app::AppState) {
+fn seed(st: &atharu::app::AppState) {
     exec(
         st,
         "INSERT INTO epics(key, title, okr, target) VALUES

@@ -14,3 +14,10 @@
 - **{{ i.label }}** {{ i.text }}{% if let Some(m) = i.meeting %} ({{ m }}){% endif %}
 {%- endfor %}
 {%- endfor %}
+{%- if !note.learning.is_empty() %}
+
+## Learning
+{%- for l in note.learning %}
+- {{ l }}
+{%- endfor %}
+{%- endif %}

@@ -104,3 +104,12 @@ pub fn meetings_count(conn: &Connection, from: &str, to: &str) -> rusqlite::Resu
         |r| r.get(0),
     )
 }
+
+/// Every rating up to `to`: (topic, day, depth), per topic oldest first.
+pub fn ratings(conn: &Connection, to: &str) -> rusqlite::Result<Vec<(String, String, u8)>> {
+    let mut stmt = conn.prepare(
+        "SELECT topic, day, depth FROM depth_ratings WHERE day <= ?1 ORDER BY topic, day, rowid",
+    )?;
+    stmt.query_map([to], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+        .collect()
+}

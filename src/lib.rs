@@ -1,4 +1,4 @@
-//! athar: a personal work log served on localhost. Library crate so `tests/` can drive the router.
+//! atharu: a personal work log served on localhost. Library crate so `tests/` can drive the router.
 pub mod app;
 pub mod config;
 pub mod db;
@@ -7,6 +7,7 @@ pub mod dump;
 pub mod epics;
 pub mod error;
 pub mod layout;
+pub mod learn;
 pub mod meetings;
 pub mod report;
 pub mod today;

@@ -17,7 +17,7 @@ RUN touch src/main.rs src/lib.rs && cargo build --release
 RUN mkdir /data-empty
 FROM gcr.io/distroless/cc-debian12:nonroot
 WORKDIR /app
-COPY --from=build /src/target/release/athar /usr/local/bin/athar
+COPY --from=build /src/target/release/atharu /usr/local/bin/atharu
 COPY --from=build --chown=65532:65532 /data-empty /app/data
 EXPOSE 7070
-CMD ["/usr/local/bin/athar"]
+CMD ["/usr/local/bin/atharu"]

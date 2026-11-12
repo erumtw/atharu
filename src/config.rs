@@ -12,17 +12,17 @@ pub struct Config {
 }
 
 impl Config {
-    /// Env (`ATHAR_HOST` / `ATHAR_PORT` / `ATHAR_DB`) sets defaults; `--db PATH` wins over env.
+    /// Env (`ATHARU_HOST` / `ATHARU_PORT` / `ATHARU_DB`) sets defaults; `--db PATH` wins over env.
     pub fn from_env_and_args(
         args: impl Iterator<Item = String>,
     ) -> Result<(Command, Config), String> {
         let env = |k: &str, d: &str| std::env::var(k).unwrap_or_else(|_| d.to_string());
         let mut cfg = Config {
-            host: env("ATHAR_HOST", "127.0.0.1"),
-            port: env("ATHAR_PORT", "7070")
+            host: env("ATHARU_HOST", "127.0.0.1"),
+            port: env("ATHARU_PORT", "7070")
                 .parse()
-                .map_err(|_| "ATHAR_PORT must be a port number".to_string())?,
-            db: PathBuf::from(env("ATHAR_DB", "data/athar.db")),
+                .map_err(|_| "ATHARU_PORT must be a port number".to_string())?,
+            db: PathBuf::from(env("ATHARU_DB", "data/atharu.db")),
         };
         let mut cmd = Command::Serve;
         let mut args = args;
@@ -32,7 +32,7 @@ impl Config {
                 "-db" | "--db" => cfg.db = args.next().ok_or("--db needs a path")?.into(),
                 other => {
                     return Err(format!(
-                        "unknown argument {other:?}; usage: athar [dump] [--db PATH]"
+                        "unknown argument {other:?}; usage: atharu [dump] [--db PATH]"
                     ));
                 }
             }
