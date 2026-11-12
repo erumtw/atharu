@@ -32,7 +32,7 @@
 <p class="small muted">Nothing logged on {{ epic.key }} yet. Start a line with {{ epic.key }} on Today.</p>
 {%- endif %}
 {#- To-do lines edit and delete like log lines (D51); their edit / Undo answers `plans-changed`, which re-fetches the timeline. #}
-<div hidden hx-get="/epics/{{ epic.key }}" hx-trigger="plans-changed from:body" hx-target="#timeline" hx-select="#timeline" hx-swap="outerHTML"></div>
+<div hidden hx-get="/epics/{{ epic.key }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#timeline" hx-select="#timeline" hx-swap="outerHTML"></div>
 <div id="timeline">
 {%- for g in timeline %}
 <h4 class="muted small">{{ g.label }}</h4>

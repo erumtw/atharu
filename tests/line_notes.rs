@@ -131,7 +131,9 @@ async fn header_checks_and_dates_todos_and_folds_past_five() {
     );
     let page = get(&st, "/notes/7").await.body;
     assert!(page.contains(r#"<h2 id="lnh-h">Line</h2>"#));
-    assert!(page.contains(r#"hx-get="/notes/7/lines" hx-trigger="plans-changed from:body""#));
+    assert!(page.contains(
+        r#"hx-get="/notes/7/lines" hx-trigger="plans-changed from:body, atharu-sync from:body""#
+    ));
     assert!(page.contains(r#"aria-label="Mark done""#));
     assert!(page.contains(r#"name="due" value="2026-11-13""#));
     // An unlinked note has no header at all.

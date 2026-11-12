@@ -1,3 +1,5 @@
+{#- The Mac app fires `atharu-sync` on this window after the menu-bar popover changes something (start, record, end…). #}
+<div hidden hx-get="/meetings/banner?back={{ banner.back|urlencode }}" hx-trigger="atharu-sync from:body" hx-target="#meeting" hx-swap="outerHTML"></div>
 {#- Body of #meeting. Needs `banner` (active?, series, name, error, back, rec). Start/End swap this section. -#}
 {%- if let Some(m) = banner.active %}
 {%- if let Some(r) = banner.rec.live %}{% if !banner.rec.blocked %}
