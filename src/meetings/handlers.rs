@@ -307,6 +307,30 @@ pub struct Segments {
     /// The recorder finished the tail (or gave up): close the recording.
     #[serde(default)]
     done: bool,
+    /// The speaker split (T56): Others lines as `Speaker N`, replacing every line that isn't "me".
+    #[serde(default)]
+    split: Option<Vec<Segment>>,
+}
+
+/// Tenths: the dedupe compares t for equality, so both sides must round the same way.
+fn tidy(segs: Vec<Segment>, ok: impl Fn(&str) -> bool) -> Vec<(f64, String, String)> {
+    segs.into_iter()
+        .filter(|s| ok(&s.speaker) && !s.text.trim().is_empty())
+        .map(|s| {
+            (
+                (s.t * 10.0).round() / 10.0,
+                s.speaker,
+                s.text.trim().to_string(),
+            )
+        })
+        .collect()
+}
+
+/// `Speaker 3`: what the split names a voice before the owner does.
+fn split_speaker(s: &str) -> bool {
+    s == "others"
+        || s.strip_prefix("Speaker ")
+            .is_some_and(|n| n.parse::<u16>().is_ok_and(|n| n > 0))
 }
 
 /// The Mac app's recorder posts each window's lines here as soon as whisper returns them, so a crash
@@ -316,20 +340,16 @@ pub async fn segments(
     Path(tid): Path<i64>,
     axum::Json(b): axum::Json<Segments>,
 ) -> AppResult<Response> {
-    let segs: Vec<(f64, String, String)> = b
-        .segments
-        .into_iter()
-        .filter(|s| matches!(s.speaker.as_str(), "me" | "others") && !s.text.trim().is_empty())
-        // Tenths: the dedupe compares t for equality, so both sides must round the same way.
-        .map(|s| {
-            (
-                (s.t * 10.0).round() / 10.0,
-                s.speaker,
-                s.text.trim().to_string(),
-            )
-        })
-        .collect();
-    let res = queries::append_segments(&st.conn(), tid, &segs, b.done, &recording::now())?;
+    let segs = tidy(b.segments, |s| matches!(s, "me" | "others"));
+    let split = b.split.map(|s| tidy(s, split_speaker));
+    let res = queries::append_segments(
+        &st.conn(),
+        tid,
+        &segs,
+        split.as_deref(),
+        b.done,
+        &recording::now(),
+    )?;
     Ok(match res {
         queries::Append::Saved => StatusCode::NO_CONTENT.into_response(),
         queries::Append::NotFound => return Err(AppError::NotFound),
@@ -373,8 +393,40 @@ fn tx_section(
     })
 }
 
-fn who(speaker: &str) -> &'static str {
-    if speaker == "me" { "Me" } else { "Others" }
+#[derive(Deserialize)]
+pub struct RenameForm {
+    from: String,
+    to: String,
+}
+
+/// "Speaker 2 = …" on a finished recording: every line of that voice takes the name. A blank name, or one
+/// that reads as Me / Others, changes nothing (the field shows the old name again).
+pub async fn rename_speaker(
+    State(st): State<AppState>,
+    Path((id, tid)): Path<(i64, i64)>,
+    headers: HeaderMap,
+    Form(f): Form<RenameForm>,
+) -> AppResult<Response> {
+    let conn = st.conn();
+    queries::meeting(&conn, id)?.ok_or(AppError::NotFound)?;
+    let to = f.to.trim();
+    let taken = ["me", "others"].iter().any(|r| to.eq_ignore_ascii_case(r));
+    if !to.is_empty() && to.chars().count() <= 40 && !taken && f.from != "me" {
+        queries::rename_speaker(&conn, id, tid, &f.from, to)?;
+    }
+    if !web::is_htmx(&headers) {
+        return Ok(web::back(&format!("/meetings/{id}#transcript")));
+    }
+    web::html(&tx_section(&conn, st.mac.is_some(), id, String::new())?)
+}
+
+/// Row label: the two streams by their UI names; a split voice by its own (`Speaker 2`, or the owner's name).
+fn who(speaker: &str) -> &str {
+    match speaker {
+        "me" => "Me",
+        "others" => "Others",
+        s => s,
+    }
 }
 
 /// `text` cut around case-insensitive hits of `q` (ASCII folding keeps byte offsets; Thai has no case).
@@ -421,7 +473,7 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
         }
         rows.push(view::TxRow {
             time: recording::clock(*at),
-            who: who(sp),
+            who: who(sp).to_string(),
             cont: prev == sp,
             parts,
         });
@@ -443,8 +495,12 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
                     recorded(),
                     recording::clock(last)
                 ),
-                // RTF ≈ 0.1 on the M5 (D27): the rest of the audio takes about a tenth of its length.
-                Some((pct, recording::about((total - last).max(0.0) * 0.1))),
+                // RTF ≈ 0.1 on the M5 (D27): the rest of the audio takes about a tenth of its length; then
+                // the speaker split, about another tenth of the whole recording (D35: diarization RTF 0.08).
+                Some((
+                    pct,
+                    recording::about((total - last).max(0.0) * 0.1 + total * 0.1),
+                )),
             )
         }
         _ => (
@@ -467,6 +523,11 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
         finishing,
         interrupted: (t.status == "interrupted").then(|| recording::clock(last)),
         done: t.status == "done",
+        speakers: if t.status == "done" {
+            t.speakers()
+        } else {
+            Vec::new()
+        },
     }
 }
 

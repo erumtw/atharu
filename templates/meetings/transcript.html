@@ -18,9 +18,16 @@
 <div class="txhead"><span class="small muted" style="flex: 1; min-width: 140px">{{ t.meta }}</span>
 <form class="fld s" role="search" method="get" action="/meetings/{{ meeting }}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#search"/></svg><input id="txq-{{ t.id }}" hx-preserve name="q" value="{{ q }}" placeholder="Search transcript" aria-label="Search transcript"></form>
 <textarea id="txcopy-{{ t.id }}" hidden>{{ t.copy }}</textarea><button class="btn ghost s" type="button" data-copy="#txcopy-{{ t.id }}" aria-label="Copy {{ t.lines }} lines">Copy</button></div>
+{%- if !t.speakers.is_empty() %}
+<div class="txspk"><span class="small muted">Voices on the call, told apart after the meeting. Name one and every line follows.</span>
+{%- for s in t.speakers %}
+<form method="post" action="/meetings/{{ meeting }}/transcripts/{{ t.id }}/speakers" hx-post="/meetings/{{ meeting }}/transcripts/{{ t.id }}/speakers" hx-trigger="change" hx-target="#tx" hx-swap="outerHTML"><input type="hidden" name="from" value="{{ s }}"><input class="fld s" name="to" value="{{ s }}" maxlength="40" aria-label="Name for {{ s }}"></form>
+{%- endfor %}
+</div>
+{%- endif %}
 <div class="txbody{% if t.live %} follow{% endif %}" tabindex="0" aria-label="Transcript">
 {%- for r in t.rows %}
-<div class="txrow{% if r.cont %} cont{% endif %}"><time>{{ r.time }}</time><span class="who">{{ r.who }}</span><span>{% for (p, hit) in r.parts %}{% if *hit %}<mark>{{ p }}</mark>{% else %}{{ p }}{% endif %}{% endfor %}</span></div>
+<div class="txrow{% if r.cont %} cont{% endif %}"><time>{{ r.time }}</time><span class="who" title="{{ r.who }}">{{ r.who }}</span><span>{% for (p, hit) in r.parts %}{% if *hit %}<mark>{{ p }}</mark>{% else %}{{ p }}{% endif %}{% endfor %}</span></div>
 {%- endfor %}
 {%- if t.rows.is_empty() && !q.is_empty() %}
 <p class="small muted">No line has “{{ q }}”. <a href="/meetings/{{ meeting }}#transcript">Show all</a></p>
