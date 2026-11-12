@@ -32,6 +32,27 @@
       "x": 0,
       "y": 12232
     },
+    "Components.DatePicker.IC.dc.html": {
+      "h": 540,
+      "title": "Date picker · Increase Contrast",
+      "w": 680,
+      "x": 2590,
+      "y": 27970
+    },
+    "Components.DatePicker.RT.dc.html": {
+      "h": 540,
+      "title": "Date picker · Reduce Transparency",
+      "w": 680,
+      "x": 1830,
+      "y": 27970
+    },
+    "Components.DatePicker.dc.html": {
+      "h": 3250,
+      "title": "Date picker · anchored under the day nav and a to-do due field, every state, looks, AA",
+      "w": 1280,
+      "x": 0,
+      "y": 27970
+    },
     "Components.Navigation.dc.html": {
       "h": 4897,
       "title": "Components · navigation + menus",
@@ -187,6 +208,13 @@
       "x": 1410,
       "y": 7884
     },
+    "Mobile.DatePicker.dc.html": {
+      "h": 844,
+      "title": "Phone · date picker bottom sheet (44 px days, Done)",
+      "w": 390,
+      "x": 1360,
+      "y": 27970
+    },
     "Mobile.Drawing.dc.html": {
       "h": 844,
       "title": "Phone · note with a drawing",
@@ -269,6 +297,14 @@
       "w": 1280,
       "x": 0,
       "y": 4959
+    },
+    "Piece-32lj.dc.html": {
+      "frameless": true,
+      "h": 4186,
+      "title": "Box",
+      "w": 1264,
+      "x": 3,
+      "y": 27952
     },
     "Report.dc.html": {
       "expand": "fill",
@@ -409,33 +445,82 @@
       "x": 1360,
       "y": 3359
     },
-    "Components.DatePicker.dc.html": {
-      "h": 3250,
-      "title": "Date picker · anchored under the day nav and a to-do due field, every state, looks, AA",
+    "Capture.Float.Rest.dc.html": {
+      "h": 820,
+      "title": "Capture bar · rest, mid-scroll: the log runs under the capsule (Sumi, default look)",
       "w": 1280,
       "x": 0,
-      "y": 27970
+      "y": 32518
     },
-    "Mobile.DatePicker.dc.html": {
-      "h": 844,
-      "title": "Phone · date picker bottom sheet (44 px days, Done)",
-      "w": 390,
+    "Capture.Float.End.dc.html": {
+      "h": 820,
+      "title": "Capture bar · scrolled to the end: last line clear of the bar, toast above it",
+      "w": 1280,
       "x": 1360,
-      "y": 27970
+      "y": 32518
     },
-    "Components.DatePicker.RT.dc.html": {
-      "h": 540,
-      "title": "Date picker · Reduce Transparency",
-      "w": 680,
-      "x": 1830,
-      "y": 27970
+    "Capture.Float.Typing.dc.html": {
+      "h": 820,
+      "title": "Capture bar · typing: live hint in its own glass pill above the capsule (Wakaba Clear)",
+      "w": 1280,
+      "x": 2720,
+      "y": 32518
     },
-    "Components.DatePicker.IC.dc.html": {
-      "h": 540,
-      "title": "Date picker · Increase Contrast",
-      "w": 680,
-      "x": 2590,
-      "y": 27970
+    "Capture.Float.Menu.dc.html": {
+      "h": 820,
+      "title": "Capture bar · # tag menu opens upward, above the hint pill (Wakaba Clear)",
+      "w": 1280,
+      "x": 4080,
+      "y": 32518
+    },
+    "Capture.Float.Error.dc.html": {
+      "h": 820,
+      "title": "Capture bar · error: .bad ring, the reason in the hint pill (Sumi)",
+      "w": 1280,
+      "x": 5440,
+      "y": 32518
+    },
+    "Capture.Float.Legend.dc.html": {
+      "h": 820,
+      "title": "Capture bar · ? in the capsule opens the grammar legend above it (Glass Tinted)",
+      "w": 1280,
+      "x": 6800,
+      "y": 32518
+    },
+    "Mobile.Capture.Float.dc.html": {
+      "h": 844,
+      "title": "Phone · capture bar at rest (12px gutters, above the home indicator)",
+      "w": 390,
+      "x": 8160,
+      "y": 32518
+    },
+    "Mobile.Capture.Float.Keyboard.dc.html": {
+      "h": 844,
+      "title": "Phone · keyboard open: the bar rides 8px above it (visualViewport)",
+      "w": 390,
+      "x": 8630,
+      "y": 32518
+    },
+    "Capture.Float.Looks.dc.html": {
+      "h": 1470,
+      "title": "Capture bar · looks, decisions, AA",
+      "w": 1280,
+      "x": 0,
+      "y": 33498
+    },
+    "Capture.Float.RT.dc.html": {
+      "h": 460,
+      "title": "Capture bar · Reduce Transparency",
+      "w": 1280,
+      "x": 1360,
+      "y": 33498
+    },
+    "Capture.Float.IC.dc.html": {
+      "h": 460,
+      "title": "Capture bar · Increase Contrast",
+      "w": 1280,
+      "x": 1360,
+      "y": 34058
     }
   },
   "createdOnFiles": {
@@ -474,7 +559,9 @@
     "t13",
     "s12",
     "t14",
-    "s13"
+    "s13",
+    "t15",
+    "s14"
   ],
   "notes": {
     "s0": {
@@ -511,6 +598,13 @@
       "w": 420,
       "x": 9520,
       "y": 25270
+    },
+    "s13": {
+      "fill": "teal",
+      "text": "Date picker (T75, D38)\n· Replaces the browser picker UI on every input[type=date] (day nav, to-do due, report from/to, event, epic dates). The native input stays: value carrier + no-JS fallback; forms post unchanged.\n· Glass = .menu (class=\"menu dp\"), floor 85%: at the menus’ 60% the accent fell to 3.18.\n· Monday first (D4), 6 rows always. Today = accent ring, value = accent fill + white, out of month --muted (--faint is 1.74), disabled .45.\n· Keys: arrows day/week, PgUp/PgDn month (+Shift year), Home/End, Enter picks, Esc closes; focus returns to the field.\n· Phone: bottom sheet, 44 px days, tap selects, Done commits.\n· AA min: ink 13.58 · muted 7.34 · accent 4.57 · white on accent 5.57 · rings 4.57 (≥3).",
+      "w": 420,
+      "x": 3350,
+      "y": 27970
     },
     "s2": {
       "fill": "green",
@@ -609,6 +703,14 @@
       "x": 0,
       "y": 24990
     },
+    "t14": {
+      "kind": "title1",
+      "maxW": 3770,
+      "text": "Date picker · one shared popover",
+      "w": 240,
+      "x": 0,
+      "y": 27690
+    },
     "t2": {
       "kind": "title1",
       "maxW": 4000,
@@ -673,20 +775,20 @@
       "x": 0,
       "y": 11972
     },
-    "t14": {
+    "t15": {
       "kind": "title1",
-      "maxW": 3770,
-      "text": "Date picker · one shared popover",
+      "maxW": 9000,
+      "text": "Floating capture bar · Liquid Glass capsule",
       "w": 240,
       "x": 0,
-      "y": 27690
+      "y": 32238
     },
-    "s13": {
+    "s14": {
       "fill": "teal",
       "w": 420,
-      "x": 3350,
-      "y": 27970,
-      "text": "Date picker (T75, D38)\n· Replaces the browser picker UI on every input[type=date] (day nav, to-do due, report from/to, event, epic dates). The native input stays: value carrier + no-JS fallback; forms post unchanged.\n· Glass = .menu (class=\"menu dp\"), floor 85%: at the menus’ 60% the accent fell to 3.18.\n· Monday first (D4), 6 rows always. Today = accent ring, value = accent fill + white, out of month --muted (--faint is 1.74), disabled .45.\n· Keys: arrows day/week, PgUp/PgDn month (+Shift year), Home/End, Enter picks, Esc closes; focus returns to the field.\n· Phone: bottom sheet, 44 px days, tap selects, Done commits.\n· AA min: ink 13.58 · muted 7.34 · accent 4.57 · white on accent 5.57 · rings 4.57 (≥3)."
+      "x": 2720,
+      "y": 33498,
+      "text": "Floating capture bar (T78, D42)\n· Today capture bar = glass capsule, position: sticky bottom 16px in the doc column (not fixed): in the sheet, centred on the text, last line never under it at the end.\n· Width = doc column (764 @1280); phone full width − 12px gutters + safe area; 52 tall.\n· ? stays in the capsule at every width; legend = .menu panel above it (anchor positioning).\n· Above it, out of flow: hint pill · # menu · toast, 6px apart, 8px clear: never glass on glass. #tagsug leaves the form (Backdrop Root).\n· --lg-float shadow (0 12 32 .16). Floors: capsule 70%, pills/menus 85%, hint --accent-2.\n· AA worst (dark banner fully behind): placeholder 4.75, hint 5.12.\n· Phone keyboard: visualViewport → --kb, rides 8px above it."
     }
   },
   "order": [
@@ -748,7 +850,19 @@
     "Components.DatePicker.dc.html",
     "Mobile.DatePicker.dc.html",
     "Components.DatePicker.RT.dc.html",
-    "Components.DatePicker.IC.dc.html"
+    "Components.DatePicker.IC.dc.html",
+    "Piece-32lj.dc.html",
+    "Capture.Float.Rest.dc.html",
+    "Capture.Float.End.dc.html",
+    "Capture.Float.Typing.dc.html",
+    "Capture.Float.Menu.dc.html",
+    "Capture.Float.Error.dc.html",
+    "Capture.Float.Legend.dc.html",
+    "Mobile.Capture.Float.dc.html",
+    "Mobile.Capture.Float.Keyboard.dc.html",
+    "Capture.Float.Looks.dc.html",
+    "Capture.Float.RT.dc.html",
+    "Capture.Float.IC.dc.html"
   ],
   "pages": [],
   "title": "Atharu Design"
