@@ -1,6 +1,7 @@
 //! `/` Today: capture a line, see the day's log grouped by epic, delete/undo, live parse hint.
 mod handlers;
-mod queries;
+// The agent CLI files lines through the same queries (one validation path).
+pub(crate) mod queries;
 mod view;
 
 use crate::app::AppState;

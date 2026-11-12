@@ -45,6 +45,7 @@ fn groups(conn: &Connection, day: NaiveDate) -> rusqlite::Result<Vec<view::Group
             topic: r.topic,
             text: r.text,
             meeting: r.meeting,
+            author: r.author,
         };
         // Rows arrive sorted by group, so a new key always means a new group.
         match out.last_mut() {
@@ -179,7 +180,7 @@ pub async fn create(
         }
     };
 
-    let (id, new_epic) = queries::insert_entry(&mut st.conn(), &dates::iso(day), &entry)?;
+    let (id, new_epic) = queries::insert_entry(&mut st.conn(), &dates::iso(day), &entry, "me")?;
     if !web::is_htmx(&headers) {
         return Ok(web::back(&format!("/?day={}", dates::iso(day))));
     }

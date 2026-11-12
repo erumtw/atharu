@@ -92,3 +92,30 @@ form.inline{display:inline}
 /* Undo / delete are POST forms (work without JS) but read as links, like the board's <a>. */
 .linkbtn{font:inherit;background:none;border:0;padding:0;color:var(--accent);cursor:pointer}
 .linkbtn:hover{text-decoration:underline}
+
+/* Notes editor (P4): the body as the board draws it, plus the `/` and `[[` menus. */
+.note-body{display:flex;flex-direction:column;gap:10px;font-size:16px;line-height:1.6;min-height:240px}
+.note-body .ProseMirror{display:flex;flex-direction:column;gap:10px;outline:0;min-height:240px}
+.note-body h1,.note-body h2,.note-body h3{margin:4px 0 0}
+.note-body p,.note-body ul,.note-body ol,.note-body blockquote,.note-body pre{margin:0}
+.note-body code{font-family:ui-monospace,'SF Mono',Menlo,monospace;background:#f5f5f7;padding:1px 5px;border-radius:4px}
+.note-body pre{background:#f5f5f7;padding:10px 14px;border-radius:8px;overflow-x:auto}
+.note-body pre code{padding:0;background:none}
+.note-body blockquote{border-left:3px solid var(--line);padding-left:14px;color:var(--ink-2)}
+.note-body .callout{padding:10px 14px;flex-direction:column;gap:6px}
+.note-body ul[data-type=taskList],.note-body li:has(>input[type=checkbox]){list-style:none}
+.note-body ul[data-type=taskList]{padding-left:0}
+.note-body ul[data-type=taskList] li{display:flex;gap:10px;align-items:flex-start}
+.note-body ul[data-type=taskList] li[data-checked=true]>div{text-decoration:line-through;color:var(--muted)}
+.note-body input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);margin:4px 0 0}
+.note-body summary{font-weight:500;cursor:pointer}
+.note-body summary p{display:inline}
+.note-body [data-type=details]{display:flex;gap:6px}
+.note-body [data-type=details]>button{border:0;background:none;cursor:pointer;color:var(--muted);padding:0;align-self:flex-start;line-height:1.6}
+.note-body [data-type=details]>button::before{content:'▸'}
+.note-body [data-type=details].is-open>button::before{content:'▾'}
+.note-body .page{color:var(--accent)}
+.note-md{font:inherit;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;resize:vertical}
+.menu{position:absolute;width:260px;background:rgba(255,255,255,.85);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(0,0,0,.08);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.12);padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px;z-index:3}
+.menu [role=option]{padding:6px 10px;border-radius:8px;cursor:pointer}
+.menu [aria-selected=true]{background:#e8f1fb}

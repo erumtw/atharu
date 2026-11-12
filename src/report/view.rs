@@ -6,6 +6,8 @@ pub struct Item {
     pub label: &'static str,
     pub text: String,
     pub meeting: Option<String>,
+    /// Agent that filed the line: shown `(via claude)` so the copy stays honest.
+    pub via: Option<String>,
 }
 
 pub struct Section {

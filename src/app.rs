@@ -45,6 +45,7 @@ pub fn router(state: AppState) -> Router {
         .merge(crate::report::routes())
         .merge(crate::meetings::routes())
         .merge(crate::learn::routes())
+        .merge(crate::notes::routes())
         .route("/static/{*path}", get(static_file))
         .with_state(state)
 }

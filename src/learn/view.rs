@@ -86,6 +86,8 @@ pub struct Page {
     pub resources: String,
     pub rate: Rate,
     pub lines: Vec<Line>,
+    /// Notes linking here with `[[…]]`: (id, title).
+    pub mentions: Vec<(i64, String)>,
 }
 
 #[derive(Template)]

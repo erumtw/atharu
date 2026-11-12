@@ -92,6 +92,8 @@ pub struct Page {
     pub notes: String,
     pub today: NaiveDate,
     pub back: String,
+    /// Notes linking here with `[[…]]`: (id, title).
+    pub mentions: Vec<(i64, String)>,
 }
 
 #[derive(Template)]

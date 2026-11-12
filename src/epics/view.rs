@@ -75,6 +75,7 @@ pub struct Evidence {
     pub id: i64,
     pub url: String,
     pub note: String,
+    pub author: String,
 }
 
 /// Impact line + evidence: the part of the epic page that changes when a property or evidence does.
@@ -94,6 +95,7 @@ pub struct TimelineRow {
     pub kind: Kind,
     pub topic: Option<String>,
     pub text: String,
+    pub author: String,
 }
 
 pub struct DayGroup {
@@ -113,6 +115,8 @@ pub struct Page {
     pub timeline: Vec<DayGroup>,
     /// Top-bar status after a plain (no-JS) save failed.
     pub save_error: bool,
+    /// Notes linking here with `[[…]]`: (id, title).
+    pub mentions: Vec<(i64, String)>,
 }
 
 /// htmx answer to a property / evidence change: the live block, plus the top-bar status out-of-band.

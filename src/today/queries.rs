@@ -15,12 +15,14 @@ pub struct LoggedRow {
     pub text: String,
     /// Meeting the line was logged in.
     pub meeting: Option<String>,
+    /// `me`, or the agent that filed it via the CLI.
+    pub author: String,
 }
 
 /// Epic groups in order of their first line that day, unfiled last; newest line first inside a group.
 pub fn day_entries(conn: &Connection, day: &str) -> rusqlite::Result<Vec<LoggedRow>> {
     let mut stmt = conn.prepare(
-        "SELECT e.id, e.epic_key, COALESCE(ep.title, ''), e.kind, e.topic, e.text, m.name
+        "SELECT e.id, e.epic_key, COALESCE(ep.title, ''), e.kind, e.topic, e.text, m.name, e.author
          FROM entries e LEFT JOIN epics ep ON ep.key = e.epic_key
          LEFT JOIN meetings m ON m.id = e.meeting_id
          WHERE e.day = ?1
@@ -39,6 +41,7 @@ pub fn day_entries(conn: &Connection, day: &str) -> rusqlite::Result<Vec<LoggedR
             topic: r.get(4)?,
             text: r.get(5)?,
             meeting: r.get(6)?,
+            author: r.get(7)?,
         })
     })?
     .collect()
@@ -67,16 +70,25 @@ pub fn epic_keys(conn: &Connection) -> rusqlite::Result<Vec<String>> {
 }
 
 /// Returns the new id and whether the key was unknown (a stub epic was created for it).
-pub fn insert_entry(conn: &mut Connection, day: &str, e: &Entry) -> rusqlite::Result<(i64, bool)> {
+/// `author` = `me` from the web, the agent slug from the CLI (also tags a stub epic it creates).
+pub fn insert_entry(
+    conn: &mut Connection,
+    day: &str,
+    e: &Entry,
+    author: &str,
+) -> rusqlite::Result<(i64, bool)> {
     let tx = conn.transaction()?;
     let mut new_epic = false;
     if let Some(key) = &e.epic_key {
-        new_epic = tx.execute("INSERT OR IGNORE INTO epics(key) VALUES (?1)", [key])? > 0;
+        new_epic = tx.execute(
+            "INSERT OR IGNORE INTO epics(key, author) VALUES (?1, ?2)",
+            params![key, author],
+        )? > 0;
     }
     tx.execute(
         // Spec: while a meeting runs, every captured line belongs to it.
-        "INSERT INTO entries(day, epic_key, kind, topic, text, plan_state, due, link, meeting_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, (SELECT id FROM meetings WHERE ended_at IS NULL))",
+        "INSERT INTO entries(day, epic_key, kind, topic, text, plan_state, due, link, author, meeting_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, (SELECT id FROM meetings WHERE ended_at IS NULL))",
         params![
             day,
             e.epic_key,
@@ -86,6 +98,7 @@ pub fn insert_entry(conn: &mut Connection, day: &str, e: &Entry) -> rusqlite::Re
             (e.kind == Kind::Plan).then_some("open"),
             e.due.map(|d| d.format("%Y-%m-%d").to_string()),
             e.link,
+            author,
         ],
     )?;
     let id = tx.last_insert_rowid();

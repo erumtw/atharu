@@ -265,6 +265,7 @@ Operations (each = a `.claude/commands/*.md` prompt, no app code):
   - `atharu log "<line>" [--day YYYY-MM-DD]` → same grammar as the capture bar; prints the saved row as one JSON line
   - `atharu epic <KEY|jira-url> [--title …] [--okr …]` → upsert epic (key from `…/browse/ABC-123`); never overwrites a field I set
   - `atharu today [--day]` · `atharu show <KEY>` → JSON on stdout for reading
+  - `atharu note "<title>" [--file|stdin] --as <agent>` (agent-authored note; `--id` updates only its own) · `atharu evidence <KEY> <url> --as <agent>` (http(s) only) — added 2026-11-12 so ingest/log can save
   - core set only (2026-11-11): `log` already covers to-dos (`>`), learn (`?`) and every line kind via the grammar. Not in the CLI yet: evidence, to-do done/pin/drop, meetings, topics, notes, events, report. An agent asked for one of those says "atharu has no command for that yet" and suggests the command; it never falls back to raw SQL writes. Add a command when an instruction actually needs it.
   - errors → exit 1 + the same copy as the States board on stderr
 - every write needs `--as <agent>` (or env `ATHARU_AGENT`), lowercase slug (`claude`, `codex`, …); missing → exit 2 "Say who is writing: --as claude". `me` is refused from the CLI's agent flag so an agent can't pose as me.
@@ -292,6 +293,10 @@ Deterministic checks (stale topic, unrated topic, dead `[[X]]`) stay in Rust on 
 - shown as display only: epic list/page shows `summary · status` under the key when our `title` is empty ("No title yet" stays editable); Jira link chips read `ABC-123 · summary`
 - config `data/config.toml`: `jira_base_url`, `jira_email`, `jira_token` (all optional; any missing → feature off, no callout noise); token is a credential, never logged or in git
 - never writes to Jira; never creates epics/todos from Jira; tests use a fixture JSON, no network
+
+**Delete + edit (added 2026-11-12)** — notes, meetings and topics can be deleted with the same Undo toast as log lines; an epic can be deleted only while it has no lines (else "Mark it Done or Dropped instead."); a log line can be edited inline and is re-parsed with the capture grammar (id, time and author kept). Deleting a meeting keeps its lines; deleting a topic keeps its `?` lines (back to the Learn inbox). Agents can't delete or edit.
+
+**Looks (added 2026-11-12)** — `/settings` picks one look: Sumi (washi, default) · Sora (blue) · Wakaba (green) · Glass. It sets a soft mesh wallpaper behind every page, so the floating glass chrome (backdrop blur) shows it, the favicon, and in the Mac app the Dock icon (Option I, docs/design/icon/options.html) plus window vibrancy. Stored in a `settings` table, not config.toml (no credential). Reduced transparency → plain background.
 
 ## UX decisions (2026-11-11, from the canvas)
 
@@ -325,8 +330,8 @@ All `cargo test`; DB tests use in-memory SQLite (`Connection::open_in_memory`).
 
 ## Out of scope
 
-auth · Jira sync (beyond P6 read-only titles) · entry edit · blocker resolve · notifications · multi-device sync · charts lib · calendar write-back / Google API OAuth (P5b is read-only iCal) · task priority / subtasks · recurring meeting templates · time tracking · attendee tracking · Notion-style blocks/nesting/DB views · LLM API calls from the binary · embeddings/RAG · LLM writing topics/depth/entries · markdown wiki files (SQLite stays the single source).
-Add when: Jira sync → typing titles annoys; edit → delete+retype annoys; sync → second machine; Google API → iCal address disabled by admin and calendar is missed.
+auth · Jira sync (beyond P6 read-only titles) · blocker resolve · notifications · multi-device sync · charts lib · calendar write-back / Google API OAuth (P5b is read-only iCal) · task priority / subtasks · recurring meeting templates · time tracking · attendee tracking · Notion-style blocks/nesting/DB views · LLM API calls from the binary · embeddings/RAG · LLM writing topics/depth/entries · markdown wiki files (SQLite stays the single source).
+Add when: Jira sync → typing titles annoys; sync → second machine; Google API → iCal address disabled by admin and calendar is missed.
 
 ## Layout
 
