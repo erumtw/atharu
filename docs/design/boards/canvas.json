@@ -2,6 +2,14 @@
   "v": 3,
   "attachments": {},
   "boards": {
+    "Calendar.Month.dc.html": {
+      "expand": "fill",
+      "h": 1225,
+      "title": "Calendar · month",
+      "w": 1280,
+      "x": 1360,
+      "y": 6259
+    },
     "Calendar.dc.html": {
       "expand": "fill",
       "h": 900,
@@ -38,6 +46,41 @@
       "x": 0,
       "y": 10652
     },
+    "Drawing.Edit.dc.html": {
+      "h": 1000,
+      "title": "Drawing · editing (Excalidraw over the note, Done / Cancel, autosave)",
+      "w": 1280,
+      "x": 1360,
+      "y": 21400
+    },
+    "Drawing.Empty.dc.html": {
+      "h": 900,
+      "title": "Drawing · empty + selected",
+      "w": 1280,
+      "x": 4080,
+      "y": 21400
+    },
+    "Drawing.Insert.dc.html": {
+      "h": 900,
+      "title": "Drawing · insert from the / menu",
+      "w": 1280,
+      "x": 2720,
+      "y": 21400
+    },
+    "Drawing.RT.dc.html": {
+      "h": 1100,
+      "title": "Drawing · Reduce Transparency",
+      "w": 1280,
+      "x": 5440,
+      "y": 21400
+    },
+    "Drawing.Read.dc.html": {
+      "h": 900,
+      "title": "Drawing · note read view (stored SVG)",
+      "w": 1280,
+      "x": 0,
+      "y": 21400
+    },
     "Epic.dc.html": {
       "expand": "fill",
       "h": 1577,
@@ -69,6 +112,14 @@
       "x": 0,
       "y": 3359
     },
+    "LiquidGlass.dc.html": {
+      "h": 2934,
+      "is_interactive": true,
+      "title": "Liquid Glass · every glass surface, Clear / Tinted, states, RT / IC",
+      "w": 1280,
+      "x": 0,
+      "y": 17978
+    },
     "Main.dc.html": {
       "expand": "fill",
       "h": 1569,
@@ -76,6 +127,41 @@
       "w": 1280,
       "x": 0,
       "y": 0
+    },
+    "Meeting.Finishing.dc.html": {
+      "h": 1380,
+      "title": "Recording · after Stop: last part transcribing → done + /meeting hint",
+      "w": 1280,
+      "x": 2720,
+      "y": 22880
+    },
+    "Meeting.Live.dc.html": {
+      "h": 1150,
+      "title": "Recording · live transcript (~30 s behind), search, copy",
+      "w": 1280,
+      "x": 1360,
+      "y": 22880
+    },
+    "Meeting.Permissions.dc.html": {
+      "h": 1320,
+      "title": "Recording · first-run macOS permissions + denied",
+      "w": 1280,
+      "x": 4080,
+      "y": 22880
+    },
+    "Meeting.RTIC.dc.html": {
+      "h": 1050,
+      "title": "Recording · Reduce Transparency + Increase Contrast, search hits",
+      "w": 1280,
+      "x": 7270,
+      "y": 22880
+    },
+    "Meeting.Record.dc.html": {
+      "h": 1250,
+      "title": "Recording · Start option + consent, banner (elapsed, Me / Others levels, Stop)",
+      "w": 1280,
+      "x": 0,
+      "y": 22880
     },
     "Meetings.dc.html": {
       "expand": "fill",
@@ -101,6 +187,20 @@
       "x": 1410,
       "y": 7884
     },
+    "Mobile.Drawing.dc.html": {
+      "h": 844,
+      "title": "Phone · note with a drawing",
+      "w": 390,
+      "x": 6800,
+      "y": 21400
+    },
+    "Mobile.DrawingEdit.dc.html": {
+      "h": 844,
+      "title": "Phone · drawing editor",
+      "w": 390,
+      "x": 7270,
+      "y": 21400
+    },
     "Mobile.Epic.dc.html": {
       "h": 844,
       "is_interactive": true,
@@ -108,6 +208,13 @@
       "w": 390,
       "x": 940,
       "y": 7884
+    },
+    "Mobile.Meeting.dc.html": {
+      "h": 844,
+      "title": "Phone · meeting transcript (view only)",
+      "w": 390,
+      "x": 6800,
+      "y": 22880
     },
     "Mobile.Nav.dc.html": {
       "h": 844,
@@ -124,6 +231,20 @@
       "w": 390,
       "x": 1360,
       "y": 9128
+    },
+    "Mobile.Tags.dc.html": {
+      "h": 844,
+      "title": "Phone · tag hub",
+      "w": 390,
+      "x": 4080,
+      "y": 26690
+    },
+    "Mobile.TagsCapture.dc.html": {
+      "h": 844,
+      "title": "Phone · tag suggestions above the capture bar",
+      "w": 390,
+      "x": 4550,
+      "y": 26690
     },
     "Mobile.Today.dc.html": {
       "h": 844,
@@ -157,9 +278,16 @@
       "x": 4080,
       "y": 0
     },
+    "Settings.Transcription.dc.html": {
+      "h": 2010,
+      "title": "Settings · transcription (model download, language)",
+      "w": 1280,
+      "x": 5440,
+      "y": 22880
+    },
     "Settings.dc.html": {
       "expand": "fill",
-      "h": 1124,
+      "h": 1188,
       "is_interactive": true,
       "title": "Settings · appearance + connections",
       "w": 1280,
@@ -181,136 +309,6 @@
       "x": 5440,
       "y": 0
     },
-    "Todos.dc.html": {
-      "expand": "fill",
-      "h": 982,
-      "title": "To-dos",
-      "w": 1280,
-      "x": 2720,
-      "y": 1977
-    },
-    "Topic.dc.html": {
-      "expand": "fill",
-      "h": 1200,
-      "title": "Topic",
-      "w": 1280,
-      "x": 1360,
-      "y": 3359
-    },
-    "Calendar.Month.dc.html": {
-      "expand": "fill",
-      "w": 1280,
-      "h": 1225,
-      "x": 1360,
-      "y": 6259,
-      "title": "Calendar · month"
-    },
-    "LiquidGlass.dc.html": {
-      "h": 2934,
-      "is_interactive": true,
-      "title": "Liquid Glass · every glass surface, Clear / Tinted, states, RT / IC",
-      "w": 1280,
-      "x": 0,
-      "y": 17978
-    },
-    "Drawing.Read.dc.html": {
-      "h": 900,
-      "title": "Drawing · note read view (stored SVG)",
-      "w": 1280,
-      "x": 0,
-      "y": 21400
-    },
-    "Drawing.Edit.dc.html": {
-      "h": 1000,
-      "title": "Drawing · editing (Excalidraw over the note, Done / Cancel, autosave)",
-      "w": 1280,
-      "x": 1360,
-      "y": 21400
-    },
-    "Drawing.Insert.dc.html": {
-      "h": 900,
-      "title": "Drawing · insert from the / menu",
-      "w": 1280,
-      "x": 2720,
-      "y": 21400
-    },
-    "Drawing.Empty.dc.html": {
-      "h": 900,
-      "title": "Drawing · empty + selected",
-      "w": 1280,
-      "x": 4080,
-      "y": 21400
-    },
-    "Drawing.RT.dc.html": {
-      "h": 1100,
-      "title": "Drawing · Reduce Transparency",
-      "w": 1280,
-      "x": 5440,
-      "y": 21400
-    },
-    "Mobile.Drawing.dc.html": {
-      "h": 844,
-      "title": "Phone · note with a drawing",
-      "w": 390,
-      "x": 6800,
-      "y": 21400
-    },
-    "Mobile.DrawingEdit.dc.html": {
-      "h": 844,
-      "title": "Phone · drawing editor",
-      "w": 390,
-      "x": 7270,
-      "y": 21400
-    },
-    "Meeting.Record.dc.html": {
-      "h": 1250,
-      "title": "Recording · Start option + consent, banner (elapsed, Me / Others levels, Stop)",
-      "w": 1280,
-      "x": 0,
-      "y": 22880
-    },
-    "Meeting.Live.dc.html": {
-      "h": 1150,
-      "title": "Recording · live transcript (~30 s behind), search, copy",
-      "w": 1280,
-      "x": 1360,
-      "y": 22880
-    },
-    "Meeting.Finishing.dc.html": {
-      "h": 1380,
-      "title": "Recording · after Stop: last part transcribing → done + /meeting hint",
-      "w": 1280,
-      "x": 2720,
-      "y": 22880
-    },
-    "Meeting.Permissions.dc.html": {
-      "h": 1320,
-      "title": "Recording · first-run macOS permissions + denied",
-      "w": 1280,
-      "x": 4080,
-      "y": 22880
-    },
-    "Settings.Transcription.dc.html": {
-      "h": 2010,
-      "title": "Settings · transcription (model download, language)",
-      "w": 1280,
-      "x": 5440,
-      "y": 22880
-    },
-    "Mobile.Meeting.dc.html": {
-      "h": 844,
-      "title": "Phone · meeting transcript (view only)",
-      "w": 390,
-      "x": 6800,
-      "y": 22880
-    },
-    "Meeting.RTIC.dc.html": {
-      "h": 1050,
-      "title": "Recording · Reduce Transparency + Increase Contrast, search hits",
-      "w": 1280,
-      "x": 7270,
-      "y": 22880
-    },
     "Tags.Capture.dc.html": {
       "h": 1250,
       "title": "Tags · capture: #ex suggestions, “Tag as #expense?”, saved line with the chip",
@@ -318,32 +316,11 @@
       "x": 0,
       "y": 25270
     },
-    "Tags.Retag.dc.html": {
-      "h": 1190,
-      "title": "Tags · Make tag from a selected word + “4 older lines mention…” · Tag them · Undo",
+    "Tags.ERD.dc.html": {
+      "h": 820,
+      "title": "Tags · one-hop ERD for T71 (owner OK needed)",
       "w": 1280,
-      "x": 1360,
-      "y": 25270
-    },
-    "Tags.Hub.dc.html": {
-      "h": 1300,
-      "title": "Tags · hub /tags/expense (to-dos, decisions/blockers/impact, lines, epics, notes, meetings, topics, coming up; ⋯ rename · merge · delete)",
-      "w": 1280,
-      "x": 2720,
-      "y": 25270
-    },
-    "Tags.HubMerged.dc.html": {
-      "h": 900,
-      "title": "Tags · one name, one hub (tag + topic + meeting series cms-profile)",
-      "w": 1280,
-      "x": 4080,
-      "y": 25270
-    },
-    "Tags.List.dc.html": {
-      "h": 900,
-      "title": "Tags · list under Track (count, last used, sort)",
-      "w": 1280,
-      "x": 5440,
+      "x": 8160,
       "y": 25270
     },
     "Tags.EpicField.dc.html": {
@@ -351,13 +328,6 @@
       "title": "Tags · tag field on an epic + how lines inherit",
       "w": 1280,
       "x": 6800,
-      "y": 25270
-    },
-    "Tags.ERD.dc.html": {
-      "h": 820,
-      "title": "Tags · one-hop ERD for T71 (owner OK needed)",
-      "w": 1280,
-      "x": 8160,
       "y": 25270
     },
     "Tags.Filter.dc.html": {
@@ -374,26 +344,33 @@
       "x": 1360,
       "y": 26690
     },
-    "Tags.Report.dc.html": {
-      "h": 900,
-      "title": "Tags · Report grouped by tag",
+    "Tags.Hub.dc.html": {
+      "h": 1300,
+      "title": "Tags · hub /tags/expense (to-dos, decisions/blockers/impact, lines, epics, notes, meetings, topics, coming up; ⋯ rename",
       "w": 1280,
       "x": 2720,
-      "y": 26690
+      "y": 25270
     },
-    "Mobile.Tags.dc.html": {
-      "h": 844,
-      "title": "Phone · tag hub",
-      "w": 390,
+    "Tags.HubMerged.dc.html": {
+      "h": 900,
+      "title": "Tags · one name, one hub (tag + topic + meeting series cms-profile)",
+      "w": 1280,
       "x": 4080,
+      "y": 25270
+    },
+    "Tags.IC.dc.html": {
+      "h": 530,
+      "title": "Tags · Increase Contrast",
+      "w": 1280,
+      "x": 6380,
       "y": 26690
     },
-    "Mobile.TagsCapture.dc.html": {
-      "h": 844,
-      "title": "Phone · tag suggestions above the capture bar",
-      "w": 390,
-      "x": 4550,
-      "y": 26690
+    "Tags.List.dc.html": {
+      "h": 900,
+      "title": "Tags · list under Track (count, last used, sort)",
+      "w": 1280,
+      "x": 5440,
+      "y": 25270
     },
     "Tags.RT.dc.html": {
       "h": 530,
@@ -402,12 +379,63 @@
       "x": 5020,
       "y": 26690
     },
-    "Tags.IC.dc.html": {
-      "h": 530,
-      "title": "Tags · Increase Contrast",
+    "Tags.Report.dc.html": {
+      "h": 900,
+      "title": "Tags · Report grouped by tag",
       "w": 1280,
-      "x": 6380,
+      "x": 2720,
       "y": 26690
+    },
+    "Tags.Retag.dc.html": {
+      "h": 1190,
+      "title": "Tags · Make tag from a selected word + “4 older lines mention…” · Tag them · Undo",
+      "w": 1280,
+      "x": 1360,
+      "y": 25270
+    },
+    "Todos.dc.html": {
+      "expand": "fill",
+      "h": 982,
+      "title": "To-dos",
+      "w": 1280,
+      "x": 2720,
+      "y": 1977
+    },
+    "Topic.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "title": "Topic",
+      "w": 1280,
+      "x": 1360,
+      "y": 3359
+    },
+    "Components.DatePicker.dc.html": {
+      "h": 3250,
+      "title": "Date picker · anchored under the day nav and a to-do due field, every state, looks, AA",
+      "w": 1280,
+      "x": 0,
+      "y": 27970
+    },
+    "Mobile.DatePicker.dc.html": {
+      "h": 844,
+      "title": "Phone · date picker bottom sheet (44 px days, Done)",
+      "w": 390,
+      "x": 1360,
+      "y": 27970
+    },
+    "Components.DatePicker.RT.dc.html": {
+      "h": 540,
+      "title": "Date picker · Reduce Transparency",
+      "w": 680,
+      "x": 1830,
+      "y": 27970
+    },
+    "Components.DatePicker.IC.dc.html": {
+      "h": 540,
+      "title": "Date picker · Increase Contrast",
+      "w": 680,
+      "x": 2590,
+      "y": 27970
     }
   },
   "createdOnFiles": {
@@ -444,7 +472,9 @@
     "t12",
     "s11",
     "t13",
-    "s12"
+    "s12",
+    "t14",
+    "s13"
   ],
   "notes": {
     "s0": {
@@ -460,6 +490,27 @@
       "w": 420,
       "x": 4080,
       "y": 1977
+    },
+    "s10": {
+      "fill": "teal",
+      "text": "Drawing block (T41, D23/D24)\n· Read: the stored SVG in a white 12-radius figure, no glass (content). Shown as <img>, so no script and no JS needed. Edit drawing = glass pill top-right on hover/focus, always on touch.\n· Insert: / menu → Drawing opens the editor at once. Empty = dashed placeholder + Draw. Selected = 2px blue ring; Backspace deletes like any block.\n· Edit: Excalidraw full-screen on an opaque white sheet; our one glass capsule top-right (Library hidden): status · Cancel (discard since opening) · Done (the one blue). Autosaves into the note 1 s after a change.\n· Excalidraw themed via its CSS vars to the one blue + system font; colours inside a drawing are user content.\n· Lazy: Excalidraw (434 KB gz) loads only on Edit / Draw; a note without a drawing loads none of it.",
+      "w": 420,
+      "x": 7740,
+      "y": 21400
+    },
+    "s11": {
+      "fill": "teal",
+      "text": "Meeting recording (T51; D26, D27)\n· Mac app only: browser + phone show transcripts and “Recording on the Mac”, never capture.\n· Start: Record audio switch, off by default every time; on → “Tell people you’re recording” in ink. No model → disabled + link to Settings.\n· Banner: red dot (new token --rec-on-dark #ff5c52, 4.9:1 on --dark; --err is 2.28 there) + “Recording” + elapsed + Me / Others level meters + Stop recording + End meeting.\n· Transcript = content (white box, no glass): timestamp · Me / Others · text; ~30 s behind live; search is a GET filter with <mark>; Copy → toast.\n· After Stop: “Transcribing the last part…” + progress (~4–5 min per hour), then “Ask Claude for notes: run /meeting” with a copy chip. Audio deleted once text.\n· First Record: Microphone → Screen & System Audio Recording → Quit & Reopen; the meeting runs either way.\n· Settings › Transcription: one model (large-v3-turbo q5_0, 574 MB, SHA-256 checked), Thai default (Auto | Thai | English), vocabulary = meeting name + active epics.",
+      "w": 420,
+      "x": 8630,
+      "y": 22880
+    },
+    "s12": {
+      "fill": "teal",
+      "text": "Tags (T70, D29)\n· #word in any line, to-do, note, meeting note or own event; epics, meeting series and topics have a Tags field and pass it down to their lines (read time, nothing copied).\n· Chip = the .chip family (--fill-2, 6 radius): text --ink-2 11.1:1, the # is the only accent, 4.88:1 (hover # → --accent-2, 5.57 on --sep). Opaque, so the same on every look. Dashed outline = inherited; --accent-wash = active filter.\n· Capture bar: # opens suggestions by use count (menu glass, Tab/↵ inserts); a typed word that is a tag (case-insensitive, plural) gets a “Tag as #x?” offer, never auto-applied.\n· Make tag: select one word in a line edit; toast offers to tag older lines that mention it, one Undo.\n· Hub /tags/<tag>: one page per name, shared with a topic / meeting series of the same name. [[X]]: epic → topic → series → tag.\n· Google events are never tagged: matched by word on the hub (“matched by word”).\n· Filter row (GET ?tag=) on To-dos, Today, Notes, Calendar, Report; Group by Epic | Tag on Today and Report.",
+      "w": 420,
+      "x": 9520,
+      "y": 25270
     },
     "s2": {
       "fill": "green",
@@ -526,6 +577,38 @@
       "x": 0,
       "y": -280
     },
+    "t10": {
+      "kind": "title1",
+      "maxW": 1280,
+      "text": "Liquid Glass",
+      "w": 240,
+      "x": 0,
+      "y": 17698
+    },
+    "t11": {
+      "kind": "title1",
+      "maxW": 7660,
+      "text": "Drawings · Excalidraw in notes",
+      "w": 240,
+      "x": 0,
+      "y": 21120
+    },
+    "t12": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Meeting recording · Mac app, local transcript",
+      "w": 240,
+      "x": 0,
+      "y": 22600
+    },
+    "t13": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Tags · one grouping layer (#tag)",
+      "w": 240,
+      "x": 0,
+      "y": 24990
+    },
     "t2": {
       "kind": "title1",
       "maxW": 4000,
@@ -590,58 +673,20 @@
       "x": 0,
       "y": 11972
     },
-    "t10": {
+    "t14": {
       "kind": "title1",
-      "maxW": 1280,
-      "text": "Liquid Glass",
+      "maxW": 3770,
+      "text": "Date picker · one shared popover",
       "w": 240,
       "x": 0,
-      "y": 17698
+      "y": 27690
     },
-    "t11": {
-      "kind": "title1",
-      "maxW": 7660,
-      "text": "Drawings · Excalidraw in notes",
-      "w": 240,
-      "x": 0,
-      "y": 21120
-    },
-    "s10": {
+    "s13": {
       "fill": "teal",
       "w": 420,
-      "x": 7740,
-      "y": 21400,
-      "text": "Drawing block (T41, D23/D24)\n· Read: the stored SVG in a white 12-radius figure, no glass (content). Shown as <img>, so no script and no JS needed. Edit drawing = glass pill top-right on hover/focus, always on touch.\n· Insert: / menu → Drawing opens the editor at once. Empty = dashed placeholder + Draw. Selected = 2px blue ring; Backspace deletes like any block.\n· Edit: Excalidraw full-screen on an opaque white sheet; our one glass capsule top-right (Library hidden): status · Cancel (discard since opening) · Done (the one blue). Autosaves into the note 1 s after a change.\n· Excalidraw themed via its CSS vars to the one blue + system font; colours inside a drawing are user content.\n· Lazy: Excalidraw (434 KB gz) loads only on Edit / Draw; a note without a drawing loads none of it."
-    },
-    "t12": {
-      "kind": "title1",
-      "maxW": 9050,
-      "text": "Meeting recording · Mac app, local transcript",
-      "w": 240,
-      "x": 0,
-      "y": 22600
-    },
-    "s11": {
-      "fill": "teal",
-      "w": 420,
-      "x": 8630,
-      "y": 22880,
-      "text": "Meeting recording (T51; D26, D27)\n· Mac app only: browser + phone show transcripts and “Recording on the Mac”, never capture.\n· Start: Record audio switch, off by default every time; on → “Tell people you’re recording” in ink. No model → disabled + link to Settings.\n· Banner: red dot (new token --rec-on-dark #ff5c52, 4.9:1 on --dark; --err is 2.28 there) + “Recording” + elapsed + Me / Others level meters + Stop recording + End meeting.\n· Transcript = content (white box, no glass): timestamp · Me / Others · text; ~30 s behind live; search is a GET filter with <mark>; Copy → toast.\n· After Stop: “Transcribing the last part…” + progress (~4–5 min per hour), then “Ask Claude for notes: run /meeting” with a copy chip. Audio deleted once text.\n· First Record: Microphone → Screen & System Audio Recording → Quit & Reopen; the meeting runs either way.\n· Settings › Transcription: one model (large-v3-turbo q5_0, 574 MB, SHA-256 checked), Thai default (Auto | Thai | English), vocabulary = meeting name + active epics."
-    },
-    "t13": {
-      "kind": "title1",
-      "maxW": 9440,
-      "text": "Tags · one grouping layer (#tag)",
-      "w": 240,
-      "x": 0,
-      "y": 24990
-    },
-    "s12": {
-      "fill": "teal",
-      "w": 420,
-      "x": 9520,
-      "y": 25270,
-      "text": "Tags (T70, D29)\n· #word in any line, to-do, note, meeting note or own event; epics, meeting series and topics have a Tags field and pass it down to their lines (read time, nothing copied).\n· Chip = the .chip family (--fill-2, 6 radius): text --ink-2 11.1:1, the # is the only accent, 4.88:1 (hover # → --accent-2, 5.57 on --sep). Opaque, so the same on every look. Dashed outline = inherited; --accent-wash = active filter.\n· Capture bar: # opens suggestions by use count (menu glass, Tab/↵ inserts); a typed word that is a tag (case-insensitive, plural) gets a “Tag as #x?” offer, never auto-applied.\n· Make tag: select one word in a line edit; toast offers to tag older lines that mention it, one Undo.\n· Hub /tags/<tag>: one page per name, shared with a topic / meeting series of the same name. [[X]]: epic → topic → series → tag.\n· Google events are never tagged: matched by word on the hub (“matched by word”).\n· Filter row (GET ?tag=) on To-dos, Today, Notes, Calendar, Report; Group by Epic | Tag on Today and Report."
+      "x": 3350,
+      "y": 27970,
+      "text": "Date picker (T75, D38)\n· Replaces the browser picker UI on every input[type=date] (day nav, to-do due, report from/to, event, epic dates). The native input stays: value carrier + no-JS fallback; forms post unchanged.\n· Glass = .menu (class=\"menu dp\"), floor 85%: at the menus’ 60% the accent fell to 3.18.\n· Monday first (D4), 6 rows always. Today = accent ring, value = accent fill + white, out of month --muted (--faint is 1.74), disabled .45.\n· Keys: arrows day/week, PgUp/PgDn month (+Shift year), Home/End, Enter picks, Esc closes; focus returns to the field.\n· Phone: bottom sheet, 44 px days, tap selects, Done commits.\n· AA min: ink 13.58 · muted 7.34 · accent 4.57 · white on accent 5.57 · rings 4.57 (≥3)."
     }
   },
   "order": [
@@ -699,7 +744,11 @@
     "Mobile.Tags.dc.html",
     "Mobile.TagsCapture.dc.html",
     "Tags.RT.dc.html",
-    "Tags.IC.dc.html"
+    "Tags.IC.dc.html",
+    "Components.DatePicker.dc.html",
+    "Mobile.DatePicker.dc.html",
+    "Components.DatePicker.RT.dc.html",
+    "Components.DatePicker.IC.dc.html"
   ],
   "pages": [],
   "title": "Atharu Design"
