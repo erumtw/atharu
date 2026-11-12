@@ -106,7 +106,7 @@ async fn todos_are_today_and_overdue_overdue_first_capped_at_eight() {
     );
     let b = get(&st, "/quick").await.body;
     let rows: Vec<&str> = b
-        .match_indices("<span class=\"tx\">")
+        .match_indices("<span class=\"qtx\">")
         .map(|(i, m)| b[i + m.len()..].split('<').next().unwrap())
         .collect();
     assert_eq!(
