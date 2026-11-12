@@ -103,7 +103,8 @@ pub struct Page {
     pub series_count: usize,
     pub plans: Vec<Plan>,
     pub groups: Vec<KindGroup>,
-    pub notes: String,
+    /// Its note (T90): (id, title, markdown), edited in place with the Notes editor; None = "Start notes".
+    pub note: Option<(i64, String, String)>,
     pub today: NaiveDate,
     pub back: String,
     /// Notes linking here with `[[…]]`: (id, title).

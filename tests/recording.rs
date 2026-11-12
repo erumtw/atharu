@@ -45,7 +45,7 @@ fn segs(st: &AppState, tid: i64) -> String {
 #[test]
 fn migration_009_adds_meeting_transcripts() {
     let st = state();
-    assert_eq!(count(&st, "PRAGMA user_version"), 9);
+    assert!(count(&st, "PRAGMA user_version") >= 9);
     exec(
         &st,
         "INSERT INTO meetings(day, name) VALUES ('2026-11-11', 'oms-sync');

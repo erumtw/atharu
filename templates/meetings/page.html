@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block head %}<script src="/static/js/editor.js" defer></script>{% endblock %}
 {% block side %}{% include "meetings/side.html" %}{% endblock %}
 {% block content %}
 {%- let full = false %}{% let pin_error = false %}
@@ -42,11 +43,21 @@
 {%- endfor %}
 </div>
 {%- endfor %}
-<h3><label for="mnotes">Notes</label> <span id="notes-saved" class="saved normal">saves as you type</span></h3>
-<form style="display: flex; flex-direction: column; gap: 8px" method="post" action="/meetings/{{ id }}/notes" hx-post="/meetings/{{ id }}/notes" hx-trigger="input changed delay:1s, change" hx-target="#notes-saved" hx-swap="innerHTML">
-<textarea id="mnotes" name="notes" class="ta" rows="5">{{ notes }}</textarea>
+{#- Notes are a real note (T90, D58): the Notes editor in place, posting to /notes/<id> like the note page does
+    (editor.js binds #note / #editor / #note-md; it builds from the markdown, so no server render is needed). #}
+<section id="notes">
+{%- if let Some((nid, _, body)) = note %}
+<h3>Notes <span id="saved" class="saved normal">saves as you type</span> <a class="small normal" href="/notes/{{ nid }}" style="margin-left: 8px">Open as note</a></h3>
+<form id="note" method="post" action="/notes/{{ nid }}" hx-post="/notes/{{ nid }}" hx-trigger="input delay:1s, change, submit" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 8px">
+<div id="editor" class="note-body"></div>
+<textarea id="note-md" name="body" class="note-md" rows="8" aria-label="Meeting notes (markdown)">{{ body }}</textarea>
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
+{%- else %}
+<h3>Notes</h3>
+<form method="post" action="/meetings/{{ id }}/note"><button class="btn ghost s" type="submit">Start notes</button> <span class="small muted">A note of its own: <span class="mono">/</span> blocks, <span class="mono">[[</span> links, #tags, drawings.</span></form>
+{%- endif %}
+</section>
 {{ shots|safe }}
 {{ tx|safe }}
 {% include "partials/backlinks.html" %}

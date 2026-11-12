@@ -363,7 +363,9 @@ fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
         "id": id,
         "day": m.day,
         "name": m.name,
-        "notes": m.notes,
+        // The meeting's own note (T90) is where its notes live now; the old text field only for pre-010 rows.
+        "notes": m.note.as_ref().map_or(m.notes.clone(), |n| n.2.clone()),
+        "note": m.note.as_ref().map(|n| json!({"id": n.0, "title": n.1})),
         "endedAt": m.ended_at,
         "lines": lines,
         "plans": plans,

@@ -31,6 +31,7 @@ pub fn routes() -> Router<AppState> {
             post(handlers::rename_speaker),
         )
         .route("/meetings/{id}/notes", post(handlers::save_notes))
+        .route("/meetings/{id}/note", post(handlers::start_note))
         .route("/meetings/{id}/tags", post(handlers::set_tags))
         .route("/meetings/{id}/delete", post(handlers::delete))
         .route("/meetings/restore", post(handlers::restore))
