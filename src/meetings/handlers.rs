@@ -261,6 +261,12 @@ fn span_label(start: Option<&str>, end: Option<&str>) -> String {
     }
 }
 
+/// "Start notes" (T90): create the meeting's note and come back to edit it in place.
+pub async fn start_note(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
+    queries::create_note(&mut st.conn(), id)?.ok_or(AppError::NotFound)?;
+    Ok(web::back(&format!("/meetings/{id}#notes")))
+}
+
 #[derive(Deserialize)]
 pub struct SeriesNameForm {
     name: String,
@@ -684,13 +690,17 @@ pub async fn page(
             .ended_at
             .clone()
             .map(|t| t.get(11..16).unwrap_or(&t).to_string()),
-        mentions: queries::mentions(&conn, &m.name)?,
+        // Its own note links `[[series]]` too; listing it as a mention would be noise.
+        mentions: queries::mentions(&conn, &m.name)?
+            .into_iter()
+            .filter(|(n, _)| m.note.as_ref().is_none_or(|own| own.0 != *n))
+            .collect(),
         field: tag_field(&conn, &m.name)?,
         banner: recording_here.then_some(b),
         tx: tx_section(&conn, st.mac.is_some(), id, q.q)?,
         shots: shots_view(&st, &conn, id, m.ended_at.is_none()),
         name: m.name,
-        notes: m.notes,
+        note: m.note,
         today: st.today(),
         back: format!("/meetings/{id}"),
     })

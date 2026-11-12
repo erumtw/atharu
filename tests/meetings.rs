@@ -222,3 +222,69 @@ async fn rename_moves_the_whole_series_and_its_tags() {
         2
     );
 }
+
+#[tokio::test]
+async fn migration_010_moves_notes_text_into_a_note() {
+    // A pre-010 database: meetings with a notes text column only.
+    let dir = std::env::temp_dir().join(format!("atharu-010-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("atharu.db");
+    {
+        let c = atharu::db::open(&path).unwrap();
+        c.execute_batch(
+            "ALTER TABLE meetings DROP COLUMN note_id; PRAGMA user_version = 9;
+             INSERT INTO meetings(id, day, name, notes, ended_at) VALUES
+               (1, '2026-11-10', 'oms-sync', 'ship friday #cshub', '2026-11-10 10:00:00'),
+               (2, '2026-11-11', 'oms-sync', '', '2026-11-11 10:00:00');",
+        )
+        .unwrap();
+    }
+    let st = atharu::app::AppState::new(atharu::db::open(&path).unwrap());
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE title = 'oms-sync · 2026-11-10' AND body LIKE 'ship friday #cshub%[[oms-sync]]' AND author = 'me'"
+        ),
+        1
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM meetings WHERE id = 1 AND note_id IS NOT NULL"
+        ),
+        1
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM meetings WHERE id = 2 AND note_id IS NULL"
+        ),
+        1
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM taggings WHERE tag = 'cshub' AND item_type = 'note'"
+        ),
+        1
+    );
+    // The page edits it in place; an empty meeting offers "Start notes", which makes one once.
+    let page = get(&st, "/meetings/1").await.body;
+    assert!(page.contains("id=\"note-md\"") && page.contains("ship friday #cshub"));
+    assert!(
+        !page.contains("Mentioned in"),
+        "its own note isn't a mention"
+    );
+    assert!(get(&st, "/meetings/2").await.body.contains("Start notes"));
+    post(&st, "/meetings/2/note", "", false).await;
+    post(&st, "/meetings/2/note", "", false).await;
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE title = 'oms-sync · 2026-11-11'"
+        ),
+        1
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}

@@ -113,8 +113,11 @@ pub fn meetings(conn: &Connection, name: Option<&str>) -> rusqlite::Result<Vec<M
 pub struct Meeting {
     pub day: String,
     pub name: String,
+    /// The pre-010 text field; kept only for rollback (the note below replaced it, D58).
     pub notes: String,
     pub ended_at: Option<String>,
+    /// Its note (T90): (id, title, markdown body).
+    pub note: Option<(i64, String, String)>,
 }
 
 /// Renames series `old` to `new` everywhere it is written: every meeting in it and its series tags, one
@@ -144,6 +147,36 @@ pub fn rename_series(conn: &mut Connection, old: &str, new: &str) -> rusqlite::R
     Ok(true)
 }
 
+/// "Start notes" on a meeting without a note (T90): an owner note "<series> · <day>" ending in `[[series]]` so it
+/// links back, attached to the meeting. Returns the existing one if a double click got here first.
+pub fn create_note(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<i64>> {
+    let tx = conn.transaction()?;
+    let row: Option<(String, String, Option<i64>)> = tx
+        .query_row(
+            "SELECT day, name, note_id FROM meetings WHERE id = ?1",
+            [id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .optional()?;
+    let Some((day, name, existing)) = row else {
+        return Ok(None);
+    };
+    if existing.is_some() {
+        return Ok(existing);
+    }
+    tx.execute(
+        "INSERT INTO notes(title, body, author) VALUES (?1, ?2, 'me')",
+        params![format!("{name} · {day}"), format!("\n\n[[{name}]]")],
+    )?;
+    let note = tx.last_insert_rowid();
+    tx.execute(
+        "UPDATE meetings SET note_id = ?1 WHERE id = ?2",
+        params![note, id],
+    )?;
+    tx.commit()?;
+    Ok(Some(note))
+}
+
 /// Newest meeting (CLI `meeting latest`).
 pub fn latest(conn: &Connection) -> rusqlite::Result<Option<i64>> {
     conn.query_row("SELECT max(id) FROM meetings", [], |r| r.get(0))
@@ -151,14 +184,20 @@ pub fn latest(conn: &Connection) -> rusqlite::Result<Option<i64>> {
 
 pub fn meeting(conn: &Connection, id: i64) -> rusqlite::Result<Option<Meeting>> {
     conn.query_row(
-        "SELECT day, name, notes, ended_at FROM meetings WHERE id = ?1",
+        "SELECT m.day, m.name, m.notes, m.ended_at, n.id, n.title, n.body
+         FROM meetings m LEFT JOIN notes n ON n.id = m.note_id WHERE m.id = ?1",
         [id],
         |r| {
+            let note: Option<i64> = r.get(4)?;
             Ok(Meeting {
                 day: r.get(0)?,
                 name: r.get(1)?,
                 notes: r.get(2)?,
                 ended_at: r.get(3)?,
+                note: match note {
+                    Some(n) => Some((n, r.get(5)?, r.get(6)?)),
+                    None => None,
+                },
             })
         },
     )
@@ -249,7 +288,7 @@ pub fn delete(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<(String
     let snap = tx
         .query_row(
             "SELECT name, json_object('id', id, 'day', day, 'name', name, 'notes', notes,
-               'ended_at', ended_at,
+               'ended_at', ended_at, 'note_id', note_id,
                'entries', json((SELECT json_group_array(e.id) FROM entries e WHERE e.meeting_id = m.id)),
                'transcripts', json((SELECT json_group_array(json_object('started_at', t.started_at,
                    'ended_at', t.ended_at, 'status', t.status, 'model', t.model, 'lang', t.lang,
@@ -274,11 +313,13 @@ pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<i64
         return Ok(Err(name));
     }
     tx.execute(
-        "INSERT INTO meetings(id, day, name, notes, ended_at)
+        "INSERT INTO meetings(id, day, name, notes, ended_at, note_id)
          SELECT CASE WHEN EXISTS (SELECT 1 FROM meetings WHERE id = j.id) THEN NULL ELSE j.id END,
-                j.day, j.name, j.notes, j.ended_at
+                j.day, j.name, j.notes, j.ended_at,
+                (SELECT id FROM notes WHERE id = j.note_id)
          FROM (SELECT ?1 ->> 'id' AS id, ?1 ->> 'day' AS day, ?1 ->> 'name' AS name,
-                      ?1 ->> 'notes' AS notes, ?1 ->> 'ended_at' AS ended_at) j",
+                      ?1 ->> 'notes' AS notes, ?1 ->> 'ended_at' AS ended_at,
+                      ?1 ->> 'note_id' AS note_id) j",
         [snap],
     )?;
     let id = tx.last_insert_rowid();

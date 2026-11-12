@@ -15,7 +15,7 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 | `entries` | one logged line | `id`, `day` (YYYY-MM-DD), `epic_key`, `meeting_id`, `kind` (done · decision · blocker · impact · learn · plan), `topic` (learn only), `text`, `plan_state` (open · done · dropped, plans only), `closed_day`, `pinned`, `due`, `link`, `note_id` (the line's note, many lines → one note; NULL = none), `author` |
 | `epics` | a Jira key the owner tracks | `key` (FK-123), `title`, `role` (owner · contributor), `okr`, `status` (active · done · dropped), `start`, `target`, `done_on`, `metric`, `before`, `after`, `tags` (`a,b`), `author` |
 | `evidence` | links proving an epic's impact | `epic_key`, `url`, `note`, `author` |
-| `meetings` | meeting mode; `name` is a series slug (oms-sync) | `id`, `day`, `name`, `notes`, `ended_at` (NULL = running) |
+| `meetings` | meeting mode; `name` is a series slug (oms-sync) | `id`, `day`, `name`, `note_id` (its note, the meeting's notes; `notes` = pre-010 text, unused), `ended_at` (NULL = running) |
 | `topics` | learn pages, **the owner's own understanding** | `slug`, `summary`, `own_words`, `resources` |
 | `depth_ratings` | append-only self-rating 1 heard of · 2 can explain · 3 can build w/o AI · 4 can teach | `topic`, `day`, `depth` |
 | `notes` | markdown notes; `[[X]]` links a page | `id`, `title`, `body`, `author`, `updated_at` |
