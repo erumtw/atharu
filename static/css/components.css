@@ -625,3 +625,7 @@ progress.prog::-moz-progress-bar{background:var(--accent)}
 .ttl .ptitle textarea{all:unset;display:block;width:100%;box-sizing:border-box;font:inherit;color:inherit;letter-spacing:inherit;line-height:inherit;resize:none;overflow:hidden;field-sizing:content;overflow-wrap:anywhere;border-radius:10px;padding:0 6px;margin:0 -6px;cursor:text}
 .ttl .ptitle textarea:hover{background:var(--fill-2)}
 .ttl .ptitle textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px;background:var(--fill-2)}
+/* Suggest menu (suggest.ts): replaces the native datalist dropdown. Fixed to the viewport under its input, opaque like
+   the capture bar's menus (a blurred menu over glass would be glass on glass); long names clip, full one on hover. */
+.menu.sugm{position:fixed;--lg-min:100%;backdrop-filter:none;-webkit-backdrop-filter:none;z-index:50;max-height:264px;overflow-y:auto}
+.menu.sugm [role=option]{min-width:0}
