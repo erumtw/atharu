@@ -39,7 +39,7 @@
 <h3>{{ g.title }}</h3>
 <div class="blocks">
 {%- for l in g.lines %}
-<div class="blk"><span class="{{ l.kind.badge_class() }}" title="{{ l.kind.tooltip() }}">{{ l.kind.mark() }}</span><span>{% if let Some(t) = l.topic %}<span class="mono">{{ t }}</span> {% endif %}{{ l.text }}</span>{% if let Some(k) = l.epic_key %}<a href="/epics/{{ k }}"><span class="chip key">{{ k }}</span></a>{% endif %}</div>
+<div class="blk ln"><span class="{{ l.kind.badge_class() }}" title="{{ l.kind.tooltip() }}">{{ l.kind.mark() }}</span><span>{% if let Some(t) = l.topic %}<span class="mono">{{ t }}</span> {% endif %}{{ l.text }}</span>{% if let Some(k) = l.epic_key %}<a href="/epics/{{ k }}"><span class="chip key">{{ k }}</span></a>{% endif %}</div>
 {%- endfor %}
 </div>
 {%- endfor %}

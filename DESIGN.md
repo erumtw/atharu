@@ -139,7 +139,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Toast | `.toast` | above the capture bar, `role=status`; `:empty` hides it; `.tick` ✓ in accent |
 | Day nav | `.dnav` (`.i` = icon segment) | see rules |
 | Text box | `.ta`, `.note-md` | multi-line glass box, 12 radius; autosaves (Save only in `<noscript>`) |
-| Inline input | `.pin`, `.pin.dash`, `.pin.bad` | borderless props input/select; `.dash` = dashed "type here" rule (inline edit); `.bad` = red ring |
+| Inline input | `.pin`, `.pin.dash`, `.pin.bad` | borderless props input/select; `.dash` = dashed "type here" rule (inline edit); `.bad` = red ring; a page title (note, epic) is a one-row `textarea.pin` that grows, so a long title wraps instead of clipping; Enter leaves it (T91) |
 | Line edit | `.edit-line` | log text as a link; dotted underline on hover; opens `entry_edit` in place |
 | Save status | `.saved` | 12 px muted in the crumb: "Changes save as you type · ✓ saved"; `.err` on failure |
 | Error | `.err` | 13 px `--err` text under the field it explains |
@@ -153,6 +153,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Stat tile | `.stat` | 28/600 number over a muted label; glass +10% with Glass everywhere |
 | Properties | `.props` | Notion inline `dt/dd` grid, hover = editable, autosave on change |
 | Block row | `.blk` | log line, 32 tall; hover reveals delete `.x` |
+| Line row | `.blk.ln` | a log line, to-do or decision (Today, To-dos, meeting, epic, tag hub): the text takes the room and wraps; chips + actions keep their width in one right-hand column, top-aligned to the first text line (`--lh` 32, 44 phone), so a wrapped row never squeezes the text or shifts Pin / Drop. A series chip is capped at min(35%, 16rem) with "…" + full name on hover. Phone: check/kind + text + ⋯ on line one, chips wrap under it (T91) |
 | To-do check | `.check` + `.done-text` | Apple Reminders circle: 20px (24 phone), 1.5px `--ctl-edge` ring (3.3:1), checked = accent fill + white tick; native checkbox under appearance:none, posts on change; done = struck + muted |
 | Segmented | `.seg`, `.seg.mac` | pill track 36 / 30 segments (32/26 in chrome), `rgba(120,120,128,.12)` (iOS); `.mac` = 8-radius macOS control for settings |
 | Grouped list | `.sec` + `.grp` > `.gi` | Apple System Settings inset group (`--fill`, hairline inset 16px); Notion bold label + one-line help left, one control right; `.gi.col` stacks |
