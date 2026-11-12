@@ -61,7 +61,7 @@
 <section class="qsec qtodo" id="qtodo" aria-labelledby="qt">
 {%- if todos.is_empty() %}
 <h2 class="qlbl" id="qt">To-dos</h2>
-<div class="qempty"><b>Nothing due today</b><span>No overdue to-dos either. Add one: start a line with <span class="k">&gt;</span></span>{% if more > 0 %}<a href="/todos">{{ more }} open to-do{% if more != 1 %}s{% endif %} · Open Atharu</a>{% endif %}</div>
+<div class="qempty"><b>Nothing due today</b><span>No overdue to-dos either. Add one: start a line with&nbsp;<span class="k">&gt;</span></span>{% if more > 0 %}<a href="/todos">{{ more }} open to-do{% if more != 1 %}s{% endif %} · Open Atharu</a>{% endif %}</div>
 {%- else %}
 <h2 class="qlbl" id="qt">To-dos<span class="n">· {{ overdue }} overdue, {{ due_today }} today</span></h2>
 <div class="qlist" role="list">

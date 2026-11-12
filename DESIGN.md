@@ -361,15 +361,19 @@ the log scrolls under it.
   macOS 26 menu-bar-extra style: no arrow, 18 radius, 6 px under the bar, left edge on the tray item, clamped 8 px inside the
   screen's right edge. Right click = a native menu (below). The browser can open `/quick` too; every action is a plain form POST.
 - **Panel** = `<div class="menu quick" role="dialog">`: the `.menu` glass recipe whole (rim, light, shadow, `--muted-tint`,
-  `--err-tint`, RT/IC), floor **90%**: it floats over anything on the desktop, so AA is measured over black / a dark window, not a
-  wallpaper. In Atharu.app the native popover material does the blur (`data-app=mac` drops the CSS blur); the window is forced to the
-  light appearance, so the panel is our light glass on a dark menu bar too. In the panel, links take `--accent-2` (`--accent` is 4.44
+  `--err-tint`, RT/IC), following **every appearance setting like the main window**: the look's wallpaper behind it, Clear/Tinted, the
+  opacity slider (`--glass-a` + 5%, the sidebar's step, so Wakaba reads green), Glass everywhere (panel −5%, each section a 12-radius
+  card at +10% with the `--glass-edge`, 8 apart), RT/IC. Blur text boxes has nothing to act on here (no `.ta`/`.note-md`), as on Today.
+  In Atharu.app the native Popover material is the base layer, the look's wallpaper paints over it at .8 (as in the main window,
+  rounded 18) and the glass on top; the CSS blur is dropped (a smooth mesh gains nothing). The window stays forced light: every look is
+  light. App-only floor **35%** (`--lg-min`): the 20% left to the material is modelled as black, and Sumi's 18% floor would put the
+  hint at 3.88 there. In the panel, links take `--accent-2` (`--accent` is 4.44
   over black) and the to-do check ring `--muted` (`--ctl-edge` is 2.12 there); fields and pills keep a `--line` edge.
 - **Layout**, 360 × 480, 12 side padding, sections split by hairlines, in this order: **header** (40: dry-brush mark · **Atharu** ·
   date in `--muted` · "Open Atharu" `.ib`) · **capture** · **meeting** · **to-dos**. Desktop control heights at every width: the page
   loads tokens/base/components/looks + `quick.css`, never `responsive.css` (360 px must not trip the phone rules); a `(hover:none)`
   rule gives touch its 44.
-- **Capture**: six **kind tiles** in one row (44 tall, key square over an 11/500 word: done · decision · blocker · impact · learned ·
+- **Capture**: 8 px between the tiles, the field and the hint (the section's gap). Six **kind tiles** in one row (44 tall, key square over an 11/500 word: done · decision · blocker · impact · learned ·
   to-do), a native radio group posting `kind`. A typed prefix always wins and quick.ts mirrors it onto the tile; a picked tile only
   prepends its prefix when the line has none. Selected = `--accent-wash` + 1.5 px inset `--accent` ring + 600 (ring and weight, not
   colour alone). Below: the 44 `.fld` with **Log ↵** (36, the view's one blue) and the live hint (13, `--accent-2`, 18 px reserved so
@@ -384,7 +388,8 @@ the log scrolls under it.
 - **To-dos**: today + overdue only, overdue first, late ones with the existing `.due.late`; rows 32 (check 20 · text with ellipsis ·
   due right). The list takes what is left of the 480 and scrolls on its own; header, capture and meeting never move. At most 8 rows;
   "+ N more open · Open Atharu" links `/todos`. Ticking posts at once; the struck row stays until the popover closes (untick = reopen).
-  Empty: "**Nothing due today** · No overdue to-dos either. Add one: start a line with `>`" + "N open to-dos · Open Atharu".
+  Empty: "**Nothing due today** · No overdue to-dos either. Add one: start a line with `>`" + "N open to-dos · Open Atharu";
+  the lines wrap balanced (WebKit's SF ran the one-liner past 360) with the `>` chip glued to "with".
 - **Keyboard**: opens focused in the line. Tab from the line: Log ↵ → series pills → name → Start / End meeting → each check →
   + N more; Shift+Tab: kind tiles (one stop, ←→ picks) → Open Atharu. Enter saves (unless an option was arrowed to). Esc closes an open
   menu, else hides the popover; blur hides it; Ctrl+Opt+Space toggles it. Any link opens in the main window and hides the popover.
@@ -392,9 +397,12 @@ the log scrolls under it.
   while one runs, **End meeting · name** instead · separator · **Quit Atharu ⌘Q**. "Quick capture" goes (left click is it now).
 - **RT / IC**: Reduce Transparency → panel 100% white + `--line` hairline, no blur (the OS drops the material too). Increase Contrast →
   ink edge (from `.menu`), ink hairlines and tile outlines, `--muted-hc`, ink check ring.
-- **AA** (T81 `aa81.py`, panel at 90% over black, `#1e1e1e` and the Glass look's darkest stops, Clear + Tinted + IC): ink 10.95 ·
-  `--muted-tint` 5.92 · hint and links `--accent-2` 4.63 · `.due.late` `--err-tint` 4.92 · tile text 9.85 · white on `--accent` 5.57 ·
-  rings: tile 4.44, check 5.92, focus 4.44 (≥ 3) · dark callout as the banner (white 14.91, muted 9.28, End 4.94, rec dot 4.90).
+- **AA** (`aa81b.py`, each look at its floor, weakest step −5%, darkest veiled stop, unblurred, Clear + Tinted + IC; app = wallpaper
+  .8 over black + the 35% floor): worst text is always the hint/links `--accent-2`: browser Sumi 5.75 · Sora 5.34 · Wakaba 5.63 ·
+  Glass 4.88; app Sumi 4.56 · Sora 4.68 · Wakaba 4.66 · Glass 4.57. Rings ≥ 3.59. Opaque pairs unchanged (white on `--accent` 5.57,
+  dark callout as the banner: white 14.91, muted 9.28, End 4.94, rec dot 4.90).
+- **Canvas drift**: the Quick boards still show the T81 white 90% panel with the tiles touching the field; the app (above) is the
+  source of truth until the boards are redrawn.
 
 ### Line notes (canvas row "Line notes · the note is the detail page", T84; D49)
 
