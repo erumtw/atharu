@@ -388,7 +388,7 @@ the log scrolls under it.
   saving the box is back on that kind. The field becomes a 3-line `.fld.note` (14 radius, textarea 15/20, **Save ↵** bottom right),
   placeholder "Note title, then the body on the next lines"; a half-typed line moves into it. First non-blank line = title, the rest =
   markdown body (empty ok), saved as the owner via `POST /notes/new` (htmx even in the app: a plain POST would be a navigation);
-  `#tags` in the body tag it, as in the editor. Enter saves, Shift+Enter = new line. Saved → hint "✓ Saved note · **Open**" (opens
+  `#tags` anywhere, title line included, tag it (D54). Enter saves, Shift+Enter = new line. Saved → hint "✓ Saved note · **Open**" (opens
   `/notes/<id>` in the main window). Only whitespace → "Nothing to save. Type the note’s title first." in the hint, the text stays.
   AA: same surfaces and tokens as the line field and the tiles, nothing new.
 - **Meeting**: not running → "Start a meeting", the three most recent series as `.btn.ghost.s` pills (submit buttons: one click

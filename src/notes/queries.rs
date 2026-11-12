@@ -150,7 +150,7 @@ pub fn insert(conn: &Connection, title: &str, body: &str, author: &str) -> rusql
         params![title, body, author],
     )?;
     let id = tx.last_insert_rowid();
-    retag(&tx, id, body)?;
+    retag(&tx, id)?;
     tx.commit()?;
     Ok(id)
 }
@@ -170,7 +170,7 @@ pub fn agent_update(
         params![title, body, id, author],
     )? > 0;
     if ok {
-        retag(&tx, id, body)?;
+        retag(&tx, id)?;
     }
     tx.commit()?;
     Ok(ok)
@@ -192,10 +192,8 @@ pub fn update_fields(conn: &Connection, id: i64, f: &[(&str, &str)]) -> rusqlite
             &format!("UPDATE notes SET {col} = ?1, updated_at = datetime('now') WHERE id = ?2"),
             params![v, id],
         )?;
-        if *col == "body" {
-            retag(&tx, id, v)?;
-        }
     }
+    retag(&tx, id)?;
     tx.commit()?;
     Ok(true)
 }
@@ -296,8 +294,7 @@ pub fn restore(conn: &Connection, snap: &str) -> rusqlite::Result<i64> {
         [snap],
     )?;
     let id = tx.last_insert_rowid();
-    let body: String = tx.query_row("SELECT body FROM notes WHERE id = ?1", [id], |r| r.get(0))?;
-    retag(&tx, id, &body)?;
+    retag(&tx, id)?;
     // Only lines no other note took meanwhile (snapshots from before line notes have no `lines`).
     tx.execute(
         "UPDATE entries SET note_id = ?1 WHERE note_id IS NULL
@@ -308,13 +305,19 @@ pub fn restore(conn: &Connection, snap: &str) -> rusqlite::Result<i64> {
     Ok(id)
 }
 
-/// A note's `#tags` (headings `# x` are not tags: the parser needs a word right after the `#`).
-fn retag(conn: &Connection, id: i64, body: &str) -> rusqlite::Result<()> {
+/// A note's `#tags`, title and body alike (D54: a one-line quick note's tag lives in the title).
+/// Headings `# x` are not tags: the parser needs a word right after the `#`.
+fn retag(conn: &Connection, id: i64) -> rusqlite::Result<()> {
+    let text: String = conn.query_row(
+        "SELECT title || char(10) || body FROM notes WHERE id = ?1",
+        [id],
+        |r| r.get(0),
+    )?;
     crate::db::retag(
         conn,
         "note",
         &id.to_string(),
-        &crate::domain::tags::tags(body),
+        &crate::domain::tags::tags(&text),
     )
 }
 
