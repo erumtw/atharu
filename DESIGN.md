@@ -144,7 +144,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Save status | `.saved` | 12 px muted in the crumb: "Changes save as you type · ✓ saved"; `.err` on failure |
 | Error | `.err` | 13 px `--err` text under the field it explains |
 | Line kind square | `.k` | 22px mono square: `!` `x` `+` `?` `>`; impact = blue (`.k.imp`), blocker = ink (`.k.bl`) |
-| Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.llm` = ink outline badge for agent-written rows; `.chip.tag` (`.inh`, `.fl`) = see "Tag chip" below |
+| Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.llm` = ink outline badge for agent-written rows; `.chip.tag` (`.inh`, `.fl`) = see "Tag chip" below. One line, never wider than its container: a long name ends in "…" with the full name in the link's `title` (also crumbs, sidebar series via `.ell`) |
 | Link chip | `.lchip` | source link on a line; the only blue chip |
 | Flag | `.flag.stale/.risk/.over` | pill; ink weight, no colour |
 | Due | `.due`, `.due.late` | muted / red bold |
@@ -173,6 +173,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw` |
 | Recording banner | `.callout.dark.recb` > `.dot.rec` + `.rect` + `.lvl` ×2 | meeting banner while recording: pulsing dot, elapsed, one level meter per stream, Stop recording + End meeting |
 | Transcript | `.tx` > `.txhead` + `.txbody` > `.txrow` | white 12-radius box (content, no glass); search `.fld.s` + Copy in the head |
+| Screenshots | `#shots` > `.shots` > `a` > `img` + caption | meeting page under Notes: 160×100 cover thumbnails (8 radius, `--line` border), `HH:MM` caption, click = full PNG; **Take screenshot** ghost pill (app, meeting running); the camera `.btn.ghost` on the banner and the popover card runs macOS's picker (T89) |
 | Progress | `progress.prog` | native `<progress>`, 6 px, `--accent` on `--sep` (4.6:1) |
 | Command chip | `.cmd` | a copyable CLI / slash command in a white pill with a Copy button inside |
 

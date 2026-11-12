@@ -19,6 +19,8 @@
 .pg{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
 .crumb{display:flex;gap:8px;align-items:center;padding:10px 24px;font-size:13px;color:var(--muted);min-height:52px;box-sizing:border-box;flex-wrap:wrap}
 .crumb a{color:var(--muted)}.crumb b{color:var(--ink);font-weight:500}
+/* A long series slug in the trail or title clips; the title attribute keeps the full name. */
+.crumb a.trail,.crumb b{max-width:min(320px,40vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .doc{max-width:860px;width:100%;margin:0 auto;box-sizing:border-box;padding:24px 48px 72px;display:flex;flex-direction:column;gap:14px}
 .doc.wide{max-width:1080px}
 .ptitle{font-size:40px;font-weight:600;letter-spacing:-.5px;line-height:1.1;margin:8px 0 0}

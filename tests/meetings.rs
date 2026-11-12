@@ -113,7 +113,7 @@ async fn lines_logged_during_a_meeting_get_its_id() {
     assert!(b.contains("<td>1 open</td>"));
     assert!(b.contains("Revisit queue design"));
     assert!(!b.contains("if traffic doubles"));
-    assert!(b.contains("oms-sync · 1"));
+    assert!(b.contains("<span class=\"ell\">oms-sync</span><span>· 1</span>"));
     assert!(
         get(&st, "/")
             .await
