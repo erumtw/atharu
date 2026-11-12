@@ -32,6 +32,8 @@ Approved wireframes: canvas https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ, H
 | `--dark` / `--on-dark-muted` | `#272729` / `#cccccc` | meeting banner, impact callout / muted text on it (9.3:1) |
 | `--fill-3` / `--now` | `#fafafc` / `#f5f9fe` | table hover, calendar heads, toast / today's calendar column |
 | `--faint` | `#b0b0b5` | dashed rules (inline edit, own events), the "other" OKR segment; never text |
+| `--ctl-edge` | `#8e8e93` | unchecked control rings, e.g. the to-do check (3.3:1 on white, the 3:1 floor for non-text UI) |
+| `--tick` | SVG mask (`url(data:…)`) | the check's tick, drawn as a mask so it takes the fill colour |
 | `--chrome-bg` | `#eef0f5` | behind the sheet when no look is set |
 | `--muted-look` / `--muted-tint` / `--muted-hc` | `#5e5e63` / `#48484d` / `#3a3a3c` | `--muted` on a look / with Tinted glass / under Increase Contrast |
 | `--err-tint` | `#a32019` | `--err` with Tinted glass (`#b3261e` falls to 4.48:1 on the Glass look's tinted sheet) |
@@ -150,7 +152,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Stat tile | `.stat` | 28/600 number over a muted label; glass +10% with Glass everywhere |
 | Properties | `.props` | Notion inline `dt/dd` grid, hover = editable, autosave on change |
 | Block row | `.blk` | log line, 32 tall; hover reveals delete `.x` |
-| To-do check | `.check` + `.done-text` | native checkbox, accent fill, posts on change; done = struck + muted |
+| To-do check | `.check` + `.done-text` | Apple Reminders circle: 20px (24 phone), 1.5px `--ctl-edge` ring (3.3:1), checked = accent fill + white tick; native checkbox under appearance:none, posts on change; done = struck + muted |
 | Segmented | `.seg`, `.seg.mac` | pill track 36 / 30 segments (32/26 in chrome), `rgba(120,120,128,.12)` (iOS); `.mac` = 8-radius macOS control for settings |
 | Grouped list | `.sec` + `.grp` > `.gi` | Apple System Settings inset group (`--fill`, hairline inset 16px); Notion bold label + one-line help left, one control right; `.gi.col` stacks |
 | Switch | `.sw` | native checkbox `role=switch` (posts without JS), 38×22, 51×31 on phone; pressed stretches the knob |
@@ -170,6 +172,10 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 
 ### Drawing block (canvas row "Drawings · Excalidraw in notes", T41; D23, D24)
 
+- **Stored as** one markdown line in the note body, `![Drawing](data:image/svg+xml;base64,…)`: the exported SVG with the
+  Excalidraw scene embedded in it (`exportEmbedScene`), so one block is both the picture and the editable scene; `![Drawing]()`
+  = an empty drawing. The server sanitiser (`domain::markdown`) turns only that exact form, alone on its line with a base64
+  payload, into the figure; anything else stays an ordinary markdown image.
 - **Read view** `.drawing`: a figure in `.note-body`, white, `--line` border, 12 radius, 16 padding; the stored SVG centred,
   `max-width:100%`, `max-height:480px`. It is content, so no glass. The SVG is shown as an `<img>` (no script, no fetches) and works
   without JS. **Edit drawing** = `.btn.ghost.s` top-right, shown on hover / focus-within (always on touch).

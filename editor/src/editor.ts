@@ -97,14 +97,21 @@ async function editDrawing(start: string, set: (src: string) => void): Promise<v
   const form = document.getElementById('note')
   const md = document.getElementById('note-md')
   let session: import('./drawing').Session | null = null
-  let timer = 0
   let saving = false
   let closed = false
   const status = (text: string, err = false) => { saved.textContent = text; saved.classList.toggle('err', err) }
   // The form's own htmx autosave posts the note; this only reports how the post went while the sheet is open.
   const after = (e: Event) => {
     if (!saving) return
-    if ((e as CustomEvent<{ successful: boolean }>).detail.successful) { saving = false; status('✓ saved just now') }
+    if ((e as CustomEvent<{ successful: boolean }>).detail.successful) {
+      saving = false
+      status('✓ saved')
+      // The phone bar (Mobile.DrawingEdit) drops "just now" to keep Cancel / Done at 44; CSS hides the span there.
+      const more = document.createElement('span')
+      more.className = 'more'
+      more.textContent = ' just now'
+      saved.append(more)
+    }
     else {
       status('Couldn’t save · retrying', true)
       setTimeout(() => md?.dispatchEvent(new Event('input', { bubbles: true })), 3000)
@@ -114,7 +121,6 @@ async function editDrawing(start: string, set: (src: string) => void): Promise<v
   const close = (src: string) => {
     if (closed) return
     closed = true
-    clearTimeout(timer)
     // Done never waits on the network: the node changes now, the form posts it like any edit.
     set(src)
     session?.close()
@@ -131,16 +137,26 @@ async function editDrawing(start: string, set: (src: string) => void): Promise<v
   ;(document.activeElement as HTMLElement | null)?.blur()
   document.body.append(sheet)
   const mod = await import(ISLAND) as typeof import('./drawing')
-  session = await mod.open(host, start, () => {
-    status('Saving…')
-    clearTimeout(timer)
-    timer = window.setTimeout(async () => {
-      if (!session || closed) return
+  // No timer here: the form's `input delay:1s` already coalesces the posts. This only keeps one export in flight
+  // and re-runs it once for whatever changed meanwhile, so a drag doesn't queue an export per pointer move.
+  let busy = false
+  let dirty = false
+  const flush = async () => {
+    dirty = true
+    if (busy || !session) return
+    busy = true
+    while (dirty && !closed) {
+      dirty = false
       const src = await session.src(false)
-      if (closed) return
+      if (closed) break
       saving = true
       set(src)
-    }, 1000)
+    }
+    busy = false
+  }
+  session = await mod.open(host, start, () => {
+    status('Saving…')
+    void flush()
   })
 }
 
