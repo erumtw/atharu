@@ -17,7 +17,8 @@ Write up meeting $ARGUMENTS (a meeting number, or `latest` when empty) in atharu
    `cargo run -q -- log "<line>" --meeting <id> --note <note id> --as claude` (`!` decision, `> … by <when>` to-do,
    `x ` blocker; epic key first when it belongs to one). `--meeting` files it under this meeting even after it
    ended; `--note` links the line to the summary. One thing per line; skip what's only someone else's chatter.
-4. Ending the meeting, editing my notes field, closing or pinning to-dos: atharu has no command for that yet. Say so.
+4. Got a line of yours wrong (a misheard owner)? `cargo run -q -- edit <id> "<line>" --as claude` rewrites lines you
+   wrote; mine stay mine. Ending the meeting, editing my notes field, closing or pinning to-dos: atharu has no command for that yet. Say so.
    Never write SQL. Never paste the transcript anywhere else.
 5. Finish with: the note's id and title, a table of what was logged (id · kind · epic · text), and anything you
    skipped as unclear.

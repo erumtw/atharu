@@ -206,6 +206,14 @@ pub fn set_meeting(conn: &Connection, id: i64, meeting: i64) -> rusqlite::Result
     Ok(())
 }
 
+/// Who wrote a line (`me` or an agent slug): CLI `edit` lets an agent change only its own.
+pub fn entry_author(conn: &Connection, id: i64) -> rusqlite::Result<Option<String>> {
+    conn.query_row("SELECT author FROM entries WHERE id = ?1", [id], |r| {
+        r.get(0)
+    })
+    .optional()
+}
+
 /// The line as grammar text, for the inline edit box: (day, line).
 pub fn entry_line(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String, String)>> {
     conn.query_row(
