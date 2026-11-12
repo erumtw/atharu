@@ -455,3 +455,39 @@ async fn end_answers_with_a_link_to_the_meeting() {
     // A later page load doesn't repeat it.
     assert!(!get(&st, "/").await.body.contains("Ended <b>"));
 }
+
+#[tokio::test]
+async fn screenshots_are_served_listed_and_path_checked() {
+    let dir = std::env::temp_dir().join(format!("atharu-t89-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let st = AppState::new(atharu::db::open(&dir.join("atharu.db")).unwrap());
+    post(&st, "/meetings", &form(&[("name", "oms-sync")]), true).await;
+    let png = b"\x89PNG\r\n\x1a\nfake";
+    let name = atharu::meetings::add_shot(&st, 1, png).unwrap();
+    assert!(
+        atharu::meetings::add_shot(&st, 9, png).is_err(),
+        "no such meeting"
+    );
+    assert!(
+        atharu::meetings::add_shot(&st, 1, b"GIF89a").is_err(),
+        "png only"
+    );
+
+    let r = get(&st, &format!("/attachments/meetings/1/{name}")).await;
+    assert_eq!(r.status, 200);
+    for bad in ["../atharu.db", "..%2Fatharu.db", "x.png"] {
+        assert_eq!(
+            get(&st, &format!("/attachments/meetings/1/{bad}"))
+                .await
+                .status,
+            404,
+            "{bad}"
+        );
+    }
+    let page = get(&st, "/meetings/1").await.body;
+    assert!(page.contains(&format!("src=\"/attachments/meetings/1/{name}\"")));
+    // A browser lists them but has no camera (the picker is the Mac app's).
+    assert!(!page.contains("/app/screenshot"));
+    let _ = std::fs::remove_dir_all(&dir);
+}

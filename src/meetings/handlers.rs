@@ -343,6 +343,47 @@ pub struct TxQuery {
     q: String,
 }
 
+fn shots_view(st: &AppState, conn: &Connection, id: i64, running: bool) -> view::Shots {
+    view::Shots {
+        id,
+        files: super::shots::root(conn)
+            .map(|r| super::shots::list(&r, id))
+            .unwrap_or_default(),
+        can_take: st.mac.is_some() && running,
+    }
+}
+
+/// The Screenshots section alone: re-fetched after the app adds one (`atharu-sync`).
+pub async fn shots(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
+    let conn = st.conn();
+    let m = queries::meeting(&conn, id)?.ok_or(AppError::NotFound)?;
+    web::html(&shots_view(&st, &conn, id, m.ended_at.is_none()))
+}
+
+/// One screenshot. Only names `shots::save` writes are served, so no path can leave the meeting's folder.
+pub async fn shot_file(
+    State(st): State<AppState>,
+    Path((id, file)): Path<(i64, String)>,
+) -> AppResult<Response> {
+    if !super::shots::valid_name(&file) {
+        return Err(AppError::NotFound);
+    }
+    let root = super::shots::root(&st.conn()).ok_or(AppError::NotFound)?;
+    let bytes =
+        std::fs::read(root.join(id.to_string()).join(&file)).map_err(|_| AppError::NotFound)?;
+    Ok((
+        [
+            (axum::http::header::CONTENT_TYPE, "image/png"),
+            (
+                axum::http::header::CACHE_CONTROL,
+                "private, max-age=31536000, immutable",
+            ),
+        ],
+        bytes,
+    )
+        .into_response())
+}
+
 /// The Transcript section alone: polled while live / finishing.
 pub async fn transcript(
     State(st): State<AppState>,
@@ -541,11 +582,15 @@ pub async fn page(
         groups,
         day,
         // Stored as local `YYYY-MM-DD HH:MM:SS`; the page only needs the time.
-        ended: m.ended_at.map(|t| t.get(11..16).unwrap_or(&t).to_string()),
+        ended: m
+            .ended_at
+            .clone()
+            .map(|t| t.get(11..16).unwrap_or(&t).to_string()),
         mentions: queries::mentions(&conn, &m.name)?,
         field: tag_field(&conn, &m.name)?,
         banner: recording_here.then_some(b),
         tx: tx_section(&conn, st.mac.is_some(), id, q.q)?,
+        shots: shots_view(&st, &conn, id, m.ended_at.is_none()),
         name: m.name,
         notes: m.notes,
         today: st.today(),
