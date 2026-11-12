@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.3 — 2026-11-12
+
+### Fixes
+
+- our own suggestion menu instead of the browser's datalist dropdown
+
+### Other
+
+- Merge pull request #4 from erumtw/feat/worklog
+
 ## v0.1.2 — 2026-11-12
 
 ### Features
