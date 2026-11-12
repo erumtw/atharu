@@ -1,0 +1,78 @@
+<!doctype html>
+{#- The menu-bar popover (T81, DESIGN.md §6 "Quick popover"). Own lean page: no sidebar, and no layout.css /
+    responsive.css, so the 360 px window never trips the phone rules. Every form posts to its slice with back=/quick. #}
+<html lang="en" class="q" data-look="{{ layout.look }}"{% if layout.glass_all %} data-glass="all"{% endif %}{% if layout.tinted %} data-tint="tinted"{% endif %}{% if layout.text_blur %} data-blur="text"{% endif %} style="--glass-a:{{ layout.glass_a }}%">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atharu · Quick</title>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/components.css">
+<link rel="stylesheet" href="/static/css/looks.css">
+<link rel="stylesheet" href="/static/css/quick.css">
+<link rel="icon" type="image/svg+xml" href="/static/icon/{{ layout.look }}.svg">
+<meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":false}]}'>
+<script src="/static/js/htmx.min.js" defer></script>
+<script src="/static/js/datepicker.js" defer></script>
+<script src="/static/js/capture.js" defer></script>
+<script src="/static/js/quick.js" defer></script>
+</head>
+<body>
+<div class="menu quick" role="dialog" aria-label="Atharu quick capture">
+<header class="qh"><svg class="mark" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><path d="M7.3 2.6A6.5 6.5 0 1 0 14.4 6.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="26 1.6 3 1.4 2"/><circle cx="9.9" cy="8.1" r="2.2"/></svg><b>Atharu</b><span class="small muted">{{ date }}</span><a class="ib" href="/" aria-label="Open Atharu" title="Open Atharu"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#open"/></svg></a></header>
+
+{#- Saving answers with a 303 back here (back=/quick); htmx follows it and takes only the hint and the to-dos, so the
+    form, its focus and capture.js stay. A rejected line answers 422 into #hint (the form keeps its text). #}
+<section class="qsec qcap" aria-label="Log a line">
+<form method="post" action="/entries" hx-post="/entries" hx-swap="none" hx-select-oob="#hint,#qtodo" hx-disinherit="*" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) this.reset()">
+<input type="hidden" name="back" value="/quick"><input type="hidden" name="notag" id="notag" value="">
+<fieldset class="kinds"><legend class="vh">Line kind</legend>
+{%- for (v, mark, class, word) in kinds %}<label class="kc"><input type="radio" name="kind" value="{{ v }}"{% if loop.first %} checked{% endif %}><span class="{{ class }}">{{ mark }}</span>{{ word }}</label>{% endfor -%}
+</fieldset>
+<div class="qfield">
+<div class="fld"><input id="line" name="line" value="" placeholder="What did you do?" aria-label="Log a line" autocomplete="off" autofocus role="combobox" aria-expanded="false" aria-controls="tagsug" aria-autocomplete="list" hx-post="/parse-preview" hx-trigger="input changed delay:150ms, kindpick" hx-target="#hint" hx-swap="innerHTML"><button class="btn" type="submit">Log ↵</button></div>
+<input type="date" id="bydate" data-for="line" hidden tabindex="-1" aria-label="Due date">
+<div id="tagsug"></div><div id="bysug"></div>
+</div>
+</form>
+<div class="qhint" id="hint" aria-live="polite">
+{%- if let Some(s) = saved -%}
+<span class="tick">✓</span> Saved as <b>{{ s.kind }}</b>{% if let Some(k) = s.key %} on <span class="chip key">{{ k }}</span>{% endif %} · <form class="inline" method="post" action="/entries/{{ s.id }}/delete?back=/quick" hx-post="/entries/{{ s.id }}/delete?back=/quick" hx-swap="none" hx-select-oob="#hint,#qtodo"><button class="linkbtn" type="submit">Undo</button></form>
+{%- endif -%}
+</div>
+</section>
+
+{#- Plain forms: quick.js posts them without HX-Request, so the meetings slice answers its 303 back here (with it, it
+    would answer Today's banner partial) and swaps in the fresh section. #}
+<section class="qsec qmeet" id="qmeet" aria-labelledby="qm">
+{%- if let Some(m) = running %}
+<h2 class="qlbl vh" id="qm">Meeting</h2>
+<div class="callout dark qrun"><span class="dot" aria-hidden="true"></span><span class="t"><a href="/meetings/{{ m.id }}"><b>{{ m.name }}</b></a>{% if !m.since.is_empty() %}<span class="small muted">{{ m.since }}</span>{% endif %}</span><form class="inline" method="post" action="/meetings/{{ m.id }}/end"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit">End meeting</button></form></div>
+{%- else %}
+<h2 class="qlbl" id="qm">Start a meeting</h2>
+{%- if !series.is_empty() %}
+<form method="post" action="/meetings" class="qpills"><input type="hidden" name="back" value="/quick">{% for s in series %}<button class="btn ghost s" type="submit" name="name" value="{{ s }}">{{ s }}</button>{% endfor %}</form>
+{%- endif %}
+<form method="post" action="/meetings" class="fld m"><input type="hidden" name="back" value="/quick"><input name="name" value="" placeholder="{% if series.is_empty() %}Name it, e.g. oms-sync{% else %}or a new name, e.g. vendor-call{% endif %}" aria-label="Meeting name" autocomplete="off" required><button class="btn ghost" type="submit">Start</button></form>
+{%- endif %}
+</section>
+
+<section class="qsec qtodo" id="qtodo" aria-labelledby="qt">
+{%- if todos.is_empty() %}
+<h2 class="qlbl" id="qt">To-dos</h2>
+<div class="qempty"><b>Nothing due today</b><span>No overdue to-dos either. Add one: start a line with <span class="k">&gt;</span></span>{% if more > 0 %}<a href="/todos">{{ more }} open to-do{% if more != 1 %}s{% endif %} · Open Atharu</a>{% endif %}</div>
+{%- else %}
+<h2 class="qlbl" id="qt">To-dos<span class="n">· {{ overdue }} overdue, {{ due_today }} today</span></h2>
+<div class="qlist" role="list">
+{%- for t in todos %}
+{#- Ticking posts at once; the row stays (struck) until the popover reloads, so a mis-tick can be unticked = reopened. #}
+<div class="qt" role="listitem"><form method="post" action="/plans/{{ t.id }}" hx-post="/plans/{{ t.id }}" hx-trigger="change" hx-swap="none"><input type="hidden" name="back" value="/quick"><input type="hidden" name="state" value="done"><input class="check" type="checkbox" aria-label="Mark done: {{ t.text }}" hx-on:change="this.form.elements.state.value = this.checked ? 'done' : 'open'; this.closest('.qt').querySelector('.tx').classList.toggle('done-text', this.checked)"><noscript><button class="btn ghost s" type="submit">Done</button></noscript></form><span class="tx">{{ t.text }}</span><span class="due{% if t.late %} late{% endif %}">due {{ t.due }}</span></div>
+{%- endfor %}
+</div>
+{%- if more > 0 %}<a class="qmore" href="/todos">+ {{ more }} more open · Open Atharu</a>{% endif %}
+{%- endif %}
+</section>
+</div>
+</body>
+</html>

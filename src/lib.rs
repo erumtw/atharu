@@ -14,6 +14,7 @@ pub mod layout;
 pub mod learn;
 pub mod meetings;
 pub mod notes;
+pub mod quick;
 pub mod report;
 pub mod settings;
 pub mod tags;

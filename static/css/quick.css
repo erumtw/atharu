@@ -1,0 +1,90 @@
+/* Menu-bar quick popover (T81, D46; DESIGN.md §6 "Quick popover"). Linked only by templates/quick/page.html, which
+   loads tokens, base, components, looks and this file but NOT layout.css or responsive.css: the window is 360 px wide,
+   and the < 640 phone rules (44 px controls, bottom sheets, .m-only) must not fire on a pointer surface. */
+
+html.q,html.q body{background:transparent;margin:0;min-height:0;height:100%;overflow:hidden}
+
+/* The panel = the .menu glass recipe (rim, light, shadow, lens, RT/IC, --muted-tint, --err-tint), floor 90%: it floats over
+   anything on the desktop, so AA is measured over black / a dark window, not a known wallpaper (aa81.py; worst text 4.63). */
+.menu.quick{--lg-min:90%;position:relative;width:360px;max-height:480px;height:100%;border-radius:18px;padding:4px 12px 8px;gap:0;z-index:auto;
+  font-size:14px}
+/* Atharu.app: the window is the panel and the native popover material (window-vibrancy) does the blur; a CSS blur over a
+   transparent WKWebView has nothing to sample. The rim, light and tint stay. */
+html[data-app=mac] .menu.quick{height:100vh;max-height:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:var(--lg-light)}
+/* In the panel: links and the hint one blue step darker (--accent 4.44 over a black desktop), check ring --muted (5.92;
+   --ctl-edge 2.12 fails the 3:1 non-text floor here). */
+.quick a,.quick .linkbtn{color:var(--accent-2)}
+.quick .check{border-color:var(--muted)}
+/* Fields and pills inside the panel: the solid sheet's --line edge (a white glass edge vanishes on 90% white, and fully under RT). */
+.quick :is(.btn.ghost,.fld):not(:focus-within):not(.bad){border-color:var(--line)}
+.quick .check:checked{border-color:var(--accent)}
+
+.qh{display:flex;align-items:center;gap:8px;height:40px;flex:none}
+.qh .mark{width:18px;height:18px;flex:none}
+.qh b{font-size:15px;font-weight:600}
+.qh .ib{margin-left:auto;color:var(--ink)}
+/* .ic's stroke recipe lives in responsive.css, which this page doesn't load. */
+.quick .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.qsec{border-top:1px solid rgba(0,0,0,.08);padding:10px 0;display:flex;flex-direction:column;gap:8px;flex:none}
+.qlbl{margin:0;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0;display:flex;align-items:center;gap:6px;line-height:1}
+.qlbl .n{font-weight:500}
+
+/* Kind chips: one row of six 44-tall tiles (key square over the word), a radio group posting `kind`. A typed prefix wins;
+   capture.ts mirrors it onto the chip, so the chip never disagrees with the line. */
+.kinds{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;border:0;margin:0;padding:0;min-width:0}
+.kc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:44px;border-radius:10px;
+  background:rgba(0,0,0,.05);font-size:11px;font-weight:500;line-height:1;color:var(--ink);cursor:pointer;letter-spacing:0;position:relative}
+.kc input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.kc .k{width:20px;height:20px;font-size:12px}
+.kc:hover{background:rgba(0,0,0,.08)}
+/* Selected = the menus' --accent-wash + an inset accent ring (4.44, ≥ 3) + 600: weight and ring, not colour alone. */
+.kc:has(:checked){background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
+.kc:has(:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+
+.qfield{position:relative}
+/* The 44 field holds the 36 primary (DESIGN §6). Flat glass: it sits inside the panel, no rim. */
+.quick .fld input{font-size:15px}
+.qhint{min-height:18px;font-size:13px;line-height:1.4;color:var(--accent-2);padding:0 4px}
+.qhint .tick{color:var(--accent-2);font-weight:600}
+.qhint .err{font-size:13px}
+
+/* # and `by ` menus (the capture bar's `.menu.up` markup) open DOWN here, inside the window (it can't grow past the
+   screen top), over the sections below. Opaque white (floor 100%) with the rim + shadow: a blurred menu over the glass
+   panel would be glass on glass. */
+.quick .qfield .menu{--lg-min:100%;top:calc(100% + 6px);left:0;right:0;width:auto;z-index:5;backdrop-filter:none;-webkit-backdrop-filter:none}
+
+.qpills{display:flex;flex-wrap:wrap;gap:6px}
+.qpills .btn{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;line-height:30px}
+
+/* Running meeting: the banner's opaque --dark, so its colours are the banner's (AA from T51, not the glass). */
+.qrun{padding:10px 8px 10px 14px;align-items:center;gap:10px;border-radius:12px}
+.qrun .t{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.3}
+.qrun .t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qrun .t .small{font-variant-numeric:tabular-nums}
+.qrun .btn{flex:none}
+.dot.rec{background:var(--rec-on-dark);animation:rec 1.6s ease-in-out infinite}
+@keyframes rec{50%{opacity:.35}}
+
+/* To-dos take the rest of the 480 and scroll on their own; header, capture and meeting never move. */
+.qtodo{flex:1 1 auto;min-height:0;padding-bottom:0}
+.qlist{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;margin:0 -12px;padding:0 12px}
+.qt{display:flex;align-items:center;gap:10px;min-height:32px;flex:none}
+.qt form{display:contents}
+.qt .tx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qt .due{flex:none}
+.qt .done-text{color:var(--muted)}
+.qmore{font-size:13px;padding:6px 0 0;flex:none}
+.qempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:13px;color:var(--muted);padding:12px 0}
+.qempty b{color:var(--ink);font-weight:600;font-size:14px}
+
+/* Touch (browser /quick on a phone): the 44 floor responsive.css would have given. */
+@media (hover:none){.kc,.quick .fld{height:48px}.qt{min-height:44px}.qpills .btn,.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}}
+@media (prefers-reduced-motion: reduce){.dot.rec{animation:none}}
+/* Reduce Transparency: looks.css already makes .menu solid + hairline; the panel goes fully opaque too. */
+@media (prefers-reduced-transparency: reduce){.menu.quick{--lg-min:100%}}
+@media (prefers-contrast: more){.qsec{border-top-color:var(--ink)}.kc{box-shadow:inset 0 0 0 1px var(--ink)}.kc:has(:checked){box-shadow:inset 0 0 0 2px var(--accent)}
+  .quick .check{border-color:var(--ink)}}
+/* Atharu.app: the window is exactly the panel, so the look's wallpaper (looks.css body::before) would only paint
+   under the glass; the native material is the backdrop there. The browser keeps it around the panel. */
+html.q[data-app=mac] body::before{content:none}

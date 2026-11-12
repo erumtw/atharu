@@ -161,9 +161,45 @@ pub fn parse(line: &str, today: NaiveDate) -> Result<Entry, ParseError> {
     })
 }
 
+/// A kind picked outside the line (the quick popover's tiles, value = the prefix): put it where a typed prefix would
+/// go, after the key. A prefix typed in the line wins, so the tile can never contradict the text.
+pub fn with_kind(line: &str, kind: Option<&str>) -> String {
+    let Some(p) = kind.filter(|k| Kind::from_prefix(k).is_some()) else {
+        return line.to_string();
+    };
+    let rest = line.trim_start();
+    let (first, tail) = split_first(rest);
+    let (key, body) = if is_epic_key(first) {
+        (Some(first), tail)
+    } else {
+        (None, rest)
+    };
+    if body.is_empty() || Kind::from_prefix(split_first(body).0).is_some() {
+        return line.to_string();
+    }
+    match key {
+        Some(k) => format!("{k} {p} {body}"),
+        None => format!("{p} {body}"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tile_kind_only_fills_a_missing_prefix() {
+        let k = |line, kind| with_kind(line, Some(kind));
+        assert_eq!(k("p95 down", "+"), "+ p95 down");
+        assert_eq!(k("OPS-1 p95 down", "+"), "OPS-1 + p95 down");
+        assert_eq!(k("OPS-1 ! keep it", "+"), "OPS-1 ! keep it");
+        assert_eq!(k("> call vendor", "x"), "> call vendor");
+        assert_eq!(k("xml parser fixed", "x"), "x xml parser fixed");
+        assert_eq!(k("OPS-1", "+"), "OPS-1");
+        assert_eq!(k("shipped", ""), "shipped");
+        assert_eq!(k("shipped", "bogus"), "shipped");
+        assert_eq!(with_kind("shipped", None), "shipped");
+    }
 
     fn d(s: &str) -> NaiveDate {
         s.parse().unwrap()
