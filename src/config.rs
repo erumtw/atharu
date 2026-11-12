@@ -39,7 +39,7 @@ impl Config {
                 "-db" | "--db" => cfg.db = args.next().ok_or("--db needs a path")?.into(),
                 other => {
                     return Err(format!(
-                        "unknown argument {other:?}; usage: atharu [--db PATH] [dump | log | epic | note | evidence | today | show]"
+                        "unknown argument {other:?}; usage: atharu [--db PATH] [dump | log | epic | note | evidence | today | show | version | update]"
                     ));
                 }
             }
