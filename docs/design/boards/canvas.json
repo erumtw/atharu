@@ -323,9 +323,9 @@
     },
     "Settings.dc.html": {
       "expand": "fill",
-      "h": 1188,
+      "h": 1400,
       "is_interactive": true,
-      "title": "Settings · appearance + connections",
+      "title": "Settings · appearance + connections + about",
       "w": 1280,
       "x": 0,
       "y": 9128
@@ -521,6 +521,55 @@
       "w": 1280,
       "x": 1360,
       "y": 34058
+    },
+    "Quick.dc.html": {
+      "h": 700,
+      "title": "Quick · capture first: rest, typing (chip follows the prefix), saved inline, # and by menus inside",
+      "w": 2280,
+      "x": 0,
+      "y": 35348
+    },
+    "Quick.Meeting.dc.html": {
+      "h": 700,
+      "title": "Quick.Meeting · start (recent series pills + name) / running / recording",
+      "w": 1840,
+      "x": 2380,
+      "y": 35348
+    },
+    "Quick.Todos.dc.html": {
+      "h": 700,
+      "title": "Quick.Todos · today + overdue, tick, short day, empty",
+      "w": 1840,
+      "x": 4320,
+      "y": 35348
+    },
+    "Quick.Menu.dc.html": {
+      "h": 560,
+      "title": "Quick.Menu · right-click native menu, light + dark menu bar",
+      "w": 1920,
+      "x": 6260,
+      "y": 35348
+    },
+    "Quick.Notes.dc.html": {
+      "h": 1640,
+      "title": "Quick · dark menu bar, sizes, keyboard, AA",
+      "w": 1300,
+      "x": 0,
+      "y": 36208
+    },
+    "Quick.RT.dc.html": {
+      "h": 640,
+      "title": "Quick · Reduce Transparency",
+      "w": 470,
+      "x": 1400,
+      "y": 36208
+    },
+    "Quick.IC.dc.html": {
+      "h": 640,
+      "title": "Quick · Increase Contrast",
+      "w": 470,
+      "x": 1970,
+      "y": 36208
     }
   },
   "createdOnFiles": {
@@ -561,7 +610,9 @@
     "t14",
     "s13",
     "t15",
-    "s14"
+    "s14",
+    "t16",
+    "s15"
   ],
   "notes": {
     "s0": {
@@ -789,6 +840,21 @@
       "x": 2720,
       "y": 33498,
       "text": "Floating capture bar (T78, D42)\n· Today capture bar = glass capsule, position: sticky bottom 16px in the doc column (not fixed): in the sheet, centred on the text, last line never under it at the end.\n· Width = doc column (764 @1280); phone full width − 12px gutters + safe area; 52 tall.\n· ? stays in the capsule at every width; legend = .menu panel above it (anchor positioning).\n· Above it, out of flow: hint pill · # menu · toast, 6px apart, 8px clear: never glass on glass. #tagsug leaves the form (Backdrop Root).\n· --lg-float shadow (0 12 32 .16). Floors: capsule 70%, pills/menus 85%, hint --accent-2.\n· AA worst (dark banner fully behind): placeholder 4.75, hint 5.12.\n· Phone keyboard: visualViewport → --kb, rides 8px above it."
+    },
+    "t16": {
+      "kind": "title1",
+      "maxW": 8200,
+      "text": "Menu-bar quick popover · capture, meeting, to-dos",
+      "w": 240,
+      "x": 0,
+      "y": 35068
+    },
+    "s15": {
+      "fill": "teal",
+      "w": 440,
+      "x": 2540,
+      "y": 36208,
+      "text": "Quick popover (T81, D46)\n· Tray left click / ⌃⌥Space → /quick in a 360×480 borderless window, 6 px under the bar, left edge on the item, clamped 8 px in; macOS 26 style, no arrow, 18 radius. Right click = native menu.\n· Panel = .menu glass, floor 90% (AA over a black desktop); native popover material does the blur in the app; forced light appearance.\n· Order: header · capture · meeting · to-dos. Only to-dos scroll.\n· Kind tiles: one row of six 44-tall radio tiles posting kind; a typed prefix wins and moves the tile.\n· # and by menus open DOWN inside the window, opaque (no glass on glass). Enter → “✓ Saved as … · Undo” in the hint row, stays open.\n· Meeting: 3 recent series as one-click pills + name + Start; running = the dark banner, minutes, End meeting.\n· To-dos: today + overdue, overdue first (.due.late), 32 rows, max 8, “+ N more · Open Atharu”.\n· Desktop control sizes at 360 px: the page skips responsive.css.\n· AA worst: --accent-2 links/hint 4.63, --muted-tint 5.92; --accent (4.44) and --ctl-edge ring (2.12) rejected in the panel."
     }
   },
   "order": [
@@ -862,7 +928,14 @@
     "Mobile.Capture.Float.Keyboard.dc.html",
     "Capture.Float.Looks.dc.html",
     "Capture.Float.RT.dc.html",
-    "Capture.Float.IC.dc.html"
+    "Capture.Float.IC.dc.html",
+    "Quick.dc.html",
+    "Quick.Meeting.dc.html",
+    "Quick.Todos.dc.html",
+    "Quick.Menu.dc.html",
+    "Quick.Notes.dc.html",
+    "Quick.RT.dc.html",
+    "Quick.IC.dc.html"
   ],
   "pages": [],
   "title": "Atharu Design"
