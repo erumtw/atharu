@@ -33,6 +33,8 @@ pub struct Layout {
     pub glass_all: bool,
     /// `data-tint="tinted"`: the Tinted preset's colour + contrast tokens.
     pub tinted: bool,
+    /// `data-blur="text"`: text boxes get the glass blur too (D25, off by default).
+    pub text_blur: bool,
     /// `--glass-a` in %, already clamped to the look's AA floor.
     pub glass_a: u8,
 }
@@ -56,6 +58,7 @@ impl Layout {
             look: look.slug,
             glass_all: get("glass_all") == Some("1"),
             tinted: get("glass_tint") == Some("tinted"),
+            text_blur: get("text_blur") == Some("1"),
             glass_a: crate::domain::look::glass_alpha(look, get("glass_opacity")),
         })
     }

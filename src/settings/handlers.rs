@@ -45,6 +45,7 @@ pub struct GlassForm {
     /// Checkbox: present = on.
     glass_all: Option<String>,
     glass_opacity: Option<u8>,
+    text_blur: Option<String>,
     /// Which preset button submitted the form, if one did.
     preset: Option<String>,
 }
@@ -73,6 +74,11 @@ pub async fn save_glass(
         &conn,
         "glass_all",
         if f.glass_all.is_some() { "1" } else { "0" },
+    )?;
+    queries::set(
+        &conn,
+        "text_blur",
+        if f.text_blur.is_some() { "1" } else { "0" },
     )?;
     queries::set(&conn, "glass_opacity", &alpha.to_string())?;
     if let Some(t) = tint {

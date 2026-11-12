@@ -14,6 +14,7 @@
 .side{min-height:calc(100vh - 24px)}
 .side .gap{flex:1;min-height:24px}
 .side svg{flex:none;color:var(--muted)}
+.side a.on svg{color:var(--ink)}
 .cnt{margin-left:auto;font-size:11px;font-weight:600;background:var(--accent);color:#fff;border-radius:9999px;padding:0 6px;min-width:18px;text-align:center;letter-spacing:0}
 .pg{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
 .crumb{display:flex;gap:8px;align-items:center;padding:10px 24px;font-size:13px;color:var(--muted);min-height:52px;box-sizing:border-box;flex-wrap:wrap}

@@ -24,7 +24,7 @@ pub fn open_plans(conn: &Connection) -> rusqlite::Result<i64> {
 /// The look + glass settings as (key, value) rows; absent keys mean defaults.
 pub fn looks(conn: &Connection) -> rusqlite::Result<Vec<(String, String)>> {
     let mut stmt = conn.prepare(
-        "SELECT key, value FROM settings WHERE key IN ('look', 'glass_all', 'glass_opacity', 'glass_tint')",
+        "SELECT key, value FROM settings WHERE key IN ('look', 'glass_all', 'glass_opacity', 'glass_tint', 'text_blur')",
     )?;
     stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
         .collect()

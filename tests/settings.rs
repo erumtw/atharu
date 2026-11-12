@@ -133,6 +133,51 @@ async fn glass_settings_persist_and_render_on_html() {
 }
 
 #[tokio::test]
+async fn text_blur_round_trips_htmx_and_plain_post() {
+    let st = state();
+    let s = get(&st, "/settings").await.body;
+    assert!(
+        s.contains("role=\"switch\" name=\"text_blur\" value=\"1\">"),
+        "off by default"
+    );
+    assert!(!s.contains("data-blur"));
+    // htmx: 204, the switch is the whole state of the form, so the other settings ride along unchanged.
+    let r = post(
+        &st,
+        "/settings/glass",
+        &form(&[("text_blur", "1"), ("glass_opacity", "60")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 204);
+    for p in PAGES {
+        assert!(
+            get(&st, p)
+                .await
+                .body
+                .contains(" data-blur=\"text\" style="),
+            "{p}"
+        );
+    }
+    assert!(
+        get(&st, "/settings")
+            .await
+            .body
+            .contains("name=\"text_blur\" value=\"1\" checked")
+    );
+    // Plain form POST without the checkbox = off, 303 back.
+    let r = post(
+        &st,
+        "/settings/glass",
+        &form(&[("glass_opacity", "60")]),
+        false,
+    )
+    .await;
+    assert_eq!(r.status, 303);
+    assert!(!get(&st, "/").await.body.contains("data-blur"));
+}
+
+#[tokio::test]
 async fn slider_sits_on_the_true_scale() {
     let st = state();
     let s = get(&st, "/settings").await.body;
