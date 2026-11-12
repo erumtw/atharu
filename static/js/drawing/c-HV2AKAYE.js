@@ -1,0 +1,2 @@
+/* atharu drawing editor, built by editor/build.mjs. Bundles Excalidraw, React (MIT). */
+import{a as e,c as s}from"./c-BYOSCR3U.js";import"./c-5FQTMDC5.js";import"./c-Z5MVJX5Z.js";import{d as r}from"./c-V3AQALKB.js";r();var p=import.meta.url?new URL(import.meta.url):void 0;typeof window>"u"&&typeof self<"u"&&(self.onmessage=async a=>{if(a.data.command===e.Subset){let t=await s(a.data.arrayBuffer,a.data.codePoints);self.postMessage(t,{transfer:[t]})}});export{p as WorkerUrl};

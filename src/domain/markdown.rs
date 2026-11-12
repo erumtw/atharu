@@ -68,12 +68,38 @@ fn render(md: &str, out: &mut String) {
     html::push_html(out, events);
 }
 
+/// The editor's drawing block, one line: `![Drawing](data:image/svg+xml;base64,…)`, or `![Drawing]()` before anything is
+/// drawn. `Some(src)` only for that exact form: base64 has no `"`, `<` or `:`, so the src can't break out of the attribute,
+/// and an SVG shown through `<img>` runs no script and fetches nothing (D24). Anything else stays an ordinary image.
+fn drawing(line: &str) -> Option<&str> {
+    let src = line.strip_prefix("![Drawing](")?.strip_suffix(')')?;
+    let b64 = src
+        .strip_prefix("data:image/svg+xml;base64,")
+        .unwrap_or(src);
+    let ok = (src.is_empty() || b64.len() < src.len())
+        && b64
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='));
+    ok.then_some(src)
+}
+
 pub fn to_html(md: &str) -> String {
     let mut out = String::new();
     let mut chunk = String::new();
     let mut open: Vec<&'static str> = Vec::new();
     for line in md.lines() {
         let t = line.trim();
+        if let Some(src) = drawing(t) {
+            render(&std::mem::take(&mut chunk), &mut out);
+            if src.is_empty() {
+                out.push_str("<figure class=\"drawing empty\"><span class=\"small muted\">Empty drawing</span></figure>");
+            } else {
+                out.push_str("<figure class=\"drawing\"><img src=\"");
+                out.push_str(src);
+                out.push_str("\" alt=\"Drawing\"></figure>");
+            }
+            continue;
+        }
         // `:::details {open="true"}` → only the block name matters here.
         let tag = t.split_whitespace().next().and_then(fence);
         if tag.is_some() || (t == ":::" && !open.is_empty()) {
@@ -173,5 +199,30 @@ mod tests {
         );
         assert!(h.ends_with("</div></details>"), "{h}");
         assert!(h.contains("checked"));
+    }
+
+    #[test]
+    fn drawing_block_is_the_only_data_image() {
+        let h = to_html(
+            "before\n\n![Drawing](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)\n\n![Drawing]()\nafter",
+        );
+        assert_eq!(
+            h,
+            "<p>before</p>\n<figure class=\"drawing\"><img src=\"data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=\" alt=\"Drawing\"></figure><figure class=\"drawing empty\"><span class=\"small muted\">Empty drawing</span></figure><p>after</p>\n"
+        );
+        for bad in [
+            "![Drawing](javascript:alert(1))",
+            "![Drawing](data:text/html;base64,PHNjcmlwdD4=)",
+            "![Drawing](data:image/svg+xml,<svg onload=alert(1)>)",
+            "![Drawing](data:image/svg+xml;base64,PH\"onerror=alert(1))",
+            "![x](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)",
+            "a ![Drawing](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)",
+        ] {
+            let h = to_html(bad);
+            assert!(
+                !h.contains("=\"data:") && !h.contains("=\"javascript:") && !h.contains("figure"),
+                "{bad} → {h}"
+            );
+        }
     }
 }

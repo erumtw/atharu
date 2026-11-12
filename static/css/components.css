@@ -135,6 +135,8 @@ input[list]::-webkit-calendar-picker-indicator{display:none !important}
 /* "Own words" is long-form writing: a size up from the form fields. */
 .ta.prose{font-size:16px;line-height:1.6}
 .note-md{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px}
+/* display:block above beats the UA [hidden] rule, so the mounted editor's textarea stayed visible. */
+.note-md[hidden]{display:none}
 /* Day nav: one glass capsule, Today | ‹ | date ▾ | ›, hairlines between. The date is a native date input laid over
    its label, so a click opens the OS picker and the keyboard still types a date. */
 .dnav{--s:10%;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;border-radius:9999px;border:1px solid var(--glass-edge);overflow:hidden;font-size:13px;flex:none;
@@ -235,6 +237,39 @@ form.inline{display:inline}
 .note-body [data-type=details]>button::before{content:'▸'}
 .note-body [data-type=details].is-open>button::before{content:'▾'}
 .note-body .page{color:var(--accent)}
+
+/* Drawing block (DESIGN.md §6, boards Drawing.*): content, so white and no glass; the SVG is an <img> (D24). */
+.note-body .drawing{position:relative;margin:0;border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;display:flex;justify-content:center}
+.drawing img{display:block;max-width:100%;height:auto;max-height:480px}
+.drawing .edit{position:absolute;top:8px;right:8px;opacity:0}
+.drawing:is(:hover,:focus-within) .edit{opacity:1}
+@media (hover:none){.drawing .edit{opacity:1}}
+.drawing.sel{outline:2px solid var(--accent);outline-offset:2px}
+.drawing.empty{border:1px dashed var(--faint);min-height:160px;box-sizing:border-box;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.drawing.empty .ic{width:28px;height:28px;color:var(--muted)}
+/* Editor sheet: opaque (it is content), Excalidraw fills it; our bar floats top-right where Library was. */
+.drawsheet{position:fixed;inset:0;z-index:50;background:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+.drawhost{position:absolute;inset:0}
+.drawbar{--s:25%;--g:color-mix(in srgb,var(--glass-c) max(var(--lg-min),min(100%,var(--glass-a) + var(--s))),transparent);--muted:var(--muted-tint);--err:var(--err-tint);
+  position:absolute;top:12px;right:16px;z-index:5;display:flex;align-items:center;gap:6px;height:44px;box-sizing:border-box;padding:0 4px 0 14px;border-radius:9999px;border:1px solid transparent;
+  background:linear-gradient(var(--g),var(--g)) padding-box,var(--lg-rim) border-box;box-shadow:var(--lg-light),var(--lg-shadow);
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+.drawbar .saved{margin-right:4px;white-space:nowrap;color:var(--muted)}
+.drawbar .saved.err{color:var(--err)}
+.drawsheet .default-sidebar-trigger{display:none}
+@media (max-width:639px){
+  .drawbar{top:8px;left:8px;right:8px;justify-content:space-between;padding:0 4px}
+  .drawbar .btn{height:44px}
+  .drawbar .ghost{order:-1}
+  /* Excalidraw's top toolbar moves below our full-width bar. */
+  .drawsheet .App-top-bar{margin-top:52px}
+}
+@media (prefers-reduced-transparency: reduce){.drawbar{background:#fff;border-color:var(--line);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:var(--lg-shadow)}}
+/* Excalidraw themed, not restyled: the one blue + system type through the variables it reads (beats its .excalidraw rule). */
+.drawsheet .excalidraw{--color-primary:var(--accent);--color-primary-darker:var(--accent-2);--color-primary-darkest:var(--accent-2);--color-primary-hover:var(--accent-2);
+  --color-primary-light:var(--accent-wash);--color-on-primary-container:var(--accent-2);--color-selection:var(--accent);
+  --ui-font:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+.drawsheet .HintViewer{color:var(--muted)}
 
 /* Settings (canvas "Settings · appearance", D18): Apple grouped inset list, Notion label + help left, one control right.
    Help text = --muted on --fill: 4.66 (plain), 5.92 (look), 8.35 (tinted). */

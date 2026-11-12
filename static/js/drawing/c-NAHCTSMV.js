@@ -1,0 +1,2 @@
+/* atharu drawing editor, built by editor/build.mjs. Bundles Excalidraw, React (MIT). */
+import{d as c}from"./c-V3AQALKB.js";c();var m=async(t=[{}])=>(Array.isArray(t)||(t=[t]),new Promise((l,p)=>{let e=document.createElement("input");e.type="file";let s=[...t.map(a=>a.mimeTypes||[]),...t.map(a=>a.extensions||[])].join();e.multiple=t[0].multiple||!1,e.accept=s||"";let n=a=>{typeof i=="function"&&i(),l(a)},i=t[0].legacySetup&&t[0].legacySetup(n,()=>i(p),e);e.addEventListener("change",()=>{n(e.multiple?Array.from(e.files):e.files[0])}),e.click()}));export{m as default};
