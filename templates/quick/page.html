@@ -73,8 +73,9 @@
 <form method="post" action="/meetings" class="fld m" id="qstart"><input type="hidden" name="back" value="/quick"><input name="name" value="" placeholder="{% if series.is_empty() %}Name it, e.g. oms-sync{% else %}or a new name, e.g. vendor-call{% endif %}" aria-label="Meeting name" autocomplete="off" required><button class="btn ghost" type="submit">Start</button></form>
 {%- if rec_app %}
 {#- Same switch as Today's start (D31): off every time, consent line in ink once on. #}
-<div class="recopt qrec"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="qstart" autocomplete="off"{% if !model_ready %} disabled{% endif %} onchange="document.getElementById('qrec-p').disabled = !this.checked"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
+<div class="recopt qrec"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="qstart" autocomplete="off"{% if !model_ready %} disabled{% endif %} onchange="document.getElementById('qrec-p').disabled = !this.checked" hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#qrecperm" hx-swap="innerHTML" hx-include="this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
 {%- if model_ready %}<span class="consent">Tell people you’re recording.</span>{% else %}<span class="muted">Needs the speech model.</span> <a href="/settings#transcription">Settings</a>{% endif %}</div>
+<div id="qrecperm"></div>
 {%- endif %}
 {%- endif %}
 </section>

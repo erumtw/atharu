@@ -49,9 +49,10 @@
 <datalist id="series">{% for s in banner.series %}<option value="{{ s }}"></option>{% endfor %}</datalist>
 {%- if banner.rec.mac %}
 {#- Off by default every time (D31): recording is a choice per meeting. Consent swaps in by CSS, no JS. -#}
-<div class="recopt"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="start-meeting"{% if !banner.rec.model_ready %} disabled{% endif %}><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
+<div class="recopt"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="start-meeting"{% if !banner.rec.model_ready %} disabled{% endif %} hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#recperm" hx-swap="innerHTML" hx-include="this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
 {%- if banner.rec.model_ready %}<span class="muted off">Transcribed on this Mac. Audio is deleted once it’s text.</span><span class="consent">Tell people you’re recording before you start.</span>
 {%- else %}<span class="muted">Needs the speech model (574 MB).</span> <a href="/settings#transcription">Download it in Settings</a>{% endif %}</div>
+<div id="recperm" style="padding: 0 18px"></div>
 {%- endif %}
 {%- if let Some(e) = banner.error %}
 <span class="err" style="padding: 0 18px">{{ e }}</span>

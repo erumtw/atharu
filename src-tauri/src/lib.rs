@@ -172,6 +172,7 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
     #[cfg(feature = "recording")]
     let mac = {
         let m = Arc::new(atharu::recording::Mac::new(app_dir.join("models")));
+        let _ = m.ask_screen.set(Box::new(recording::screen_or_ask));
         state.mac = Some(m.clone());
         m
     };

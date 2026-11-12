@@ -222,6 +222,17 @@ pub async fn banner_get(
     web::html(&view::BannerSwap { banner: b })
 }
 
+/// The Record switch just turned on (Today, the meeting pages, the popover): ask for Screen & System Audio
+/// Recording now, so the Quit & Reopen it needs happens before the meeting, not in it. Browser: nothing to ask.
+pub async fn permissions(State(st): State<AppState>) -> AppResult<Response> {
+    let allowed = st
+        .mac
+        .as_deref()
+        .and_then(|m| m.ask_screen.get())
+        .is_none_or(|ask| ask());
+    web::html(&view::Permission { needed: !allowed })
+}
+
 /// Record a running meeting that isn't recording (after Stop, or after Quit & Reopen for a permission).
 pub async fn record(
     State(st): State<AppState>,
