@@ -44,17 +44,17 @@ impl Range {
         }
     }
 
-    /// First and last day of the grid: Mon–Sun of the week, or whole weeks covering the month.
+    /// First and last day of the grid: Sun–Sat of the week (D48), or whole weeks covering the month.
     fn span(&self) -> (NaiveDate, NaiveDate) {
         if self.month {
             let ms = dates::month_start(self.anchor);
             let last = dates::end_of(ms, 1);
             (
-                dates::week_start(ms),
-                dates::week_start(last) + Days::new(6),
+                dates::calendar_week_start(ms),
+                dates::calendar_week_start(last) + Days::new(6),
             )
         } else {
-            let ws = dates::week_start(self.anchor);
+            let ws = dates::calendar_week_start(self.anchor);
             (ws, ws + Days::new(6))
         }
     }

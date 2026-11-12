@@ -5,7 +5,7 @@
 {%- endif %}
 <div class="tw"><div class="cal{% if cal.month %} month{% endif %}">
 {%- if cal.month %}
-<div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div><div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div><div class="dh">Sun</div>
+<div class="dh">Sun</div><div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div><div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div>
 {%- else %}
 {%- for d in cal.days %}<div class="dh{% if d.now %} now{% endif %}"><a href="/?day={{ d.iso }}">{{ d.head }}{% if d.now %} · today{% endif %}</a></div>{% endfor %}
 {%- endif %}
