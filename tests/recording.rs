@@ -207,7 +207,7 @@ async fn segments_append_dedupe_and_close() {
     let me = b.find("โอเค เริ่มเลย</span>").unwrap();
     let others = b.find("ได้ครับ deploy service ใหม่แล้ว</span>").unwrap();
     assert!(me < others);
-    assert!(b.contains("<time>00:00:04</time><span class=\"who\">Me</span>"));
+    assert!(b.contains("<time>00:00:04</time><span class=\"who\" title=\"Me\">Me</span>"));
     assert!(b.contains("Live · about 30 s behind · th · 3 lines"));
     assert!(b.contains("Listening · the next lines arrive about 30 s after they’re said"));
     assert!(b.contains("hx-get=\"/meetings/1/transcript?q=\""));
@@ -252,6 +252,81 @@ async fn segments_append_dedupe_and_close() {
     post(&st, "/meetings/1/end", "", false).await;
     post_json(&st, "/meetings/transcripts/2/segments", r#"{"done":true}"#).await;
     assert_eq!(count(&st, "SELECT COUNT(*) FROM meeting_transcripts"), 1);
+    let _ = std::fs::remove_dir_all(&mac.dir);
+}
+
+#[tokio::test]
+async fn speaker_split_replaces_others_and_names_follow_every_line() {
+    let (st, mac) = mac_state("split", true);
+    post(
+        &st,
+        "/meetings",
+        &form(&[("name", "oms"), ("record", "1")]),
+        false,
+    )
+    .await;
+    let live = r#"{"segments":[{"t":1.0,"speaker":"others","text":"Hello all, two voices in one line"},
+                               {"t":9.0,"speaker":"others","text":"Rollback is ready"},
+                               {"t":12.0,"speaker":"me","text":"Rollback is ready"},
+                               {"t":20.0,"speaker":"me","text":"Thanks both"}]}"#;
+    post_json(&st, "/meetings/transcripts/1/segments", live).await;
+    post(&st, "/meetings/1/record/stop", "", false).await;
+    // The split: Others lines come back with speakers (the shared line cut in two); a bad label is dropped.
+    let split = r#"{"done":true,"split":[{"t":1.0,"speaker":"Speaker 1","text":"Hello all"},
+                   {"t":4.5,"speaker":"Speaker 2","text":"two voices in one line"},
+                   {"t":9.0,"speaker":"Speaker 1","text":"Rollback is ready"},
+                   {"t":15.0,"speaker":"me","text":"not the split's to write"}]}"#;
+    assert_eq!(
+        post_json(&st, "/meetings/transcripts/1/segments", split)
+            .await
+            .status,
+        204
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT json_array_length(segments) FROM meeting_transcripts"
+        ),
+        5
+    );
+    let b = get(&st, "/meetings/1").await.body;
+    assert!(!b.contains(">Others</span>"));
+    assert!(b.contains("aria-label=\"Name for Speaker 2\""));
+    // The mic's echo of Speaker 1 is still hidden.
+    assert!(b.contains("00:00:09 Speaker 1: Rollback is ready"));
+    assert!(!b.contains("00:00:12 Me: Rollback is ready"));
+
+    // Naming: every line of the voice follows; Me / blank are refused quietly.
+    let r = post(
+        &st,
+        "/meetings/1/transcripts/1/speakers",
+        &form(&[("from", "Speaker 1"), ("to", " Anna ")]),
+        true,
+    )
+    .await;
+    assert!(r.body.contains("00:00:01 Anna: Hello all"));
+    assert!(r.body.contains("00:00:09 Anna: Rollback is ready"));
+    for (from, to) in [("Speaker 2", "me"), ("Speaker 2", "  "), ("me", "Bob")] {
+        post(
+            &st,
+            "/meetings/1/transcripts/1/speakers",
+            &form(&[("from", from), ("to", to)]),
+            false,
+        )
+        .await;
+    }
+    let s = segs(&st, 1);
+    assert!(s.contains(r#""speaker":"Speaker 2""#) && !s.contains("Bob"));
+    // Renaming one voice to another's name merges them (the split cut one person in two).
+    post(
+        &st,
+        "/meetings/1/transcripts/1/speakers",
+        &form(&[("from", "Speaker 2"), ("to", "Anna")]),
+        false,
+    )
+    .await;
+    let b = get(&st, "/meetings/1").await.body;
+    assert_eq!(b.matches("aria-label=\"Name for ").count(), 1);
     let _ = std::fs::remove_dir_all(&mac.dir);
 }
 

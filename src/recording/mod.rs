@@ -192,10 +192,12 @@ impl Mac {
     pub fn delete(&self) {
         self.cancel();
         let _ = std::fs::remove_file(self.model_path());
+        // The Mac app's speaker-split models (T56) go with it: nothing of the feature is left on disk.
+        let _ = std::fs::remove_dir_all(self.dir.join("speakers"));
     }
 }
 
-fn sha256(path: &std::path::Path) -> Option<String> {
+pub fn sha256(path: &std::path::Path) -> Option<String> {
     let out = Command::new("shasum")
         .args(["-a", "256", "-b"])
         .arg(path)

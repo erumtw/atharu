@@ -117,6 +117,8 @@ alters a token, component, glass surface or pattern updates `DESIGN.md` in the s
 
 - `export PATH=/opt/homebrew/opt/rustup/bin:$PATH` (rustup is keg-only here).
 - Check before every commit: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`.
+- Building the Mac app (`--workspace`, `cargo tauri build`) needs `scripts/sherpa-onnx.sh` once: the sha-pinned
+  sherpa-onnx static lib for the speaker split (D37); `.cargo/config.toml` points the crate at it.
 - Layout: vertical slices (`src/<feature>/{mod,handlers,queries,view}.rs`) + pure `src/domain/`. `domain/` imports
   no feature; features never import each other; SQL only in a slice's `queries.rs`; HTML only in `templates/`;
   every htmx action returns one partial and also works as a plain form POST (303 back). `src/cli/` is an entry
