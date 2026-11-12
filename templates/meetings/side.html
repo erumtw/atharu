@@ -1,6 +1,6 @@
 {%- if !side.is_empty() %}
 <div class="lbl">Series</div>
 {%- for s in side %}
-<a class="sub" href="/meetings?name={{ s.name }}">{{ s.name }} · {{ s.count }}</a>
+<a class="sub" href="/meetings?name={{ s.name }}" title="{{ s.name }}"><span class="ell">{{ s.name }}</span><span>· {{ s.count }}</span></a>
 {%- endfor %}
 {%- endif %}
