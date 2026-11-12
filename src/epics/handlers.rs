@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, impact::impact_line},
+    domain::{dates, flags, impact::impact_line},
     error::{AppError, AppResult},
     layout::{Layout, crumb},
     web,
@@ -20,7 +20,22 @@ fn date(s: Option<&str>) -> Option<NaiveDate> {
     s.and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
 }
 
+fn flag(e: &queries::EpicRow, today: NaiveDate) -> Option<view::Flag> {
+    let facts = flags::EpicFacts {
+        status: &e.status,
+        target: date(e.target.as_deref()),
+        last_activity: date(e.last_log.as_deref()),
+        open_plans: e.open_plans,
+    };
+    flags::flag(&facts, today).map(|f| view::Flag {
+        class: f.flag.class(),
+        label: f.flag.label(),
+        reason: f.reason,
+    })
+}
+
 fn list_row(e: queries::EpicRow, today: NaiveDate) -> view::ListRow {
+    let flag = flag(&e, today);
     let (target, target_note, late) = match date(e.target.as_deref()) {
         None => (String::new(), String::new(), false),
         Some(t) => {
@@ -46,6 +61,7 @@ fn list_row(e: queries::EpicRow, today: NaiveDate) -> view::ListRow {
         target_note,
         late,
         last_log,
+        flag,
     }
 }
 
@@ -183,6 +199,13 @@ fn render_page(
         }
     }
     let live = live(&conn, &e, ev_line, ev_error)?;
+    let since = dates::week_start(today) - chrono::Days::new(49);
+    let days: Vec<NaiveDate> = queries::entry_days_since(&conn, key, &dates::iso(since))?
+        .iter()
+        .filter_map(|d| date(Some(d)))
+        .collect();
+    let weeks = flags::weekly_counts(&days, today);
+    let max = weeks.iter().copied().max().unwrap_or(0).max(1);
     let title = if e.title.is_empty() {
         e.key.clone()
     } else {
@@ -190,6 +213,8 @@ fn render_page(
     };
     Ok(view::Page {
         layout: Layout::load(&conn, "epics", title, vec![crumb("Epics", "/epics")])?,
+        flag: flag(&e, today),
+        activity: weeks.iter().map(|n| n * 100 / max).collect(),
         epic: view::EpicView {
             key: e.key,
             title: e.title,

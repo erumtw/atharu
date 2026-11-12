@@ -40,8 +40,10 @@ impl AppState {
 pub fn router(state: AppState) -> Router {
     Router::new()
         .merge(crate::today::routes())
+        .merge(crate::todos::routes())
         .merge(crate::epics::routes())
         .merge(crate::report::routes())
+        .merge(crate::meetings::routes())
         .route("/static/{*path}", get(static_file))
         .with_state(state)
 }

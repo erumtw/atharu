@@ -107,6 +107,19 @@ pub fn is_slug(s: &str) -> bool {
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
+/// Meeting names become series slugs: `OMS Sync` → `oms-sync`, so the same meeting groups across days.
+pub fn slugify(s: &str) -> String {
+    let mut out = String::new();
+    for c in s.trim().chars().flat_map(char::to_lowercase) {
+        if c.is_ascii_alphanumeric() {
+            out.push(c);
+        } else if !out.ends_with('-') && !out.is_empty() {
+            out.push('-');
+        }
+    }
+    out.trim_end_matches('-').to_string()
+}
+
 impl Entry {
     /// Back to line grammar, so "Undo" after a delete can re-log the same line: `parse(e.to_line()) == e`.
     pub fn to_line(&self) -> String {
@@ -123,5 +136,23 @@ impl Entry {
             parts.push(format!("by {}", d.format("%Y-%m-%d")));
         }
         parts.join(" ")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::slugify;
+
+    #[test]
+    fn slugs() {
+        for (name, want) in [
+            ("OMS Sync", "oms-sync"),
+            ("  1:1 lead ", "1-1-lead"),
+            ("oms-sync", "oms-sync"),
+            ("Q4 -- planning!", "q4-planning"),
+            ("!!!", ""),
+        ] {
+            assert_eq!(slugify(name), want, "{name}");
+        }
     }
 }

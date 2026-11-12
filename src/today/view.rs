@@ -1,5 +1,5 @@
 use crate::{
-    domain::{dates, entry::Kind},
+    domain::{dates, entry::Kind, plan::Plan},
     layout::Layout,
 };
 use askama::Template;
@@ -10,6 +10,7 @@ pub struct Row {
     pub kind: Kind,
     pub topic: Option<String>,
     pub text: String,
+    pub meeting: Option<String>,
 }
 
 pub struct Group {
@@ -64,10 +65,45 @@ pub struct Preview {
     pub due: Option<String>,
 }
 
+/// "This week" (pinned) and "Other open plans"; always about the real today, not the backfill day.
+pub struct Plans {
+    pub pinned: Vec<Plan>,
+    pub other: Vec<Plan>,
+}
+
+pub struct ActiveMeeting {
+    pub id: i64,
+    pub name: String,
+}
+
+/// Fields `partials/meeting_banner.html` reads; start/end themselves live in the meetings slice.
+pub struct Banner {
+    pub active: Option<ActiveMeeting>,
+    pub series: Vec<String>,
+    pub name: String,
+    pub error: Option<String>,
+    pub back: String,
+}
+
+/// One "Needs you" line: a flagged epic or an overdue to-do.
+pub struct Need {
+    /// `flag over` / `flag risk` / `flag stale`.
+    pub class: &'static str,
+    pub label: &'static str,
+    pub key: Option<String>,
+    /// `Log retention · 6 days past target`.
+    pub text: String,
+    pub href: String,
+}
+
 #[derive(Template)]
 #[template(path = "today/page.html")]
 pub struct Page {
     pub layout: Layout,
+    pub banner: Banner,
+    pub today: NaiveDate,
+    pub plans: Plans,
+    pub needs: Vec<Need>,
     pub day: Day,
     pub groups: Vec<Group>,
     pub keys: Vec<String>,
@@ -83,6 +119,9 @@ pub struct Page {
 #[derive(Template)]
 #[template(path = "today/swap.html")]
 pub struct Swap {
+    pub today: NaiveDate,
+    /// Swapped out-of-band: a `>` line or its undo changes the open plans too.
+    pub plans: Plans,
     pub day: Day,
     pub groups: Vec<Group>,
     pub saved: Option<Saved>,

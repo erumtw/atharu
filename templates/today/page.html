@@ -6,6 +6,18 @@
 {%- if !day.is_today %}
 <div class="row small"><span class="chip">Logging for {{ day.label }}</span><a href="/">Back to today</a></div>
 {%- endif %}
+<section id="meeting">{% include "partials/meeting_banner.html" %}</section>
+<section id="plans">{% include "today/plans.html" %}</section>
+{%- if !needs.is_empty() %}
+<div class="callout">
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1">
+<div class="row"><b>Needs you</b><span class="small muted">epics that are late, due soon, or gone quiet</span></div>
+{%- for n in needs %}
+<a class="row small" href="{{ n.href }}" style="color: #1d1d1f"><span class="{{ n.class }}">{{ n.label }}</span>{% if let Some(k) = n.key %}<span class="chip key">{{ k }}</span>{% endif %}<span>{{ n.text }}</span></a>
+{%- endfor %}
+</div>
+</div>
+{%- endif %}
 {% include "today/log.html" %}
 <div class="capture">
 <div id="toast" class="toast row small" role="status">{%- include "partials/toast.html" -%}</div>

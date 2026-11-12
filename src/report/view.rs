@@ -5,6 +5,7 @@ pub struct Item {
     /// `Impact` / `Decision` / `Blocker`.
     pub label: &'static str,
     pub text: String,
+    pub meeting: Option<String>,
 }
 
 pub struct Section {
@@ -57,6 +58,13 @@ pub struct Page {
     pub epics_done: usize,
     pub impact_lines: usize,
     pub decisions: usize,
+    pub decisions_in_meetings: usize,
+    /// Plans logged in range: hit rate % (`None` = no plans) and the counts behind it.
+    pub hit_rate: Option<i64>,
+    pub plans_done: i64,
+    pub plans_open: i64,
+    pub plans_dropped: i64,
+    pub meetings: i64,
     pub note: Note,
     pub markdown: String,
     /// Empty-range nudge: (preset, label) of the next wider range; none past a quarter.

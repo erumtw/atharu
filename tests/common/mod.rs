@@ -1,6 +1,7 @@
 //! Shared HTTP test harness: router over in-memory SQLite with "today" pinned.
 #![allow(dead_code)] // each test binary uses a different subset
 
+use athar::app::{AppState, router};
 use axum::{
     Router,
     body::Body,
@@ -8,12 +9,11 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use tower::ServiceExt;
-use worklog::app::{AppState, router};
 
 pub const TODAY: &str = "2026-11-11"; // Wednesday
 
 pub fn state() -> AppState {
-    let mut st = AppState::new(worklog::db::open_in_memory().unwrap());
+    let mut st = AppState::new(athar::db::open_in_memory().unwrap());
     st.fixed_today = Some(TODAY.parse().unwrap());
     st
 }

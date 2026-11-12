@@ -11,6 +11,6 @@
 
 ## {{ sec.heading }}
 {%- for i in sec.items %}
-- **{{ i.label }}** {{ i.text }}
+- **{{ i.label }}** {{ i.text }}{% if let Some(m) = i.meeting %} ({{ m }}){% endif %}
 {%- endfor %}
 {%- endfor %}

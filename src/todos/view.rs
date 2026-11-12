@@ -1,0 +1,66 @@
+use crate::{domain::plan::Plan, layout::Layout};
+use askama::Template;
+use chrono::NaiveDate;
+
+pub struct Group {
+    pub title: &'static str,
+    pub plans: Vec<Plan>,
+}
+
+/// The `#todos` section: open groups + "Done this week".
+pub struct Lists {
+    pub groups: Vec<Group>,
+    pub done: Vec<Plan>,
+}
+
+impl Lists {
+    pub fn is_empty(&self) -> bool {
+        self.groups.is_empty()
+    }
+}
+
+#[derive(Template)]
+#[template(path = "todos/page.html")]
+pub struct Page {
+    pub layout: Layout,
+    pub today: NaiveDate,
+    pub lists: Lists,
+    pub keys: Vec<String>,
+    /// Kept in the add box after a parse error.
+    pub line: String,
+    pub error: Option<String>,
+    /// A plan action that failed without JS (pin cap), shown above the lists.
+    pub notice: Option<String>,
+}
+
+/// htmx answer to "Add": the lists, so the new row lands in its due group.
+#[derive(Template)]
+#[template(path = "todos/lists.html")]
+pub struct ListsSwap {
+    pub today: NaiveDate,
+    pub lists: Lists,
+}
+
+/// htmx answer to a plan action: just that row.
+#[derive(Template)]
+#[template(path = "todos/row.html")]
+pub struct Row {
+    pub today: NaiveDate,
+    pub p: Plan,
+    pub back: String,
+    pub full: bool,
+    pub pin_error: bool,
+}
+
+pub struct Preview {
+    pub key: Option<String>,
+    pub link: Option<String>,
+    pub due: Option<String>,
+}
+
+#[derive(Template)]
+#[template(path = "todos/hint.html")]
+pub struct Hint {
+    pub error: Option<String>,
+    pub preview: Option<Preview>,
+}

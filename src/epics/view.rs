@@ -18,6 +18,14 @@ pub struct ListRow {
     pub late: bool,
     /// `today`, `9d ago`, or `—`.
     pub last_log: String,
+    pub flag: Option<Flag>,
+}
+
+/// A flag as the epic pages show it.
+pub struct Flag {
+    pub class: &'static str,
+    pub label: &'static str,
+    pub reason: String,
 }
 
 pub struct OkrGroup {
@@ -98,6 +106,9 @@ pub struct DayGroup {
 pub struct Page {
     pub layout: Layout,
     pub epic: EpicView,
+    pub flag: Option<Flag>,
+    /// Entries per week, last 8 weeks, as % of the busiest.
+    pub activity: Vec<i64>,
     pub live: Live,
     pub timeline: Vec<DayGroup>,
     /// Top-bar status after a plain (no-JS) save failed.

@@ -1,0 +1,5 @@
+{#- Body of #hint under the To-dos box. -#}
+{%- if let Some(e) = error -%}<span class="err">{{ e }}</span>{%- endif -%}
+{%- if let Some(p) = preview -%}
+→ will save as <b>to-do</b>{% if let Some(k) = p.key %} on {{ k }}{% endif %}{% if let Some(l) = p.link %} · link {{ l }}{% endif %}{% if let Some(d) = p.due %} · due {{ d }}{% endif %}
+{%- endif -%}

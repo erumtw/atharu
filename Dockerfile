@@ -12,11 +12,12 @@ COPY src src
 # touch: the stub build left newer mtimes than the copied sources, cargo would skip the rebuild.
 RUN touch src/main.rs src/lib.rs && cargo build --release
 
-FROM debian:bookworm-slim
-RUN useradd --uid 1000 --create-home worklog
+# No shell or package manager at runtime: smaller image, less to patch. The empty data dir is
+# made in the build stage because distroless can't mkdir; nonroot = uid 65532.
+RUN mkdir /data-empty
+FROM gcr.io/distroless/cc-debian12:nonroot
 WORKDIR /app
-COPY --from=build /src/target/release/worklog /usr/local/bin/worklog
-RUN mkdir data && chown worklog data
-USER worklog
+COPY --from=build /src/target/release/athar /usr/local/bin/athar
+COPY --from=build --chown=65532:65532 /data-empty /app/data
 EXPOSE 7070
-CMD ["worklog"]
+CMD ["/usr/local/bin/athar"]
