@@ -306,6 +306,14 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   under `prefers-reduced-motion`.
 - **Phone (< 640)**: a bottom sheet like the ⋯ sheet: 8 px inset, 22 radius, grabber, 17 px month, 44 px day cells across the width,
   `::backdrop` dim; a tap selects, **Done** (the sheet's one blue) commits; backdrop tap / Esc / swipe down close without change.
+- **`by ` menu** (T80, D44; not drawn on the canvas, described here): on a `>` line in the capture bar, typing `by ` opens a `.menu.up`
+  listbox like the `#` menu ("Due date" head): Today · Tomorrow · the day after tomorrow by name while it is still this week ·
+  Next Mon · Pick a date…, each with its date right in `--muted` (`Thu 12 Nov`). **Nothing is preselected**: Enter saves the line
+  as typed unless ↑↓ moved into the menu; Tab or a click picks (Tab with nothing chosen takes the first); Esc closes it for this
+  line; typing filters by word or weekday name (`fr` → the row that falls on Friday), no match closes it and leaves the text.
+  A pick writes readable text, `by 20 Nov` (ISO when a year or more out). "Pick a date…" opens this popover (min = today) anchored to
+  the capture bar. A trailing `by` + words that aren't a date save as text with a soft `--muted` note in the hint ("‘by hand’ isn't
+  a date · saved as text"); an impossible date (`by 32 Nov`, `by 2026-13-01`) is still an error.
 - **RT / IC**: nothing of its own under Reduce Transparency (`.menu` goes solid white + `--line` hairline, no lens). Increase Contrast:
   ink edge (from `.menu`), weekday and out-of-month `--muted-hc` (9.67), today ring 2 px.
 - **AA** (T75, each look at its glass floor, Clear + Tinted, over a half-covered ink pixel / the darkest veiled wallpaper, desktop and

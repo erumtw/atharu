@@ -31,6 +31,8 @@
 <input type="hidden" name="day" value="{{ day.iso }}"><input type="hidden" name="notag" id="notag" value="">
 <input id="line" name="line" list="keys" value="{{ line }}" aria-label="Log a line" placeholder="What did you do? e.g.  OPS-101 + checkout p95 1.8s → 0.6s" autocomplete="off" autofocus role="combobox" aria-expanded="false" aria-controls="tagsug" aria-autocomplete="list" hx-post="/parse-preview" hx-trigger="input changed delay:150ms" hx-target="#hint" hx-swap="innerHTML">
 <div id="tagsug"></div>
+{#- `by ` date menu (capture.js, T80); the hidden date input carries a "Pick a date…" pick through the shared popover. #}
+<div id="bysug"></div><input type="date" id="bydate" data-for="line" hidden tabindex="-1" aria-label="Due date">
 <datalist id="keys">{% for k in keys %}<option value="{{ k }}"></option>{% endfor %}</datalist>
 <button class="ib m-only" type="button" popovertarget="legend" aria-label="Show line grammar"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#help"/></svg></button>
 <button class="btn" type="submit">Log ↵</button>

@@ -64,6 +64,8 @@ pub struct Row {
 }
 
 pub struct Preview {
+    /// Trailing `by …` kept as text (`by hand`), for the soft hint (D44).
+    pub soft: Option<String>,
     pub key: Option<String>,
     pub link: Option<String>,
     pub due: Option<String>,

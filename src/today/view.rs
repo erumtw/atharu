@@ -82,6 +82,8 @@ pub struct Deleted {
 }
 
 pub struct Preview {
+    /// Trailing `by …` kept as text (`by hand`), for the soft hint (D44).
+    pub soft: Option<String>,
     pub kind: &'static str,
     pub key: Option<String>,
     pub text: String,

@@ -62,6 +62,10 @@ const panel = (): HTMLElement => {
   return p
 }
 
+// A hidden carrier (the capture bar's `by` pick, T80) names the control it serves: the panel anchors to it and
+// hands focus back to it.
+const home = (el: HTMLInputElement): HTMLElement => (el.dataset.for && document.getElementById(el.dataset.for)) || el
+
 const inRange = (s: string) => !!input && !(input.min && s < input.min) && !(input.max && s > input.max)
 
 const render = (slide = 0) => {
@@ -113,7 +117,7 @@ const place = () => {
   }
   // The day nav's input is laid over one segment: anchor to the whole capsule, end edge to end edge.
   const nav = input.closest('.dnav')
-  const r = (nav ?? input).getBoundingClientRect()
+  const r = (nav ?? home(input)).getBoundingClientRect()
   const w = dp.offsetWidth, h = dp.offsetHeight
   const left = nav || r.left + w > innerWidth - 8 ? r.right - w : r.left
   const below = r.bottom + 6
@@ -139,7 +143,7 @@ const close = (refocus = true) => {
   const el = input
   input = null
   // On a phone, focusing the field again can bring up the OS picker over the page.
-  if (refocus && !phone.matches) el?.focus({ preventScroll: true })
+  if (refocus && !phone.matches && el) home(el).focus({ preventScroll: true })
 }
 
 // The existing listeners (htmx triggers, the epic autosave, the day nav's submit) all hang off `change`.
@@ -150,7 +154,7 @@ const commit = (value: string) => {
   el.value = value
   // A plan row's `change` swaps the row out (outerHTML): find the same field in the new row afterwards.
   const row = el.closest('[id]')?.id
-  if (row && !phone.matches) refind = `#${CSS.escape(row)} input[name="${el.name}"]`
+  if (row && el.name && !phone.matches) refind = `#${CSS.escape(row)} input[name="${el.name}"]`
   el.dispatchEvent(new Event('input', { bubbles: true }))
   el.dispatchEvent(new Event('change', { bubbles: true }))
 }

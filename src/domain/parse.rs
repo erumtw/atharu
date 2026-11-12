@@ -34,6 +34,54 @@ fn split_first(s: &str) -> (&str, &str) {
     }
 }
 
+/// `2026-13-01` or `32 Nov`: meant as a date, so a wrong one is an error rather than text.
+fn date_shaped(when: &[&str]) -> bool {
+    const MONTHS: [&str; 12] = [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    ];
+    match when {
+        [w] => {
+            let parts: Vec<&str> = w.split('-').collect();
+            parts.len() == 3
+                && parts
+                    .iter()
+                    .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
+        }
+        [d, m] => {
+            let m = m.to_ascii_lowercase();
+            d.len() <= 2
+                && d.bytes().all(|b| b.is_ascii_digit())
+                && m.len() >= 3
+                && MONTHS.iter().any(|x| x.starts_with(&m))
+        }
+        _ => false,
+    }
+}
+
+/// A to-do whose trailing `by …` was kept as text: those words (`by hand`), for the preview's soft hint.
+pub fn by_as_text(e: &Entry) -> Option<String> {
+    if e.kind != Kind::Plan || e.due.is_some() {
+        return None;
+    }
+    let toks: Vec<&str> = e.text.split_whitespace().collect();
+    let n = toks.len();
+    [1, 2]
+        .into_iter()
+        .find(|&w| n > w && toks[n - w - 1].eq_ignore_ascii_case("by"))
+        .map(|w| toks[n - w - 1..].join(" "))
+}
+
 pub fn parse(line: &str, today: NaiveDate) -> Result<Entry, ParseError> {
     let mut rest = line.trim();
     if rest.is_empty() {
@@ -76,17 +124,22 @@ pub fn parse(line: &str, today: NaiveDate) -> Result<Entry, ParseError> {
     if kind == Kind::Plan {
         let toks: Vec<&str> = rest.split_whitespace().collect();
         let n = toks.len();
-        if n >= 2 && toks[n - 2].eq_ignore_ascii_case("by") {
-            let when = toks[n - 1];
-            due = Some(parse_when(when, today).ok_or_else(|| ParseError::BadDate(when.into()))?);
-            text = toks[..n - 2].join(" ");
-        } else if n >= 3 && toks[n - 3].eq_ignore_ascii_case("by") {
-            // Two-token form (`20 Nov`) only when it reads as a date: "by email today" is plain text.
-            let when = toks[n - 2..].join(" ");
-            if let Some(d) = parse_when(&when, today) {
-                due = Some(d);
-                text = toks[..n - 3].join(" ");
+        // `by <when>` is one token, or two for `20 Nov`. Words that aren't a date stay text ("refactor by hand",
+        // D44); only a date-shaped one that doesn't exist (`32 Nov`, `2026-13-01`) is an error.
+        for w in [1, 2] {
+            if n < w + 1 || !toks[n - w - 1].eq_ignore_ascii_case("by") {
+                continue;
             }
+            let when = toks[n - w..].join(" ");
+            match parse_when(&when, today) {
+                Some(d) => {
+                    due = Some(d);
+                    text = toks[..n - w - 1].join(" ");
+                }
+                None if date_shaped(&toks[n - w..]) => return Err(ParseError::BadDate(when)),
+                None => continue,
+            }
+            break;
         }
     }
 
@@ -155,6 +208,10 @@ mod tests {
             ("> ship by today", None, Plan, None, "ship", Some(TODAY), None),
             ("> ask by email today", None, Plan, None, "ask by email today", None, None),
             ("done by fri stays text", None, Done, None, "done by fri stays text", None, None),
+            ("> refactor by hand", None, Plan, None, "refactor by hand", None, None),
+            ("> ship by someday", None, Plan, None, "ship by someday", None, None),
+            ("> paint by 2", None, Plan, None, "paint by 2", None, None),
+            ("> buy 2 by 5 apples", None, Plan, None, "buy 2 by 5 apples", None, None),
         ];
         for &(line, key, kind, topic, text, due, link) in cases {
             let want = Entry {
@@ -175,6 +232,17 @@ mod tests {
     }
 
     #[test]
+    fn by_kept_as_text() {
+        let t = d(TODAY);
+        let soft = |l: &str| by_as_text(&parse(l, t).unwrap());
+        assert_eq!(soft("> refactor by hand"), Some("by hand".into()));
+        assert_eq!(soft("> ask by email today"), Some("by email today".into()));
+        assert_eq!(soft("> ship by fri"), None);
+        assert_eq!(soft("> ship it"), None);
+        assert_eq!(soft("done by hand"), None, "not a to-do");
+    }
+
+    #[test]
     fn rejects_lines() {
         for (line, msg) in [
             ("", "Type what you did first."),
@@ -187,7 +255,8 @@ mod tests {
                 "Nothing after “vector-search:”. Type what happened.",
             ),
             ("> by fri", "Nothing after “>”. Type what happened."),
-            ("> ship by someday", "Can't read date ‘someday’"),
+            ("> ship by 32 Nov", "Can't read date ‘32 Nov’"),
+            ("> ship by 2026-13-01", "Can't read date ‘2026-13-01’"),
         ] {
             assert_eq!(
                 parse(line, d(TODAY)).unwrap_err().to_string(),
