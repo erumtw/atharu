@@ -261,6 +261,49 @@ fn span_label(start: Option<&str>, end: Option<&str>) -> String {
     }
 }
 
+/// "Start notes" (T90): create the meeting's note and come back to edit it in place.
+pub async fn start_note(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
+    queries::create_note(&mut st.conn(), id)?.ok_or(AppError::NotFound)?;
+    Ok(web::back(&format!("/meetings/{id}#notes")))
+}
+
+#[derive(Deserialize)]
+pub struct SeriesNameForm {
+    name: String,
+}
+
+/// Rename the meeting's series from its title (T92). The page reloads after (htmx `HX-Redirect`), since the
+/// crumb, sidebar and every list name it; a refusal comes back as a hint under the title.
+pub async fn rename(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Form(f): Form<SeriesNameForm>,
+) -> AppResult<Response> {
+    let m = queries::meeting(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    let new = slugify(&f.name);
+    let error = if new.is_empty() {
+        Some("Type a name with letters or digits, e.g. cs-hub-sync.".to_string())
+    } else if !queries::rename_series(&mut st.conn(), &m.name, &new)? {
+        Some(format!(
+            "“{new}” is another series already. Pick a different name."
+        ))
+    } else {
+        None
+    };
+    let to = format!("/meetings/{id}");
+    match error {
+        None if web::is_htmx(&headers) => {
+            Ok(([("HX-Redirect", to)], StatusCode::OK).into_response())
+        }
+        None => Ok(web::back(&to)),
+        Some(e) if web::is_htmx(&headers) => {
+            Ok((StatusCode::UNPROCESSABLE_ENTITY, e).into_response())
+        }
+        Some(e) => Ok((StatusCode::UNPROCESSABLE_ENTITY, e).into_response()),
+    }
+}
+
 /// Record a running meeting that isn't recording (after Stop, or after Quit & Reopen for a permission).
 pub async fn record(
     State(st): State<AppState>,
@@ -307,6 +350,30 @@ pub struct Segments {
     /// The recorder finished the tail (or gave up): close the recording.
     #[serde(default)]
     done: bool,
+    /// The speaker split (T56): Others lines as `Speaker N`, replacing every line that isn't "me".
+    #[serde(default)]
+    split: Option<Vec<Segment>>,
+}
+
+/// Tenths: the dedupe compares t for equality, so both sides must round the same way.
+fn tidy(segs: Vec<Segment>, ok: impl Fn(&str) -> bool) -> Vec<(f64, String, String)> {
+    segs.into_iter()
+        .filter(|s| ok(&s.speaker) && !s.text.trim().is_empty())
+        .map(|s| {
+            (
+                (s.t * 10.0).round() / 10.0,
+                s.speaker,
+                s.text.trim().to_string(),
+            )
+        })
+        .collect()
+}
+
+/// `Speaker 3`: what the split names a voice before the owner does.
+fn split_speaker(s: &str) -> bool {
+    s == "others"
+        || s.strip_prefix("Speaker ")
+            .is_some_and(|n| n.parse::<u16>().is_ok_and(|n| n > 0))
 }
 
 /// The Mac app's recorder posts each window's lines here as soon as whisper returns them, so a crash
@@ -316,20 +383,16 @@ pub async fn segments(
     Path(tid): Path<i64>,
     axum::Json(b): axum::Json<Segments>,
 ) -> AppResult<Response> {
-    let segs: Vec<(f64, String, String)> = b
-        .segments
-        .into_iter()
-        .filter(|s| matches!(s.speaker.as_str(), "me" | "others") && !s.text.trim().is_empty())
-        // Tenths: the dedupe compares t for equality, so both sides must round the same way.
-        .map(|s| {
-            (
-                (s.t * 10.0).round() / 10.0,
-                s.speaker,
-                s.text.trim().to_string(),
-            )
-        })
-        .collect();
-    let res = queries::append_segments(&st.conn(), tid, &segs, b.done, &recording::now())?;
+    let segs = tidy(b.segments, |s| matches!(s, "me" | "others"));
+    let split = b.split.map(|s| tidy(s, split_speaker));
+    let res = queries::append_segments(
+        &st.conn(),
+        tid,
+        &segs,
+        split.as_deref(),
+        b.done,
+        &recording::now(),
+    )?;
     Ok(match res {
         queries::Append::Saved => StatusCode::NO_CONTENT.into_response(),
         queries::Append::NotFound => return Err(AppError::NotFound),
@@ -341,6 +404,47 @@ pub async fn segments(
 pub struct TxQuery {
     #[serde(default)]
     q: String,
+}
+
+fn shots_view(st: &AppState, conn: &Connection, id: i64, running: bool) -> view::Shots {
+    view::Shots {
+        id,
+        files: super::shots::root(conn)
+            .map(|r| super::shots::list(&r, id))
+            .unwrap_or_default(),
+        can_take: st.mac.is_some() && running,
+    }
+}
+
+/// The Screenshots section alone: re-fetched after the app adds one (`atharu-sync`).
+pub async fn shots(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
+    let conn = st.conn();
+    let m = queries::meeting(&conn, id)?.ok_or(AppError::NotFound)?;
+    web::html(&shots_view(&st, &conn, id, m.ended_at.is_none()))
+}
+
+/// One screenshot. Only names `shots::save` writes are served, so no path can leave the meeting's folder.
+pub async fn shot_file(
+    State(st): State<AppState>,
+    Path((id, file)): Path<(i64, String)>,
+) -> AppResult<Response> {
+    if !super::shots::valid_name(&file) {
+        return Err(AppError::NotFound);
+    }
+    let root = super::shots::root(&st.conn()).ok_or(AppError::NotFound)?;
+    let bytes =
+        std::fs::read(root.join(id.to_string()).join(&file)).map_err(|_| AppError::NotFound)?;
+    Ok((
+        [
+            (axum::http::header::CONTENT_TYPE, "image/png"),
+            (
+                axum::http::header::CACHE_CONTROL,
+                "private, max-age=31536000, immutable",
+            ),
+        ],
+        bytes,
+    )
+        .into_response())
 }
 
 /// The Transcript section alone: polled while live / finishing.
@@ -373,8 +477,40 @@ fn tx_section(
     })
 }
 
-fn who(speaker: &str) -> &'static str {
-    if speaker == "me" { "Me" } else { "Others" }
+#[derive(Deserialize)]
+pub struct RenameForm {
+    from: String,
+    to: String,
+}
+
+/// "Speaker 2 = …" on a finished recording: every line of that voice takes the name. A blank name, or one
+/// that reads as Me / Others, changes nothing (the field shows the old name again).
+pub async fn rename_speaker(
+    State(st): State<AppState>,
+    Path((id, tid)): Path<(i64, i64)>,
+    headers: HeaderMap,
+    Form(f): Form<RenameForm>,
+) -> AppResult<Response> {
+    let conn = st.conn();
+    queries::meeting(&conn, id)?.ok_or(AppError::NotFound)?;
+    let to = f.to.trim();
+    let taken = ["me", "others"].iter().any(|r| to.eq_ignore_ascii_case(r));
+    if !to.is_empty() && to.chars().count() <= 40 && !taken && f.from != "me" {
+        queries::rename_speaker(&conn, id, tid, &f.from, to)?;
+    }
+    if !web::is_htmx(&headers) {
+        return Ok(web::back(&format!("/meetings/{id}#transcript")));
+    }
+    web::html(&tx_section(&conn, st.mac.is_some(), id, String::new())?)
+}
+
+/// Row label: the two streams by their UI names; a split voice by its own (`Speaker 2`, or the owner's name).
+fn who(speaker: &str) -> &str {
+    match speaker {
+        "me" => "Me",
+        "others" => "Others",
+        s => s,
+    }
 }
 
 /// `text` cut around case-insensitive hits of `q` (ASCII folding keeps byte offsets; Thai has no case).
@@ -421,7 +557,7 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
         }
         rows.push(view::TxRow {
             time: recording::clock(*at),
-            who: who(sp),
+            who: who(sp).to_string(),
             cont: prev == sp,
             parts,
         });
@@ -443,8 +579,12 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
                     recorded(),
                     recording::clock(last)
                 ),
-                // RTF ≈ 0.1 on the M5 (D27): the rest of the audio takes about a tenth of its length.
-                Some((pct, recording::about((total - last).max(0.0) * 0.1))),
+                // RTF ≈ 0.1 on the M5 (D27): the rest of the audio takes about a tenth of its length; then
+                // the speaker split, about another tenth of the whole recording (D35: diarization RTF 0.08).
+                Some((
+                    pct,
+                    recording::about((total - last).max(0.0) * 0.1 + total * 0.1),
+                )),
             )
         }
         _ => (
@@ -467,6 +607,11 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
         finishing,
         interrupted: (t.status == "interrupted").then(|| recording::clock(last)),
         done: t.status == "done",
+        speakers: if t.status == "done" {
+            t.speakers()
+        } else {
+            Vec::new()
+        },
     }
 }
 
@@ -541,13 +686,21 @@ pub async fn page(
         groups,
         day,
         // Stored as local `YYYY-MM-DD HH:MM:SS`; the page only needs the time.
-        ended: m.ended_at.map(|t| t.get(11..16).unwrap_or(&t).to_string()),
-        mentions: queries::mentions(&conn, &m.name)?,
+        ended: m
+            .ended_at
+            .clone()
+            .map(|t| t.get(11..16).unwrap_or(&t).to_string()),
+        // Its own note links `[[series]]` too; listing it as a mention would be noise.
+        mentions: queries::mentions(&conn, &m.name)?
+            .into_iter()
+            .filter(|(n, _)| m.note.as_ref().is_none_or(|own| own.0 != *n))
+            .collect(),
         field: tag_field(&conn, &m.name)?,
         banner: recording_here.then_some(b),
         tx: tx_section(&conn, st.mac.is_some(), id, q.q)?,
+        shots: shots_view(&st, &conn, id, m.ended_at.is_none()),
         name: m.name,
-        notes: m.notes,
+        note: m.note,
         today: st.today(),
         back: format!("/meetings/{id}"),
     })

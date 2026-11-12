@@ -2,9 +2,11 @@
 //! as a live recording, into a temp DB behind the real router. Needs the 574 MB model, so opt-in:
 //!   ATHARU_T53_MODELS=<dir with ggml-large-v3-turbo-q5_0.bin> ATHARU_T53_WAV=<16 kHz mono s16 wav> \
 //!   cargo test -p atharu-app --release --test transcribe_wav -- --ignored --nocapture
+//! The WAV goes in as the Others stream, so the speaker split (T56) runs after Stop: it fetches its models into
+//! `<models>/speakers` if missing. ATHARU_T56_SPEAKERS=<n> also checks it told n voices apart.
 #![cfg(feature = "recording")]
 use atharu::{app, db, recording::Mac};
-use atharu_app::recording::{pipeline::Pipeline, post, run};
+use atharu_app::recording::{pipeline::Pipeline, run, speakers::Tap};
 use std::{
     io::{Read, Write},
     net::TcpStream,
@@ -78,15 +80,12 @@ async fn wav_lands_as_segments_on_the_meeting() {
     let (tx, rx) = mpsc::channel();
     let stop = Arc::new(AtomicBool::new(false));
     let (model, flag, tid) = (mac.model_path(), stop.clone(), want.tid);
+    let models = mac.dir.clone();
+    let tmp = std::env::temp_dir().join(format!("atharu-others-{tid}.pcm"));
     let t0 = std::time::Instant::now();
     let worker = std::thread::spawn(move || {
         let mut p = Pipeline::new(&model, &want.lang, &want.prompt).unwrap();
-        let mut posts = 0;
-        run(&mut p, &rx, &flag, |segs, done| {
-            posts += 1;
-            assert_eq!(post(addr, tid, segs, done), Some(204));
-        });
-        posts
+        run(&mut p, &rx, &flag, addr, tid, Tap::new(tid), &models);
     });
     for chunk in audio.chunks(1_600) {
         tx.send((1usize, chunk.to_vec())).unwrap();
@@ -97,7 +96,7 @@ async fn wav_lands_as_segments_on_the_meeting() {
         .await
         .unwrap();
     stop.store(true, std::sync::atomic::Ordering::SeqCst);
-    let posts = tokio::task::spawn_blocking(move || worker.join().unwrap())
+    tokio::task::spawn_blocking(move || worker.join().unwrap())
         .await
         .unwrap();
     let took = t0.elapsed().as_secs_f64();
@@ -106,17 +105,31 @@ async fn wav_lands_as_segments_on_the_meeting() {
         .conn()
         .query_row(
             "SELECT status, json_array_length(segments),
-                    (SELECT group_concat(value ->> 't' || ' ' || (value ->> 'text'), char(10)) FROM json_each(segments))
+                    (SELECT group_concat(value ->> 't' || ' ' || (value ->> 'speaker') || ': ' || (value ->> 'text'), char(10))
+                     FROM json_each(segments))
              FROM meeting_transcripts WHERE id = ?1",
             [tid],
             |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
         )
         .unwrap();
     println!(
-        "{text}\n-- {lines} lines, {posts} posts, {secs:.1} s audio in {took:.1} s (RTF {:.3})",
+        "{text}\n-- {lines} lines, {secs:.1} s audio in {took:.1} s (RTF {:.3}, incl. the speaker split)",
         took / secs
     );
     assert_eq!(status, "done");
+    assert!(!tmp.exists(), "Others audio deleted once the split ends");
+    if let Ok(n) = std::env::var("ATHARU_T56_SPEAKERS") {
+        let got: i64 = st
+            .conn()
+            .query_row(
+                "SELECT COUNT(DISTINCT value ->> 'speaker') FROM meeting_transcripts t, json_each(t.segments)
+                 WHERE t.id = ?1 AND value ->> 'speaker' LIKE 'Speaker %'",
+                [tid],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(got, n.parse::<i64>().unwrap());
+    }
     assert!(lines >= 8, "only {lines} lines");
     assert!(
         text.to_lowercase().contains("deploy"),

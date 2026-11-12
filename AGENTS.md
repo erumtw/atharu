@@ -15,7 +15,7 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 | `entries` | one logged line | `id`, `day` (YYYY-MM-DD), `epic_key`, `meeting_id`, `kind` (done · decision · blocker · impact · learn · plan), `topic` (learn only), `text`, `plan_state` (open · done · dropped, plans only), `closed_day`, `pinned`, `due`, `link`, `note_id` (the line's note, many lines → one note; NULL = none), `author` |
 | `epics` | a Jira key the owner tracks | `key` (FK-123), `title`, `role` (owner · contributor), `okr`, `status` (active · done · dropped), `start`, `target`, `done_on`, `metric`, `before`, `after`, `tags` (`a,b`), `author` |
 | `evidence` | links proving an epic's impact | `epic_key`, `url`, `note`, `author` |
-| `meetings` | meeting mode; `name` is a series slug (oms-sync) | `id`, `day`, `name`, `notes`, `ended_at` (NULL = running) |
+| `meetings` | meeting mode; `name` is a series slug (oms-sync) | `id`, `day`, `name`, `note_id` (its note, the meeting's notes; `notes` = pre-010 text, unused), `ended_at` (NULL = running) |
 | `topics` | learn pages, **the owner's own understanding** | `slug`, `summary`, `own_words`, `resources` |
 | `depth_ratings` | append-only self-rating 1 heard of · 2 can explain · 3 can build w/o AI · 4 can teach | `topic`, `day`, `depth` |
 | `notes` | markdown notes; `[[X]]` links a page | `id`, `title`, `body`, `author`, `updated_at` |
@@ -55,8 +55,8 @@ name → `/meetings?name=X`, else nothing (a dead link).
 |---|---|
 | read everything | write `topics` or `depth_ratings` |
 | write `entries`, `epics`, `evidence` and your own `notes` **only through the `atharu` CLI**, as yourself (`--as <your name>`) | write any table with raw SQL |
-| update a note you wrote (`atharu note … --id N`) | edit or delete rows with `author = 'me'`, or another agent's note |
-| suggest `[[X]]` links in chat for the owner's notes | delete or edit anything: deletes and line edits are the owner's, on the web only |
+| update a note you wrote (`atharu note … --id N`) or a line you wrote (`atharu edit N "<line>"`) | edit or delete rows with `author = 'me'`, or another agent's note / line |
+| suggest `[[X]]` links in chat for the owner's notes | delete anything, or edit the owner's lines: those are the owner's, on the web only |
 | | rate depth or write "own words": depth only means something if it is the owner's |
 
 Asked for something the CLI can't do yet (to-do done/pin/drop, meetings, topics, events, report):
@@ -70,6 +70,7 @@ Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No serv
 
 ```sh
 atharu log "<line>" [--day YYYY-MM-DD] [--note N] [--meeting N] --as claude  # one line, same grammar as above
+atharu edit <N> "<line>" --as claude                        # rewrite a line YOU wrote (same grammar); others' refused
 atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as claude  # upsert; key from …/browse/ABC-123
 atharu note "<title>" [--file PATH] [--links a,b] [--id N] --as claude  # agent note; body from stdin without --file
 atharu evidence <KEY|jira-url> <url> [--label …] --as claude  # impact link on an existing epic, http(s) only
@@ -88,6 +89,8 @@ atharu help                                                 # this table (also -
 - `log` / `note` tag from their text (`#tag`); the JSON echoes `tags`. A line also counts under its epic's tags.
 - `log --meeting N` files the line under meeting N (refused with exit 1 if none); without it a line goes to the
   running meeting, if any. `/meeting` uses it to write up a recording after the meeting ended.
+- `edit N "<line>"` rewrites line N (kind, epic, text, due, link, tags) keeping its day, meeting, note and author;
+  refused (exit 1) unless that line's author is you. For fixing your own mistakes, e.g. a misheard owner from /meeting.
 - `log --note N` links the line to existing note N (its detail page; refused with exit 1 if there is no such note).
 - `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`.
   `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
@@ -114,6 +117,8 @@ alters a token, component, glass surface or pattern updates `DESIGN.md` in the s
 
 - `export PATH=/opt/homebrew/opt/rustup/bin:$PATH` (rustup is keg-only here).
 - Check before every commit: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`.
+- Building the Mac app (`--workspace`, `cargo tauri build`) needs `scripts/sherpa-onnx.sh` once: the sha-pinned
+  sherpa-onnx static lib for the speaker split (D37); `.cargo/config.toml` points the crate at it.
 - Layout: vertical slices (`src/<feature>/{mod,handlers,queries,view}.rs`) + pure `src/domain/`. `domain/` imports
   no feature; features never import each other; SQL only in a slice's `queries.rs`; HTML only in `templates/`;
   every htmx action returns one partial and also works as a plain form POST (303 back). `src/cli/` is an entry

@@ -13,10 +13,13 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/007_meeting_start.sql"),
     include_str!("../migrations/008_line_notes.sql"),
     include_str!("../migrations/009_meeting_transcripts.sql"),
+    include_str!("../migrations/010_meeting_notes.sql"),
 ];
 
 /// `user_version` after 006: the step that also fills `taggings` from text written before tags existed.
 const TAGS_VERSION: usize = 6;
+/// `user_version` after 010: the step that moves each meeting's notes text into a note.
+const MEETING_NOTES_VERSION: usize = 10;
 
 pub fn open(path: &Path) -> rusqlite::Result<Connection> {
     if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
@@ -51,8 +54,32 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         if i + 1 == TAGS_VERSION {
             backfill_tags(&tx)?;
         }
+        if i + 1 == MEETING_NOTES_VERSION {
+            backfill_meeting_notes(&tx)?;
+        }
         tx.pragma_update(None, "user_version", (i + 1) as i64)?;
         tx.commit()?;
+    }
+    Ok(())
+}
+
+/// 010: each meeting with notes text gets a note "<series> · <day>" holding it (plus `[[series]]`, so the note
+/// links back), written by the owner, tagged from its text. Per row in Rust: SQL can't pair each new note id
+/// with its meeting, and the tags need the parser.
+fn backfill_meeting_notes(conn: &Connection) -> rusqlite::Result<()> {
+    let rows: Vec<(i64, String, String, String)> = conn
+        .prepare("SELECT id, day, name, notes FROM meetings WHERE trim(notes) <> '' ORDER BY id")?
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
+        .collect::<Result<_, _>>()?;
+    for (id, day, name, text) in rows {
+        let body = format!("{}\n\n[[{name}]]", text.trim_end());
+        conn.execute(
+            "INSERT INTO notes(title, body, author) VALUES (?1, ?2, 'me')",
+            rusqlite::params![format!("{name} · {day}"), body],
+        )?;
+        let note = conn.last_insert_rowid();
+        conn.execute("UPDATE meetings SET note_id = ?1 WHERE id = ?2", [note, id])?;
+        retag(conn, "note", &note.to_string(), &tags::tags(&body))?;
     }
     Ok(())
 }

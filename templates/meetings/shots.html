@@ -1,0 +1,8 @@
+{#- Screenshots (T89): files beside the DB; the camera button is the Mac app's (it runs macOS's own picker). Re-fetched on `atharu-sync` after a shot. -#}
+<section id="shots" hx-get="/meetings/{{ id }}/shots" hx-trigger="atharu-sync from:body" hx-swap="outerHTML">
+{%- if !files.is_empty() || can_take %}
+<h3>Screenshots{% if !files.is_empty() %} <span class="muted normal">· {{ files.len() }}</span>{% endif %}{% if can_take %} <a class="btn ghost s" href="/app/screenshot?meeting={{ id }}">Take screenshot</a>{% endif %}</h3>
+{%- if files.is_empty() %}<p class="small muted" style="margin: 0">Drag over what's on screen, or press Space to pick a window. Esc cancels.</p>{% endif %}
+<div class="shots">{% for f in files %}<a href="/attachments/meetings/{{ id }}/{{ f }}" target="_blank"><img src="/attachments/meetings/{{ id }}/{{ f }}" alt="Screenshot {{ self.label(f) }}" loading="lazy"><span class="small muted">{{ self.label(f) }}</span></a>{% endfor %}</div>
+{%- endif %}
+</section>

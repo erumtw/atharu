@@ -9,5 +9,6 @@ pub mod links;
 pub mod look;
 pub mod markdown;
 pub mod parse;
+pub mod people;
 pub mod plan;
 pub mod tags;

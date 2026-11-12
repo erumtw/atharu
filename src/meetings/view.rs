@@ -103,7 +103,8 @@ pub struct Page {
     pub series_count: usize,
     pub plans: Vec<Plan>,
     pub groups: Vec<KindGroup>,
-    pub notes: String,
+    /// Its note (T90): (id, title, markdown), edited in place with the Notes editor; None = "Start notes".
+    pub note: Option<(i64, String, String)>,
     pub today: NaiveDate,
     pub back: String,
     /// Notes linking here with `[[…]]`: (id, title).
@@ -113,6 +114,22 @@ pub struct Page {
     /// Shown on top while this meeting is recording (D31), so Stop is where you are.
     pub banner: Option<Banner>,
     pub tx: TxSection,
+    pub shots: Shots,
+}
+
+/// Screenshots section (T89): file names + whether this view can take one (the Mac app, meeting running).
+#[derive(Template)]
+#[template(path = "meetings/shots.html")]
+pub struct Shots {
+    pub id: i64,
+    pub files: Vec<String>,
+    pub can_take: bool,
+}
+
+impl Shots {
+    pub fn label(&self, f: &str) -> String {
+        super::shots::label(f)
+    }
 }
 
 #[derive(Template)]
@@ -129,7 +146,7 @@ pub struct Saved;
 pub struct TxRow {
     /// `00:01:02` from the start of the recording.
     pub time: String,
-    pub who: &'static str,
+    pub who: String,
     /// Same speaker as the row above: the name is hidden.
     pub cont: bool,
     /// Text split around `?q=` hits: (text, is a hit).
@@ -150,6 +167,8 @@ pub struct TxView {
     /// Closed while recording: transcribed up to `hh:mm:ss`.
     pub interrupted: Option<String>,
     pub done: bool,
+    /// Split voices the owner can name (done recordings only): `Speaker 1`, or the name given.
+    pub speakers: Vec<String>,
 }
 
 /// The Transcript section of a meeting page; polled while a recording is live or finishing.

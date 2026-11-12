@@ -1,6 +1,6 @@
 //! `/settings`: the look picker (spec "Looks") and the glass controls (D17). Stored in the `settings` table, read by the layout.
 mod handlers;
-mod queries;
+pub(crate) mod queries;
 mod view;
 
 use crate::app::AppState;
@@ -16,6 +16,7 @@ pub fn routes() -> Router<AppState> {
         .route("/settings/transcription", get(handlers::transcription_get))
         .route("/settings/transcription/model", post(handlers::model))
         .route("/settings/transcription/lang", post(handlers::lang))
+        .route("/settings/transcription/people", post(handlers::people))
         .route("/settings/db", post(handlers::save_db))
         .route("/settings/db/note", post(handlers::db_note_seen))
 }

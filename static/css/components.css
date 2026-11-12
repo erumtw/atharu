@@ -24,7 +24,15 @@ select.pin{cursor:pointer}
 .k{font-family:ui-monospace,'SF Mono',Menlo,monospace;display:inline-flex;justify-content:center;align-items:center;width:22px;height:22px;border-radius:6px;background:var(--fill-2);color:var(--ink);font-size:12px;font-weight:600;line-height:1;flex:none;letter-spacing:0}
 .k.imp{background:var(--accent);color:#fff}
 .k.bl{background:var(--ink);color:#fff}
-.chip{display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--ink-2);background:var(--fill-2);white-space:nowrap;letter-spacing:0}
+/* Block-level ellipsis (an inline-flex box can't clip its text): a long series slug or tag ends in "…" within its
+   container instead of pushing the row apart. The full name is in the title / the page it links to. */
+.chip{display:inline-block;vertical-align:middle;max-width:100%;overflow:hidden;text-overflow:ellipsis;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--ink-2);background:var(--fill-2);white-space:nowrap;letter-spacing:0;box-sizing:border-box}
+.blk>.chip,.blk>a>.chip{flex:0 1 auto;min-width:0;max-width:60%}
+/* Short fixed labels never clip: the agent badge and epic keys ("cla…" read as nothing). */
+.chip.llm,.chip.key{flex:none;max-width:none}
+.blk>span:not(.chip){min-width:0}
+/* One-line clip for a long name inside a flex row (sidebar series, crumbs). */
+.ell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip.key{font-family:ui-monospace,'SF Mono',Menlo,monospace}
 .chip.llm{background:#fff;color:var(--ink);border:1px solid var(--ink);padding:0 7px}
 /* A chip inside a link (epic key, note row) answers the hover too, not just the underline. */
@@ -560,7 +568,13 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .txhead{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .txhead .fld.s{width:220px}
 .txbody{max-height:440px;overflow:auto;padding:6px 16px 10px}
-.txrow{display:grid;grid-template-columns:62px 52px 1fr;gap:10px;padding:5px 0;align-items:baseline}
+/* Speaker naming (T56): one autosaving field per split voice; 140 px fits "Speaker 12" and most names. */
+.txspk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 16px;border-bottom:1px solid var(--line)}
+.txspk .small{flex-basis:100%}
+.txspk .fld.s{width:140px}
+/* 84 px: "Speaker 12" in 12/600; a longer name is cut, the full one is in Copy. */
+.txrow{display:grid;grid-template-columns:62px 84px 1fr;gap:10px;padding:5px 0;align-items:baseline}
+.txrow .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .txrow+.txrow{border-top:1px solid var(--sep)}
 .txrow time{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--muted);letter-spacing:0}
 .who{font-size:12px;font-weight:600;color:var(--ink-2)} /* 11.09:1 on white */
@@ -580,3 +594,12 @@ progress.prog::-moz-progress-bar{background:var(--accent)}
 .steps li.ok::before{content:"✓";background:var(--ink);color:#fff;border-color:var(--ink)}
 .path{font-weight:500}
 @media (max-width:639px){.txhead .fld.s{width:100%}.txrow{grid-template-columns:56px 1fr}.txrow .who{grid-row:1;grid-column:2}.txrow>span:last-child{grid-column:1/-1}}
+/* Meeting screenshots (T89): a wrapping strip of thumbnails, each a link to the full PNG. */
+.shots{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.shots a{display:flex;flex-direction:column;gap:4px;width:160px;text-decoration:none}
+.shots img{width:160px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#fff}
+/* Meeting title as an in-place field (T92): reads as the h1 until focused; wraps like it (textarea, one Enter = save). */
+.ttl{margin:0}
+.ttl .ptitle textarea{all:unset;display:block;width:100%;box-sizing:border-box;font:inherit;color:inherit;letter-spacing:inherit;line-height:inherit;resize:none;overflow:hidden;field-sizing:content;overflow-wrap:anywhere;border-radius:10px;padding:0 6px;margin:0 -6px;cursor:text}
+.ttl .ptitle textarea:hover{background:var(--fill-2)}
+.ttl .ptitle textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px;background:var(--fill-2)}

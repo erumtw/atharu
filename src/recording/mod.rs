@@ -192,10 +192,12 @@ impl Mac {
     pub fn delete(&self) {
         self.cancel();
         let _ = std::fs::remove_file(self.model_path());
+        // The Mac app's speaker-split models (T56) go with it: nothing of the feature is left on disk.
+        let _ = std::fs::remove_dir_all(self.dir.join("speakers"));
     }
 }
 
-fn sha256(path: &std::path::Path) -> Option<String> {
+pub fn sha256(path: &std::path::Path) -> Option<String> {
     let out = Command::new("shasum")
         .args(["-a", "256", "-b"])
         .arg(path)
@@ -331,28 +333,36 @@ pub fn wanted(conn: &Connection) -> rusqlite::Result<Option<Want>> {
         return Ok(None);
     };
     let epics = queries::active_epics(conn)?;
+    let people =
+        crate::domain::people::parse(&queries::setting(conn, "people")?.unwrap_or_default());
+    let names: Vec<String> = people.into_iter().map(|p| p.said).collect();
     Ok(Some(Want {
         tid,
         live: status == "live",
         lang,
-        prompt: glossary(&meeting, &epics),
+        prompt: glossary(&meeting, &names, &epics),
     }))
 }
 
-/// `Glossary: oms-sync, OPS-101 Checkout latency, ….` On mixed.wav (T53) this form kept every English line
-/// and wrote Thai in Thai; a bare list made whisper romanise Thai and echo the keys. Whisper still echoes
-/// the "Glossary:" word now and then: the recorder strips it. Only the last 224 tokens count, so cap it.
-fn glossary(meeting: &str, epics: &[(String, String)]) -> String {
-    let mut p = format!("Glossary: {meeting}");
+/// `Glossary: OPS-101 Checkout latency, …, oms-sync, แฟรง, ออฟ.` On mixed.wav (T53) this form kept every English
+/// line and wrote Thai in Thai; a bare list made whisper romanise Thai and echo the keys. Whisper still echoes the
+/// "Glossary:" word now and then: the recorder strips it. Whisper keeps only the prompt's LAST 224 tokens (and Thai
+/// costs about a token a letter), so the meeting and people's names go last and the epics are what gets cut.
+fn glossary(meeting: &str, names: &[String], epics: &[(String, String)]) -> String {
+    let tail: String = std::iter::once(meeting.to_string())
+        .chain(names.iter().cloned())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let mut head = String::new();
     for (key, title) in epics {
-        let item = format!(", {key} {title}");
-        if p.chars().count() + item.chars().count() > 600 {
+        let item = format!("{key} {title}");
+        if head.chars().count() + item.chars().count() + tail.chars().count() > 600 {
             break;
         }
-        p.push_str(item.trim_end());
+        head.push_str(item.trim_end());
+        head.push_str(", ");
     }
-    p.push('.');
-    p
+    format!("Glossary: {head}{tail}.")
 }
 
 /// At app launch: a recording left live or finishing has no process behind it any more (crash or
@@ -388,8 +398,13 @@ mod tests {
             ("OPS-7".to_string(), String::new()),
         ];
         assert_eq!(
-            glossary("oms-sync", &e),
-            "Glossary: oms-sync, OPS-101 Checkout latency, OPS-7."
+            glossary("oms-sync", &[], &e),
+            "Glossary: OPS-101 Checkout latency, OPS-7, oms-sync."
+        );
+        // Names last: whisper drops a long prompt's start, and they matter more than the epics.
+        assert_eq!(
+            glossary("oms-sync", &["แฟรง".into(), "ออฟ".into()], &e),
+            "Glossary: OPS-101 Checkout latency, OPS-7, oms-sync, แฟรง, ออฟ."
         );
     }
 }

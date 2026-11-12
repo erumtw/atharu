@@ -113,7 +113,7 @@ async fn lines_logged_during_a_meeting_get_its_id() {
     assert!(b.contains("<td>1 open</td>"));
     assert!(b.contains("Revisit queue design"));
     assert!(!b.contains("if traffic doubles"));
-    assert!(b.contains("oms-sync · 1"));
+    assert!(b.contains("<span class=\"ell\">oms-sync</span><span>· 1</span>"));
     assert!(
         get(&st, "/")
             .await
@@ -158,4 +158,133 @@ async fn series_filter_and_report_numbers() {
     assert!(b.contains("<b>2</b><span class=\"small muted\">1 in meetings</span>"));
     assert!(b.contains(r#"<span class="small muted">Meetings</span><b>2</b>"#));
     assert!(b.contains("- **Decision** keep sync path (oms-sync)"));
+}
+
+#[tokio::test]
+async fn rename_moves_the_whole_series_and_its_tags() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO meetings(id, day, name, ended_at) VALUES
+           (1, '2026-11-10', 'comps-add-on-cs-hub-from-comops', '2026-11-10 10:00:00'),
+           (2, '2026-11-11', 'comps-add-on-cs-hub-from-comops', '2026-11-11 10:00:00'),
+           (3, '2026-11-11', 'oms-sync', '2026-11-11 11:00:00');",
+    );
+    exec(
+        &st,
+        "INSERT INTO taggings(tag, item_type, item_id) VALUES ('cshub', 'series', 'comps-add-on-cs-hub-from-comops')",
+    );
+
+    let r = post(
+        &st,
+        "/meetings/1/rename",
+        &form(&[("name", "CS Hub sync")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.headers["hx-redirect"], "/meetings/1");
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM meetings WHERE name = 'cs-hub-sync'"
+        ),
+        2
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM taggings WHERE item_type = 'series' AND item_id = 'cs-hub-sync'"
+        ),
+        1
+    );
+
+    // Taken by another series, or nothing usable: refused, nothing moves.
+    let r = post(
+        &st,
+        "/meetings/1/rename",
+        &form(&[("name", "oms-sync")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 422);
+    assert!(r.body.contains("another series"));
+    assert_eq!(
+        post(&st, "/meetings/1/rename", &form(&[("name", " ?! ")]), true)
+            .await
+            .status,
+        422
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM meetings WHERE name = 'cs-hub-sync'"
+        ),
+        2
+    );
+}
+
+#[tokio::test]
+async fn migration_010_moves_notes_text_into_a_note() {
+    // A pre-010 database: meetings with a notes text column only.
+    let dir = std::env::temp_dir().join(format!("atharu-010-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("atharu.db");
+    {
+        let c = atharu::db::open(&path).unwrap();
+        c.execute_batch(
+            "ALTER TABLE meetings DROP COLUMN note_id; PRAGMA user_version = 9;
+             INSERT INTO meetings(id, day, name, notes, ended_at) VALUES
+               (1, '2026-11-10', 'oms-sync', 'ship friday #cshub', '2026-11-10 10:00:00'),
+               (2, '2026-11-11', 'oms-sync', '', '2026-11-11 10:00:00');",
+        )
+        .unwrap();
+    }
+    let st = atharu::app::AppState::new(atharu::db::open(&path).unwrap());
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE title = 'oms-sync · 2026-11-10' AND body LIKE 'ship friday #cshub%[[oms-sync]]' AND author = 'me'"
+        ),
+        1
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM meetings WHERE id = 1 AND note_id IS NOT NULL"
+        ),
+        1
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM meetings WHERE id = 2 AND note_id IS NULL"
+        ),
+        1
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM taggings WHERE tag = 'cshub' AND item_type = 'note'"
+        ),
+        1
+    );
+    // The page edits it in place; an empty meeting offers "Start notes", which makes one once.
+    let page = get(&st, "/meetings/1").await.body;
+    assert!(page.contains("id=\"note-md\"") && page.contains("ship friday #cshub"));
+    assert!(
+        !page.contains("Mentioned in"),
+        "its own note isn't a mention"
+    );
+    assert!(get(&st, "/meetings/2").await.body.contains("Start notes"));
+    post(&st, "/meetings/2/note", "", false).await;
+    post(&st, "/meetings/2/note", "", false).await;
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE title = 'oms-sync · 2026-11-11'"
+        ),
+        1
+    );
+    let _ = std::fs::remove_dir_all(&dir);
 }

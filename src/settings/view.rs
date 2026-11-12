@@ -33,6 +33,8 @@ pub struct Transcription {
     /// `OPS-101 Checkout latency`: the first active epic, as an example of what is passed.
     pub hint: String,
     pub perms: bool,
+    /// The Names list as typed (`domain::people`).
+    pub people: String,
 }
 
 /// Settings › About › Database file (T85); also the htmx partial `/settings/db` returns.
