@@ -24,6 +24,7 @@
 {% include "today/log.html" %}
 {#- "Tag them" / its Undo rewrite lines that may be on screen: the tags slice answers with HX-Trigger `tagged`. #}
 <div hidden hx-get="{{ filter.path }}tag={{ filter.joined() }}" hx-trigger="tagged from:body" hx-target="#log" hx-select="#log" hx-swap="outerHTML"></div>
+<div hidden hx-get="{{ filter.path }}tag={{ filter.joined() }}" hx-trigger="plans-changed from:body" hx-target="#plans" hx-select="#plans" hx-swap="outerHTML"></div>
 <div class="capture">
 {#- Out of flow above the capsule, top → bottom (the hint nearest the bar). The menus live outside the form: its backdrop-filter is a Backdrop Root. #}
 <div class="above">
