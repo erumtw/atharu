@@ -108,6 +108,11 @@ pub struct Meeting {
     pub ended_at: Option<String>,
 }
 
+/// Newest meeting (CLI `meeting latest`).
+pub fn latest(conn: &Connection) -> rusqlite::Result<Option<i64>> {
+    conn.query_row("SELECT max(id) FROM meetings", [], |r| r.get(0))
+}
+
 pub fn meeting(conn: &Connection, id: i64) -> rusqlite::Result<Option<Meeting>> {
     conn.query_row(
         "SELECT day, name, notes, ended_at FROM meetings WHERE id = ?1",
