@@ -172,7 +172,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Drawing | `.drawing`, `.drawing.empty`, `.drawsheet` + `.drawbar` | see "Drawing block" below |
 | Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw` |
 | Recording banner | `.callout.dark.recb` > `.dot.rec` + `.rect` + `.lvl` ×2 | meeting banner while recording: pulsing dot, elapsed, one level meter per stream, Stop recording + End meeting |
-| Transcript | `.tx` > `.txhead` + `.txbody` > `.txrow` | white 12-radius box (content, no glass); search `.fld.s` + Copy in the head |
+| Transcript | `.tx` > `.txhead` (+ `.txspk`) + `.txbody` > `.txrow` | white 12-radius box (content, no glass); search `.fld.s` + Copy in the head; `.txspk` names split voices |
 | Screenshots | `#shots` > `.shots` > `a` > `img` + caption | meeting page under Notes: 160×100 cover thumbnails (8 radius, `--line` border), `HH:MM` caption, click = full PNG; **Take screenshot** ghost pill (app, meeting running); the camera `.btn.ghost` on the banner and the popover card runs macOS's picker (T89) |
 | Progress | `progress.prog` | native `<progress>`, 6 px, `--accent` on `--sep` (4.6:1) |
 | Command chip | `.cmd` | a copyable CLI / slash command in a white pill with a Copy button inside |
@@ -219,10 +219,17 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 - **Transcript** section on the meeting page, after Notes: `.tx` with a head (meta in muted: "Live · about 30 s behind · th · N
   lines" / "Recorded 1 h 02 min · 812 lines · large-v3-turbo · th"), search (`GET ?q=`, server filters rows and wraps hits in
   `<mark>` on `--accent-wash`; works without JS) and **Copy** (clipboard; a `.toast` "Copied N lines"). Rows: mono timestamp ·
-  **Me** / **Others** (12/600, repeated speaker hidden) · text. Live tail line: "Listening · the next lines arrive about 30 s after
+  **Me** / **Others** (12/600, 84 px column, a longer name cut with its full text in `title`; repeated speaker hidden) · text. Live tail line: "Listening · the next lines arrive about 30 s after
   they're said". The body scrolls in its own 440 px box and follows the bottom while live.
 - **Finishing**: after Stop / End, a `role=status` row under the last lines: "Transcribing the last part… about N min left · you can
-  close this page, it keeps going" + `progress.prog` (≈ 4–5 min per hour of meeting).
+  close this page, it keeps going" + `progress.prog` (≈ 4–5 min per hour of meeting, plus ≈ 6 min per hour for the speaker
+  split).
+- **Speakers** (T56; D34, D37): after the tail, the Mac app splits Others by voice (local sherpa-onnx diarization) and the
+  Others lines come back as **Speaker 1..N**; live lines say "Others" until then. A done recording with split voices gets a
+  `.txspk` row under the head: one muted help line ("Voices on the call, told apart after the meeting. Name one and every line
+  follows.") and one `.fld.s` (140 px) per voice holding its name, autosaved on change (no Save; Enter posts the plain form).
+  Naming two voices the same merges them (the split cut one person in two); blank / Me / Others are ignored. The name lives in
+  each line's `speaker`, per recording; no voice print outlives the pass, so nothing carries to the next meeting.
 - **Done**: a grey `.callout` above the transcript: "Ask Claude for notes: run `/meeting` in Claude Code…" + `.cmd` holding
   `/meeting <id>` with Copy. No API key, no button that calls a model.
 - **Interrupted**: a grey callout "Atharu closed during this meeting. The transcript is saved up to hh:mm:ss; the rest of the audio
@@ -235,7 +242,10 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 - **Settings › Transcription** (between Connections and Accessibility): Speech model (Download 574 MB = primary · downloading:
   `progress.prog` + "212 of 574 MB · about 1 min left" + Cancel · "Checking the file…" · Ready `.pill.ok` + Delete `.dng` · checksum
   failed `.err` + Try again) · Language `.seg.mac` Auto | Thai | English (Thai default; help says Auto can translate) · Vocabulary
-  `.pill` Automatic (names + meeting name + active epics as hints) · **Names** `.ta` (both views, autosaves): one person per line `แฟรง = Frank, VP Strategy`, fed to the speech model and to /meeting · Permissions `.pill.ok` On · Audio "Deleted as soon as it's text".
+  `.pill` Automatic (names + meeting name + active epics as hints) · **Names** `.ta` (both views, autosaves): one person per line `แฟรง = Frank, VP Strategy`, fed to the speech model and to /meeting · Speakers `.pill` Automatic (split after Stop; the 30 MB voice models
+  are fetched sha-pinned with the first recording, no button; Delete of the speech model removes them too) · Permissions
+  `.pill.ok` On · Audio "Deleted as soon as it's text and its speakers are told apart" (Others sits in a temp file until the
+  split ends; a crash leaves it for the next launch to delete).
 - RT / IC: the banner is already opaque `--dark`; `.tx` is content; glass bits (search field, Copy pill, crumb) follow the usual rules.
 
 ### Tag chip (canvas row "Tags · one grouping layer", T70; D29)

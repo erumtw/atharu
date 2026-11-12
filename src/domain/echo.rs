@@ -76,7 +76,8 @@ pub fn strip_label(t: &str) -> &str {
     t
 }
 
-/// Drops each "me" segment that repeats an "others" segment within `WINDOW`. Order is kept.
+/// Drops each "me" segment that repeats another speaker's segment ("others", or a split `Speaker N` /
+/// the name the owner gave it) within `WINDOW`. Order is kept.
 /// Labels stripped too (`strip_label`), so transcripts recorded before the recorder did it read clean.
 pub fn drop_echo(segs: Vec<(f64, String, String)>) -> Vec<(f64, String, String)> {
     let segs: Vec<(f64, String, String)> = segs
@@ -85,7 +86,7 @@ pub fn drop_echo(segs: Vec<(f64, String, String)>) -> Vec<(f64, String, String)>
         .collect();
     let others: Vec<(f64, Vec<String>, &str)> = segs
         .iter()
-        .filter(|(_, s, _)| s == "others")
+        .filter(|(_, s, _)| s != "me")
         .map(|(t, _, x)| (*t, words(x), x.as_str()))
         .collect();
     let keep: Vec<bool> = segs
@@ -174,5 +175,16 @@ mod tests {
             ]
         );
         assert_eq!(out.iter().filter(|s| s.1 == "others").count(), 3);
+    }
+
+    #[test]
+    fn echo_of_a_split_or_named_speaker_is_hidden_too() {
+        let out = drop_echo(vec![
+            seg(0.0, "Speaker 2", "Our first topic is family."),
+            seg(10.0, "Anna", "Who are you most like?"),
+            seg(15.2, "me", "Our first topic is family."),
+            seg(18.0, "me", "Who are you most like?"),
+        ]);
+        assert_eq!(out.iter().filter(|s| s.1 == "me").count(), 0);
     }
 }

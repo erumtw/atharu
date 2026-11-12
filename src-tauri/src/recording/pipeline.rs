@@ -19,7 +19,10 @@ pub const SPEAKERS: [&str; 2] = ["me", "others"];
 pub struct Seg {
     /// Seconds from the start of the recording.
     pub t: f64,
-    pub speaker: &'static str,
+    /// Where the line ends (s): the speaker split matches it against the diarized turns; never stored.
+    pub end: f64,
+    /// `me`, `others`, or `Speaker N` once the split ran.
+    pub speaker: String,
     pub text: String,
 }
 
@@ -92,15 +95,7 @@ impl Pipeline {
             return Vec::new();
         }
         let base = s.offset as f64 / RATE as f64;
-        let mut p = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
-        p.set_language(Some(&self.lang));
-        // A glossary, not context: each window starts clean, so one bad window can't poison the next.
-        p.set_initial_prompt(&self.prompt);
-        p.set_no_context(true);
-        p.set_print_progress(false);
-        p.set_print_realtime(false);
-        p.set_print_special(false);
-        p.set_print_timestamps(false);
+        let p = params(&self.lang, &self.prompt);
         if self.state.full(p, audio).is_err() {
             return Vec::new();
         }
@@ -123,12 +118,47 @@ impl Pipeline {
             s.last_text = text.clone();
             out.push(Seg {
                 t: start,
-                speaker: SPEAKERS[who],
+                end,
+                speaker: SPEAKERS[who].into(),
                 text,
             });
         }
         out
     }
+
+    /// One stretch of audio (≤ 30 s) as one line: the speaker split re-transcribes a line two voices shared.
+    pub fn text(&mut self, audio: &[f32]) -> String {
+        let rms = (audio.iter().map(|v| v * v).sum::<f32>() / audio.len().max(1) as f32).sqrt();
+        if rms < SILENCE
+            || self
+                .state
+                .full(params(&self.lang, &self.prompt), audio)
+                .is_err()
+        {
+            return String::new();
+        }
+        let parts: Vec<String> = self
+            .state
+            .as_iter()
+            .filter(|seg| seg.no_speech_probability() <= 0.6)
+            .filter_map(|seg| seg.to_str_lossy().ok().map(|t| clean(&t)))
+            .filter(|t| !t.is_empty())
+            .collect();
+        parts.join(" ")
+    }
+}
+
+fn params<'a>(lang: &'a str, prompt: &'a str) -> FullParams<'a, 'a> {
+    let mut p = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+    p.set_language(Some(lang));
+    // A glossary, not context: each window starts clean, so one bad window can't poison the next.
+    p.set_initial_prompt(prompt);
+    p.set_no_context(true);
+    p.set_print_progress(false);
+    p.set_print_realtime(false);
+    p.set_print_special(false);
+    p.set_print_timestamps(false);
+    p
 }
 
 /// The prompt's own words echoed at a window start (`Glossary: …`, a made-up `word:`, a leading `-`) are not speech.

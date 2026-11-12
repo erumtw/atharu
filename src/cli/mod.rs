@@ -352,6 +352,9 @@ fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
                 "status": t.status,
                 "model": t.model,
                 "lang": t.lang,
+                // Voices the split told apart (`Speaker 2` until the owner names it); a segment's speaker is one of
+                // these, "me" or "others".
+                "speakers": t.speakers(),
                 "segments": t.segments.into_iter().map(|(t, speaker, text)| json!({"t": t, "speaker": speaker, "text": text})).collect::<Vec<_>>(),
             })
         })

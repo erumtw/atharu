@@ -25,6 +25,10 @@ pub fn routes() -> Router<AppState> {
             "/meetings/transcripts/{tid}/segments",
             post(handlers::segments),
         )
+        .route(
+            "/meetings/{id}/transcripts/{tid}/speakers",
+            post(handlers::rename_speaker),
+        )
         .route("/meetings/{id}/notes", post(handlers::save_notes))
         .route("/meetings/{id}/tags", post(handlers::set_tags))
         .route("/meetings/{id}/delete", post(handlers::delete))

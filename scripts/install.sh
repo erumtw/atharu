@@ -115,6 +115,8 @@ if [ "$app" = 1 ]; then
   else
     echo "note: unsigned build, recording permissions reset on every install: run scripts/dev-cert.sh once"
   fi
+  # Speaker split (T56): the sha-pinned sherpa-onnx static lib; tags before 0.1.1 have no script and no need.
+  if [ -x "$src/scripts/sherpa-onnx.sh" ]; then "$src/scripts/sherpa-onnx.sh"; fi
   (cd "$src/src-tauri" && cargo tauri build --bundles app)
   step "app build"
   built=$CARGO_TARGET_DIR/release/bundle/macos/Atharu.app

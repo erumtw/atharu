@@ -145,7 +145,7 @@ pub struct Saved;
 pub struct TxRow {
     /// `00:01:02` from the start of the recording.
     pub time: String,
-    pub who: &'static str,
+    pub who: String,
     /// Same speaker as the row above: the name is hidden.
     pub cont: bool,
     /// Text split around `?q=` hits: (text, is a hit).
@@ -166,6 +166,8 @@ pub struct TxView {
     /// Closed while recording: transcribed up to `hh:mm:ss`.
     pub interrupted: Option<String>,
     pub done: bool,
+    /// Split voices the owner can name (done recordings only): `Speaker 1`, or the name given.
+    pub speakers: Vec<String>,
 }
 
 /// The Transcript section of a meeting page; polled while a recording is live or finishing.
