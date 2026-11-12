@@ -1,7 +1,11 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, parse::parse},
+    domain::{
+        dates,
+        flags::{self, Flag},
+        parse::parse,
+    },
     error::{AppError, AppResult},
     layout::Layout,
     web,
@@ -40,6 +44,7 @@ fn groups(conn: &Connection, day: NaiveDate) -> rusqlite::Result<Vec<view::Group
             kind: r.kind,
             topic: r.topic,
             text: r.text,
+            meeting: r.meeting,
         };
         // Rows arrive sorted by group, so a new key always means a new group.
         match out.last_mut() {
@@ -54,6 +59,61 @@ fn groups(conn: &Connection, day: NaiveDate) -> rusqlite::Result<Vec<view::Group
     Ok(out)
 }
 
+fn plans(conn: &Connection, today: NaiveDate) -> rusqlite::Result<view::Plans> {
+    let (pinned, other) = queries::plans(conn, &dates::iso(dates::week_start(today)))?
+        .into_iter()
+        .partition(|p| p.pinned);
+    Ok(view::Plans { pinned, other })
+}
+
+/// Flagged epics (worst first), then overdue to-dos.
+fn needs(
+    conn: &Connection,
+    plans: &view::Plans,
+    today: NaiveDate,
+) -> rusqlite::Result<Vec<view::Need>> {
+    let mut out: Vec<(Flag, view::Need)> = Vec::new();
+    for e in queries::active_epic_facts(conn)? {
+        let facts = flags::EpicFacts {
+            status: "active",
+            target: e.target,
+            last_activity: e.last_activity,
+            open_plans: e.open_plans,
+        };
+        if let Some(f) = flags::flag(&facts, today) {
+            let text = if e.title.is_empty() {
+                f.reason
+            } else {
+                format!("{} · {}", e.title, f.reason)
+            };
+            out.push((
+                f.flag,
+                view::Need {
+                    class: f.flag.class(),
+                    label: f.flag.label(),
+                    href: format!("/epics/{}", e.key),
+                    key: Some(e.key),
+                    text,
+                },
+            ));
+        }
+    }
+    out.sort_by_key(|(f, _)| *f as u8);
+    let mut needs: Vec<view::Need> = out.into_iter().map(|(_, n)| n).collect();
+    for p in plans.pinned.iter().chain(&plans.other) {
+        if p.is_late(&today) {
+            needs.push(view::Need {
+                class: Flag::Overdue.class(),
+                label: "overdue",
+                key: p.epic_key.clone(),
+                text: format!("{} · was due {}", p.text, p.due_label()),
+                href: "/todos".into(),
+            });
+        }
+    }
+    Ok(needs)
+}
+
 fn render_page(
     st: &AppState,
     day: NaiveDate,
@@ -61,8 +121,20 @@ fn render_page(
     error: Option<String>,
 ) -> AppResult<view::Page> {
     let conn = st.conn();
+    let plans = plans(&conn, st.today())?;
     Ok(view::Page {
         layout: Layout::load(&conn, "today", "Today", vec![])?,
+        banner: view::Banner {
+            active: queries::active_meeting(&conn)?
+                .map(|(id, name)| view::ActiveMeeting { id, name }),
+            series: queries::meeting_series(&conn)?,
+            name: String::new(),
+            error: None,
+            back: format!("/?day={}", dates::iso(day)),
+        },
+        today: st.today(),
+        needs: needs(&conn, &plans, st.today())?,
+        plans,
         day: view::Day::new(day, st.today()),
         groups: groups(&conn, day)?,
         keys: queries::epic_keys(&conn)?,
@@ -111,9 +183,13 @@ pub async fn create(
     if !web::is_htmx(&headers) {
         return Ok(web::back(&format!("/?day={}", dates::iso(day))));
     }
+    // One guard per statement: two `st.conn()` temporaries in one expression deadlock the mutex.
+    let conn = st.conn();
     let swap = view::Swap {
+        today,
+        plans: plans(&conn, today)?,
         day: view::Day::new(day, today),
-        groups: groups(&st.conn(), day)?,
+        groups: groups(&conn, day)?,
         saved: Some(view::Saved {
             id,
             kind: entry.kind.as_str(),
@@ -136,9 +212,12 @@ pub async fn delete(
         return Ok(web::back(&format!("/?day={day}")));
     }
     let d = pick_day(Some(&day), st.today());
+    let conn = st.conn();
     let swap = view::Swap {
+        today: st.today(),
+        plans: plans(&conn, st.today())?,
         day: view::Day::new(d, st.today()),
-        groups: groups(&st.conn(), d)?,
+        groups: groups(&conn, d)?,
         saved: None,
         deleted: Some(view::Deleted {
             line: entry.to_line(),

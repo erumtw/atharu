@@ -2,7 +2,7 @@
 {% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto">{%- include "epics/saved.html" -%}</span>{% endblock %}
 {% block content %}
 <main class="doc">
-<div class="row"><span class="chip key">{{ epic.key }}</span></div>
+<div class="row"><span class="chip key">{{ epic.key }}</span>{% if let Some(f) = flag %}<span class="{{ f.class }}">{{ f.label }}</span><span class="small muted">{{ f.reason }}</span>{% endif %}</div>
 {#- Every change PATCHes the whole form (unchanged fields rewrite their own value); no-JS posts it via Save. #}
 <form method="post" action="/epics/{{ epic.key }}" hx-patch="/epics/{{ epic.key }}" hx-trigger="change, submit" hx-target="#live" hx-swap="outerHTML">
 <h1 class="ptitle" style="margin-top: 0"><input class="pin" name="title" value="{{ epic.title }}" placeholder="Untitled" aria-label="Title" style="font: inherit; letter-spacing: inherit; width: 100%"></h1>
@@ -12,6 +12,7 @@
 <dt><label for="okr">OKR</label></dt><dd><input id="okr" name="okr" class="pin" value="{{ epic.okr }}" placeholder="e.g. O1 · Faster ordering"></dd>
 <dt>Dates</dt><dd><span class="small muted">start</span><input class="pin" type="date" name="start" value="{{ epic.start }}" style="flex: 0" aria-label="Start"><span class="small muted">target</span><input class="pin" type="date" name="target" value="{{ epic.target }}" style="flex: 0" aria-label="Target"><span class="small muted">done on</span><input class="pin" type="date" name="done_on" value="{{ epic.done_on }}" style="flex: 0" aria-label="Done on"></dd>
 <dt>Metric</dt><dd><input class="pin" name="metric" value="{{ live.metric }}" placeholder="e.g. checkout p95" style="flex: 0 1 140px" aria-label="Metric name"><span class="small muted">before</span><input class="pin" name="before" value="{{ live.before }}" style="flex: 0 0 48px" aria-label="Before"><span class="small muted">after</span><input class="pin" name="after" value="{{ live.after }}" style="flex: 0 0 48px" aria-label="After"></dd>
+<dt>Activity</dt><dd><div class="bars" style="width: 120px; height: 20px" aria-hidden="true">{% for p in activity %}<span style="height: {{ p }}%"></span>{% endfor %}</div><span class="small muted">logs/week, 8 wks</span></dd>
 </dl>
 <noscript><button class="btn" type="submit">Save</button></noscript>
 </form>

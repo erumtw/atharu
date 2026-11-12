@@ -1,4 +1,7 @@
-use crate::domain::entry::{Entry, Kind};
+use crate::domain::{
+    entry::{Entry, Kind},
+    plan::Plan,
+};
 use chrono::NaiveDate;
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -10,13 +13,16 @@ pub struct LoggedRow {
     pub kind: Kind,
     pub topic: Option<String>,
     pub text: String,
+    /// Meeting the line was logged in.
+    pub meeting: Option<String>,
 }
 
 /// Epic groups in order of their first line that day, unfiled last; newest line first inside a group.
 pub fn day_entries(conn: &Connection, day: &str) -> rusqlite::Result<Vec<LoggedRow>> {
     let mut stmt = conn.prepare(
-        "SELECT e.id, e.epic_key, COALESCE(ep.title, ''), e.kind, e.topic, e.text
+        "SELECT e.id, e.epic_key, COALESCE(ep.title, ''), e.kind, e.topic, e.text, m.name
          FROM entries e LEFT JOIN epics ep ON ep.key = e.epic_key
+         LEFT JOIN meetings m ON m.id = e.meeting_id
          WHERE e.day = ?1
          ORDER BY e.epic_key IS NULL,
                   (SELECT MIN(x.id) FROM entries x WHERE x.day = ?1 AND x.epic_key IS e.epic_key),
@@ -32,9 +38,27 @@ pub fn day_entries(conn: &Connection, day: &str) -> rusqlite::Result<Vec<LoggedR
             kind: Kind::parse(&kind).unwrap_or(Kind::Done),
             topic: r.get(4)?,
             text: r.get(5)?,
+            meeting: r.get(6)?,
         })
     })?
     .collect()
+}
+
+/// The running meeting, if any: (id, name).
+pub fn active_meeting(conn: &Connection) -> rusqlite::Result<Option<(i64, String)>> {
+    conn.query_row(
+        "SELECT id, name FROM meetings WHERE ended_at IS NULL",
+        [],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )
+    .optional()
+}
+
+/// Series names for the start box's datalist, most recently met first.
+pub fn meeting_series(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT name FROM meetings GROUP BY name ORDER BY MAX(day) DESC, name")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
 }
 
 pub fn epic_keys(conn: &Connection) -> rusqlite::Result<Vec<String>> {
@@ -50,8 +74,9 @@ pub fn insert_entry(conn: &mut Connection, day: &str, e: &Entry) -> rusqlite::Re
         new_epic = tx.execute("INSERT OR IGNORE INTO epics(key) VALUES (?1)", [key])? > 0;
     }
     tx.execute(
-        "INSERT INTO entries(day, epic_key, kind, topic, text, plan_state, due, link)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        // Spec: while a meeting runs, every captured line belongs to it.
+        "INSERT INTO entries(day, epic_key, kind, topic, text, plan_state, due, link, meeting_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, (SELECT id FROM meetings WHERE ended_at IS NULL))",
         params![
             day,
             e.epic_key,
@@ -90,4 +115,60 @@ pub fn delete_entry(conn: &Connection, id: i64) -> rusqlite::Result<Option<(Stri
         },
     )
     .optional()
+}
+
+fn date(s: Option<String>) -> Option<NaiveDate> {
+    s.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok())
+}
+
+/// Open plans from any day, plus pinned ones finished this week (they stay ticked in "This week").
+/// Pinned first, then oldest.
+pub fn plans(conn: &Connection, week_start: &str) -> rusqlite::Result<Vec<Plan>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day FROM entries
+         WHERE plan_state = 'open' OR (pinned = 1 AND plan_state = 'done' AND closed_day >= ?1)
+         ORDER BY pinned DESC, day, id",
+    )?;
+    stmt.query_map([week_start], |r| {
+        Ok(Plan {
+            id: r.get(0)?,
+            day: date(r.get(1)?).unwrap_or_default(),
+            epic_key: r.get(2)?,
+            text: r.get(3)?,
+            link: r.get(4)?,
+            due: date(r.get(5)?),
+            pinned: r.get(6)?,
+            state: r.get(7)?,
+            closed_day: date(r.get(8)?),
+        })
+    })?
+    .collect()
+}
+
+/// Active epics with what the flag rules read (spec "Progress flags").
+pub struct EpicFacts {
+    pub key: String,
+    pub title: String,
+    pub target: Option<NaiveDate>,
+    pub last_activity: Option<NaiveDate>,
+    pub open_plans: i64,
+}
+
+pub fn active_epic_facts(conn: &Connection) -> rusqlite::Result<Vec<EpicFacts>> {
+    let mut stmt = conn.prepare(
+        "SELECT ep.key, ep.title, ep.target,
+                (SELECT MAX(e.day) FROM entries e WHERE e.epic_key = ep.key),
+                (SELECT COUNT(*) FROM entries e WHERE e.epic_key = ep.key AND e.plan_state = 'open')
+         FROM epics ep WHERE ep.status = 'active' ORDER BY ep.target IS NULL, ep.target, ep.key",
+    )?;
+    stmt.query_map([], |r| {
+        Ok(EpicFacts {
+            key: r.get(0)?,
+            title: r.get(1)?,
+            target: date(r.get(2)?),
+            last_activity: date(r.get(3)?),
+            open_plans: r.get(4)?,
+        })
+    })?
+    .collect()
 }

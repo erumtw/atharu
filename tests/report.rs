@@ -2,7 +2,7 @@ mod common;
 use common::*;
 
 /// Today = Wed 11 Nov 2026 → this week = Mon 9 – Sun 15 Nov.
-fn seed(st: &worklog::app::AppState) {
+fn seed(st: &athar::app::AppState) {
     exec(
         st,
         "INSERT INTO epics(key, title, okr, status, done_on, metric, before, after) VALUES

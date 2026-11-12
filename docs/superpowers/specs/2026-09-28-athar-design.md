@@ -1,4 +1,4 @@
-# Worklog — design
+# Athar (أثر) — design
 
 2026-09-28 · status: approved in chat, pending spec review
 
@@ -13,12 +13,12 @@ Success:
 - plan hit rate + depth history show growth over time
 - self-explanatory: a first-time user can use every page with no tutorial or guide (empty states show the first action, the input teaches the line grammar, no unexplained jargon)
 
-Rule: never store what Jira already knows. Store plans, decisions, impact, learning only.
+Rule: never store what Jira already knows. Store plans, decisions, impact, learning only. (P6 caches Jira titles for display only; it is a cache, never copied into our rows.)
 
 ## Assumptions
 
 - single user, localhost, no auth, no hosting
-- Jira = key + link only (no API)
+- Jira = key + link; read-only title/status lookup in P6 (no writes, no issue lists)
 - SQLite = single source of truth (no markdown files)
 - not a Notion clone: no block editor, nesting, DB views, drag-drop
 
@@ -33,6 +33,8 @@ Each phase shippable + used daily before next starts.
 | 3 | learn pages + depth heatmap | needs weeks of `?` data first |
 | 4 | notes + `[[links]]` + LLM layer | only if Obsidian/Notion not enough; LLM needs notes + topics to work on |
 | 5 | calendar view → Google Calendar read-only (iCal) | needs due dates + meetings from P2 to have something to show |
+| 6 | Jira read-only titles (cache summary · status for known keys) | needs epics + links from P1/P2; added 2026-11-11 |
+| 7 | Mac app: Tauri 2 shell around the same server | needs every page to exist; added 2026-11-11 |
 
 Phase 1 grammar already parses all prefixes (`>` and `?` saved as entries); their pages arrive in later phases.
 
@@ -40,19 +42,19 @@ Phase 1 grammar already parses all prefixes (`>` and `?` saved as entries); thei
 
 2026-11-11: Go → Rust (owner's choice: learning Rust is part of the point). Same shape: one binary, server-rendered.
 
-- one Rust binary `worklog`, serves `http://localhost:7070`
+- one Rust binary `athar`, serves `http://localhost:7070`
 - crates: `axum` (HTTP) · `askama` (Jinja-style templates, checked at compile time) · `rusqlite` with `bundled` (SQLite compiled in) · `rust-embed` (templates + CSS + htmx in the binary) · `pulldown-cmark` (phase 4 only, raw HTML off)
 - frontend = the wireframe canvas's own HTML/CSS ported to askama templates → design parity by construction; no CSS framework, no JS build
 - `htmx` (one vendored file, ~14 KB) for no-reload actions: log line, delete/undo, plan check/pin/drop, property autosave (`hx-trigger="change"`, Notion-style, no Save button); every action still works as a plain `<form>` POST without JS
 - other JS: copy-to-clipboard · `editor.js` (Tiptap, notes page only, P4)
 - heatmap / sparkline = CSS, no chart lib
 - design: canvas https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ (Apple DESIGN.md look + Liquid Glass on floating chrome, Notion UX patterns)
-- DB path: `./data/worklog.db` (flag `-db` overrides), created + migrated on start
+- DB path: `./data/athar.db` (flag `-db` overrides), created + migrated on start
 - `data/` gitignored — DB holds work data (epic keys, metrics); never pushed
 
 Subcommands:
-- `worklog` → serve
-- `worklog dump` → SQL dump to `data/dump.sql` (backup; stays local unless user opts in)
+- `athar` → serve
+- `athar dump` → SQL dump to `data/dump.sql` (backup; stays local unless user opts in)
 
 ## Data model
 
@@ -135,7 +137,7 @@ CREATE TABLE notes (
   id         INTEGER PRIMARY KEY,
   title      TEXT NOT NULL,
   body       TEXT NOT NULL DEFAULT '',      -- markdown
-  author     TEXT NOT NULL DEFAULT 'me' CHECK (author IN ('me','llm')),  -- LLM pages shown apart, never mixed with mine
+  author     TEXT NOT NULL DEFAULT 'me' CHECK (author IN ('me','llm')),  -- (P4 migration 002 widens to any agent slug, see "Agent access") LLM pages shown apart, never mixed with mine
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
@@ -232,20 +234,21 @@ Report adds: heatmap topics × months (cell = latest depth as of month end, blan
 - JS: one prebuilt `static/js/editor.js`, bundled once with `esbuild` from pinned npm versions and committed; not part of `cargo build`; other pages ship no editor JS
 - `[[X]]` in body → link at render: epic key regex → `/epics/X` · topic slug exists → `/learn/X` · meeting name exists → `/meetings?name=X` · else plain text
 - backlinks: epic / topic / meeting pages show "mentioned in notes" = `body LIKE '%[[X]]%'`, no link table
-- `author='llm'` notes: badge + separate section on `/notes`; editable by me (edit flips nothing, stays `llm`)
+- agent notes (`author` ≠ `'me'`, e.g. `claude`, `codex`): badge + separate section on `/notes`; editable by me (edit flips nothing, stays `llm`)
 
 ### LLM layer (phase 4)
 
 Borrowed from Karpathy's LLM Wiki pattern (LLM maintains a linked wiki from sources, guided by a schema file), with one inversion: **the LLM never writes my understanding.** Depth tracking only means something if `topics.summary`, `own_words` and `depth_ratings` are mine.
 
 - LLM = a Claude Code session in this repo, not an API call from the binary → no key, no new dep, no code
-- `CLAUDE.md` in repo = the schema file: tables, grammar, and the write rules below; LLM reads the DB with `sqlite3 data/worklog.db`
+- `CLAUDE.md` in repo = the schema file: tables, grammar, and the write rules below; LLM reads the DB with `sqlite3 data/athar.db`
 - write rules:
 
 | LLM may | LLM must not |
 |---|---|
-| read everything | write `entries`, `topics`, `depth_ratings`, `epics`, `evidence` |
-| insert/update `notes` with `author='llm'` | edit or delete `author='me'` notes |
+| read everything | write `topics`, `depth_ratings` |
+| write `entries`, `epics` **only through the `athar` CLI**, tagged with its own name (see Agent access) | write any table with raw SQL |
+| insert/update `notes` with `author=<its name>` | edit or delete `author='me'` rows |
 | suggest `[[X]]` links in chat for my notes | rate depth or write "own words" |
 
 Operations (each = a `.claude/commands/*.md` prompt, no app code):
@@ -255,7 +258,19 @@ Operations (each = a `.claude/commands/*.md` prompt, no app code):
   - `[[X]]` in notes that resolves to nothing → typo or missing topic
   - topic `summary` contradicted by later learn entries/notes → "re-explain this in your own words"
   - learn entries with no topic, topics never rated → nudge, not fix
-- **ingest** — I give a URL/file → LLM writes one `author='llm'` note (summary + `[[topic]]` links to existing slugs) and lists questions I should answer myself on `/learn/{slug}`. It never fills the topic page.
+- **ingest** — I give a URL/file → LLM writes one agent-authored note (summary + `[[topic]]` links to existing slugs) and lists questions I should answer myself on `/learn/{slug}`. It never fills the topic page.
+
+**Agent access (P4, added 2026-11-11 by user)** — so Claude, Codex or any coding agent can file work for me, e.g. I paste an epic link and it does the rest
+- CLI subcommands on the same binary, same parser + queries as the web (one validation path), no server needed, no new crate:
+  - `athar log "<line>" [--day YYYY-MM-DD]` → same grammar as the capture bar; prints the saved row as one JSON line
+  - `athar epic <KEY|jira-url> [--title …] [--okr …]` → upsert epic (key from `…/browse/ABC-123`); never overwrites a field I set
+  - `athar today [--day]` · `athar show <KEY>` → JSON on stdout for reading
+  - core set only (2026-11-11): `log` already covers to-dos (`>`), learn (`?`) and every line kind via the grammar. Not in the CLI yet: evidence, to-do done/pin/drop, meetings, topics, notes, events, report. An agent asked for one of those says "athar has no command for that yet" and suggests the command; it never falls back to raw SQL writes. Add a command when an instruction actually needs it.
+  - errors → exit 1 + the same copy as the States board on stderr
+- every write needs `--as <agent>` (or env `ATHAR_AGENT`), lowercase slug (`claude`, `codex`, …); missing → exit 2 "Say who is writing: --as claude". `me` is refused from the CLI's agent flag so an agent can't pose as me.
+- migration 002: `author TEXT NOT NULL DEFAULT 'me'` on `entries`, `epics`, `evidence`; `notes.author` CHECK widened to `'me'` or a slug (rebuild the empty table)
+- UI: small badge with the agent name on its rows (Today, epic timeline, evidence); report note marks agent-filed lines `(via claude)` so the copy stays honest
+- `CLAUDE.md` + `AGENTS.md` (same content, for Codex) document the commands; `.claude/commands/log.md` = "paste anything → turn it into `athar log/epic/evidence` calls, show what was saved"
 
 Deterministic checks (stale topic, unrated topic, dead `[[X]]`) stay in Rust on `/learn` + `/notes`; the LLM only does what needs judgment (duplicates, contradictions).
 
@@ -271,6 +286,13 @@ Deterministic checks (stale topic, unrated topic, dead `[[X]]`) stay in Rust on 
 - check first: Google Calendar → Settings → your calendar → "Integrate calendar" → "Secret address in iCal format". Workspace admins often disable it → then Google API (OAuth) or skip; decide then
 - crates: `reqwest` + `icalendar` (P5b only)
 
+**Jira read-only titles (P6, added 2026-11-11 by user)** — fill in what a Jira key means, nothing more
+- keys we already know: `epics.key` + keys in Jira links (`…/browse/ABC-123`) in `entries.link` (to-dos are entries)
+- one batched `GET {base}/rest/api/3/search/jql?jql=key in (…)&fields=summary,status` (Basic auth email:API token), on start + every 15 min + the same "Refresh" button; cache table `jira_issues(key PK, summary, status, fetched_at)` (migration 003), upsert by key; unknown/forbidden keys just stay uncached
+- shown as display only: epic list/page shows `summary · status` under the key when our `title` is empty ("No title yet" stays editable); Jira link chips read `ABC-123 · summary`
+- config `data/config.toml`: `jira_base_url`, `jira_email`, `jira_token` (all optional; any missing → feature off, no callout noise); token is a credential, never logged or in git
+- never writes to Jira; never creates epics/todos from Jira; tests use a fixture JSON, no network
+
 ## UX decisions (2026-11-11, from the canvas)
 
 1. Sidebar = page list + active epics (meeting series / topics / notes on their pages); breadcrumbs on top
@@ -281,7 +303,7 @@ Deterministic checks (stale topic, unrated topic, dead `[[X]]`) stay in Rust on 
 6. Epic / topic / meeting = page with big title + inline properties, autosaved on change
 7. `/report` shows exactly what Copy gives; charts in a toggle, not copied
 8. Day nav `← prev · next →` + date picker for backfill
-9. Notes: Tiptap editor (type-to-format, `/` menu, `[[` picker), markdown storage; `author='llm'` notes in their own sidebar group
+9. Notes: Tiptap editor (type-to-format, `/` menu, `[[` picker), markdown storage; agent notes in their own sidebar group
 10. Sidebar order: Today · To-dos · Calendar · Epics · Report · Meetings · Learn · Notes
 
 ## Error handling
@@ -303,7 +325,7 @@ All `cargo test`; DB tests use in-memory SQLite (`Connection::open_in_memory`).
 
 ## Out of scope
 
-auth · Jira sync · entry edit · blocker resolve · notifications · multi-device sync · charts lib · calendar write-back / Google API OAuth (P5b is read-only iCal) · task priority / subtasks · recurring meeting templates · time tracking · attendee tracking · Notion-style blocks/nesting/DB views · LLM API calls from the binary · embeddings/RAG · LLM writing topics/depth/entries · markdown wiki files (SQLite stays the single source).
+auth · Jira sync (beyond P6 read-only titles) · entry edit · blocker resolve · notifications · multi-device sync · charts lib · calendar write-back / Google API OAuth (P5b is read-only iCal) · task priority / subtasks · recurring meeting templates · time tracking · attendee tracking · Notion-style blocks/nesting/DB views · LLM API calls from the binary · embeddings/RAG · LLM writing topics/depth/entries · markdown wiki files (SQLite stays the single source).
 Add when: Jira sync → typing titles annoys; edit → delete+retype annoys; sync → second machine; Google API → iCal address disabled by admin and calendar is missed.
 
 ## Layout
@@ -332,5 +354,5 @@ personal-tracker/
   tests/               HTTP tests per feature, in-memory SQLite
   CLAUDE.md            schema + LLM write rules (P4)
   .claude/commands/{query,lint,ingest}.md   (P4)
-  data/                gitignored: worklog.db, config.toml
+  data/                gitignored: athar.db, config.toml
 ```

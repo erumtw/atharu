@@ -1,9 +1,9 @@
 services:
-  worklog:
+  athar:
     build: .
     # 0.0.0.0 inside the container only; published on 127.0.0.1 so work data never reaches the LAN (D5).
     environment:
-      WORKLOG_HOST: 0.0.0.0
+      ATHAR_HOST: 0.0.0.0
     ports:
       - "127.0.0.1:7070:7070"
     volumes:

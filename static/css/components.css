@@ -81,6 +81,8 @@
 .newline.bad{border-color:var(--err)}
 .capture{position:sticky;bottom:16px;z-index:2;display:flex;flex-direction:column;gap:8px}
 form.inline{display:inline}
+/* Swap targets wrap board markup; contents keeps the .doc gap the board was drawn with. */
+.doc > section{display:contents}
 .pin.bad{outline:2px solid var(--err);border-radius:4px}
 /* HIG: no Liquid Glass in the content layer → content buttons stay plain */
 .btn.ghost{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}

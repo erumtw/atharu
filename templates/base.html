@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Worklog · {{ layout.title }}</title>
+<title>Athar · {{ layout.title }}</title>
 <link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/base.css">
 <link rel="stylesheet" href="/static/css/layout.css">
@@ -16,11 +16,14 @@
 <body>
 <div class="wl">
 <nav class="side" aria-label="Pages">
-<div class="ws">Worklog</div>
+<div class="ws">Athar</div>
 {#- Only pages that exist; each slice adds its link when it lands (spec UX 10 order). #}
 <a href="/"{% if layout.nav == "today" %} class="on"{% endif %}>Today</a>
+<a href="/todos"{% if layout.nav == "todos" %} class="on"{% endif %}>To-dos</a>
 <a href="/epics"{% if layout.nav == "epics" %} class="on"{% endif %}>Epics</a>
 <a href="/report"{% if layout.nav == "report" %} class="on"{% endif %}>Report</a>
+<a href="/meetings"{% if layout.nav == "meetings" %} class="on"{% endif %}>Meetings</a>
+{%- block side %}{% endblock %}
 {%- if !layout.epics.is_empty() %}
 <div class="lbl">Active epics</div>
 {%- for e in layout.epics %}

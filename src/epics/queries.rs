@@ -15,11 +15,14 @@ pub struct EpicRow {
     pub after: String,
     /// Latest `entries.day` on this epic, if any.
     pub last_log: Option<String>,
+    /// Open plans on this epic (the "at risk" rule).
+    pub open_plans: i64,
 }
 
 const SELECT_EPIC: &str =
     "SELECT ep.key, ep.title, ep.role, ep.okr, ep.status, ep.start, ep.target, ep.done_on,
-        ep.metric, ep.before, ep.after, (SELECT MAX(e.day) FROM entries e WHERE e.epic_key = ep.key)
+        ep.metric, ep.before, ep.after, (SELECT MAX(e.day) FROM entries e WHERE e.epic_key = ep.key),
+        (SELECT COUNT(*) FROM entries e WHERE e.epic_key = ep.key AND e.plan_state = 'open')
  FROM epics ep";
 
 fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
@@ -36,6 +39,7 @@ fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
         before: r.get(9)?,
         after: r.get(10)?,
         last_log: r.get(11)?,
+        open_plans: r.get(12)?,
     })
 }
 
@@ -135,4 +139,10 @@ pub fn timeline(conn: &Connection, key: &str) -> rusqlite::Result<Vec<TimelineRo
         })
     })?
     .collect()
+}
+
+/// Days of every line on the epic since `from`, for the activity sparkline.
+pub fn entry_days_since(conn: &Connection, key: &str, from: &str) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare("SELECT day FROM entries WHERE epic_key = ?1 AND day >= ?2")?;
+    stmt.query_map(params![key, from], |r| r.get(0))?.collect()
 }

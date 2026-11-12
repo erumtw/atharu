@@ -17,9 +17,9 @@
 <details open>
 <summary>{{ g.okr }} <span class="muted" style="font-weight: 400">· {{ g.rows.len() }} active</span></summary>
 <div class="tw"><table>
-<tr><th>Name</th><th>Role</th><th>Target</th><th>Last log</th></tr>
+<tr><th>Name</th><th>Role</th><th>Target</th><th>Last log</th><th>Needs you?</th></tr>
 {%- for e in g.rows %}
-<tr><td><a href="/epics/{{ e.key }}" style="color: #1d1d1f"><span class="chip key">{{ e.key }}</span> <b>{{ e.title }}</b></a></td><td class="muted">{{ e.role }}</td><td>{% if e.target.is_empty() %}<span class="muted">—</span>{% else %}{{ e.target }} {% if e.late %}<b>{{ e.target_note }}</b>{% else %}<span class="muted">{{ e.target_note }}</span>{% endif %}{% endif %}</td><td class="muted">{{ e.last_log }}</td></tr>
+<tr><td><a href="/epics/{{ e.key }}" style="color: #1d1d1f"><span class="chip key">{{ e.key }}</span> <b>{{ e.title }}</b></a></td><td class="muted">{{ e.role }}</td><td>{% if e.target.is_empty() %}<span class="muted">—</span>{% else %}{{ e.target }} {% if e.late %}<b>{{ e.target_note }}</b>{% else %}<span class="muted">{{ e.target_note }}</span>{% endif %}{% endif %}</td><td class="muted">{{ e.last_log }}</td><td>{% if let Some(f) = e.flag %}<span class="{{ f.class }}">{{ f.label }}</span> <span class="small muted">{{ f.reason }}</span>{% endif %}</td></tr>
 {%- endfor %}
 </table></div>
 </details>

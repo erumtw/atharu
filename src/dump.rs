@@ -1,4 +1,4 @@
-//! `worklog dump`: plain-SQL backup without needing the sqlite3 CLI (not in the Docker image).
+//! `athar dump`: plain-SQL backup without needing the sqlite3 CLI (not in the Docker image).
 use rusqlite::{Connection, types::ValueRef};
 use std::{fmt::Write as _, path::Path};
 

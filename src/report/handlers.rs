@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, impact::impact_line},
+    domain::{dates, impact::impact_line, plan::hit_rate},
     error::AppResult,
     layout::Layout,
     web,
@@ -80,11 +80,18 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
     let notable = queries::notable(&conn, &f, &t)?;
     let impact_lines = notable.iter().filter(|n| n.kind == "impact").count();
     let decisions = notable.iter().filter(|n| n.kind == "decision").count();
+    let decisions_in_meetings = notable
+        .iter()
+        .filter(|n| n.kind == "decision" && n.meeting.is_some())
+        .count();
+    let (plans_done, plans_open, plans_dropped) = queries::plan_counts(&conn, &f, &t)?;
+    let meetings = queries::meetings_count(&conn, &f, &t)?;
     let mut sections: Vec<(Option<String>, view::Section)> = Vec::new();
     for n in notable {
         let item = view::Item {
             label: label(&n.kind),
             text: n.text,
+            meeting: n.meeting,
         };
         // Rows come sorted by epic, so a new key always means a new section.
         match sections.last_mut() {
@@ -171,6 +178,12 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
         epics_done: note.shipped.len(),
         impact_lines,
         decisions,
+        decisions_in_meetings,
+        hit_rate: hit_rate(plans_done, plans_done + plans_open + plans_dropped),
+        plans_done,
+        plans_open,
+        plans_dropped,
+        meetings,
         note,
         markdown,
         wider: match preset {

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block side %}{% include "meetings/side.html" %}{% endblock %}
+{% block content %}
+<main class="doc wide">
+<h1 class="ptitle">Meetings</h1>
+<p class="lead">Every meeting you logged in. Start one from Today; lines you log while it runs attach to it.</p>
+<section id="meeting">{% include "partials/meeting_banner.html" %}</section>
+{%- if let Some(n) = filter %}
+<div class="row small"><span class="chip">Only {{ n }}</span><a href="/meetings">All meetings</a></div>
+{%- endif %}
+{%- if groups.is_empty() %}
+<p class="small muted" style="margin: 0">No meetings yet.</p>
+{%- endif %}
+{%- for g in groups %}
+
+<details open>
+<summary>{{ g.name }} <span class="muted" style="font-weight: 400">· {{ g.rows.len() }}</span></summary>
+<div class="tw"><table>
+<tr><th>Day</th><th>Decisions</th><th>Action items</th><th>Learned</th><th>Notes</th></tr>
+{%- for r in g.rows %}
+<tr><td><a href="/meetings/{{ r.id }}" style="color: #1d1d1f"><b>{{ r.day }}</b></a>{% if r.running %} <span class="chip">running</span>{% endif %}</td><td>{{ r.decisions }}</td><td>{{ r.actions }}</td><td>{{ r.learned }}</td><td class="muted">{{ r.notes }}</td></tr>
+{%- endfor %}
+</table></div>
+</details>
+{%- endfor %}
+</main>
+{% endblock %}

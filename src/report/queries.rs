@@ -41,13 +41,16 @@ pub struct Notable {
     pub epic_title: String,
     pub kind: String,
     pub text: String,
+    /// Meeting it was logged in, shown as `(oms-sync)`.
+    pub meeting: Option<String>,
 }
 
 /// Impact, decisions, blockers in range: epics by key then unfiled; inside an epic impact → decision → blocker, oldest first.
 pub fn notable(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<Notable>> {
     let mut stmt = conn.prepare(
-        "SELECT e.epic_key, COALESCE(ep.title, ''), e.kind, e.text
+        "SELECT e.epic_key, COALESCE(ep.title, ''), e.kind, e.text, m.name
          FROM entries e LEFT JOIN epics ep ON ep.key = e.epic_key
+         LEFT JOIN meetings m ON m.id = e.meeting_id
          WHERE e.day BETWEEN ?1 AND ?2 AND e.kind IN ('impact', 'decision', 'blocker')
          ORDER BY e.epic_key IS NULL, e.epic_key,
                   CASE e.kind WHEN 'impact' THEN 0 WHEN 'decision' THEN 1 ELSE 2 END, e.day, e.id",
@@ -58,6 +61,7 @@ pub fn notable(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<
             epic_title: r.get(1)?,
             kind: r.get(2)?,
             text: r.get(3)?,
+            meeting: r.get(4)?,
         })
     })?
     .collect()
@@ -79,4 +83,24 @@ pub fn okr_status(conn: &Connection) -> rusqlite::Result<Vec<(String, String, i6
     )?;
     stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
         .collect()
+}
+
+/// Plans logged in range by state: (done, open, dropped).
+pub fn plan_counts(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<(i64, i64, i64)> {
+    conn.query_row(
+        "SELECT COUNT(CASE WHEN plan_state = 'done' THEN 1 END),
+                COUNT(CASE WHEN plan_state = 'open' THEN 1 END),
+                COUNT(CASE WHEN plan_state = 'dropped' THEN 1 END)
+         FROM entries WHERE kind = 'plan' AND day BETWEEN ?1 AND ?2",
+        params![from, to],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+    )
+}
+
+pub fn meetings_count(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<i64> {
+    conn.query_row(
+        "SELECT COUNT(*) FROM meetings WHERE day BETWEEN ?1 AND ?2",
+        params![from, to],
+        |r| r.get(0),
+    )
 }

@@ -1,0 +1,18 @@
+{#- Body of #meeting. Needs `banner` (active?, series, name, error, back). Start/End swap this section. -#}
+{%- if let Some(m) = banner.active %}
+<div class="callout dark" style="align-items: center">
+<span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 9999px; background: #2997ff; flex: none"></span>
+<span>In <a href="/meetings/{{ m.id }}"><b>{{ m.name }}</b></a> · lines you log now are saved to this meeting</span>
+<form class="inline" style="margin-left: auto" method="post" action="/meetings/{{ m.id }}/end" hx-post="/meetings/{{ m.id }}/end" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><button class="btn ghost" type="submit" style="color: #2997ff; border-color: #2997ff">End meeting</button></form>
+</div>
+{%- if let Some(e) = banner.error %}
+<span class="err">{{ e }}</span>
+{%- endif %}
+{%- else %}
+<form class="row" style="flex-wrap: nowrap" method="post" action="/meetings" hx-post="/meetings" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><input class="util" style="flex: 1; min-height: 36px" name="name" value="{{ banner.name }}" placeholder="Meeting name, e.g. oms-sync" list="series" aria-label="Meeting name" autocomplete="off"><button class="btn ghost" type="submit">Start</button></form>
+<datalist id="series">{% for s in banner.series %}<option value="{{ s }}"></option>{% endfor %}</datalist>
+{%- if let Some(e) = banner.error %}
+<span class="err">{{ e }}</span>
+{%- endif %}
+<span class="small muted">Reuse a name to group meetings into a series. “OMS Sync” is saved as oms-sync.</span>
+{%- endif %}
