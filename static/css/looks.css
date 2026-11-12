@@ -38,6 +38,8 @@ html[data-look=glass]{--base:#2466ea;--wall:var(--veil),
   --lg-rim:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,.15) 72%,rgba(255,255,255,.6));
   --lg-light:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),inset 0 -6px 12px -8px rgba(255,255,255,.8);
   --lg-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.12);
+  /* The floating capture bar only (T78): --lg-shadow's 24px .12 got lost over busy text. */
+  --lg-float:0 1px 2px rgba(0,0,0,.1),0 12px 32px rgba(0,0,0,.16);
   /* 4px blur leaves text behind half-sharp, so glass that floats over content never drops below this (AA: worst
      backdrop = a half-covered ink pixel; err-tint 4.70 on Wakaba Tinted is the lowest pair, evidence T30). */
   --lg-min:60%}

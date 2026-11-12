@@ -1,5 +1,5 @@
 /* Responsive (canvas row "Responsive · phone", D16): ≥1024 desktop as drawn · 640–1023 64 px icon rail ·
-   <640 glass top bar + pages drawer, capture bar pinned bottom. Same templates; the hooks are .m-pop, .m-only, .ib, .ic. */
+   <640 glass top bar + pages drawer, capture bar floats at the bottom. Same templates; the hooks are .m-pop, .m-only, .ib, .ic. */
 
 /* .m-pop = a native popover on phones, plain inline content everywhere else. Author styles beat the UA's [popover]
    box at any specificity, so :where() resets it without outranking each element's own rules (.side keeps its glass). */
@@ -80,15 +80,17 @@ pre{max-width:100%;overflow-x:auto}
   .blk>.edit-line,.blk>form:first-child,.blk>span:not([class]){flex:1 1 0;min-width:0;overflow-wrap:anywhere}
   .blk>.ltext{flex:1 1 0;min-width:0;overflow-wrap:anywhere}
   .cols{grid-template-columns:1fr}
-  .menu.up{left:12px;right:12px;width:auto;bottom:66px}.menu.up [role=option]{min-height:44px}
 
-  /* Capture bar: pinned to the bottom, clear of the home indicator; the grammar legend opens from ?. */
-  .doc:has(>.capture){padding-bottom:180px}
-  .capture{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-    background:linear-gradient(to top,rgba(255,255,255,.95) 55%,rgba(255,255,255,0))}
+  /* Capture bar: full width minus 12px gutters (.doc pads 16), clear of the home indicator; capture.ts sets --kb (keyboard height
+     from visualViewport) and .kb, so the bar rides 8px above the keyboard, which already covers the indicator. */
+  .doc:has(>.capture){padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .capture{bottom:calc(12px + env(safe-area-inset-bottom));margin-inline:-4px;translate:0 calc(-1 * var(--kb,0px));transition:translate .2s ease-out}
+  .capture.kb{bottom:8px}
   .newline{padding:0 4px 0 16px}
-  .legend:popover-open{position:fixed;inset:auto 8px calc(120px + env(safe-area-inset-bottom)) 8px;margin:0;padding:14px !important;display:flex;
-    border-radius:18px;background:color-mix(in srgb,var(--fill-3) 95%,transparent);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.18);color:var(--ink-2)}
+  /* The menu box stretches, so its .menu can take the full width; the pills keep their own width. */
+  .above>:has(>.menu){align-self:stretch}
+  .above .menu.up{width:100%}
+  .menu.up [role=option]{min-height:44px}
 
   /* Settings: the phone board's touch sizes (iOS switch 51x31, 28 px thumb). */
   .looks{gap:8px}
@@ -146,3 +148,5 @@ pre{max-width:100%;overflow-x:auto}
   .dp .dpf .today{margin-left:0}
   .dp .dpf .done{display:inline-flex;height:44px;margin-left:auto}
 }
+/* After the phone block, so it beats the bar's keyboard ride. */
+@media (prefers-reduced-motion: reduce){.capture{transition:none}}

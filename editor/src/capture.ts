@@ -241,3 +241,19 @@ function byMenu(input: HTMLInputElement) {
 
   return { key, open }
 }
+
+// Floating capture bar (T78). Phone keyboard: iOS keeps the layout viewport when the keyboard opens,
+// so a sticky bottom bar would sit under it; lift it by the covered height (responsive.css reads --kb and .kb). Chrome on
+// Android with `interactive-widget=resizes-content` in the viewport meta shrinks the layout viewport itself, so kb is 0 there.
+const cap = document.querySelector<HTMLElement>('.capture')
+const vv = window.visualViewport
+if (cap && vv) {
+  const ride = () => {
+    // Pinch zoom also shrinks the visual viewport: only a keyboard counts.
+    const kb = vv.scale > 1.01 ? 0 : Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
+    cap.style.setProperty('--kb', `${kb}px`)
+    cap.classList.toggle('kb', kb > 0)
+  }
+  vv.addEventListener('resize', ride)
+  vv.addEventListener('scroll', ride)
+}
