@@ -2,6 +2,7 @@
 //! Update = fetch tags on the checkout the binary was built from and, when a newer release tag
 //! exists, `scripts/install.sh --version <tag>`, which builds that tag in a temp worktree.
 //! The working tree is never pulled or touched, so uncommitted edits there don't block it.
+use crate::build_info;
 use serde_json::{Value, json};
 use std::{io::Write, path::Path, process::Command};
 
@@ -21,7 +22,7 @@ pub fn repo() -> String {
 
 /// This binary's release version, `None` for a dev build (not built from a release tag).
 pub fn installed() -> Option<&'static str> {
-    option_env!("ATHARU_GIT_TAG").map(|_| env!("CARGO_PKG_VERSION"))
+    build_info::TAG.map(|_| build_info::VERSION)
 }
 
 /// Same exit codes as `cli::run`: 0 JSON on `out`, 1 refused, 2 usage.
@@ -58,10 +59,10 @@ pub fn run(
 
 fn version() -> Value {
     json!({
-        "version": env!("CARGO_PKG_VERSION"),
-        "tag": option_env!("ATHARU_GIT_TAG"),
-        "sha": option_env!("ATHARU_GIT_SHA").unwrap_or("unknown"),
-        "built": option_env!("ATHARU_BUILT").unwrap_or("unknown"),
+        "version": build_info::VERSION,
+        "tag": build_info::TAG,
+        "sha": build_info::SHA,
+        "built": build_info::BUILT,
     })
 }
 

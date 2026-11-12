@@ -100,3 +100,7 @@ html[data-app=mac] .ws{padding-top:34px}
 html[data-app=mac] [data-tauri-drag-region]{cursor:default;-webkit-user-select:none;user-select:none}
 @media (min-width:640px) and (max-width:1023px){html[data-app=mac] .side{padding-top:40px}}
 @media (max-width:639px){html[data-app=mac] .crumb{padding-left:82px}}
+
+/* Mac-app-only hints (T82): data-app is set by the Tauri webview, so browsers and phones never show them. */
+.mac-only{display:none}
+html[data-app=mac] .mac-only{display:revert}

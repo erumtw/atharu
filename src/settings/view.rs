@@ -11,4 +11,8 @@ pub struct Page {
     /// Connections rows: on/off only, from data/config.toml; never the URL or token.
     pub google: bool,
     pub jira: bool,
+    /// About rows: the release tag, or `0.1.0 · dev build`.
+    pub version: String,
+    pub sha: &'static str,
+    pub built: &'static str,
 }

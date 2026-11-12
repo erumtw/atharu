@@ -1,6 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
+    build_info,
     domain::look::{self, LOOKS},
     error::AppResult,
     layout::Layout,
@@ -22,6 +23,12 @@ pub async fn page(State(st): State<AppState>) -> AppResult<Response> {
         looks: &LOOKS,
         google: st.settings.ical_url.is_some(),
         jira: st.settings.jira().is_some(),
+        version: build_info::TAG.map_or_else(
+            || format!("{} · dev build", build_info::VERSION),
+            str::to_string,
+        ),
+        sha: build_info::SHA,
+        built: build_info::BUILT,
     })
 }
 

@@ -447,3 +447,8 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* Reduce Transparency needs nothing here: looks.css turns .menu solid white + hairline. Increase Contrast: */
 @media (prefers-contrast: more){.dp th,.dp td.d.out{color:var(--muted-hc)}
   .dp td.d[aria-current=date]{box-shadow:inset 0 0 0 2px var(--accent)}}
+
+/* Command chip (DESIGN.md `.cmd`, T82): a copyable CLI command in a white pill, Copy inside. */
+.cmd{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 3px 0 12px;border:1px solid var(--line);border-radius:9999px;background:#fff;flex:none}
+.cmd code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px}
+.cmd .btn{height:26px;padding:0 10px}

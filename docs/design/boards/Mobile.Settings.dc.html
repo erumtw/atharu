@@ -62,6 +62,9 @@ h4{font-size:15px;font-weight:600;margin:8px 0 0;display:flex;gap:8px;align-item
 .muted{color:var(--muted)}
 .small{font-size:13px}
 .mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:0}
+.cmd{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 3px 0 12px;border:1px solid var(--line);border-radius:9999px;background:#fff;flex:none}
+.cmd code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px}
+.cmd .btn{height:26px;padding:0 10px}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:8px 10px;border-bottom:1px solid var(--fill-2);white-space:nowrap}
@@ -688,6 +691,13 @@ pre{max-width:100%;overflow-x:auto}
 <h2 class="sec">Accessibility</h2>
 <div class="grp">
 <div class="gi"><div class="t"><b>Reduce transparency</b><span>When it's on in macOS, glass turns solid here too.</span></div><span class="chev"><span class="rt-off">Off in System Settings</span><span class="rt-on">On in System Settings</span></span></div>
+</div>
+<h2 class="sec">About</h2>
+<div class="grp">
+<div class="gi"><div class="t"><b>Version</b></div><span class="chev">v0.1.0</span></div>
+<div class="gi"><div class="t"><b>Commit</b></div><span class="chev mono">aa4bbb2</span></div>
+<div class="gi"><div class="t"><b>Built</b></div><span class="chev">2026-11-12</span></div>
+<div class="gi"><div class="t"><b>Update</b><span>Run in Terminal. Installs the newest release tag.</span><span>Mac app only: add --app to update this app too.</span></div><span class="cmd"><code>atharu update</code><button class="btn" type="button">Copy</button></span></div>
 </div>
 </main>
 

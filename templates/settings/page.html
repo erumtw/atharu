@@ -52,5 +52,14 @@
 {#- A page can't read the OS setting, only match it: CSS shows whichever line is true. #}
 <div class="gi"><div class="t"><b>Reduce transparency</b><span>When it's on in macOS, glass turns solid here too.</span></div><span class="chev"><span class="rt-off">Off in System Settings</span><span class="rt-on">On in System Settings</span></span></div>
 </div>
+
+{#- D47: what's running + how to update; no network check. Copy via copy.js; without JS the command stays selectable. #}
+<h2 class="sec">About</h2>
+<div class="grp">
+<div class="gi"><div class="t"><b>Version</b></div><span class="chev">{{ version }}</span></div>
+<div class="gi"><div class="t"><b>Commit</b></div><span class="chev mono">{{ sha }}</span></div>
+<div class="gi"><div class="t"><b>Built</b></div><span class="chev">{{ built }}</span></div>
+<div class="gi"><div class="t"><b>Update</b><span>Run in Terminal. Installs the newest release tag.</span><span class="mac-only">Add --app to update this app too.</span></div><span class="cmd"><code id="upd-cmd">atharu update</code><button class="btn" type="button" data-copy="#upd-cmd">Copy</button></span></div>
+</div>
 </main>
 {% endblock %}
