@@ -7,6 +7,8 @@
 .side a.on{color:var(--ink);font-weight:600}
 .side a.sub{padding-block:0;padding-left:32px;font-size:13px;color:var(--muted);min-height:28px;gap:6px}
 .side a.sub .mono{font-size:12px;flex:none}
+/* The series count stays beside its (clipped) name instead of dropping to a line of its own. */
+.side a.sub>:not(.ell,.t){flex:none}
 /* One line per epic: a long title ellipsizes instead of doubling the row (full title in the tooltip). */
 .side a.sub .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .side .lbl{font-size:12px;font-weight:600;color:var(--muted);padding:16px 10px 4px}

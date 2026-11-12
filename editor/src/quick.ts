@@ -106,3 +106,76 @@ document.addEventListener('submit', async ev => {
   const next = new DOMParser().parseFromString(await res.text(), 'text/html').getElementById('qmeet')
   if (next) document.getElementById('qmeet')?.replaceWith(next)
 })
+
+// Series menu under the start box (T93): the server renders the recent series; this shows / filters / picks.
+// Delegated from document: #qmeet is replaced after every start / end, taking any bound listener with it.
+// With JS the native datalist is dropped (two menus at once), so no-JS keeps it as the fallback.
+const serMenu = () => document.getElementById('qsermenu')
+const serName = () => document.getElementById('qname') as HTMLInputElement | null
+const serOpts = () =>
+  Array.from(serMenu()?.querySelectorAll<HTMLElement>('[role=option]') ?? []).filter(o => !o.hidden)
+const serShow = (open: boolean) => {
+  const m = serMenu()
+  const n = serName()
+  if (!m || !n) return
+  const q = n.value.trim().toLowerCase()
+  for (const o of m.querySelectorAll<HTMLElement>('[role=option]')) o.hidden = !(o.dataset.name ?? '').includes(q)
+  const any = serOpts().length > 0
+  m.hidden = !(open && any)
+  n.setAttribute('aria-expanded', String(!m.hidden))
+  // Nothing preselected: Enter on a typed name starts THAT name, even when it's a prefix of an old series.
+  serSelect(-1)
+}
+const serSelect = (i: number) => {
+  const o = serOpts()
+  o.forEach((x, k) => x.setAttribute('aria-selected', String(k === i)))
+  const n = serName()
+  if (n && o[i]) n.setAttribute('aria-activedescendant', o[i].id)
+  else n?.removeAttribute('aria-activedescendant')
+  o[i]?.scrollIntoView({ block: 'nearest' })
+}
+// Picking starts it, like the one-click series buttons this replaced (the Record switch rides along).
+const serPick = (o: HTMLElement) => {
+  const n = serName()
+  if (!n || !o.dataset.name) return
+  n.value = o.dataset.name
+  serShow(false)
+  n.form?.requestSubmit()
+}
+document.addEventListener('focusin', ev => {
+  const n = serName()
+  if (ev.target !== n || !n) return
+  n.removeAttribute('list')
+  serShow(true)
+})
+document.addEventListener('input', ev => {
+  if (ev.target === serName()) serShow(true)
+})
+document.addEventListener('focusout', ev => {
+  // Let a click on an option land before the menu goes.
+  if (ev.target === serName()) setTimeout(() => serShow(false), 150)
+})
+document.addEventListener('mousedown', ev => {
+  const o = (ev.target as Element).closest<HTMLElement>('#qsermenu [role=option]')
+  if (!o) return
+  ev.preventDefault()
+  serPick(o)
+})
+document.addEventListener('keydown', ev => {
+  const m = serMenu()
+  if (ev.target !== serName() || !m || m.hidden) return
+  const o = serOpts()
+  const i = o.findIndex(x => x.getAttribute('aria-selected') === 'true')
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+    ev.preventDefault()
+    serSelect(ev.key === 'ArrowDown' ? (i + 1) % o.length : i <= 0 ? o.length - 1 : i - 1)
+  } else if ((ev.key === 'Enter' || ev.key === 'Tab') && o[i]) {
+    ev.preventDefault()
+    serPick(o[i])
+  } else if (ev.key === 'Escape') {
+    // Close the menu only; the popover's own Esc (hide) waits for the next press.
+    ev.preventDefault()
+    ev.stopImmediatePropagation()
+    serShow(false)
+  }
+}, true)

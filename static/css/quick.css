@@ -118,3 +118,7 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
   .qcap[data-mode=note] .kc:has(:checked){box-shadow:inset 0 0 0 1px var(--ink)}}
 /* Record audio switch under Start: the shared .recopt, at the popover's inset. */
 .qrec{padding:2px 2px 0;font-size:12px;gap:8px}
+/* Series menu under the start box (T93): same opaque menu as the capture `#` menu; names clip, the full one on hover. */
+.quick .qser{position:relative}
+.quick .qser .menu{max-height:220px;overflow-y:auto}
+.quick .qser .menu [role=option]{min-width:0}

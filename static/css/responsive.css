@@ -79,7 +79,13 @@ pre{max-width:100%;overflow-x:auto}
   .blk .x{opacity:1;width:44px;height:44px}
   .blk label.row{flex-wrap:nowrap;align-items:flex-start}
   .blk label.row>span{min-width:0;overflow-wrap:anywhere}
-  .blk>.edit-line,.blk>form:first-child,.blk>span:not([class]){flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+  .blk>.edit-line,.blk>span:not([class]){flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+  /* Line rows: check / kind + text + ⋯ on the first line, chips wrap under it (the text never shrinks to one word). */
+  .blk.ln{--lh:44px}
+  .blk.ln>:is(.ltext,.edit-line,span:not([class])){flex:1 1 calc(100% - 140px)}
+  .blk.ln>:is(.end,.row){order:1;margin-left:auto}
+  .blk.ln>:not(.k,form:first-child,.ltext,.edit-line,span:not([class]),.end,.row){order:2;min-height:0;margin-top:0}
+  .blk.ln>:is(.via,a:has(>.chip:not(.key))){max-width:calc(100% - 90px)}
   .blk>.ltext{flex:1 1 0;min-width:0;overflow-wrap:anywhere}
   .cols{grid-template-columns:1fr}
 

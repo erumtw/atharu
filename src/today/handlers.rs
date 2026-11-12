@@ -1,4 +1,5 @@
 use super::{queries, view};
+use crate::domain::entry::Kind;
 use crate::{
     app::AppState,
     domain::{
@@ -59,7 +60,11 @@ struct Opts {
 impl Opts {
     fn new(group: Option<&str>, tag: Option<&str>, add: Option<&str>) -> Opts {
         Opts {
-            group: if group == Some("tag") { "tag" } else { "epic" },
+            group: match group {
+                Some("tag") => "tag",
+                Some("type") => "type",
+                _ => "epic",
+            },
             tags: TagFilter::pick(tag, add),
         }
     }
@@ -83,6 +88,9 @@ fn groups(conn: &Connection, day: NaiveDate, o: &Opts) -> rusqlite::Result<Vec<v
     if o.group == "tag" {
         return Ok(by_tag(rows));
     }
+    if o.group == "type" {
+        return Ok(by_type(rows));
+    }
     let mut out: Vec<view::Group> = Vec::new();
     for r in rows {
         let row = view::Row {
@@ -104,11 +112,52 @@ fn groups(conn: &Connection, day: NaiveDate, o: &Opts) -> rusqlite::Result<Vec<v
                 title: r.epic_title,
                 rows: vec![row],
                 by_tag: false,
+                by_type: false,
                 tag: None,
             }),
         }
     }
     Ok(out)
+}
+
+/// One group per kind of line, in reading order for a day's review: what was decided, what's stuck, what's
+/// next, what it achieved, what was learned, then the rest. Each row keeps its epic chip (the grouping dropped it).
+fn by_type(rows: Vec<queries::LoggedRow>) -> Vec<view::Group> {
+    const ORDER: [(Kind, &str); 6] = [
+        (Kind::Decision, "Decisions"),
+        (Kind::Blocker, "Blockers"),
+        (Kind::Plan, "To-dos"),
+        (Kind::Impact, "Impact"),
+        (Kind::Learn, "Learned"),
+        (Kind::Done, "Done"),
+    ];
+    let mut out: Vec<view::Group> = ORDER
+        .iter()
+        .map(|(_, title)| view::Group {
+            key: None,
+            title: (*title).into(),
+            rows: Vec::new(),
+            by_tag: false,
+            by_type: true,
+            tag: None,
+        })
+        .collect();
+    for r in rows {
+        let i = ORDER.iter().position(|(k, _)| *k == r.kind).unwrap_or(5);
+        out[i].rows.push(view::Row {
+            id: r.id,
+            kind: r.kind,
+            topic: r.topic,
+            text: r.text,
+            meeting: r.meeting,
+            author: r.author,
+            via: None,
+            epic: r.epic_key,
+            note: r.note,
+        });
+    }
+    out.retain(|g| !g.rows.is_empty());
+    out
 }
 
 /// One group per tag, biggest first, "No tag" last; a line with two tags shows under both.
@@ -143,6 +192,7 @@ fn by_tag(rows: Vec<queries::LoggedRow>) -> Vec<view::Group> {
                     title: String::new(),
                     rows: vec![row],
                     by_tag: true,
+                    by_type: false,
                     tag,
                 }),
             }
@@ -224,9 +274,9 @@ fn render_page(
     let plans = plans(&conn, st.today())?;
     let mut path = format!("/?day={}&", dates::iso(day));
     let mut keep = vec![("day", dates::iso(day))];
-    if o.group == "tag" {
-        path.push_str("group=tag&");
-        keep.push(("group", "tag".into()));
+    if o.group != "epic" {
+        path.push_str(&format!("group={}&", o.group));
+        keep.push(("group", o.group.into()));
     }
     Ok(view::Page {
         layout: Layout::load(&conn, "today", "Today", vec![])?,

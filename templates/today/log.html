@@ -12,6 +12,8 @@
 {%- else %}
 <h4 class="muted">No tag <span class="small normal">· {{ g.rows.len() }}</span></h4>
 {%- endif %}
+{%- else if g.by_type %}
+<h4>{{ g.title }} <span class="muted normal">· {{ g.rows.len() }}</span></h4>
 {%- else if let Some(key) = g.key %}
 <h4><a href="/epics/{{ key }}"><span class="chip key">{{ key }}</span></a> {% if g.title.is_empty() %}<span class="muted normal">no title yet ·</span> <a class="small normal" href="/epics">name it</a>{% else %}{{ g.title }}{% endif %}</h4>
 {%- else %}

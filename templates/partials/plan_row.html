@@ -1,7 +1,7 @@
 {#- One plan row. Needs `p` (domain::plan::Plan), `today`, `back` (page a plain POST returns to),
     `full` (/todos: date picker on every row), `pin_error`. Plan actions swap just this row; edit and delete work like
     a log line's (D51): the edit box stands in for the row, a delete leaves "Line deleted · Undo" in its place. -#}
-<div class="blk" id="plan-{{ p.id }}">
+<div class="blk ln" id="plan-{{ p.id }}">
 <form class="inline" method="post" action="/plans/{{ p.id }}" hx-post="/plans/{{ p.id }}" hx-trigger="change" hx-target="#plan-{{ p.id }}" hx-swap="outerHTML">
 <input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="state" value="{% if p.is_open() %}done{% else %}open{% endif %}">
 <input class="check" type="checkbox"{% if p.state == "done" %} checked{% endif %} aria-label="{% if p.is_open() %}Mark done{% else %}Reopen{% endif %}">
@@ -10,7 +10,7 @@
 {#- Outside any label: only the check marks it done (D51). The text edits the line, split around #tag chips like entry_row.html. #}
 {%- let edit_href = "/?day={}&edit={}"|format(p.day, p.id) %}
 <span class="ltext{% if !p.is_open() %} done-text{% endif %}">{% for s in crate::domain::tags::segments(p.text) %}{% if let Some(t) = s.tag %}<a class="chip tag" href="/tags/{{ t }}">{{ t }}</a>{% else %}<a class="edit-line" href="{{ edit_href }}" hx-get="/entries/{{ p.id }}/edit?plan=1" hx-target="#plan-{{ p.id }}" hx-swap="outerHTML" title="Click to edit">{{ s.text }}</a>{% endif %}{% endfor %}</span>
-{%- if let Some(v) = p.via %}<span class="via">via {% if crate::domain::entry::is_epic_key(v) %}<a href="/epics/{{ v }}"><span class="chip key">{{ v }}</span></a>{% else %}<span class="chip">{{ v }}</span>{% endif %}</span>{% endif %}
+{%- if let Some(v) = p.via %}<span class="via">via {% if crate::domain::entry::is_epic_key(v) %}<a href="/epics/{{ v }}"><span class="chip key">{{ v }}</span></a>{% else %}<span class="chip" title="{{ v }}">{{ v }}</span>{% endif %}</span>{% endif %}
 {%- if let Some(l) = p.link %}<a class="lchip" href="{{ l }}" target="_blank" rel="noopener noreferrer">{{ p.link_label() }} ↗</a>{% endif %}
 {%- if let Some(k) = p.epic_key %}<a href="/epics/{{ k }}"><span class="chip key">{{ k }}</span></a>{% endif %}
 {%- if full && p.pinned && p.is_open() %}<span class="chip">pinned</span>{% endif %}
