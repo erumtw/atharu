@@ -94,6 +94,9 @@ atharu help                                                 # this table (also -
 - `log --note N` links the line to existing note N (its detail page; refused with exit 1 if there is no such note).
 - `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`.
   `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
+- A drawing in a note is one body line `![Drawing](data:image/svg+xml;base64,…)` (editable Excalidraw scene inside):
+  build it with `scripts/drawing.py` (`Drawing().box/arrow/text`, then `.line()`), put the line in the body, save with
+  `note … --file` (new note, or `--id N` on your own). Never in the owner's notes.
 - `evidence` needs the epic to exist (file it with `epic` first) and an `http://` / `https://` link.
 - Output: one JSON document on stdout (camelCase keys; a referenced epic is nested as `epic{key, …}`, a line's
   note as `note{id, title}` or `null`).
