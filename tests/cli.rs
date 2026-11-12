@@ -427,3 +427,60 @@ async fn meeting_reads_the_transcript_and_log_files_under_it() {
         0
     );
 }
+
+#[tokio::test]
+async fn edit_rewrites_only_the_agents_own_lines() {
+    let st = state();
+    let (_, out, _) = cli(
+        &st,
+        &["log", "> Frank to check pre-order by fri", "--as", "claude"],
+        None,
+    );
+    let id = serde_json::from_str::<serde_json::Value>(&out).unwrap()["id"]
+        .as_i64()
+        .unwrap();
+    let (code, out, err) = cli(
+        &st,
+        &[
+            "edit",
+            &id.to_string(),
+            "> Off to check pre-order by fri",
+            "--as",
+            "claude",
+        ],
+        None,
+    );
+    assert_eq!(code, 0, "{err}");
+    let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(v["text"], "Off to check pre-order");
+    assert_eq!(
+        count(
+            &st,
+            &format!(
+                "SELECT COUNT(*) FROM entries WHERE id = {id} AND text = 'Off to check pre-order' AND kind = 'plan'"
+            )
+        ),
+        1
+    );
+
+    // The owner's line and another agent's are refused, and stay as they were.
+    exec(
+        &st,
+        "INSERT INTO entries(id, day, kind, text, author) VALUES (90, '2026-11-11', 'done', 'mine', 'me')",
+    );
+    let (code, _, err) = cli(&st, &["edit", "90", "not mine", "--as", "claude"], None);
+    assert_eq!(code, 1);
+    assert!(err.contains("written by me"), "{err}");
+    assert_eq!(
+        cli(&st, &["edit", &id.to_string(), "x", "--as", "codex"], None).0,
+        1
+    );
+    assert_eq!(cli(&st, &["edit", "999", "x", "--as", "claude"], None).0, 1);
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM entries WHERE id = 90 AND text = 'mine'"
+        ),
+        1
+    );
+}
