@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atharu · Controls (glass)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#0066cc;text-decoration:none}
+/* Controls sheet: every field and button over the Wakaba wallpaper with Glass everywhere on, per DESIGN.md §4 + §6 */
+.cs{width:1280px;box-sizing:border-box;padding:40px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:#1d1d1f;font-size:15px;line-height:1.47;letter-spacing:-.2px;background:#c9f5df radial-gradient(60% 60% at 0% 0%,#8ef5b8,transparent 70%),radial-gradient(60% 60% at 100% 0%,#2fc49a,transparent 70%),radial-gradient(60% 60% at 0% 100%,#62b6ff,transparent 70%);display:flex;flex-direction:column;gap:28px}
+.sheet{border-radius:22px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.55);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);overflow:hidden}
+.crumb{display:flex;align-items:center;gap:10px;padding:0 20px;min-height:56px;background:rgba(255,255,255,.35);border-bottom:1px solid rgba(255,255,255,.6)}
+.crumb b{font-weight:500;font-size:14px}
+.body{padding:28px 48px 40px;display:flex;flex-direction:column;gap:18px;max-width:860px}
+h1{font-size:40px;font-weight:600;letter-spacing:-.5px;margin:0;line-height:1.1}
+h3{font-size:13px;font-weight:600;color:#5e5e63;margin:8px 0 -6px;letter-spacing:0}
+.note{font-size:13px;color:#5e5e63}
+/* One control height per context: 32 in chrome, 36 in the page, 44 on phone. Text is centred with flex, never by padding guesswork. */
+.ctl{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;box-sizing:border-box;padding:0 16px;border-radius:9999px;font:inherit;font-size:14px;line-height:1;white-space:nowrap;cursor:pointer;text-decoration:none}
+.ctl.s{height:32px;padding:0 12px;font-size:13px}
+/* Glass secondary: same material as the chrome, a step more opaque than what it sits on */
+.ctl.glass{color:#1d1d1f;border:1px solid rgba(255,255,255,.75);background:rgba(255,255,255,.7);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06)}
+.ctl.glass:hover{background:rgba(255,255,255,.85)}
+.ctl.pri{color:#fff;border:0;background:#0066cc;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.ctl:focus-visible{outline:2px solid #0066cc;outline-offset:2px}
+/* Grouped capsule for day navigation: one glass pill, hairline separators, like a macOS toolbar group */
+.grp{display:inline-flex;align-items:center;height:32px;border-radius:9999px;border:1px solid rgba(255,255,255,.75);background:rgba(255,255,255,.7);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06);overflow:hidden;font-size:13px}
+.grp > *{display:inline-flex;align-items:center;gap:4px;height:100%;padding:0 12px;color:#1d1d1f;border:0;background:none;font:inherit;font-size:13px;line-height:1;cursor:pointer}
+.grp > * + *{border-left:1px solid rgba(0,0,0,.08)}
+.grp > *:hover{background:rgba(255,255,255,.6)}
+.grp .now{font-weight:600}
+.grp .ic{padding:0 10px}
+/* Glass field: single-line inputs are pills with the action inside, like the capture bar */
+.field{display:flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 4px 0 18px;border-radius:9999px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.72);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 .5px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.06)}
+.field:focus-within{border-color:#0066cc;box-shadow:inset 0 1px 0 #fff,0 0 0 4px rgba(0,102,204,.18)}
+.field input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:16px;color:#1d1d1f;height:100%}
+.field input::placeholder{color:#5e5e63}
+.field .ctl{height:36px}
+.field.cap{height:52px;box-shadow:inset 0 1px 0 #fff,0 10px 30px rgba(0,0,0,.10)}
+.field.cap .ctl{height:44px}
+/* Legend: every chip centred on one baseline; wraps as whole items */
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:13px;color:#5e5e63;padding:0 18px}
+.legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.k{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.8);box-shadow:inset 0 0 0 .5px rgba(0,0,0,.08);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;line-height:1;color:#1d1d1f}
+.k.imp{background:#0066cc;color:#fff;box-shadow:none}
+.k.bl{background:#1d1d1f;color:#fff;box-shadow:none}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.blk{display:flex;align-items:center;gap:10px;min-height:36px}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.cmp > div{display:flex;flex-direction:column;gap:10px;min-width:0}
+.bad{border-radius:8px;border:1px solid #e0e0e0;background:#fff;height:52px;display:flex;align-items:center;padding:0 14px;color:#6e6e73;font-size:15px;box-sizing:border-box}
+.badbtn{border:1px solid #e0e0e0;background:#fff;border-radius:10px;padding:10px 18px 18px;font-size:15px;display:inline-block}
+/* T30 Liquid Glass (DESIGN.md §4, D22), drawn in Clear: 4px blur, specular rim + inner light + 2-step shadow on
+   floating layers only (sidebar, menus, capture bar, action sheet, sheet), embedded controls stay flat glass,
+   glass pills swell on press, placeholders --muted-tint. The app CSS is the source; this mirrors it. */
+.gl,.fld,.dnav,.grp,.ctl.glass,.field,.crumb{backdrop-filter:blur(4px) saturate(140%) brightness(1.04);-webkit-backdrop-filter:blur(4px) saturate(140%) brightness(1.04)}
+.side,.menu,.sheetx,.fld.cap,.field.cap,.sheet{--lgr:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,.15) 72%,rgba(255,255,255,.6));
+  border-color:transparent;backdrop-filter:blur(4px) saturate(140%) brightness(1.04);-webkit-backdrop-filter:blur(4px) saturate(140%) brightness(1.04);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),inset 0 -6px 12px -8px rgba(255,255,255,.8),0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.12)}
+.side{background:linear-gradient(rgba(255,255,255,.65),rgba(255,255,255,.65)) padding-box,var(--lgr) border-box}
+.menu,.sheetx{background:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,.85)) padding-box,var(--lgr) border-box}
+.fld.cap,.field.cap{background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,.7)) padding-box,var(--lgr) border-box}
+.sheet{background:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.55)) padding-box,var(--lgr) border-box;backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55)}
+.fld.cap.f,.field.cap:focus-within{border-color:#0066cc;box-shadow:0 0 0 4px rgba(0,102,204,.18),inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),0 8px 24px rgba(0,0,0,.12)}
+.crumb{box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.it.on{box-shadow:inset 0 1px 0 #fff,inset 0 0 8px rgba(255,255,255,.6),0 1px 4px rgba(0,0,0,.06)}
+.gl.a{transform:scale(1.04);box-shadow:inset 0 0 12px rgba(255,255,255,.7),0 4px 12px rgba(0,0,0,.1)}
+.fld input::placeholder,.field input::placeholder{color:#48484d}
+</style>
+</helmet>
+<div class="cs">
+<div class="sheet">
+<div class="crumb"><b>Today</b><span style="flex: 1"></span>
+<div class="grp" role="group" aria-label="Day"><a class="now" href="#">Today</a><a class="ic" href="#" aria-label="Previous day: Fri 6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label style="gap: 6px">Sat 7 Nov<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="ic" href="#" aria-label="Next day: Sun 8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div>
+</div>
+<div class="body">
+<h1>Sat 7 Nov</h1>
+<div class="field"><input id="meet" aria-label="Meeting name" placeholder="Start a meeting, e.g. oms-sync"><button class="ctl glass" type="button">Start</button></div>
+<span class="note" style="padding: 0 18px">Reuse a name to group meetings into a series. “OMS Sync” is saved as oms-sync.</span>
+<h3>LOGGED</h3>
+<div class="blk"><span class="k">&gt;</span><span>item-mapping fix exclusive, is_active</span></div>
+<div class="field cap"><input id="cap" aria-label="Log a line" placeholder="What did you do? e.g. OPS-101 + checkout p95 1.8s → 0.6s"><button class="ctl pri" type="submit">Log ↵</button></div>
+<div class="legend"><span>Start with an epic key (optional), then:</span><span><i class="k">·</i>done</span><span><i class="k">!</i>decision</span><span><i class="k bl">x</i>blocker</span><span><i class="k imp">+</i>impact</span><span><i class="k">?</i>learned <span class="mono">topic:</span></span><span><i class="k">&gt;</i>plan</span></div>
+<h3>BUTTONS</h3>
+<div class="row"><button class="ctl pri" type="button">Primary</button><button class="ctl glass" type="button">Secondary</button><button class="ctl glass s" type="button">Small · 32</button><a class="ctl glass s" href="#">Copy</a></div>
+</div>
+</div>
+<div class="cmp">
+<div><h3 style="margin: 0">BEFORE (today's build)</h3><div class="bad">Meeting name, e.g. oms-sync</div><span class="badbtn">Today</span><span class="note">Square white input with no glass; the Today button is taller than the row and its text sits high.</span></div>
+<div><h3 style="margin: 0">AFTER</h3><div class="field"><input id="meet2" aria-label="Meeting name, example" placeholder="Start a meeting, e.g. oms-sync"><button class="ctl glass" type="button">Start</button></div><div class="grp" style="align-self: flex-start"><a class="now" href="#">Today</a><a class="ic" href="#" aria-label="Previous day">‹</a><span>Sat 7 Nov</span><a class="ic" href="#" aria-label="Next day">›</a></div><span class="note">Glass pill fields with the action inside; one 32 px capsule for day nav, text centred.</span></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

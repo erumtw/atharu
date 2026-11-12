@@ -1,0 +1,2 @@
+{#- Top-bar save status; copy from the States board "Field autosave" tile. -#}
+{%- if let Some(e) = save_error -%}<span class="err">{{ e }}</span>{%- else -%}<span class="m-hide">Changes save as you type</span>{%- endif -%}

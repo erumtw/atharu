@@ -1,0 +1,4 @@
+{#- Tag filter row (D29); needs `filter` (layout::TagFilter). A plain GET form: works without JS. -#}
+{%- if !filter.tags.is_empty() %}<span class="small muted">Tag</span>{% endif %}
+{%- for t in filter.tags %}<span class="chip tag fl">{{ t }}<a class="rm" href="{{ filter.without(t) }}" aria-label="Remove filter #{{ t }}">×</a></span>{% endfor %}
+<form class="fld s" method="get" style="width: 160px">{% for (k, v) in filter.keep %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}{% if !filter.tags.is_empty() %}<input type="hidden" name="tag" value="{{ filter.joined() }}">{% endif %}<input name="add" list="tag-list" placeholder="{% if filter.tags.is_empty() %}Filter by tag{% else %}+ tag{% endif %}" aria-label="Add a tag filter" autocomplete="off"><datalist id="tag-list">{% for t in filter.known %}<option value="{{ t }}"></option>{% endfor %}</datalist></form>

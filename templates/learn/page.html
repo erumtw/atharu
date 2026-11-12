@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block side %}{% include "learn/side.html" %}{% endblock %}
+{% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto">Changes save as you type</span>{% endblock %}
+{% block content %}
+<main class="doc">
+<h1 class="ptitle mono t36">{{ slug }}</h1>
+{% include "learn/tags.html" %}
+{#- Two autosave forms (the rate buttons sit between them); each posts only its own fields. #}
+<form method="post" action="/learn/{{ slug }}" hx-post="/learn/{{ slug }}" hx-trigger="input changed delay:1s, change, submit" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
+<dl class="props">
+<div id="depth" style="display: contents">{% include "learn/depth.html" %}</div>
+<dt><label for="sum">One-line summary</label></dt><dd><input id="sum" name="summary" class="pin" value="{{ summary }}" placeholder="What it is, in one line"></dd>
+</dl>
+<hr class="hr">
+
+<h3 style="margin-top: 0"><label for="own">In my own words</label></h3>
+<div class="callout small" style="padding: 10px 14px"><span><b>No AI here.</b> Explain it as if to a teammate. If you can't, that's your real depth.</span></div>
+<textarea id="own" name="own_words" class="ta prose" rows="6">{{ own_words }}</textarea>
+<noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
+</form>
+
+<h3>How deep is it today?</h3>
+<p class="small muted" style="margin: 0">Rate after writing the above. One rating per day; it adds to the history.</p>
+<div id="rate" style="display: flex; flex-direction: column; gap: 8px">{% include "learn/rate_box.html" %}</div>
+
+<form method="post" action="/learn/{{ slug }}" hx-post="/learn/{{ slug }}" hx-trigger="input changed delay:1s, change, submit" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 8px">
+<h3><label for="res">Resources</label></h3>
+<textarea id="res" name="resources" class="ta" rows="2">{{ resources }}</textarea>
+<noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
+</form>
+
+<h3>Learned from</h3>
+{%- if lines.is_empty() %}
+<p class="small muted" style="margin: 0">No lines yet. Log <span class="mono">? {{ slug }}: what you learned</span> on <a href="/">Today</a>.</p>
+{%- else %}
+<div class="blocks small">
+{%- for l in lines %}
+<div class="blk"><span class="muted mono">{{ l.day }}</span><span>{{ l.text }}</span>{% if let Some(k) = l.epic_key %}<a href="/epics/{{ k }}"><span class="chip key">{{ k }}</span></a>{% endif %}</div>
+{%- endfor %}
+</div>
+{%- endif %}
+{% include "partials/backlinks.html" %}
+<form method="post" action="/learn/{{ slug }}/delete" hx-post="/learn/{{ slug }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Ratings go with it; its ? lines go back to the inbox">Delete topic</button></form>
+</main>
+{% endblock %}

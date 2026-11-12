@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block head %}<script src="/static/js/glass.js" defer></script>{% endblock %}
+{% block content %}
+{#- Canvas row "Settings · appearance" (D18): Apple grouped inset list, Notion label + help left, one control right. #}
+<main class="doc set">
+<h1 class="ptitle">Settings</h1>
+<h2 class="sec">Appearance</h2>
+<div class="grp">
+{#- Submits on change (a look repaints <html>, so it's a full reload); the Save button is for no-JS. #}
+<form class="gi col" method="post" action="/settings" onchange="this.requestSubmit()">
+<div class="t"><b id="look-h">Look</b><span>Wallpaper, app icon and tab icon.</span></div>
+<div class="looks" role="radiogroup" aria-labelledby="look-h">
+{%- for l in looks %}
+<label class="lk" title="{{ l.blurb }}"><input type="radio" name="look" value="{{ l.slug }}"{% if layout.look == l.slug %} checked{% endif %}><img src="/static/icon/{{ l.slug }}.svg" width="64" height="64" alt=""><span>{{ l.name }} <small>{{ l.jp }}</small></span></label>
+{%- endfor %}
+</div>
+<noscript><button class="btn" type="submit">Save</button></noscript>
+</form>
+{#- htmx saves on change / preset click (204); glass.js previews while dragging; without JS the Save button posts it all.
+    .gform is display:contents, so these rows sit in the same group as the look row. #}
+{#- `input delay` too: glass.js resets the slider to the AA floor mid-drag, and WebKit (the Mac app) then sends no `change` on release, so a drag to the far left was never saved. #}
+<form id="glass" class="gform" method="post" action="/settings/glass" hx-post="/settings/glass" hx-trigger="change, submit, input delay:400ms" hx-swap="none">
+<label class="gi"><span class="t"><b>Glass everywhere</b><span>The page and its cards turn to glass too. Off keeps content on a solid page, easier to read.</span></span><input class="sw" type="checkbox" role="switch" name="glass_all" value="1"{% if layout.glass_all %} checked{% endif %}></label>
+<label class="gi"><span class="t"><b>Blur text boxes</b><span>Text boxes blur what is behind them, like the sidebar. Off keeps them a plain tint.</span></span><input class="sw" type="checkbox" role="switch" name="text_blur" value="1"{% if layout.text_blur %} checked{% endif %}></label>
+<div class="gi"><div class="t"><b>Glass</b><span>Clear is more transparent. Tinted adds the look's colour and contrast.</span></div>
+<div class="seg mac" role="group" aria-label="Glass style">
+<button type="submit" name="preset" value="clear" aria-pressed="{% if layout.tinted %}false{% else %}true{% endif %}">Clear</button>
+<button type="submit" name="preset" value="tinted" aria-pressed="{% if layout.tinted %}true{% else %}false{% endif %}">Tinted</button>
+</div></div>
+<div class="gi col">
+<div class="t between"><label for="glass-a"><b>Opacity</b></label><output id="glass-out" class="val" for="glass-a">{{ layout.glass_a }}%</output></div>
+{#- The true 0–100 scale, so 60% sits at 60%. Below this look's AA floor is hatched: glass.js stops the thumb there
+    and the server clamps on read (no-JS). --v / --f place the fill and the hatch under the thumb. #}
+<div class="sl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>
+<input id="glass-a" class="rng" type="range" name="glass_opacity" min="0" max="100" value="{{ layout.glass_a }}" data-floor="{{ cur.glass_floor }}" style="--v:{{ layout.glass_a }};--f:{{ cur.glass_floor }}" aria-describedby="glass-help">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg></div>
+<span id="glass-help" class="help">Hatched part is too clear to read on {{ cur.name }}. The slider stops at {{ cur.glass_floor }}%.</span>
+{#- Live preview: painted from the same --wall / --glass-a / data-* as the real chrome, so it can't drift. #}
+<div class="prev" aria-hidden="true"><div class="pane"><b>Atharu</b><i></i><i></i><i></i></div><div class="sheet"><i></i><i></i><i></i></div></div>
+</div>
+<noscript><div class="gi"><button class="btn" type="submit">Save</button></div></noscript>
+</form>
+</div>
+
+<h2 class="sec">Connections</h2>
+<div class="grp">
+<div class="gi"><div class="t"><b>Google Calendar</b><span>Read-only. Add <span class="mono">ical_url</span> to data/config.toml.</span></div>{% if google %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
+<div class="gi"><div class="t"><b>Jira titles</b><span>Read-only. Base URL, email and API token in data/config.toml.</span></div>{% if jira %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
+</div>
+
+<h2 class="sec">Transcription</h2>
+{{ tr|safe }}
+
+<h2 class="sec">Accessibility</h2>
+<div class="grp">
+{#- A page can't read the OS setting, only match it: CSS shows whichever line is true. #}
+<div class="gi"><div class="t"><b>Reduce transparency</b><span>When it's on in macOS, glass turns solid here too.</span></div><span class="chev"><span class="rt-off">Off in System Settings</span><span class="rt-on">On in System Settings</span></span></div>
+</div>
+
+{#- D47: what's running + how to update; no network check. Copy via copy.js; without JS the command stays selectable. #}
+<h2 class="sec">About</h2>
+<div class="grp">
+<div class="gi"><div class="t"><b>Version</b></div><span class="chev">{{ version }}</span></div>
+<div class="gi"><div class="t"><b>Commit</b></div><span class="chev mono">{{ sha }}</span></div>
+<div class="gi"><div class="t"><b>Built</b></div><span class="chev">{{ built }}</span></div>
+{{ db|safe }}
+<div class="gi"><div class="t"><b>Update</b><span>Run in Terminal. Installs the newest release tag.</span><span class="mac-only">Add --app to update this app too.</span></div><span class="cmd"><code id="upd-cmd">atharu update</code><button class="btn" type="button" data-copy="#upd-cmd">Copy</button></span></div>
+</div>
+</main>
+{% endblock %}

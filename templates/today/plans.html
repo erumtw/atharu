@@ -1,0 +1,26 @@
+{#- Body of #plans: the pinned top 3, then every other open plan behind a toggle. Rows swap themselves. -#}
+{%- let back = "/?day={}"|format(day.iso) %}{% let full = false %}{% let pin_error = false %}
+<h3>This week <span class="small muted normal">· your top 3 plans</span></h3>
+{%- if plans.pinned.is_empty() %}
+{%- if plans.other.is_empty() %}
+<p class="small muted" style="margin: 0">No open plans. Log a line starting with &gt;.</p>
+{%- else %}
+<span class="small muted">No plans pinned. Pin an open plan to see it here.</span>
+{%- endif %}
+{%- else %}
+<div class="blocks">
+{%- for p in plans.pinned %}
+{% include "partials/plan_row.html" %}
+{%- endfor %}
+</div>
+{%- endif %}
+{%- if !plans.other.is_empty() %}
+<details>
+<summary class="small muted mid">Other open plans · {{ plans.other.len() }} <span class="normal">· Pin one to add it to your top 3</span></summary>
+<div class="blocks">
+{%- for p in plans.other %}
+{% include "partials/plan_row.html" %}
+{%- endfor %}
+</div>
+</details>
+{%- endif %}

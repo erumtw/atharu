@@ -1,0 +1,1 @@
+<span class="meter" aria-label="{% if d.depth == 0 %}Not rated{% else %}Depth {{ d.depth }} of 4{% endif %}">{% for i in 1..=4 %}<i{% if i <= d.depth %} class="on"{% endif %}></i>{% endfor %}</span>

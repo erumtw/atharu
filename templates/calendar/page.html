@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block crumb_extra %}<span class="row small" style="margin-left: auto; gap: 8px"><div class="dnav" role="group" aria-label="Calendar range"><a href="/calendar{% if cal.month %}?view=month{% endif %}">Today</a><a class="i" href="{{ prev }}" aria-label="Previous {% if cal.month %}month{% else %}week{% endif %}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#prev"/></svg></a><span class="m-hide">{{ title }}</span><a class="i" href="{{ next }}" aria-label="Next {% if cal.month %}month{% else %}week{% endif %}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#next"/></svg></a></div></span>{% endblock %}
+{% block content %}
+<main class="doc wide">
+<div class="row between" style="align-items: flex-end">
+<h1 class="ptitle">{{ title }}</h1>
+<span class="row" style="gap: 8px">
+<form class="seg" role="group" aria-label="View" method="get" action="/calendar"><input type="hidden" name="week" value="{{ cal.week }}">{% if !cal.tag.is_empty() %}<input type="hidden" name="tag" value="{{ cal.tag }}">{% endif %}<button{% if !cal.month %} class="on"{% endif %} type="submit" name="view" value="week">Week</button><button{% if cal.month %} class="on"{% endif %} type="submit" name="view" value="month">Month</button></form>
+{%- if has_ical %}
+<form class="inline" method="post" action="/calendar/refresh" hx-post="/calendar/refresh" hx-target="#cal" hx-swap="outerHTML"><input type="hidden" name="week" value="{{ cal.week }}"><input type="hidden" name="view" value="{{ cal.view() }}"><input type="hidden" name="tag" value="{{ cal.tag }}"><button class="btn ghost" type="submit">Refresh</button></form>
+{%- endif %}
+<details class="evadd"{% if !form.title.is_empty() || !form.date.is_empty() %} open{% endif %}>
+<summary class="btn ghost">+ Event</summary>
+{#- Reset only after this form's own 2xx: a rejected add keeps what was typed. #}
+<form class="card" method="post" action="/calendar/events" hx-post="/calendar/events" hx-target="#cal" hx-swap="outerHTML" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) { this.reset(); this.closest('details').open = false; }">
+<input type="hidden" name="week" value="{{ cal.week }}"><input type="hidden" name="view" value="{{ cal.view() }}"><input type="hidden" name="tag" value="{{ cal.tag }}">
+<input class="fld m" name="title" value="{{ form.title }}" placeholder="Title, e.g. dentist" aria-label="Event title" required>
+<input class="fld m" type="date" name="date" value="{{ form.date }}" aria-label="Date" required>
+<input class="fld m" type="time" name="time" value="{{ form.time }}" aria-label="Time (optional)">
+<button class="btn" type="submit">Add</button>
+</form>
+</details>
+</span>
+</div>
+<div class="row" style="gap: 8px; flex-wrap: wrap" role="group" aria-label="Filter">{% include "partials/tag_filter.html" %}{% if !filter.tags.is_empty() %}<span class="small muted">Google events show when a word in the title matches</span>{% endif %}</div>
+<div class="row small muted" style="gap: 14px">
+<span><span class="ev meet" style="display: inline-block">meeting</span></span>
+<span><span class="ev todo" style="display: inline-block">to-do due</span></span>
+<span><span class="ev tgt" style="display: inline-block">epic target</span></span>
+<span><span class="ev own" style="display: inline-block">your event</span></span>
+<span class="logdot">● 5 = lines logged that day</span>
+</div>
+
+{% include "calendar/grid.html" %}
+
+{%- if !has_ical %}
+<div class="callout small">
+<span><b>Google Calendar (read-only).</b> Paste your calendar's private iCal address into <span class="mono">data/config.toml</span> as <span class="mono">ical_url = "…"</span> and restart, and your Google events show here, refreshed every 15 min. Find it in Google Calendar → Settings → your calendar → Integrate calendar → Secret address in iCal format. Click a meeting to start meeting mode with its name.</span>
+</div>
+{%- endif %}
+<p class="small muted">Click a day to open its log. Click a meeting to start meeting mode. Due dates come from to-dos, targets from epics.</p>
+</main>
+{% endblock %}

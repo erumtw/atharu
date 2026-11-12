@@ -1,0 +1,1015 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Calendar.Month.dc.html": {
+      "expand": "fill",
+      "h": 1225,
+      "title": "Calendar · month",
+      "w": 1280,
+      "x": 1360,
+      "y": 6259
+    },
+    "Calendar.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Calendar · week",
+      "w": 1280,
+      "x": 0,
+      "y": 6259
+    },
+    "Components.Content.dc.html": {
+      "h": 5100,
+      "title": "Components · content, feedback, data",
+      "w": 1280,
+      "x": 2720,
+      "y": 12232
+    },
+    "Components.Controls.dc.html": {
+      "h": 5346,
+      "title": "Components · controls + fields",
+      "w": 1280,
+      "x": 0,
+      "y": 12232
+    },
+    "Components.DatePicker.IC.dc.html": {
+      "h": 540,
+      "title": "Date picker · Increase Contrast",
+      "w": 680,
+      "x": 2590,
+      "y": 27970
+    },
+    "Components.DatePicker.RT.dc.html": {
+      "h": 540,
+      "title": "Date picker · Reduce Transparency",
+      "w": 680,
+      "x": 1830,
+      "y": 27970
+    },
+    "Components.DatePicker.dc.html": {
+      "h": 3250,
+      "title": "Date picker · anchored under the day nav and a to-do due field, every state, looks, AA",
+      "w": 1280,
+      "x": 0,
+      "y": 27970
+    },
+    "Components.Navigation.dc.html": {
+      "h": 4897,
+      "title": "Components · navigation + menus",
+      "w": 1280,
+      "x": 1360,
+      "y": 12232
+    },
+    "Controls.dc.html": {
+      "h": 1180,
+      "title": "Controls · glass fields + buttons",
+      "w": 1280,
+      "x": 0,
+      "y": 10652
+    },
+    "Drawing.Edit.dc.html": {
+      "h": 1000,
+      "title": "Drawing · editing (Excalidraw over the note, Done / Cancel, autosave)",
+      "w": 1280,
+      "x": 1360,
+      "y": 21400
+    },
+    "Drawing.Empty.dc.html": {
+      "h": 900,
+      "title": "Drawing · empty + selected",
+      "w": 1280,
+      "x": 4080,
+      "y": 21400
+    },
+    "Drawing.Insert.dc.html": {
+      "h": 900,
+      "title": "Drawing · insert from the / menu",
+      "w": 1280,
+      "x": 2720,
+      "y": 21400
+    },
+    "Drawing.RT.dc.html": {
+      "h": 1100,
+      "title": "Drawing · Reduce Transparency",
+      "w": 1280,
+      "x": 5440,
+      "y": 21400
+    },
+    "Drawing.Read.dc.html": {
+      "h": 900,
+      "title": "Drawing · note read view (stored SVG)",
+      "w": 1280,
+      "x": 0,
+      "y": 21400
+    },
+    "Epic.dc.html": {
+      "expand": "fill",
+      "h": 1577,
+      "title": "Epic detail",
+      "w": 1280,
+      "x": 2720,
+      "y": 0
+    },
+    "Epics.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Epics · Jira summary · status",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "Flows.dc.html": {
+      "h": 928,
+      "title": "Flows · loops by rhythm",
+      "w": 1704,
+      "x": 0,
+      "y": -1560
+    },
+    "Learn.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Learn",
+      "w": 1280,
+      "x": 0,
+      "y": 3359
+    },
+    "LiquidGlass.dc.html": {
+      "h": 2934,
+      "is_interactive": true,
+      "title": "Liquid Glass · every glass surface, Clear / Tinted, states, RT / IC",
+      "w": 1280,
+      "x": 0,
+      "y": 17978
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 1569,
+      "title": "Today · inline edit + Undo toast",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "Meeting.Finishing.dc.html": {
+      "h": 1380,
+      "title": "Recording · after Stop: last part transcribing → done + /meeting hint",
+      "w": 1280,
+      "x": 2720,
+      "y": 22880
+    },
+    "Meeting.Live.dc.html": {
+      "h": 1150,
+      "title": "Recording · live transcript (~30 s behind), search, copy",
+      "w": 1280,
+      "x": 1360,
+      "y": 22880
+    },
+    "Meeting.Permissions.dc.html": {
+      "h": 1320,
+      "title": "Recording · first-run macOS permissions + denied",
+      "w": 1280,
+      "x": 4080,
+      "y": 22880
+    },
+    "Meeting.RTIC.dc.html": {
+      "h": 1050,
+      "title": "Recording · Reduce Transparency + Increase Contrast, search hits",
+      "w": 1280,
+      "x": 7270,
+      "y": 22880
+    },
+    "Meeting.Record.dc.html": {
+      "h": 1250,
+      "title": "Recording · Start option + consent, banner (elapsed, Me / Others levels, Stop)",
+      "w": 1280,
+      "x": 0,
+      "y": 22880
+    },
+    "Meetings.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Meeting page",
+      "w": 1280,
+      "x": 1360,
+      "y": 1977
+    },
+    "MeetingsList.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Meetings list",
+      "w": 1280,
+      "x": 0,
+      "y": 1977
+    },
+    "Mobile.Calendar.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · calendar agenda",
+      "w": 390,
+      "x": 1410,
+      "y": 7884
+    },
+    "Mobile.DatePicker.dc.html": {
+      "h": 844,
+      "title": "Phone · date picker bottom sheet (44 px days, Done)",
+      "w": 390,
+      "x": 1360,
+      "y": 27970
+    },
+    "Mobile.Drawing.dc.html": {
+      "h": 844,
+      "title": "Phone · note with a drawing",
+      "w": 390,
+      "x": 6800,
+      "y": 21400
+    },
+    "Mobile.DrawingEdit.dc.html": {
+      "h": 844,
+      "title": "Phone · drawing editor",
+      "w": 390,
+      "x": 7270,
+      "y": 21400
+    },
+    "Mobile.Epic.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · epic page",
+      "w": 390,
+      "x": 940,
+      "y": 7884
+    },
+    "Mobile.Meeting.dc.html": {
+      "h": 844,
+      "title": "Phone · meeting transcript (view only)",
+      "w": 390,
+      "x": 6800,
+      "y": 22880
+    },
+    "Mobile.Nav.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · pages drawer",
+      "w": 390,
+      "x": 470,
+      "y": 7884
+    },
+    "Mobile.Settings.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · settings",
+      "w": 390,
+      "x": 1360,
+      "y": 9128
+    },
+    "Mobile.Tags.dc.html": {
+      "h": 844,
+      "title": "Phone · tag hub",
+      "w": 390,
+      "x": 4080,
+      "y": 26690
+    },
+    "Mobile.TagsCapture.dc.html": {
+      "h": 844,
+      "title": "Phone · tag suggestions above the capture bar",
+      "w": 390,
+      "x": 4550,
+      "y": 26690
+    },
+    "Mobile.Today.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · Today + capture",
+      "w": 390,
+      "x": 0,
+      "y": 7884
+    },
+    "Notes.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Note page",
+      "w": 1280,
+      "x": 1360,
+      "y": 4959
+    },
+    "NotesList.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Notes · Mine / Written by LLM",
+      "w": 1280,
+      "x": 0,
+      "y": 4959
+    },
+    "Piece-32lj.dc.html": {
+      "frameless": true,
+      "h": 4186,
+      "title": "Box",
+      "w": 1264,
+      "x": 3,
+      "y": 27952
+    },
+    "Report.dc.html": {
+      "expand": "fill",
+      "h": 1365,
+      "title": "Report · paste-ready",
+      "w": 1280,
+      "x": 4080,
+      "y": 0
+    },
+    "Settings.Transcription.dc.html": {
+      "h": 2010,
+      "title": "Settings · transcription (model download, language)",
+      "w": 1280,
+      "x": 5440,
+      "y": 22880
+    },
+    "Settings.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "title": "Settings · appearance + connections + about",
+      "w": 1280,
+      "x": 0,
+      "y": 9128
+    },
+    "Sitemap.dc.html": {
+      "h": 1104,
+      "title": "Sitemap",
+      "w": 984,
+      "x": 1784,
+      "y": -1560
+    },
+    "States.dc.html": {
+      "expand": "fill",
+      "h": 2264,
+      "title": "States · every message (real responses)",
+      "w": 1280,
+      "x": 5440,
+      "y": 0
+    },
+    "Tags.Capture.dc.html": {
+      "h": 1250,
+      "title": "Tags · capture: #ex suggestions, “Tag as #expense?”, saved line with the chip",
+      "w": 1280,
+      "x": 0,
+      "y": 25270
+    },
+    "Tags.ERD.dc.html": {
+      "h": 820,
+      "title": "Tags · one-hop ERD for T71 (owner OK needed)",
+      "w": 1280,
+      "x": 8160,
+      "y": 25270
+    },
+    "Tags.EpicField.dc.html": {
+      "h": 930,
+      "title": "Tags · tag field on an epic + how lines inherit",
+      "w": 1280,
+      "x": 6800,
+      "y": 25270
+    },
+    "Tags.Filter.dc.html": {
+      "h": 900,
+      "title": "Tags · filter chip on To-dos (+ Group by tag)",
+      "w": 1280,
+      "x": 0,
+      "y": 26690
+    },
+    "Tags.Group.dc.html": {
+      "h": 900,
+      "title": "Tags · Today grouped by tag",
+      "w": 1280,
+      "x": 1360,
+      "y": 26690
+    },
+    "Tags.Hub.dc.html": {
+      "h": 1300,
+      "title": "Tags · hub /tags/expense (to-dos, decisions/blockers/impact, lines, epics, notes, meetings, topics, coming up; ⋯ rename",
+      "w": 1280,
+      "x": 2720,
+      "y": 25270
+    },
+    "Tags.HubMerged.dc.html": {
+      "h": 900,
+      "title": "Tags · one name, one hub (tag + topic + meeting series cms-profile)",
+      "w": 1280,
+      "x": 4080,
+      "y": 25270
+    },
+    "Tags.IC.dc.html": {
+      "h": 530,
+      "title": "Tags · Increase Contrast",
+      "w": 1280,
+      "x": 6380,
+      "y": 26690
+    },
+    "Tags.List.dc.html": {
+      "h": 900,
+      "title": "Tags · list under Track (count, last used, sort)",
+      "w": 1280,
+      "x": 5440,
+      "y": 25270
+    },
+    "Tags.RT.dc.html": {
+      "h": 530,
+      "title": "Tags · Reduce Transparency",
+      "w": 1280,
+      "x": 5020,
+      "y": 26690
+    },
+    "Tags.Report.dc.html": {
+      "h": 900,
+      "title": "Tags · Report grouped by tag",
+      "w": 1280,
+      "x": 2720,
+      "y": 26690
+    },
+    "Tags.Retag.dc.html": {
+      "h": 1190,
+      "title": "Tags · Make tag from a selected word + “4 older lines mention…” · Tag them · Undo",
+      "w": 1280,
+      "x": 1360,
+      "y": 25270
+    },
+    "Todos.dc.html": {
+      "expand": "fill",
+      "h": 982,
+      "title": "To-dos",
+      "w": 1280,
+      "x": 2720,
+      "y": 1977
+    },
+    "Topic.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "title": "Topic",
+      "w": 1280,
+      "x": 1360,
+      "y": 3359
+    },
+    "Capture.Float.Rest.dc.html": {
+      "h": 820,
+      "title": "Capture bar · rest, mid-scroll: the log runs under the capsule (Sumi, default look)",
+      "w": 1280,
+      "x": 0,
+      "y": 32518
+    },
+    "Capture.Float.End.dc.html": {
+      "h": 820,
+      "title": "Capture bar · scrolled to the end: last line clear of the bar, toast above it",
+      "w": 1280,
+      "x": 1360,
+      "y": 32518
+    },
+    "Capture.Float.Typing.dc.html": {
+      "h": 820,
+      "title": "Capture bar · typing: live hint in its own glass pill above the capsule (Wakaba Clear)",
+      "w": 1280,
+      "x": 2720,
+      "y": 32518
+    },
+    "Capture.Float.Menu.dc.html": {
+      "h": 820,
+      "title": "Capture bar · # tag menu opens upward, above the hint pill (Wakaba Clear)",
+      "w": 1280,
+      "x": 4080,
+      "y": 32518
+    },
+    "Capture.Float.Error.dc.html": {
+      "h": 820,
+      "title": "Capture bar · error: .bad ring, the reason in the hint pill (Sumi)",
+      "w": 1280,
+      "x": 5440,
+      "y": 32518
+    },
+    "Capture.Float.Legend.dc.html": {
+      "h": 820,
+      "title": "Capture bar · ? in the capsule opens the grammar legend above it (Glass Tinted)",
+      "w": 1280,
+      "x": 6800,
+      "y": 32518
+    },
+    "Mobile.Capture.Float.dc.html": {
+      "h": 844,
+      "title": "Phone · capture bar at rest (12px gutters, above the home indicator)",
+      "w": 390,
+      "x": 8160,
+      "y": 32518
+    },
+    "Mobile.Capture.Float.Keyboard.dc.html": {
+      "h": 844,
+      "title": "Phone · keyboard open: the bar rides 8px above it (visualViewport)",
+      "w": 390,
+      "x": 8630,
+      "y": 32518
+    },
+    "Capture.Float.Looks.dc.html": {
+      "h": 1470,
+      "title": "Capture bar · looks, decisions, AA",
+      "w": 1280,
+      "x": 0,
+      "y": 33498
+    },
+    "Capture.Float.RT.dc.html": {
+      "h": 460,
+      "title": "Capture bar · Reduce Transparency",
+      "w": 1280,
+      "x": 1360,
+      "y": 33498
+    },
+    "Capture.Float.IC.dc.html": {
+      "h": 460,
+      "title": "Capture bar · Increase Contrast",
+      "w": 1280,
+      "x": 1360,
+      "y": 34058
+    },
+    "Quick.dc.html": {
+      "h": 700,
+      "title": "Quick · capture first: rest, typing (chip follows the prefix), saved inline, # and by menus inside",
+      "w": 2280,
+      "x": 0,
+      "y": 35348
+    },
+    "Quick.Meeting.dc.html": {
+      "h": 700,
+      "title": "Quick.Meeting · start (recent series pills + name) / running / recording",
+      "w": 1840,
+      "x": 2380,
+      "y": 35348
+    },
+    "Quick.Todos.dc.html": {
+      "h": 700,
+      "title": "Quick.Todos · today + overdue, tick, short day, empty",
+      "w": 1840,
+      "x": 4320,
+      "y": 35348
+    },
+    "Quick.Menu.dc.html": {
+      "h": 560,
+      "title": "Quick.Menu · right-click native menu, light + dark menu bar",
+      "w": 1920,
+      "x": 6260,
+      "y": 35348
+    },
+    "Quick.Notes.dc.html": {
+      "h": 1640,
+      "title": "Quick · dark menu bar, sizes, keyboard, AA",
+      "w": 1300,
+      "x": 0,
+      "y": 36208
+    },
+    "Quick.RT.dc.html": {
+      "h": 640,
+      "title": "Quick · Reduce Transparency",
+      "w": 470,
+      "x": 1400,
+      "y": 36208
+    },
+    "Quick.IC.dc.html": {
+      "h": 640,
+      "title": "Quick · Increase Contrast",
+      "w": 470,
+      "x": 1970,
+      "y": 36208
+    },
+    "LineNotes.Rows.dc.html": {
+      "h": 1900,
+      "title": "Line notes · the note button on Today rows (every state), To-dos, tag hub, epic timeline, quick popover",
+      "w": 1280,
+      "x": 0,
+      "y": 38228
+    },
+    "LineNotes.Header.dc.html": {
+      "h": 1720,
+      "title": "Line notes · /notes/<id> header: 3 lines, 1 to-do, done, line deleted, many",
+      "w": 1280,
+      "x": 1360,
+      "y": 38228
+    },
+    "LineNotes.List.dc.html": {
+      "h": 1240,
+      "title": "Line notes · Notes list kind badge + “Linked to lines” filter",
+      "w": 1280,
+      "x": 2720,
+      "y": 38228
+    },
+    "Mobile.LineNotes.dc.html": {
+      "h": 844,
+      "title": "Phone · Add a note in the ⋯ sheet · note header at 390",
+      "w": 820,
+      "x": 4080,
+      "y": 38228
+    },
+    "LineNotes.RT.dc.html": {
+      "h": 420,
+      "title": "Line notes · Reduce Transparency",
+      "w": 1280,
+      "x": 4980,
+      "y": 38228
+    },
+    "LineNotes.IC.dc.html": {
+      "h": 760,
+      "title": "Line notes · Increase Contrast + AA",
+      "w": 1280,
+      "x": 4980,
+      "y": 38748
+    },
+    "Quick.Note.dc.html": {
+      "h": 700,
+      "title": "Quick.Note · 7th tile Note: picked, typing, saved (back to the kind), empty",
+      "w": 1840,
+      "x": 8280,
+      "y": 35348
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-11T15:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "noteOrder": [
+    "t1",
+    "t2",
+    "t3",
+    "t4",
+    "s0",
+    "s1",
+    "s2",
+    "s4",
+    "t0",
+    "t5",
+    "s5",
+    "t6",
+    "s6",
+    "t7",
+    "s7",
+    "t8",
+    "s8",
+    "t9",
+    "s9",
+    "t10",
+    "t11",
+    "s10",
+    "t12",
+    "s11",
+    "t13",
+    "s12",
+    "t14",
+    "s13",
+    "t15",
+    "s14",
+    "t16",
+    "s15",
+    "t17",
+    "s16"
+  ],
+  "notes": {
+    "s0": {
+      "fill": "orange",
+      "text": "Look and rules: DESIGN.md (repo root) wins over these boards. One Action Blue, glass only on chrome unless Glass everywhere is on, AA measured, tokens in static/css/tokens.css.\n\nPage and phone boards are generated from the app at 4540c51: real templates, static/css verbatim, Wakaba look with glass chrome. Sample data is made up.\n\nUX = Notion patterns: sidebar by journey (daily · Track · Grow, Settings at the bottom), breadcrumbs, every epic / meeting / topic / note is a page, lines behave like blocks (click to edit, × or ⋯ to delete, Undo toast), capture bar floats at the bottom.\nReduce Transparency / Increase Contrast → glass turns opaque.",
+      "w": 400,
+      "x": -480,
+      "y": 0
+    },
+    "s1": {
+      "fill": "blue",
+      "text": "Empty states (each names the next action; exact copy on the States board)\n· Today: “Nothing logged yet.” + example lines\n· Pinned plans: “No plans pinned. Pin an open plan to see it here.”\n· To-dos: “No open plans. Log a line starting with >.”\n· Report: “Nothing logged in this range. Try This month”\n· Meetings: “No meetings yet.”\n· Learn: “No topics yet. Log a line like ? vector-search: …”\n· Notes: “No notes yet.” + New note",
+      "w": 420,
+      "x": 4080,
+      "y": 1977
+    },
+    "s10": {
+      "fill": "teal",
+      "text": "Drawing block (T41, D23/D24)\n· Read: the stored SVG in a white 12-radius figure, no glass (content). Shown as <img>, so no script and no JS needed. Edit drawing = glass pill top-right on hover/focus, always on touch.\n· Insert: / menu → Drawing opens the editor at once. Empty = dashed placeholder + Draw. Selected = 2px blue ring; Backspace deletes like any block.\n· Edit: Excalidraw full-screen on an opaque white sheet; our one glass capsule top-right (Library hidden): status · Cancel (discard since opening) · Done (the one blue). Autosaves into the note 1 s after a change.\n· Excalidraw themed via its CSS vars to the one blue + system font; colours inside a drawing are user content.\n· Lazy: Excalidraw (434 KB gz) loads only on Edit / Draw; a note without a drawing loads none of it.",
+      "w": 420,
+      "x": 7740,
+      "y": 21400
+    },
+    "s11": {
+      "fill": "teal",
+      "text": "Meeting recording (T51; D26, D27)\n· Mac app only: browser + phone show transcripts and “Recording on the Mac”, never capture.\n· Start: Record audio switch, off by default every time; on → “Tell people you’re recording” in ink. No model → disabled + link to Settings.\n· Banner: red dot (new token --rec-on-dark #ff5c52, 4.9:1 on --dark; --err is 2.28 there) + “Recording” + elapsed + Me / Others level meters + Stop recording + End meeting.\n· Transcript = content (white box, no glass): timestamp · Me / Others · text; ~30 s behind live; search is a GET filter with <mark>; Copy → toast.\n· After Stop: “Transcribing the last part…” + progress (~4–5 min per hour), then “Ask Claude for notes: run /meeting” with a copy chip. Audio deleted once text.\n· First Record: Microphone → Screen & System Audio Recording → Quit & Reopen; the meeting runs either way.\n· Settings › Transcription: one model (large-v3-turbo q5_0, 574 MB, SHA-256 checked), Thai default (Auto | Thai | English), vocabulary = meeting name + active epics.",
+      "w": 420,
+      "x": 8630,
+      "y": 22880
+    },
+    "s12": {
+      "fill": "teal",
+      "text": "Tags (T70, D29)\n· #word in any line, to-do, note, meeting note or own event; epics, meeting series and topics have a Tags field and pass it down to their lines (read time, nothing copied).\n· Chip = the .chip family (--fill-2, 6 radius): text --ink-2 11.1:1, the # is the only accent, 4.88:1 (hover # → --accent-2, 5.57 on --sep). Opaque, so the same on every look. Dashed outline = inherited; --accent-wash = active filter.\n· Capture bar: # opens suggestions by use count (menu glass, Tab/↵ inserts); a typed word that is a tag (case-insensitive, plural) gets a “Tag as #x?” offer, never auto-applied.\n· Make tag: select one word in a line edit; toast offers to tag older lines that mention it, one Undo.\n· Hub /tags/<tag>: one page per name, shared with a topic / meeting series of the same name. [[X]]: epic → topic → series → tag.\n· Google events are never tagged: matched by word on the hub (“matched by word”).\n· Filter row (GET ?tag=) on To-dos, Today, Notes, Calendar, Report; Group by Epic | Tag on Today and Report.",
+      "w": 420,
+      "x": 9520,
+      "y": 25270
+    },
+    "s13": {
+      "fill": "teal",
+      "text": "Date picker (T75, D38)\n· Replaces the browser picker UI on every input[type=date] (day nav, to-do due, report from/to, event, epic dates). The native input stays: value carrier + no-JS fallback; forms post unchanged.\n· Glass = .menu (class=\"menu dp\"), floor 85%: at the menus’ 60% the accent fell to 3.18.\n· Monday first (D4), 6 rows always. Today = accent ring, value = accent fill + white, out of month --muted (--faint is 1.74), disabled .45.\n· Keys: arrows day/week, PgUp/PgDn month (+Shift year), Home/End, Enter picks, Esc closes; focus returns to the field.\n· Phone: bottom sheet, 44 px days, tap selects, Done commits.\n· AA min: ink 13.58 · muted 7.34 · accent 4.57 · white on accent 5.57 · rings 4.57 (≥3).",
+      "w": 420,
+      "x": 3350,
+      "y": 27970
+    },
+    "s2": {
+      "fill": "green",
+      "text": "UX decisions live in the spec → “UX decisions (2026-11-11)”.\nStack: Rust (axum + askama + rusqlite) · htmx for no-reload actions + field autosave; every action also works as a plain form POST.\nLive hint under the line box: the same parser on keyup → “will save as impact on OPS-101”.",
+      "w": 420,
+      "x": 4580,
+      "y": 1977
+    },
+    "s4": {
+      "fill": "purple",
+      "text": "LLM layer has no screen.\nAgents write through the atharu CLI as themselves (log · epic · note · evidence --as claude); Claude Code’s /log and /ingest (plus /query, /lint) wrap it. In the app: an agent badge on lines it filed, and its notes under “Written by LLM” on Notes.",
+      "w": 420,
+      "x": 2720,
+      "y": 4959
+    },
+    "s5": {
+      "fill": "blue",
+      "text": "Calendar\n· Week: desktop grid, phone agenda. Month: 7 columns, phone = day numbers with a dot.\n· Shows to-do due dates, epic targets, meetings, lines logged per day and your own events.\n· Google read-only through the calendar’s secret iCal address (ical_url in data/config.toml, never in git); a failed refresh says “Couldn’t reach Google Calendar. Showing the last copy.”",
+      "w": 420,
+      "x": 2720,
+      "y": 6259
+    },
+    "s6": {
+      "fill": "teal",
+      "text": "Breakpoints (same templates, CSS only)\n· ≥1024 px: desktop as drawn above.\n· 640–1023 px: sidebar shrinks to a 64 px icon rail (labels as tooltips); content sheet keeps its max-width.\n· <640 px (these boards): glass top bar with ☰ → pages drawer; title + day nav in the bar; capture bar pinned to the bottom (safe-area aware), grammar legend behind the ? button.\n\nTouch rules\n· every target ≥44 px; hover-only controls (× delete, Pin/Drop) become a visible ⋯ menu per line.\n· inputs 16 px so iOS doesn't zoom.\n· props stack label-over-value; tables become stacked rows or scroll in their own box; calendar week → agenda list, month → 7-column dots.\n· Reduce Transparency → glass turns opaque.\n\nThe phone boards are the same generated pages with the <640 rules pinned on.",
+      "w": 420,
+      "x": 1880,
+      "y": 7884
+    },
+    "s7": {
+      "fill": "teal",
+      "text": "Settings pattern\n· Apple System Settings: grouped inset list (rounded group, hairline dividers inset from the left), one control per row on the right: switch for on/off, segmented control for Clear | Tinted, slider with end icons.\n· Notion settings: bold label + one-line help on the left, sections with small grey headers.\n· Look = 4 app-icon tiles, the picked one ringed in accent (like macOS Appearance).\n· Opacity slider shows the real 0–100 scale; the part below the look's readable floor is hatched and unreachable, so 60% sits at 60%.\n· Live preview tile shows sidebar glass (and the page when Glass everywhere is on).\n· Connections are status only (set in data/config.toml).",
+      "w": 420,
+      "x": 1830,
+      "y": 9128
+    },
+    "s8": {
+      "fill": "teal",
+      "text": "Control rules (go into DESIGN.md §6)\n· One height per context: 32 px in chrome (top bar), 36 px in the page, 44 px on phone. Labels centred with flex + line-height 1.\n· Single-line fields are glass pills (44 px; capture bar 52 px) with their action inside on the right, focus = blue ring.\n· Secondary buttons = glass pill (a step more opaque than what they sit on); primary = the one blue pill.\n· Day nav = one glass capsule: Today | ‹ | date ▾ | ›; the date opens the native picker.\n· Legend chips sit on one baseline and wrap as whole items.\n· Reduce Transparency → the same shapes, solid white.",
+      "w": 420,
+      "x": 1360,
+      "y": 10652
+    },
+    "s9": {
+      "fill": "teal",
+      "text": "Component library (for T28)\n· Every control in the app, every state that can happen: default · hover · focus-visible · pressed · selected · disabled · error (422, input kept) · loading (htmx-request) · empty.\n· Drawn over Wakaba with Glass everywhere on; each board ends with a plain Sumi strip (solid sheet) and Reduce Transparency / Increase Contrast variants.\n· Hover/focus/pressed are forced with classes here; in the app they are :hover, :focus-visible, :active, [disabled], .htmx-request.\n· .util (28, square) becomes the 32 glass pill; .btn.ghost becomes the glass secondary.\n· Copy is from the templates; two menu empty lines are marked 'proposed copy'.\n· Colours outside DESIGN.md §1 that the CSS already uses: #e8f1fb, #272729, #2997ff, #4d8fd1, #fafafc, #f5f9fe, #b0b0b5, heat #e3effc/#bcd6f2/#003d7a.",
+      "w": 420,
+      "x": 4080,
+      "y": 12232
+    },
+    "t0": {
+      "kind": "title1",
+      "maxW": 2768,
+      "text": "How you move · flows + sitemap",
+      "w": 240,
+      "x": 0,
+      "y": -1840
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 6720,
+      "text": "Today · epics · report",
+      "w": 240,
+      "x": 0,
+      "y": -280
+    },
+    "t10": {
+      "kind": "title1",
+      "maxW": 1280,
+      "text": "Liquid Glass",
+      "w": 240,
+      "x": 0,
+      "y": 17698
+    },
+    "t11": {
+      "kind": "title1",
+      "maxW": 7660,
+      "text": "Drawings · Excalidraw in notes",
+      "w": 240,
+      "x": 0,
+      "y": 21120
+    },
+    "t12": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Meeting recording · Mac app, local transcript",
+      "w": 240,
+      "x": 0,
+      "y": 22600
+    },
+    "t13": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Tags · one grouping layer (#tag)",
+      "w": 240,
+      "x": 0,
+      "y": 24990
+    },
+    "t14": {
+      "kind": "title1",
+      "maxW": 3770,
+      "text": "Date picker · one shared popover",
+      "w": 240,
+      "x": 0,
+      "y": 27690
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 4000,
+      "text": "Meetings · to-dos",
+      "w": 240,
+      "x": 0,
+      "y": 1781
+    },
+    "t3": {
+      "kind": "title1",
+      "maxW": 2640,
+      "text": "Learn · topics + depth",
+      "w": 240,
+      "x": 0,
+      "y": 3079
+    },
+    "t4": {
+      "kind": "title1",
+      "maxW": 2640,
+      "text": "Notes · LLM layer",
+      "w": 240,
+      "x": 0,
+      "y": 4679
+    },
+    "t5": {
+      "kind": "title1",
+      "maxW": 4000,
+      "text": "Calendar · week + month",
+      "w": 240,
+      "x": 0,
+      "y": 5979
+    },
+    "t6": {
+      "kind": "title1",
+      "maxW": 2320,
+      "text": "Responsive · phone",
+      "w": 240,
+      "x": 0,
+      "y": 7624
+    },
+    "t7": {
+      "kind": "title1",
+      "maxW": 2400,
+      "text": "Settings · appearance",
+      "w": 240,
+      "x": 0,
+      "y": 8868
+    },
+    "t8": {
+      "kind": "title1",
+      "maxW": 1880,
+      "text": "Controls · Liquid Glass",
+      "w": 240,
+      "x": 0,
+      "y": 10392
+    },
+    "t9": {
+      "kind": "title1",
+      "maxW": 4000,
+      "text": "Components · every state",
+      "w": 240,
+      "x": 0,
+      "y": 11972
+    },
+    "t15": {
+      "kind": "title1",
+      "maxW": 9000,
+      "text": "Floating capture bar · Liquid Glass capsule",
+      "w": 240,
+      "x": 0,
+      "y": 32238
+    },
+    "s14": {
+      "fill": "teal",
+      "w": 420,
+      "x": 2720,
+      "y": 33498,
+      "text": "Floating capture bar (T78, D42)\n· Today capture bar = glass capsule, position: sticky bottom 16px in the doc column (not fixed): in the sheet, centred on the text, last line never under it at the end.\n· Width = doc column (764 @1280); phone full width − 12px gutters + safe area; 52 tall.\n· ? stays in the capsule at every width; legend = .menu panel above it (anchor positioning).\n· Above it, out of flow: hint pill · # menu · toast, 6px apart, 8px clear: never glass on glass. #tagsug leaves the form (Backdrop Root).\n· --lg-float shadow (0 12 32 .16). Floors: capsule 70%, pills/menus 85%, hint --accent-2.\n· AA worst (dark banner fully behind): placeholder 4.75, hint 5.12.\n· Phone keyboard: visualViewport → --kb, rides 8px above it."
+    },
+    "t16": {
+      "kind": "title1",
+      "maxW": 8200,
+      "text": "Menu-bar quick popover · capture, meeting, to-dos",
+      "w": 240,
+      "x": 0,
+      "y": 35068
+    },
+    "s15": {
+      "fill": "teal",
+      "w": 440,
+      "x": 2540,
+      "y": 36208,
+      "text": "Quick popover (T81, D46)\n· Tray left click / ⌃⌥Space → /quick in a 360×480 borderless window, 6 px under the bar, left edge on the item, clamped 8 px in; macOS 26 style, no arrow, 18 radius. Right click = native menu.\n· Panel = .menu glass, floor 90% (AA over a black desktop); native popover material does the blur in the app; forced light appearance.\n· Order: header · capture · meeting · to-dos. Only to-dos scroll.\n· Kind tiles: one row of six 44-tall radio tiles posting kind; a typed prefix wins and moves the tile.\n· # and by menus open DOWN inside the window, opaque (no glass on glass). Enter → “✓ Saved as … · Undo” in the hint row, stays open.\n· Meeting: 3 recent series as one-click pills + name + Start; running = the dark banner, minutes, End meeting.\n· To-dos: today + overdue, overdue first (.due.late), 32 rows, max 8, “+ N more · Open Atharu”.\n· Desktop control sizes at 360 px: the page skips responsive.css.\n· AA worst: --accent-2 links/hint 4.63, --muted-tint 5.92; --accent (4.44) and --ctl-edge ring (2.12) rejected in the panel."
+    },
+    "t17": {
+      "kind": "title1",
+      "maxW": 6800,
+      "text": "Line notes · the note is the detail page",
+      "w": 240,
+      "x": 0,
+      "y": 37948
+    },
+    "s16": {
+      "fill": "teal",
+      "w": 440,
+      "x": 6340,
+      "y": 38228,
+      "text": "Line notes (T84, D49)\n· New ui.svg symbol `note` (page + fold + 2 lines); one glyph, two states via --note-fill / --note-line.\n· Row button .ib.note, 28 like ×, first in the row’s right cluster so filled icons share a column. Has note = <a> in --accent fill, always shown (“Open note”). No note = POST button, --muted outline, shown on row hover / focus like × (“Add a note”); creates + links + 303 to /notes/<id>.\n· Phone: Add a note / Open note in the ⋯ sheet; a filled 44 button stays in the row.\n· Note header: white card + --line hairline under the title (a --fill panel failed AA). Each line: kind square or round check · text + tags · epic · due field / done · “logged Thu 12 Nov” day link. Deleted line = dashed square + Undo while the undo lives.\n· List: the first line’s .k before the title + “3 lines”; filter chip “Linked to lines” (?linked=1) = the .fl chip without #.\n· AA worst: text 4.66 (--muted on --fill row hover), non-text 3.26 (check ring on the card)."
+    }
+  },
+  "order": [
+    "Flows.dc.html",
+    "Sitemap.dc.html",
+    "Main.dc.html",
+    "Epics.dc.html",
+    "Epic.dc.html",
+    "Report.dc.html",
+    "States.dc.html",
+    "MeetingsList.dc.html",
+    "Meetings.dc.html",
+    "Learn.dc.html",
+    "Topic.dc.html",
+    "NotesList.dc.html",
+    "Notes.dc.html",
+    "Todos.dc.html",
+    "Calendar.dc.html",
+    "Calendar.Month.dc.html",
+    "Mobile.Today.dc.html",
+    "Mobile.Nav.dc.html",
+    "Mobile.Epic.dc.html",
+    "Mobile.Calendar.dc.html",
+    "Settings.dc.html",
+    "Mobile.Settings.dc.html",
+    "Controls.dc.html",
+    "Components.Controls.dc.html",
+    "Components.Navigation.dc.html",
+    "Components.Content.dc.html",
+    "LiquidGlass.dc.html",
+    "Drawing.Read.dc.html",
+    "Drawing.Edit.dc.html",
+    "Drawing.Insert.dc.html",
+    "Drawing.Empty.dc.html",
+    "Drawing.RT.dc.html",
+    "Mobile.Drawing.dc.html",
+    "Mobile.DrawingEdit.dc.html",
+    "Meeting.Record.dc.html",
+    "Meeting.Live.dc.html",
+    "Meeting.Finishing.dc.html",
+    "Meeting.Permissions.dc.html",
+    "Settings.Transcription.dc.html",
+    "Mobile.Meeting.dc.html",
+    "Meeting.RTIC.dc.html",
+    "Tags.Capture.dc.html",
+    "Tags.Retag.dc.html",
+    "Tags.Hub.dc.html",
+    "Tags.HubMerged.dc.html",
+    "Tags.List.dc.html",
+    "Tags.EpicField.dc.html",
+    "Tags.ERD.dc.html",
+    "Tags.Filter.dc.html",
+    "Tags.Group.dc.html",
+    "Tags.Report.dc.html",
+    "Mobile.Tags.dc.html",
+    "Mobile.TagsCapture.dc.html",
+    "Tags.RT.dc.html",
+    "Tags.IC.dc.html",
+    "Components.DatePicker.dc.html",
+    "Mobile.DatePicker.dc.html",
+    "Components.DatePicker.RT.dc.html",
+    "Components.DatePicker.IC.dc.html",
+    "Piece-32lj.dc.html",
+    "Capture.Float.Rest.dc.html",
+    "Capture.Float.End.dc.html",
+    "Capture.Float.Typing.dc.html",
+    "Capture.Float.Menu.dc.html",
+    "Capture.Float.Error.dc.html",
+    "Capture.Float.Legend.dc.html",
+    "Mobile.Capture.Float.dc.html",
+    "Mobile.Capture.Float.Keyboard.dc.html",
+    "Capture.Float.Looks.dc.html",
+    "Capture.Float.RT.dc.html",
+    "Capture.Float.IC.dc.html",
+    "Quick.dc.html",
+    "Quick.Meeting.dc.html",
+    "Quick.Todos.dc.html",
+    "Quick.Menu.dc.html",
+    "Quick.Note.dc.html",
+    "Quick.Notes.dc.html",
+    "Quick.RT.dc.html",
+    "Quick.IC.dc.html",
+    "LineNotes.Rows.dc.html",
+    "LineNotes.Header.dc.html",
+    "LineNotes.List.dc.html",
+    "Mobile.LineNotes.dc.html",
+    "LineNotes.RT.dc.html",
+    "LineNotes.IC.dc.html"
+  ],
+  "pages": [],
+  "title": "Atharu Design"
+}

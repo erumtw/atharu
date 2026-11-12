@@ -1,0 +1,24 @@
+//! atharu: a personal work log served on localhost. Library crate so `tests/` can drive the router.
+pub mod app;
+pub mod build_info;
+pub mod calendar;
+pub mod cli;
+pub mod config;
+pub mod db;
+pub mod domain;
+pub mod dump;
+pub mod epics;
+pub mod error;
+pub mod jira;
+pub mod layout;
+pub mod learn;
+pub mod meetings;
+pub mod notes;
+pub mod quick;
+pub mod recording;
+pub mod report;
+pub mod settings;
+pub mod tags;
+pub mod today;
+pub mod todos;
+pub mod web;

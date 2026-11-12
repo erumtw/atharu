@@ -1,0 +1,164 @@
+/* Responsive (canvas row "Responsive · phone", D16): ≥1024 desktop as drawn · 640–1023 64 px icon rail ·
+   <640 glass top bar + pages drawer, capture bar floats at the bottom. Same templates; the hooks are .m-pop, .m-only, .ib, .ic. */
+
+/* .m-pop = a native popover on phones, plain inline content everywhere else. Author styles beat the UA's [popover]
+   box at any specificity, so :where() resets it without outranking each element's own rules (.side keeps its glass). */
+:where(.m-pop){position:static;inset:auto;width:auto;height:auto;margin:0;padding:0;border:0;overflow:visible;color:inherit;background:none}
+.acts{display:contents}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* Desktop sidebar: 16 px icon + label (Components.Navigation board); rail and drawer keep the 20 px icon. */
+@media (min-width:1024px){.side a .ic{width:16px;height:16px}}
+.tw>.cal{min-width:760px}
+.cal:not(.month) .dc>.dn{display:none}
+pre{max-width:100%;overflow-x:auto}
+
+@media (min-width:640px){.m-only{display:none !important}}
+
+/* Touch screens have no hover: the hover-only × is always shown. */
+@media (hover:none){.x{opacity:1}}
+
+/* Rail: labels become tooltips (title attr); sub-lists live on their pages. */
+@media (min-width:640px) and (max-width:1023px){
+  .wl{flex-wrap:nowrap}
+  .side{flex:none;width:64px;padding:10px 8px;position:sticky;top:12px;align-items:center}
+  .side .ws,.side .lb,.side .lbl,.side a.sub,.side .cnt{display:none}
+  .side a{justify-content:center;padding:0;width:44px;min-height:44px;border-radius:12px}
+  /* Section labels become thin dividers; the screen reader still reads the label text. */
+  .side .lbl.nh{display:block;font-size:0;width:32px;height:1px;padding:0;margin:6px 0;background:var(--line)}
+  .pg{flex:1 1 0}
+  .doc{padding:24px 32px 72px}
+}
+
+@media (max-width:639px){
+  .check{width:24px;height:24px}.check::after{width:14px;height:14px}
+  .m-pop:not(:popover-open){display:none}
+  /* iOS zooms into inputs under 16 px; max() keeps bigger ones (the title input) as they are. */
+  /* !important: .fld.s / .fld.m / .dnav input set 13–14px at higher specificity; no field may undercut this. */
+  .wl :is(input,select,textarea){font-size:max(16px,1em) !important}
+  .wl{display:block;padding:8px 0 0}
+  .pg{border-radius:22px 22px 0 0;border-bottom:0;min-height:calc(100vh - 8px)}
+  .doc,.doc.wide{padding:16px 16px 48px}
+  .ptitle,.ptitle.t32,.ptitle.t36{font-size:30px}
+
+  /* Top bar: the crumb, minus the trail (the drawer covers navigation). */
+  .crumb{padding:8px;gap:4px;min-height:60px}
+  .crumb .trail{display:none}
+  .crumb>b{font-size:17px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .crumb>span,.crumb>form{max-width:100%}
+  .crumb .m-hide,.m-hide{display:none}
+
+  /* Controls: the phone context is 44 (touch target); an action inside a field stays a step smaller than the field. */
+  .ib{width:44px;height:44px;border-radius:12px}
+  .btn,.btn.s,.crumb .btn{height:44px;padding:0 18px;font-size:16px}
+  .fld.m,.fld.s{height:44px}
+  .fld.m .btn{height:36px}
+  .dnav{height:44px}
+  .dnav>*{padding:0 14px}
+  .seg:not(.mac){height:44px}.seg:not(.mac) button{height:38px}
+  /* The four depth labels need ~560px in one row: two per row, track radius = 38/2 + 3 padding. */
+  #rate .seg{display:grid;grid-template-columns:1fr 1fr;height:auto;border-radius:22px}
+
+  /* Drawer: the sidebar in the top layer. */
+  .side:popover-open{position:fixed;inset:8px auto 8px 8px;width:min(300px,calc(100vw - 32px));max-width:none;overflow-y:auto;z-index:5;padding:8px;display:flex;
+    --s:12%;box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
+  .side::backdrop{background:rgba(20,20,30,.28)}
+  .side .ws{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px 12px;font-size:17px}
+  .side a{min-height:48px;padding:0 12px;border-radius:12px;font-size:16px}
+  .side a.sub{min-height:44px;font-size:14px;padding-left:24px}
+
+  /* ⋯ menu: the row's actions as a bottom action sheet. */
+  .acts:popover-open{position:fixed;inset:auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;z-index:6;display:flex;flex-direction:column;gap:6px;padding:10px;
+    border-radius:22px;border:1px solid transparent;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
+  .acts::backdrop{background:rgba(20,20,30,.2)}
+  /* !important: the forms carry an inline margin-left:auto for the desktop row. */
+  .acts>*{margin:0 !important;display:flex}
+  .acts *{box-sizing:border-box}
+  .blk .acts .x,.acts .btn,.acts .linkbtn,.acts input{flex:1;min-height:48px;height:auto;width:100%;justify-content:center;align-items:center;border-radius:14px;opacity:1}
+  .acts .x{gap:6px;background:#fff;border:1px solid var(--line);color:var(--err);font-size:16px;height:auto}
+  .blk{min-height:44px;flex-wrap:wrap}
+  .blk .x{opacity:1;width:44px;height:44px}
+  .blk label.row{flex-wrap:nowrap;align-items:flex-start}
+  .blk label.row>span{min-width:0;overflow-wrap:anywhere}
+  .blk>.edit-line,.blk>form:first-child,.blk>span:not([class]){flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+  .blk>.ltext{flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+  .cols{grid-template-columns:1fr}
+
+  /* Capture bar: full width minus 12px gutters (.doc pads 16), clear of the home indicator; capture.ts sets --kb (keyboard height
+     from visualViewport) and .kb, so the bar rides 8px above the keyboard, which already covers the indicator. */
+  .doc:has(>.capture){padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .capture{bottom:calc(12px + env(safe-area-inset-bottom));margin-inline:-4px;translate:0 calc(-1 * var(--kb,0px));transition:translate .2s ease-out}
+  .capture.kb{bottom:8px}
+  .newline{padding:0 4px 0 16px}
+  /* The menu box stretches, so its .menu can take the full width; the pills keep their own width. */
+  .above>:has(>.menu){align-self:stretch}
+  .above .menu.up{width:100%}
+  .menu.up [role=option]{min-height:44px}
+
+  /* Settings: the phone board's touch sizes (iOS switch 51x31, 28 px thumb). */
+  .looks{gap:8px}
+  .lk img{width:56px;height:56px;border-radius:13px}
+  .gi{min-height:56px}
+  .sw{width:51px;height:31px}.sw::after{width:27px;height:27px}.sw:checked::after{transform:translateX(20px)}
+  /* auto: the 32 px touch segments would overflow the 30 px desktop track. */
+  .seg.mac{height:auto}.seg.mac button{min-height:32px;padding:4px 16px}
+  .rng{--th:28px}
+
+  /* Props stack label over value. */
+  .props{grid-template-columns:minmax(0,1fr);gap:2px}
+  .props dt{padding:8px 10px 0;font-size:12px}
+  .props dd{padding:0 10px 8px;min-height:24px}
+
+  /* Tables scroll inside their own box; grids go one column. */
+  table{display:block;overflow-x:auto}
+  .sgrid{grid-template-columns:minmax(0,1fr)}
+
+  /* Calendar: week = agenda list, month = 7 columns of day numbers with a dot. */
+  .tw>.cal{min-width:0}
+  .cal:not(.month){display:flex;flex-direction:column;gap:6px;border:0;border-radius:0}
+  .cal:not(.month) .dh{display:none}
+  .cal:not(.month) .dc{min-height:0;border:1px solid var(--fill-2);border-radius:12px;padding:10px 12px}
+  .cal:not(.month) .dc>.dn{display:block;font-size:14px;color:var(--ink)}
+  .cal:not(.month) .dc:not(:has(.ev,.logdot)){padding:8px 12px}
+  .cal .ev{font-size:14px;padding:8px 10px}
+  .cal.month{gap:2px;border:0}
+  .cal.month .dh{padding:4px 0;text-align:center;border:0;background:none;font-size:11px}
+  .cal.month .dc{min-height:44px;padding:0;border:0;align-items:center;justify-content:center;gap:2px;border-radius:10px}
+  .cal.month .dc>:not(.dn){display:none}
+  .cal.month .dn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:44px;font-size:13px;color:var(--ink)}
+  .cal.month .dc:has(.ev,.logdot) .dn::after{content:"";width:5px;height:5px;border-radius:9999px;background:var(--accent)}
+  .cal.month .dc.now{background:var(--accent)}
+  .cal.month .dc.now .dn{color:#fff}
+  .cal.month .dc.now .dn::after{background:#fff}
+  .cal.month .dc.out .dn{color:var(--muted)}
+}
+
+@media (prefers-reduced-transparency: reduce){.side:popover-open,.acts:popover-open{backdrop-filter:none;-webkit-backdrop-filter:none}}
+
+/* Phone (< 640): a bottom sheet like the ⋯ sheet: grabber, 44 px days, 17 px type, Done commits (a tap only selects). */
+@media (max-width:639px){
+  .dp{position:fixed;inset:auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;margin:0;z-index:6;border-radius:22px;padding:8px 12px 12px;gap:8px;
+    box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
+  .dp::backdrop{background:rgba(20,20,30,.24)}
+  /* Grabber: decoration (the sheet also closes on a backdrop tap, Esc, or a swipe down). */
+  .dp::before{content:"";align-self:center;width:36px;height:5px;border-radius:9999px;background:rgba(0,0,0,.2);margin-bottom:2px}
+  .dp .dph h2{font-size:17px}
+  /* display:table: responsive.css makes phone tables scroll blocks. */
+  .dp table{display:table;width:calc(100% + 4px);table-layout:fixed}
+  .dp th{font-size:12px}
+  .dp td.d{width:auto;height:44px;font-size:17px}
+  .dp .dpf{font-size:16px;padding:8px 4px 0}
+  .dp .dpf .today{margin-left:0}
+  .dp .dpf .done{display:inline-flex;height:44px;margin-left:auto}
+}
+/* Line notes on phone: the add button moves into the ⋯ sheet ("Add a note"); a line with a note keeps its filled
+   button in the row at 44. The header's day link drops under the text. */
+@media (max-width:639px){
+  .blk .ib.note:not(.has){display:none}
+  .ib.note{width:44px;height:44px;border-radius:12px}
+  .ib.note .ic{width:22px;height:22px}
+  .lnh{padding:4px 12px 8px}
+  .lnh .blk{flex-wrap:wrap}
+  .lnh .day,.lnh :is(.due-f,.when)+.day{margin-left:32px;flex-basis:calc(100% - 32px)}
+}
+/* After the phone block, so it beats the bar's keyboard ride. */
+@media (prefers-reduced-motion: reduce){.capture{transition:none}}

@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atharu · Navigation, every state</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#0066cc;text-decoration:none}a:hover{text-decoration:underline}
+/* Component sheet over Wakaba with Glass everywhere on (--glass-a 60%, Wakaba floor 57): sheet 55%, cards/callouts 70%,
+   capture bar 70%, chrome 60–65%, menus 85% (DESIGN.md §4). Muted on a look = #5e5e63. Captions are state names. */
+.cs{width:1280px;box-sizing:border-box;padding:40px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:#1d1d1f;font-size:15px;line-height:1.47;letter-spacing:-.2px;display:flex;flex-direction:column;gap:28px;
+  background:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,.45)),radial-gradient(circle 520px at 88% 8%,#2fc49a,transparent),radial-gradient(circle 560px at 8% 22%,#62b6ff,transparent),radial-gradient(circle 520px at 90% 45%,#45d4f0,transparent),radial-gradient(circle 520px at 20% 62%,#a4fcb4,transparent),radial-gradient(circle 560px at 85% 80%,#2fc49a,transparent),radial-gradient(circle 480px at 10% 95%,#62b6ff,transparent),#94f7b6}
+.sheet{border-radius:22px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.55);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);padding:32px 40px 36px;display:flex;flex-direction:column}
+.bt{font-size:40px;font-weight:600;letter-spacing:-.5px;line-height:1.1;margin:0}
+.lead{font-size:15px;color:#5e5e63;margin:8px 0 0;max-width:820px}
+h2{font-size:20px;font-weight:600;letter-spacing:-.2px;margin:30px 0 6px;line-height:1.3}
+.r{display:grid;grid-template-columns:190px minmax(0,1fr);gap:20px;padding:16px 0;border-top:1px solid rgba(29,29,31,.08);align-items:start}
+.nm b{display:block;font-size:14px;font-weight:600;line-height:1.3}
+.nm code{display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#5e5e63;letter-spacing:0;margin-top:2px}
+.nm span{display:block;font-size:12px;color:#5e5e63;margin-top:6px;line-height:1.4}
+.sts{display:flex;flex-wrap:wrap;gap:18px 24px;align-items:flex-start}
+.st{display:flex;flex-direction:column;gap:8px;align-items:flex-start;min-width:0}
+.cap{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;line-height:1;color:#5e5e63;letter-spacing:0}
+.muted{color:#5e5e63}.small{font-size:13px}.mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.err{color:#b3261e;font-size:13px}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic20{width:20px;height:20px}
+/* Forced states for the board (the app uses :hover / :focus-visible / :active / [disabled] / .htmx-request). */
+.f{outline:2px solid #0066cc;outline-offset:2px}
+.dis{opacity:.45;cursor:not-allowed}
+.spin{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+/* Buttons: one height per context, 32 chrome / 36 page / 44 phone; label centred with flex + line-height 1. */
+.ctl{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;box-sizing:border-box;padding:0 16px;border-radius:9999px;font:inherit;font-size:14px;line-height:1;white-space:nowrap;cursor:pointer;text-decoration:none;border:1px solid transparent;letter-spacing:-.1px}
+.ctl.s{height:32px;padding:0 12px;font-size:13px}
+.ctl.ph{height:44px;padding:0 18px;font-size:16px}
+.pri{color:#fff;background:#0066cc;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.pri.h{background:#0055b3}
+.pri.a{background:#0055b3;transform:scale(.96)}
+.gl{color:#1d1d1f;border-color:rgba(255,255,255,.75);background:rgba(255,255,255,.7);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06)}
+.gl.h{background:rgba(255,255,255,.88)}
+.gl.a{background:rgba(255,255,255,.95);transform:scale(.96);box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
+.gl.dng{color:#b3261e}
+.ib{width:32px;height:32px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;color:#1d1d1f;padding:0;cursor:pointer;flex:none}
+.ib.h{background:rgba(0,0,0,.05)}.ib.a{background:rgba(0,0,0,.1)}
+.ib.ph{width:44px;height:44px;border-radius:12px}
+.lb{font:inherit;font-size:14px;background:none;border:0;padding:0;color:#0066cc;cursor:pointer;line-height:1.3}
+.lb.h{text-decoration:underline}.lb.f{border-radius:4px}
+/* Glass field: single-line inputs are pills with their action inside on the right. */
+.fld{display:flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 4px 0 18px;border-radius:9999px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.72);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 .5px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.06);width:380px;color:#1d1d1f}
+.fld input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:16px;color:#1d1d1f;height:100%;padding:0}
+.fld input::placeholder{color:#5e5e63}
+.fld.h{background:rgba(255,255,255,.85)}
+.fld.f{outline:0;border-color:#0066cc;box-shadow:inset 0 1px 0 #fff,0 0 0 4px rgba(0,102,204,.18)}
+.fld.e{border-color:#b3261e;box-shadow:inset 0 1px 0 #fff,0 0 0 4px rgba(179,38,30,.14)}
+.fld.dis{opacity:.5}
+.fld .ctl{height:36px}
+.fld.cap{height:52px;width:600px;padding:0 4px 0 20px;background:rgba(255,255,255,.7);box-shadow:inset 0 1px 0 #fff,0 10px 30px rgba(0,0,0,.10)}
+.fld.cap.f{box-shadow:inset 0 1px 0 #fff,0 0 0 4px rgba(0,102,204,.18),0 10px 30px rgba(0,0,0,.10)}
+.fld.cap .ctl{height:44px}
+.fld.p36{height:36px;padding:0 14px;gap:8px;width:280px}
+.fld.p36 input{font-size:14px}
+.fld.p32{height:32px;padding:0 12px;gap:6px;width:auto}
+.fld.p32 input,.fld.p32 span{font-size:13px}
+.hint{font-size:13px;color:#0066cc;padding:0 20px;min-height:18px;line-height:1.4}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:13px;color:#5e5e63;padding:0 20px;max-width:600px}
+.legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.k{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#f0f0f0;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;font-weight:600;line-height:1;color:#1d1d1f;flex:none;letter-spacing:0;font-style:normal}
+.k.imp{background:#0066cc;color:#fff}
+.k.bl{background:#1d1d1f;color:#fff}
+/* Menus / popovers: glass +25% (85%). Selected option = accent at 10%. */
+.menu{width:260px;box-sizing:border-box;background:rgba(255,255,255,.85);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(0,0,0,.08);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.12);padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.op{padding:0 10px;min-height:32px;border-radius:8px;display:flex;gap:10px;align-items:center;color:#1d1d1f}
+.op.sel{background:rgba(0,102,204,.10)}
+.op .k{width:24px;height:24px}
+.mh{font-size:12px;font-weight:600;color:#5e5e63;padding:6px 10px 2px;letter-spacing:0}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:1px 8px;font-size:12px;color:#333;background:#f0f0f0;white-space:nowrap;letter-spacing:0;line-height:1.5}
+.chip.key{font-family:ui-monospace,'SF Mono',Menlo,monospace}
+.chip.llm{background:#fff;color:#1d1d1f;border:1px solid #1d1d1f;padding:0 7px}
+/* Sumi strip: plain look, solid white sheet (Glass everywhere off). */
+.sumi{border-radius:22px;padding:24px;background:radial-gradient(circle 600px at 90% 10%,#ece3cf,transparent),#f6f1e6;display:flex;flex-direction:column;gap:12px}
+.sumi>.sh{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:22px;padding:24px 32px;display:flex;flex-direction:column;gap:14px}
+.sumi .muted,.sumi .cap,.sumi .nm code,.sumi .nm span{color:#5e5e63}
+.lbl2{font-size:13px;font-weight:600;color:#5e5e63;letter-spacing:0}
+/* Accessibility variants: Reduce Transparency = same shapes, solid white, no blur; Increase Contrast = ink edges, muted #3a3a3c. */
+.rt .gl,.rt .fld,.rt .menu,.rt .glassbox{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;border-color:#e0e0e0}
+.ic2 .gl,.ic2 .fld,.ic2 .menu,.ic2 .glassbox{background:#fff;border-color:#1d1d1f;backdrop-filter:none;-webkit-backdrop-filter:none}
+.ic2 .muted,.ic2 .cap,.ic2 input::placeholder{color:#3a3a3c}
+.var{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.var>div{border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.var .rt{background:#c4fad7} /* Wakaba flat: 45% white veil over #94f7b6, what RT shows instead of the mesh */
+.var .ic2{background:#fff;border:1px solid #1d1d1f}
+
+/* Day nav: one 32 px glass capsule with hairline separators, like a macOS toolbar group. */
+.dnav{display:inline-flex;align-items:center;height:32px;box-sizing:border-box;border-radius:9999px;border:1px solid rgba(255,255,255,.75);background:rgba(255,255,255,.7);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06);overflow:hidden;font-size:13px}
+.dnav>*{display:inline-flex;align-items:center;gap:6px;height:100%;padding:0 12px;color:#1d1d1f;border:0;background:none;font:inherit;font-size:13px;line-height:1;cursor:pointer;text-decoration:none}
+.dnav>*+*{border-left:1px solid rgba(0,0,0,.08)}
+.dnav .i{padding:0 10px}
+.dnav .h,.dnav .a{background:rgba(255,255,255,.75)}
+.dnav .a{background:rgba(0,0,0,.06)}
+.dnav .fi{outline:2px solid #0066cc;outline-offset:-3px;border-radius:9999px}
+.dnav .cur{color:#5e5e63;cursor:default;font-weight:600}
+.dnav label .ic{width:12px;height:12px;color:#5e5e63}
+.mini{width:220px;margin-left:60px}
+.mcal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;font-size:12px;text-align:center;padding:2px 4px 4px}
+.mcal>*{display:flex;align-items:center;justify-content:center;height:26px;border-radius:9999px;font-style:normal}
+.mcal b{background:#0066cc;color:#fff;font-weight:600}
+.mcal i{color:#0066cc;font-weight:600}
+/* Sidebar: glass +5% (65%). */
+.side{width:232px;box-sizing:border-box;border-radius:22px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.65);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 32px rgba(0,0,0,.06);padding:12px 8px;display:flex;flex-direction:column;gap:1px;font-size:14px}
+.side-s{width:220px;box-sizing:border-box;border-radius:14px;background:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.7);padding:6px;font-size:14px}
+.ws{font-weight:600;font-size:15px;padding:6px 10px 12px;letter-spacing:-.224px;display:flex;justify-content:space-between;align-items:center}
+.it{display:flex;gap:8px;align-items:center;padding:0 10px;border-radius:8px;color:#333;min-height:32px;box-sizing:border-box;text-decoration:none}
+.it:hover{text-decoration:none}
+.it .ic{color:#5e5e63}
+.it.h{background:rgba(255,255,255,.6);color:#1d1d1f}
+.it.a{background:rgba(0,0,0,.06)}
+.it.f,.it.fi{outline:2px solid #0066cc;outline-offset:-2px}
+.it.on{background:rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 1px 4px rgba(0,0,0,.06);color:#1d1d1f;font-weight:600}
+.it.on .ic{color:#1d1d1f}
+.it.sub{padding-left:32px;font-size:13px;color:#5e5e63;min-height:28px;gap:6px}
+.it.sub.on{color:#1d1d1f}
+.cnt{margin-left:auto;font-size:11px;font-weight:500;color:#5e5e63;letter-spacing:0;min-width:18px;text-align:center}
+.lbl{font-size:12px;font-weight:600;color:#5e5e63;padding:16px 10px 4px;letter-spacing:0}
+.rail{width:64px;align-items:center;padding:10px 8px}
+.rail .it{justify-content:center;padding:0;width:44px;min-height:44px;border-radius:12px}
+.dv{display:block;width:32px;height:1px;margin:6px 0;background:#e0e0e0}
+.tip{font-size:12px;color:#fff;background:#1d1d1f;border-radius:6px;padding:4px 8px;margin-top:12px;line-height:1.3}
+/* Phone frames (390 wide, scaled down to 300 here). */
+.phone{position:relative;width:300px;height:560px;border-radius:28px;overflow:hidden;background:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.7)}
+.phone.short{height:340px}
+.scrim{position:absolute;inset:0;background:rgba(20,20,30,.28)}
+.drawer{position:absolute;top:8px;bottom:8px;left:8px;width:250px;padding:8px;background:rgba(255,255,255,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 20px 50px rgba(0,0,0,.18);overflow:hidden}
+.drawer .ws{font-size:17px;padding:0 0 4px 12px}
+.drawer .it{min-height:44px;font-size:16px;border-radius:12px;padding:0 12px}
+.drawer .it.sub{min-height:44px;font-size:14px;padding-left:24px}
+.drawer .lbl{padding:10px 12px 2px}
+.pbar{display:flex;align-items:center;gap:4px;padding:8px;min-height:60px;box-sizing:border-box;background:rgba(255,255,255,.6);border-bottom:1px solid rgba(0,0,0,.05)}
+.pbar b{font-size:17px;font-weight:600}
+.psheet{background:rgba(255,255,255,.55);height:100%;padding:16px;box-sizing:border-box}
+.ptl{font-size:30px;font-weight:600;letter-spacing:-.5px}
+.sheetx{position:absolute;left:8px;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:22px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.85);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:0 20px 50px rgba(0,0,0,.18)}
+.sheetx .ctl{border-radius:14px;height:48px}
+/* Breadcrumb: sticky glass, 0 step (60%). */
+.crumb{display:flex;gap:8px;align-items:center;padding:0 24px;font-size:13px;color:#5e5e63;min-height:52px;box-sizing:border-box;width:880px;border-radius:14px;background:rgba(255,255,255,.6);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.7);border-bottom-color:rgba(0,0,0,.05)}
+.crumb b{color:#1d1d1f;font-weight:500}
+.tr{color:#5e5e63}
+a.tr.h{color:#1d1d1f;text-decoration:underline}
+.fl{outline:2px solid #0066cc;outline-offset:2px;border-radius:4px}
+.views{display:flex;gap:18px;border-bottom:1px solid #e0e0e0;font-size:14px}
+.views a{color:#5e5e63;padding:8px 0;border-bottom:2px solid transparent;margin-bottom:-1px;text-decoration:none}
+.views a.on{color:#1d1d1f;border-color:#1d1d1f;font-weight:500}
+.views a.h{color:#1d1d1f}
+/* Block row with hover-only delete. */
+.blkd{display:flex;gap:10px;align-items:center;padding:3px 6px;border-radius:6px;min-height:32px;width:400px;box-sizing:border-box}
+.blkd.h{background:rgba(255,255,255,.6)}
+.xb{margin-left:auto;border:0;background:none;color:#5e5e63;cursor:pointer;width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex:none;padding:0}
+.typed{font-size:15px;padding:2px 4px;border-left:2px solid #0066cc}
+.op.h{background:rgba(0,0,0,.04)}
+.op .ic{color:#5e5e63}
+.rt .side,.rt .dnav,.rt .crumb{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;border-color:#e0e0e0}
+.ic2 .side,.ic2 .dnav,.ic2 .crumb{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;border-color:#1d1d1f}
+.ic2 .it .ic,.ic2 .cnt{color:#3a3a3c}
+.sumi .dnav{border-color:#e0e0e0}
+.sumi .crumb{width:auto;background:#fff;border:0;border-bottom:1px solid rgba(0,0,0,.05)}
+
+/* T30 Liquid Glass (DESIGN.md §4, D22), drawn in Clear: 4px blur, specular rim + inner light + 2-step shadow on
+   floating layers only (sidebar, menus, capture bar, action sheet, sheet), embedded controls stay flat glass,
+   glass pills swell on press, placeholders --muted-tint. The app CSS is the source; this mirrors it. */
+.gl,.fld,.dnav,.grp,.ctl.glass,.field,.crumb{backdrop-filter:blur(4px) saturate(140%) brightness(1.04);-webkit-backdrop-filter:blur(4px) saturate(140%) brightness(1.04)}
+.side,.menu,.sheetx,.fld.cap,.field.cap,.sheet{--lgr:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,.15) 72%,rgba(255,255,255,.6));
+  border-color:transparent;backdrop-filter:blur(4px) saturate(140%) brightness(1.04);-webkit-backdrop-filter:blur(4px) saturate(140%) brightness(1.04);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),inset 0 -6px 12px -8px rgba(255,255,255,.8),0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.12)}
+.side{background:linear-gradient(rgba(255,255,255,.65),rgba(255,255,255,.65)) padding-box,var(--lgr) border-box}
+.menu,.sheetx{background:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,.85)) padding-box,var(--lgr) border-box}
+.fld.cap,.field.cap{background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,.7)) padding-box,var(--lgr) border-box}
+.sheet{background:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.55)) padding-box,var(--lgr) border-box;backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55)}
+.fld.cap.f,.field.cap:focus-within{border-color:#0066cc;box-shadow:0 0 0 4px rgba(0,102,204,.18),inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),0 8px 24px rgba(0,0,0,.12)}
+.crumb{box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.it.on{box-shadow:inset 0 1px 0 #fff,inset 0 0 8px rgba(255,255,255,.6),0 1px 4px rgba(0,0,0,.06)}
+.gl.a{transform:scale(1.04);box-shadow:inset 0 0 12px rgba(255,255,255,.7),0 4px 12px rgba(0,0,0,.1)}
+.fld input::placeholder,.field input::placeholder{color:#48484d}
+</style>
+</helmet>
+<div class="cs" style="min-height: 4600px">
+<div class="sheet">
+<h1 class="bt">Navigation · every state</h1>
+<p class="lead">Chrome is glass: sidebar +5%, breadcrumb bar 0, menus +25%. Order follows the loops (D18): Today · To-dos · Calendar · Meetings, then Track, then Grow, active epics, Settings at the bottom.</p>
+
+<h2>Day nav</h2>
+<div class="r"><div class="nm"><b>Day-nav capsule</b><code>crumb_extra → .dnav</code><span>One 32 px glass capsule: Today | ‹ | date ▾ | ›. The date opens the native picker.</span></div>
+<div class="sts">
+<div class="st"><div class="dnav" role="group" aria-label="Day"><a href="#">Today</a><a class="i" href="#" aria-label="Previous day: Fri 6"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>Sat 7 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i" href="#" aria-label="Next day: Sun 8"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div><span class="cap">another day · Today enabled</span></div>
+<div class="st"><div class="dnav" role="group" aria-label="Day"><span class="cur" aria-current="date">Today</span><a class="i" href="#" aria-label="Previous day: Wed 11"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>Thu 12 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i" href="#" aria-label="Next day: Fri 13"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div><span class="cap">on today · Today is current</span></div>
+<div class="st"><div class="dnav" role="group" aria-label="Day"><a href="#">Today</a><a class="i h" href="#" aria-label="Previous day: Fri 6"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>Sat 7 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i" href="#" aria-label="Next day: Sun 8"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div><span class="cap">hover ‹</span></div>
+<div class="st"><div class="dnav" role="group" aria-label="Day"><a href="#">Today</a><a class="i" href="#" aria-label="Previous day: Fri 6"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>Sat 7 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i fi" href="#" aria-label="Next day: Sun 8"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div><span class="cap">focus-visible ›</span></div>
+<div class="st"><div class="dnav" role="group" aria-label="Day"><a href="#">Today</a><a class="i" href="#" aria-label="Previous day: Fri 6"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label class="a">Sat 7 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i" href="#" aria-label="Next day: Sun 8"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div>
+<div class="menu mini" aria-label="Pick a day"><div class="mh">November 2026</div><div class="mcal"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><b>7</b><span>8</span><span>9</span><span>10</span><span>11</span><i>12</i><span>13</span><span>14</span><span>15</span></div></div><span class="cap">date pressed · picker open</span></div>
+<div class="st"><div class="dnav" role="group" aria-label="Day" aria-busy="true" style="opacity: .7"><a href="#">Today</a><a class="i" href="#" aria-label="Previous day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label><svg class="spin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>Sun 8 Nov</label><a class="i" href="#" aria-label="Next day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div><span class="cap">loading · day swapping</span></div>
+<div class="st"><div class="dnav" role="group" aria-label="Calendar range"><a href="#">Today</a><a class="i" href="#" aria-label="Previous week"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>9 – 15 Nov</label><a class="i" href="#" aria-label="Next week"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div><span class="cap">calendar · week range</span></div>
+</div></div>
+
+<h2>Sidebar</h2>
+<div class="r"><div class="nm"><b>Sidebar item</b><code>.side a</code><span>32 tall, 8 radius. Current = whiter pill + 600. Count is muted, not a badge.</span></div>
+<div class="sts">
+<div class="st"><div class="side-s"><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg><span>Today</span></a></div><span class="cap">default</span></div>
+<div class="st"><div class="side-s"><a class="it h" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg><span>To-dos</span></a></div><span class="cap">hover</span></div>
+<div class="st"><div class="side-s"><a class="it f" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>Calendar</span></a></div><span class="cap">focus-visible</span></div>
+<div class="st"><div class="side-s"><a class="it a" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"></path></svg><span>Meetings</span></a></div><span class="cap">pressed</span></div>
+<div class="st"><div class="side-s"><a class="it on" href="#" aria-current="page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg><span>Epics</span></a></div><span class="cap">current</span></div>
+<div class="st"><div class="side-s"><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg><span>To-dos</span><span class="cnt">4</span></a></div><span class="cap">with count</span></div>
+<div class="st"><div class="side-s"><a class="it sub" href="#"><span class="mono" style="font-size: 12px">OPS-101</span> Checkout speed</a></div><span class="cap">sub · active epic</span></div>
+<div class="st"><div class="side-s"><a class="it sub on" href="#" aria-current="page"><span class="mono" style="font-size: 12px">OPS-101</span> Checkout speed</a></div><span class="cap">sub · current</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Sidebar · whole</b><code>nav.side .ws .lbl .gap</code><span>Brand row, unlabelled daily block, section labels, spacer pins Settings down.</span></div>
+<div class="sts">
+<div class="st"><nav class="side" aria-label="Pages"><div class="ws">Atharu</div>
+<a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg><span>Today</span></a><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg><span>To-dos</span><span class="cnt">4</span></a><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>Calendar</span></a><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"></path></svg><span>Meetings</span></a>
+<div class="lbl">Track</div><a class="it on" href="#" aria-current="page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg><span>Epics</span></a><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg><span>Report</span></a>
+<div class="lbl">Grow</div><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg><span>Learn</span></a><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v4h4M9 12h6M9 16h6"></path></svg><span>Notes</span></a>
+<div class="lbl">Active epics</div><a class="it sub" href="#"><span class="mono" style="font-size: 12px">OPS-101</span> Checkout speed</a><a class="it sub" href="#"><span class="mono" style="font-size: 12px">OPS-114</span> Item mapping</a>
+<span style="height: 40px"></span><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path></svg><span>Settings</span></a></nav><span class="cap">desktop · ≥1024</span></div>
+<div class="st"><nav class="side rail" aria-label="Pages"><a class="it" href="#" aria-label="Today"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg></a><a class="it" href="#" aria-label="To-dos"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a><a class="it h" href="#" aria-label="Calendar"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></a><a class="it" href="#" aria-label="Meetings"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"></path></svg></a><span class="dv" role="separator" aria-label="Track"></span><a class="it on" href="#" aria-current="page" aria-label="Epics"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg></a><a class="it fi" href="#" aria-label="Report"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg></a><span class="dv" role="separator" aria-label="Grow"></span><a class="it" href="#" aria-label="Learn"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg></a><a class="it" href="#" aria-label="Notes"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v4h4M9 12h6M9 16h6"></path></svg></a><span style="height: 40px"></span><a class="it" href="#" aria-label="Settings"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path></svg></a></nav><span class="cap">rail · 640–1023</span></div>
+<div class="st" style="gap: 14px">
+<div class="row" style="gap: 14px; align-items: flex-start"><div class="side rail" style="padding: 8px"><a class="it" href="#" aria-label="Today"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg></a></div><span class="cap" style="margin-top: 18px">rail item · default</span></div>
+<div class="row" style="gap: 14px; align-items: flex-start"><div class="side rail" style="padding: 8px"><a class="it h" href="#" aria-label="Calendar"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></a></div><span class="tip">Calendar</span><span class="cap" style="margin-top: 18px">hover · tooltip = title</span></div>
+<div class="row" style="gap: 14px; align-items: flex-start"><div class="side rail" style="padding: 8px"><a class="it on" href="#" aria-label="Epics"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg></a></div><span class="cap" style="margin-top: 18px">current</span></div>
+<div class="row" style="gap: 14px; align-items: flex-start"><div class="side rail" style="padding: 8px"><a class="it fi" href="#" aria-label="Report"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg></a></div><span class="cap" style="margin-top: 18px">focus-visible</span></div>
+<div class="row" style="gap: 14px; align-items: center"><div class="side rail" style="padding: 8px 14px"><span class="dv" role="separator" aria-label="Track"></span></div><span class="cap">section label → divider</span></div>
+</div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Section label</b><code>.side .lbl</code><span>12 / 600 muted, 16 above. In the rail: a 32 px hairline the screen reader still names.</span></div>
+<div class="sts">
+<div class="st"><div class="side-s" style="width: 200px"><div class="lbl" style="padding-top: 4px">Track</div></div><span class="cap">default</span></div>
+<div class="st"><div class="side-s" style="width: 200px"><div class="lbl" style="padding-top: 4px">Active epics</div></div><span class="cap">dynamic group</span></div>
+<div class="st"><div class="side-s" style="width: 200px"><div class="lbl" style="padding-top: 4px">Written by LLM</div><span class="small muted" style="padding: 0 10px">No notes yet.</span></div><span class="cap">empty group</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Phone drawer</b><code>.side:popover-open</code><span>Native popover: Esc, light dismiss, focus return. 48 rows, 16 px text.</span></div>
+<div class="sts">
+<div class="st"><div class="phone"><div class="scrim"></div><nav class="side drawer" aria-label="Pages"><div class="ws">Atharu<button class="ib ph" type="button" aria-label="Close pages"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+<a class="it" href="#"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg><span>Today</span></a><a class="it" href="#"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg><span>To-dos</span><span class="cnt">4</span></a><a class="it a" href="#"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>Calendar</span></a><a class="it" href="#"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"></path></svg><span>Meetings</span></a><div class="lbl">Track</div><a class="it on" href="#" aria-current="page"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg><span>Epics</span></a><a class="it" href="#"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg><span>Report</span></a><div class="lbl">Grow</div><a class="it" href="#"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg><span>Learn</span></a><a class="it" href="#"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v4h4M9 12h6M9 16h6"></path></svg><span>Notes</span></a><div class="lbl">Active epics</div><a class="it sub" href="#"><span class="mono">OPS-101</span> Checkout speed</a></nav></div><span class="cap">open · Calendar pressed</span></div>
+<div class="st"><div class="phone"><div class="pbar"><button class="ib ph" type="button" aria-label="Open pages"><svg class="ic ic20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button><b>Epics</b></div><div class="psheet"><span class="ptl">Epics</span></div></div><span class="cap">closed · ☰ in the top bar</span></div>
+</div></div>
+
+<h2>Breadcrumb and tabs</h2>
+<div class="r"><div class="nm"><b>Breadcrumb bar</b><code>.crumb</code><span>Sticky glass, 52 tall. Trail muted, current ink 500. Right side holds the page's chrome controls.</span></div>
+<div class="sts" style="flex-direction: column; gap: 14px">
+<div class="st"><div class="crumb"><a class="tr" href="#">Epics</a><span class="tr">/</span><b>OPS-101</b><span class="saved" style="margin-left: auto">✓ saved just now</span></div><span class="cap">default · saved status</span></div>
+<div class="st"><div class="crumb"><a class="tr h" href="#">Epics</a><span class="tr">/</span><b>OPS-101</b><span class="saved" style="margin-left: auto"><svg class="spin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>Saving…</span></div><span class="cap">hover trail · saving</span></div>
+<div class="st"><div class="crumb"><a class="tr fl" href="#">Learn</a><span class="tr">/</span><b>vector-search</b></div><span class="cap">focus-visible trail</span></div>
+<div class="st"><div class="crumb"><b>Report</b><span class="row" style="margin-left: auto; gap: 8px"><span class="small muted">copies the text from “Week 46” down</span><button class="ctl pri s" type="button">Copy as markdown</button></span></div><span class="cap">with the one primary · 32 in chrome</span></div>
+<div class="st"><div class="crumb"><b>Today</b><span style="flex: 1"></span><div class="dnav" role="group" aria-label="Day"><a href="#">Today</a><a class="i" href="#" aria-label="Previous day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>Sat 7 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i" href="#" aria-label="Next day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div></div><span class="cap">with day nav</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Views tabs</b><code>.views</code><span>In components.css, not used by a template yet. Underline in ink, no colour.</span></div>
+<div class="sts">
+<div class="st"><nav class="views" aria-label="Views"><a class="on" href="#" aria-current="page">Open</a><a href="#">Done</a><a href="#">Dropped</a></nav><span class="cap">default · current</span></div>
+<div class="st"><nav class="views" aria-label="Views"><a class="on" href="#">Open</a><a class="h" href="#">Done</a><a href="#">Dropped</a></nav><span class="cap">hover</span></div>
+<div class="st"><nav class="views" aria-label="Views"><a class="on" href="#">Open</a><a href="#">Done</a><a class="fl" href="#">Dropped</a></nav><span class="cap">focus-visible</span></div>
+</div></div>
+
+<h2>Menus and popovers</h2>
+<div class="r"><div class="nm"><b>⋯ row menu</b><code>.ib.more + .acts</code><span>Desktop: hover reveals ×. Touch: ⋯ opens a bottom action sheet; 48 rows, delete in err.</span></div>
+<div class="sts">
+<div class="st"><div class="blkd"><span class="k">&gt;</span><span>item-mapping fix exclusive, is_active</span><button class="xb" type="button" aria-label="Delete line" style="opacity: 0"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><span class="cap">desktop · default</span></div>
+<div class="st"><div class="blkd h"><span class="k">&gt;</span><span>item-mapping fix exclusive, is_active</span><button class="xb" type="button" aria-label="Delete line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><span class="cap">desktop · hover shows ×</span></div>
+<div class="st"><div class="blkd"><span class="k">&gt;</span><span>item-mapping fix exclusive, is_active</span><button class="xb fl" type="button" aria-label="Delete line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><span class="cap">× focus-visible</span></div>
+<div class="st"><div class="phone short"><div class="scrim" style="opacity: .7"></div><div class="sheetx"><button class="ctl gl ph" type="button" style="width: 100%">Edit line</button><button class="ctl gl ph" type="button" style="width: 100%">Pin</button><button class="ctl gl ph" type="button" style="width: 100%">Drop</button><button class="ctl gl ph dng" type="button" style="width: 100%"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>Delete line</button></div></div><span class="cap">phone · ⋯ open</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>/ block menu</b><code>.menu [role=option]</code><span>Glass popover at the caret. ↑ ↓ move, Enter picks, Esc closes.</span></div>
+<div class="sts">
+<div class="st"><div class="menu" role="listbox" aria-label="Insert block"><div class="mh">Insert block</div><div class="op sel" role="option" aria-selected="true"><span class="k">H</span>Heading</div><div class="op" role="option"><span class="k">☐</span>To-do list</div><div class="op h" role="option"><span class="k">▸</span>Toggle</div><div class="op" role="option"><span class="k">i</span>Callout</div><div class="op" role="option"><span class="k">{}</span>Code block</div><div class="op" role="option"><span class="k">—</span>Divider</div><div class="op" role="option"><span class="k">[[</span>Link a page</div></div><span class="cap">open · first selected · hover Toggle</span></div>
+<div class="st"><div class="typed"><span class="mono">/to</span></div><div class="menu" role="listbox" aria-label="Insert block"><div class="op sel" role="option" aria-selected="true"><span class="k">☐</span>To-do list</div><div class="op" role="option"><span class="k">▸</span>Toggle</div></div><span class="cap">filtered · /to</span></div>
+<div class="st"><div class="typed"><span class="mono">/zz</span></div><div class="menu" role="listbox" aria-label="Insert block"><div class="op muted" role="option" aria-disabled="true">No blocks match. Keep typing as text.</div></div><span class="cap">empty · proposed copy</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>[[ page picker</b><code>.menu (Link a page)</code><span>Epics, topics and notes in one list, grouped. Type to filter.</span></div>
+<div class="sts">
+<div class="st"><div class="typed"><span class="mono">[[vec</span></div><div class="menu" role="listbox" aria-label="Link a page"><div class="mh">Topics</div><div class="op sel" role="option" aria-selected="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg>vector-search</div><div class="mh">Notes</div><div class="op" role="option"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v4h4M9 12h6M9 16h6"></path></svg>HNSW notes</div></div><span class="cap">filtered · selected</span></div>
+<div class="st"><div class="typed"><span class="mono">[[</span></div><div class="menu" role="listbox" aria-label="Link a page"><div class="mh">Epics</div><div class="op sel" role="option" aria-selected="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg><span class="mono">OPS-101</span> Checkout speed</div><div class="op" role="option"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg><span class="mono">OPS-114</span> Item mapping</div><div class="mh">Topics</div><div class="op" role="option"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg>vector-search</div></div><span class="cap">open · recent first</span></div>
+<div class="st"><div class="typed"><span class="mono">[[pricing</span></div><div class="menu" role="listbox" aria-label="Link a page"><div class="op muted" role="option" aria-disabled="true">No page called “pricing”. It stays a grey link until you make it.</div></div><span class="cap">empty · proposed copy</span></div>
+</div></div>
+</div>
+
+<div class="sheet">
+<h2 style="margin-top: 0">Glass chrome · accessibility variants</h2>
+<div class="var" style="margin-top: 12px">
+<div class="rt"><span class="lbl2">Reduce Transparency</span>
+<div class="row" style="align-items: flex-start; gap: 20px"><nav class="side glassbox" aria-label="Pages" style="width: 200px"><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg><span>Today</span></a><a class="it on" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg><span>Epics</span></a><div class="lbl">Grow</div><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg><span>Learn</span></a></nav>
+<div style="display: flex; flex-direction: column; gap: 12px"><div class="dnav glassbox" role="group" aria-label="Day"><a href="#">Today</a><a class="i" href="#" aria-label="Previous day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>Sat 7 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i" href="#" aria-label="Next day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div><div class="menu" style="width: 200px"><div class="op sel">Heading</div><div class="op">To-do list</div></div></div></div>
+<div class="crumb glassbox"><a class="tr" href="#">Epics</a><span class="tr">/</span><b>OPS-101</b></div></div>
+<div class="ic2"><span class="lbl2" style="color: #1d1d1f">Increase Contrast</span>
+<div class="row" style="align-items: flex-start; gap: 20px"><nav class="side glassbox" aria-label="Pages" style="width: 200px"><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg><span>Today</span></a><a class="it on" href="#" style="box-shadow: inset 0 0 0 1px #1d1d1f"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg><span>Epics</span></a><div class="lbl" style="color: #3a3a3c">Grow</div><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg><span>Learn</span></a></nav>
+<div style="display: flex; flex-direction: column; gap: 12px"><div class="dnav glassbox" role="group" aria-label="Day"><a href="#">Today</a><a class="i" href="#" aria-label="Previous day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>Sat 7 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i" href="#" aria-label="Next day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div><div class="menu" style="width: 200px"><div class="op sel" style="box-shadow: inset 0 0 0 1px #0066cc">Heading</div><div class="op">To-do list</div></div></div></div>
+<div class="crumb glassbox"><a class="tr" href="#" style="color: #3a3a3c">Epics</a><span class="tr" style="color: #3a3a3c">/</span><b>OPS-101</b></div></div>
+</div>
+</div>
+
+<div class="sumi">
+<span class="lbl2">Plain Sumi · solid sheet (Glass everywhere off)</span>
+<div class="row" style="align-items: flex-start; gap: 16px">
+<nav class="side" aria-label="Pages" style="width: 220px"><div class="ws">Atharu</div><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg><span>Today</span></a><a class="it h" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg><span>To-dos</span><span class="cnt">4</span></a><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>Calendar</span></a><div class="lbl">Track</div><a class="it on" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"></path></svg><span>Epics</span></a><a class="it" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg><span>Report</span></a></nav>
+<div class="sh" style="flex: 1; padding: 0; overflow: hidden; gap: 0"><div class="crumb" style="border-radius: 0"><a class="tr" href="#">Epics</a><span class="tr">/</span><b>OPS-101</b><span style="flex: 1"></span><div class="dnav" role="group" aria-label="Day"><a href="#">Today</a><a class="i" href="#" aria-label="Previous day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a><label>Sat 7 Nov<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label><a class="i" href="#" aria-label="Next day"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div></div>
+<div style="padding: 20px 28px; display: flex; gap: 20px; align-items: flex-start"><div class="menu" role="listbox" aria-label="Insert block"><div class="op sel" role="option" aria-selected="true"><span class="k">H</span>Heading</div><div class="op" role="option"><span class="k">☐</span>To-do list</div><div class="op" role="option"><span class="k">[[</span>Link a page</div></div><nav class="views" aria-label="Views"><a class="on" href="#">Open</a><a href="#">Done</a><a href="#">Dropped</a></nav></div></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":4600}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

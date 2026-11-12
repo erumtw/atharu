@@ -1,2 +1,5 @@
+target/
 data/
-/worklog
+/atharu
+.DS_Store
+editor/node_modules/

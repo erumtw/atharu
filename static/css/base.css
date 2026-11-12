@@ -1,0 +1,16 @@
+/* Element defaults + text utilities. */
+body{margin:0}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+h3{font-size:20px;font-weight:600;letter-spacing:-.2px;margin:14px 0 0;line-height:1.3}
+h4{font-size:15px;font-weight:600;margin:8px 0 0;display:flex;gap:8px;align-items:center}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+/* Weight steps under a bold heading: aside text (.normal), a quieter summary (.mid). */
+.normal{font-weight:400}
+.mid{font-weight:500}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--fill-2);white-space:nowrap}
+tr:hover td{background:var(--fill-3)}
+summary{cursor:pointer;font-weight:600;padding:4px 0}

@@ -1,0 +1,16 @@
+{#- One log line in its edit box: Enter saves through the capture grammar, Esc (or Cancel) puts the row back.
+    From a to-do row (`plan`) it stands in for #plan-<id>: saving answers `plans-changed`, so the row's own list
+    re-fetches (Today, To-dos, a meeting each have one); Esc asks for the same re-fetch. -#}
+{%- if plan %}
+<form class="blk" id="plan-{{ id }}" method="post" action="/entries/{{ id }}" hx-post="/entries/{{ id }}" hx-swap="none" style="flex-wrap: wrap">
+<input type="hidden" name="plan" value="1">
+<input class="pin dash{% if error.is_some() %} bad{% endif %}" name="line" value="{{ line }}" aria-label="Edit line" autofocus style="flex: 1" hx-on:keydown="if (event.key === 'Escape') { event.preventDefault(); htmx.trigger(document.body, 'plans-changed') }">
+<button class="btn ghost s" type="submit">Save</button><a class="small" href="" hx-on:click="event.preventDefault(); htmx.trigger(document.body, 'plans-changed')">Cancel</a>
+{%- else %}
+<form class="blk" id="entry-{{ id }}" method="post" action="/entries/{{ id }}" hx-post="/entries/{{ id }}" hx-target="#log" hx-swap="outerHTML" style="flex-wrap: wrap">
+<input type="hidden" name="day" value="{{ day }}">
+<input class="pin dash{% if error.is_some() %} bad{% endif %}" name="line" value="{{ line }}" aria-label="Edit line" autofocus style="flex: 1" hx-on:keydown="if (event.key === 'Escape') { event.preventDefault(); htmx.ajax('GET', '/?day={{ day }}', {target: '#log', select: '#log', swap: 'outerHTML'}) }">
+<button class="btn ghost s" type="submit">Save</button><a class="small" href="/?day={{ day }}">Cancel</a>
+{%- endif %}
+{%- if let Some(e) = error %}<span class="err" style="flex-basis: 100%">{{ e }}</span>{% endif %}
+</form>
