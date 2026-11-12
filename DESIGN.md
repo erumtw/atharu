@@ -81,19 +81,19 @@ wallpaper: ink ≥ 13.61, placeholder ≥ 7.35 (Glass Tinted; T33). Reduce Trans
     Clear | Tinted switch is the only variant control.
   - **Highlight**: `--lg-rim`, a gradient in a transparent border (bright top-left and bottom-right), not a flat white line.
   - **Illumination**: `--lg-light`, inset glow + light lower lip; the selected sidebar row is lit from inside.
-  - **Shadow**: `--lg-shadow`, contact + soft 24px.
-- **Floating layers** get all three: sidebar `.side`, capture bar `.newline`, menus `.menu`, the ⋯ sheet `.acts:popover-open`, and the
+  - **Shadow**: `--lg-shadow`, contact + soft 24px; the floating capture bar alone takes `--lg-float` (contact + 32px .16).
+- **Floating layers** get all three: sidebar `.side`, capture bar `.newline` (a sticky capsule over the sheet, §6 "Floating capture bar"; its hint and toast pills take the same three layers at the menus' step), menus `.menu`, the ⋯ sheet `.acts:popover-open`, and the
   Glass-everywhere sheet (rim + light, no shadow). The crumb is a bar flush with the sheet: material + lit top edge only.
 - **Never glass on glass**: pills, fields, day nav and text boxes inside any glass layer stay flat glass (no rim, no lens, small shadow).
 - **Over content** (crumb, capture bar, menus, ⋯ sheet, phone drawer): text behind a 4px blur is half-sharp, so these never drop below
-  `--lg-min` (60%) and take `--muted-tint` / `--err-tint`. Placeholders on every glass field are `--muted-tint` (`--muted-look` measures 4.40 there).
+  `--lg-min` (60%) (the capture bar 70%, the pills and menus above it 85%: they pass over the dark meeting banner) and take `--muted-tint` / `--err-tint`. Placeholders on every glass field are `--muted-tint` (`--muted-look` measures 4.40 there).
 - **Press**: glass pills swell to `scale(1.04)` and glow; the blue primary still sinks to `.96`.
 - **Lensing** (Chromium only): SVG filter `#lg-lens` (defined once in `templates/base.html`) is prepended to the floating layers'
   `backdrop-filter` under `@supports (-webkit-app-region:drag)`. WebKit (Safari, the Mac app's WKWebView) accepts `url()` in
   `backdrop-filter` and then drops the **whole** filter, blur included (measured T30), so it must never see it; `-webkit-app-region` parses
   only in Chromium. Off under Reduce Transparency.
 - AA at each look's floor (T30): worst 4.70 (Wakaba Tinted, error text over content); sidebar labels ≥ 5.61 Clear, ≥ 6.78 Tinted.
-- One alpha drives all of them: `--glass-a` (inline on `<html>`, clamped per look by `domain::look::glass_alpha` to keep AA). Each surface adds a fixed step `--s`: crumb 0, sidebar +5%, capture bar and glass pills +10% (hover +25%, pressed +35%), fields and text boxes +12%, menus +25%.
+- One alpha drives all of them: `--glass-a` (inline on `<html>`, clamped per look by `domain::look::glass_alpha` to keep AA). Each surface adds a fixed step `--s`: crumb 0, sidebar +5%, capture bar +10% (floor 70%), its hint/toast pills +25% (floor 85%), glass pills +10% (hover +25%, pressed +35%), fields and text boxes +12%, menus +25%.
 - The page sheet `.pg` is opaque white. Opt-in `data-glass=all` makes it glass too (−5%), with cards/callouts +10% on top.
 - `data-tint=tinted`: the look's colour mixed into the glass, darker edges, full-ink chrome text, darker muted/links (measured AA).
 - **Reduced transparency → every glass surface opaque, mesh becomes one flat colour, no rim or lens, hairline border back.** Not optional.
@@ -281,6 +281,40 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   the toast "Renamed #a to #b · N places rewritten · Undo · Open #b" (one transaction, one Undo, like a deleted page).
 - Report: Group by `.seg` Epic | Tag sits at the right of the filter row (the range row already holds the from/to dates).
 
+### Floating capture bar (canvas row "Floating capture bar", T78; D42)
+
+The Today capture bar is a Liquid Glass capsule that floats over the page at every width, like iOS 26's bottom bars;
+the log scrolls under it.
+
+- **Placement**: `position: sticky; bottom: 16px` as the last child of `.doc`, not `fixed`. It stays inside the sheet,
+  centred on the doc column at every width with no sidebar maths, and it stays in flow, so at scroll end it lands 16px
+  above the sheet's edge and the last line is never under it. `.doc{flex:1 0 auto}` + `margin-top:auto` keep it at the bottom
+  on a short day. Sheet stays the scroll context: no top-layer bar, no z-index fight with menus.
+- **Size**: width = the doc column (764 at 1280: long lines need the room); phone = full width minus 12px gutters,
+  `bottom: 12px + safe-area-inset-bottom`. Height 52, 44 Log ↵ inside (44 targets on phone).
+- **Contents**: input · `?` · Log ↵. The `?` stays in the capsule at every width; the grammar legend is no longer a row
+  under the bar (it would float over content). It opens a `.menu` panel as wide as the capsule, 8px above it (CSS anchor
+  positioning on `.newline`, fixed 12px-gutter fallback).
+- **Above the bar**, out of flow, bottom-up: hint pill (nearest) · `#` / `by ` menu · toast; 6px apart, 8px clear of the
+  capsule, so nothing ever sits on it (**never glass on glass**). The capsule never moves when they appear. The bar
+  reserves 40px above itself (pointer-events none) so at scroll end one pill never covers the last line.
+  `#tagsug` and the `by ` menu (`#bysug`) live outside the form: `.newline`'s backdrop-filter is a Backdrop Root, so a
+  menu inside it blurred only the capsule. The open legend takes the pills' slot, so they hide meanwhile; on phone the menus
+  take the full width.
+- **Hint + toast pills**: their own small glass layer (the `.menu` recipe: +25%, rim, light, `--lg-shadow`), 32px,
+  pill radius; hint text `--accent-2`, errors `--err-tint`.
+- **Shadow**: the capsule takes `--lg-float` (1px contact + `0 12px 32px rgba(0,0,0,.16)`): `--lg-shadow`'s 24px .12
+  got lost over busy text.
+- **Floors** (it now floats over the whole sheet, dark banner included): capsule 70%, pills + menus + legend above it
+  85%. Measured (t78/aa78.py: every look × Clear/Tinted at its floor; backdrop = a half-covered ink pixel, or the
+  `--dark` meeting banner fully behind): placeholder `--muted-tint` ≥ 4.75 (Wakaba Tinted over the banner; 3.83 at the
+  old 60%), hint `--accent-2` ≥ 5.12 (`--accent` was 4.17 there).
+- **Phone keyboard**: `capture.ts` reads `visualViewport` and sets `--kb` + `.kb` on `.capture`; the bar rides 8px above
+  the keyboard (no safe-area inset then, the keyboard covers the home indicator). The viewport meta adds
+  `interactive-widget=resizes-content`, so Chrome on Android resizes the layout viewport itself and `--kb` stays 0.
+- **Reduce Transparency**: capsule, pills, menu and legend solid white with a `--line` hairline, no blur, rim or lens.
+  **Increase Contrast**: ink edge on the capsule and pills.
+
 ### Date picker (canvas row "Date picker · one shared popover", T75; D38, D4)
 
 - **One popover for every date field**: day nav, to-do due (`.fld.s`), report from/to, event date, epic start/target/done on. It replaces
@@ -325,7 +359,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 
 1. **Sidebar** = page list, each row icon + label (icon `--muted`, `--ink` on the selected `.on` row; 16 px desktop, 20 px rail/drawer) grouped by the user's loops (D18): an unlabelled daily block Today · To-dos · Calendar · Meetings, then **Track** Epics · Report, then **Grow** Learn · Notes, then the active epics, and Settings pinned to the bottom (spacer). Same order in the phone drawer; the rail draws the section labels as thin dividers. Breadcrumbs on top.
 2. **Every thing is a page**: epic, meeting, topic, note → big title + inline properties, autosaved. No Save buttons anywhere.
-3. **One input**: the floating "Type a line…" bar takes the line grammar; a live hint underneath says what it will save as.
+3. **One input**: the floating "Type a line…" bar takes the line grammar; a live hint above it says what it will save as.
 4. **Feedback**: toast above the bar, "Saved as impact on OPS-101 · Undo", `role=status`.
 5. **Toggles** fold secondary things (open plans, report charts, raw numbers).
 6. **Notes**: Tiptap; type-to-format markdown shortcuts, `/` block menu (glass popover), `[[` page picker.
@@ -337,7 +371,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 |---|---|
 | ≥ 1024 | sidebar 220–248px + sheet |
 | 640–1023 | 64px icon rail (labels become tooltips, section labels become dividers) |
-| < 640 | sheet full width with top-rounded corners; nav in a popover; inputs ≥ 16px (no iOS zoom) |
+| < 640 | sheet full width with top-rounded corners; nav in a popover; inputs ≥ 16px (no iOS zoom); the capture bar floats 12px inside the edges above the home indicator and rides the keyboard |
 
 ## 9. Rules
 

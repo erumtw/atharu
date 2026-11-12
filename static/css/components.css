@@ -132,11 +132,54 @@ input[list]::-webkit-calendar-picker-indicator{display:none !important}
 .newline:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent),var(--lg-light),var(--lg-shadow)}
 .newline input{font:inherit;font-size:16px;border:0;outline:0;flex:1;min-width:0;height:100%;padding:0;background:transparent;color:var(--ink)}
 .newline .btn{height:44px}
-.capture{position:sticky;bottom:16px;z-index:2;display:flex;flex-direction:column;gap:8px}
+/* Floating capture bar (T78, D42, DESIGN.md §6). Sticky, not fixed: it stays inside the sheet, centred on the doc column at
+   every width with no sidebar maths, and stays in flow, so at scroll end it lands 16px above the sheet's edge and the last line is
+   never under it. flex + margin-top:auto pin it to the bottom on a short day (.pg is a flex column ≥ the viewport). */
+.doc:has(>.capture){flex:1 0 auto;padding-bottom:16px}
+/* --lg-min: it floats over the whole sheet, dark banner included (t78 aa78.py, half-ink + a --dark block fully behind):
+   capsule 70% → placeholder --muted-tint ≥ 4.75 (Wakaba Tinted); the pills + menus above 85% → hint --accent-2 ≥ 5.12. */
+.capture{position:sticky;bottom:16px;z-index:3;margin-top:auto;--lg-min:70%;
+  /* 40px above the capsule (one 32px pill + 8): at scroll end a toast or hint never covers the last line.
+     pointer-events: mid-scroll that band is over the log and must not take its clicks. */
+  padding-top:40px;pointer-events:none}
+.capture>*{pointer-events:auto}
+.capture .above,.capture .legend{--lg-min:85%}
+/* .capture>: looks.css (loaded later) sets .newline's --lg-shadow; over busy text the capsule has to read as lifted off the page. */
+.capture>.newline{anchor-name:--capture;box-shadow:var(--lg-light),var(--lg-float)}
+.capture>.newline:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent),var(--lg-light),var(--lg-float)}
+.capture>.newline.bad{box-shadow:0 0 0 4px color-mix(in srgb,var(--err) 14%,transparent),var(--lg-light),var(--lg-float)}
+/* Everything that opens from the bar stacks ABOVE it (bottom 60 = the 52px capsule + 8), out of flow: the capsule never moves and
+   nothing sits on it (no glass on glass). pointer-events: the empty width of the stack must not swallow clicks on the log under it.
+   #tagsug / #bysug live here, not in the form: .newline's backdrop-filter is a Backdrop Root, so a menu inside it blurred only the capsule. */
+.capture>.above{position:absolute;left:0;right:0;bottom:60px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;pointer-events:none}
+.above>*{pointer-events:auto;max-width:100%}
+.above .menu.up{position:static;width:300px}
+/* Toast + hint: small glass pills, a separate layer 8px clear of the capsule. Same recipe as .menu (+25%, rim, light, --lg-shadow);
+   the hint is --accent-2 because --accent over a dark block behind 85% glass measures 4.17. */
+.capture :is(.toast,.hint){--s:25%;--g:color-mix(in srgb,var(--glass-c) max(var(--lg-min),min(100%,var(--glass-a) + var(--s))),transparent);
+  --muted:var(--muted-tint);--err:var(--err-tint);
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:32px;box-sizing:border-box;padding:4px 14px;border-radius:9999px;line-height:1.4;
+  border:1px solid transparent;background:linear-gradient(var(--g),var(--g)) padding-box,var(--lg-rim) border-box;
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:var(--lg-light),var(--lg-shadow)}
+/* Block, not .row's flex: the partial is a run of text + <b>, and flex gaps split it into islands. */
+.capture .hint{display:block;padding:5px 14px;color:var(--accent-2)}
+.capture .hint:has(.tagask){padding:2px 4px 2px 14px}
+.capture .above>:empty{display:none}
+html[data-tint=tinted] .capture :is(.toast,.hint){border-color:var(--glass-edge)}
+html:not([data-glass=all]) .pg .capture :is(.toast,.hint){border-color:var(--line)}
+/* Legend (the `?` in the capsule, every width): a .menu panel as wide as the capsule, anchored 8px above it.
+   :not(:popover-open): .menu's display:flex would beat the UA rule that hides a closed popover. */
+.legend:not(:popover-open){display:none}
+.legend:popover-open{position:fixed;inset:auto;margin:0;position-anchor:--capture;left:anchor(left);right:anchor(right);bottom:calc(anchor(top) + 8px);
+  width:auto;flex-direction:row;flex-wrap:wrap;gap:8px 16px;padding:12px 16px;border-radius:18px;color:var(--ink-2)}
+/* The legend takes the pills' slot: no glass on glass while it is open. */
+.capture:has(.legend:popover-open) .above{visibility:hidden}
+@supports not (anchor-name:--a){.legend:popover-open{left:12px;right:12px;bottom:calc(92px + env(safe-area-inset-bottom))}}
+@media (prefers-reduced-transparency: reduce){.capture :is(.toast,.hint){background:var(--g);border-color:var(--line);backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media (prefers-contrast: more){.capture :is(.toast,.hint){background:var(--g);border-color:var(--ink)}}
 .hint{padding:0 20px;color:var(--accent);min-height:18px;line-height:1.4}
 .hint .err{color:var(--err)}
 /* Legend: every chip centred on one baseline; wraps as whole items. */
-.legend{gap:8px 16px;padding:0 20px}
 .legend>span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 /* Multi-line field: a glass box, 12 radius; autosaves, so no Save button unless JS is off. */
 .ta,.note-md{--s:12%;display:block;width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--glass-edge);padding:10px 14px;font:inherit;font-size:15px;line-height:1.5;
@@ -372,13 +415,12 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* Line text with tags: plain runs are the edit link, each tag its own link to the hub (no link inside a link). */
 .ltext{min-width:0}
 .ltext .edit-line{display:inline}
-/* "Tag as #expense?" under the capture bar: opaque white (sits over glass), dashed ring, Tab accepts, × = not a tag. */
+/* "Tag as #expense?" in the hint above the capture bar: opaque white (sits over glass), dashed ring, Tab accepts, × = not a tag. */
 .tagask{display:inline-flex;align-items:center;gap:6px;height:28px;box-sizing:border-box;padding:0 4px 0 10px;border-radius:9999px;border:1px dashed var(--ctl-edge);background:#fff;color:var(--ink);font:inherit;font-size:13px;line-height:1;cursor:pointer}
 .tagask:hover{border-style:solid}
 .kbd{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;line-height:1;padding:3px 5px;border:1px solid var(--line);border-radius:4px;color:var(--muted);background:#fff;letter-spacing:0}
 .tagask .x{opacity:1;width:20px;height:20px;font-size:14px}
-/* Suggestions: the .menu opened upward from the capture bar; count right in --muted (menus take --muted-tint). */
-.menu.up{bottom:60px;left:16px;width:300px}
+/* Suggestions (.menu.up, placed in .capture .above): count right in --muted (menus take --muted-tint). */
 .menu [role=option] .n{margin-left:auto;font-size:12px;color:var(--muted)}
 .menu .mf{font-size:12px;color:var(--muted);padding:4px 10px 2px;border-top:1px solid rgba(0,0,0,.06);margin-top:2px;letter-spacing:0}
 /* Hub */
