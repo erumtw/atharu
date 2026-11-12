@@ -55,6 +55,8 @@ pre{max-width:100%;overflow-x:auto}
   .dnav{height:44px}
   .dnav>*{padding:0 14px}
   .seg:not(.mac){height:44px}.seg:not(.mac) button{height:38px}
+  /* The four depth labels need ~560px in one row: two per row, track radius = 38/2 + 3 padding. */
+  #rate .seg{display:grid;grid-template-columns:1fr 1fr;height:auto;border-radius:22px}
 
   /* Drawer: the sidebar in the top layer. */
   .side:popover-open{position:fixed;inset:8px auto 8px 8px;width:min(300px,calc(100vw - 32px));max-width:none;overflow-y:auto;z-index:5;padding:8px;display:flex;

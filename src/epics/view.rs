@@ -123,8 +123,8 @@ pub struct Page {
     pub activity: Vec<i64>,
     pub live: Live,
     pub timeline: Vec<DayGroup>,
-    /// Top-bar status after a plain (no-JS) save failed.
-    pub save_error: bool,
+    /// Top-bar status after a plain (no-JS) save failed: the reason.
+    pub save_error: Option<&'static str>,
     /// Notes linking here with `[[…]]`: (id, title).
     pub mentions: Vec<(i64, String)>,
     /// A plain (no-JS) delete was refused.
@@ -136,7 +136,7 @@ pub struct Page {
 #[template(path = "epics/swap.html")]
 pub struct Swap {
     pub live: Live,
-    pub save_error: bool,
+    pub save_error: Option<&'static str>,
     /// The Tags prop, swapped out-of-band: a chip edit changes it.
     pub field: Option<crate::layout::TagField>,
 }
