@@ -21,5 +21,9 @@ chrome, Notion UX patterns).
   in each board's `<helmet>`, the Notes chrome, and a real Excalidraw 0.18.1 `exportToSvg` of a made-up scene; Excalidraw's UI is
   redrawn in HTML (themed to `--accent`).
 
+- Meeting.* + Settings.Transcription + Mobile.Meeting (T51, row "Meeting recording"): `static/css` verbatim + the proposed recording /
+  transcript CSS in each board's `<helmet>` (one new token, `--rec-on-dark`), the app's chrome markup, made-up Thai + English transcript;
+  states strips under each page; Meeting.RTIC forces Reduce Transparency + Increase Contrast. Generator: scratchpad `canvas-t51/gen.py`.
+
 Source of truth is `templates/` + `static/css/`; when a board and the app differ, the app wins and the board is
 regenerated. `boards/app.css` is the original wireframe stylesheet that `tokens.css` was transcribed from; no board uses it now.
