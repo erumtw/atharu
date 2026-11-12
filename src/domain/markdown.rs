@@ -158,6 +158,18 @@ pub fn to_text(md: &str) -> String {
     out.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Why a quick note (D53) can't be saved: the hint error, from the notes slice (htmx) or the popover (plain POST).
+pub const NO_TITLE: &str = "Nothing to save. Type the note’s title first.";
+
+/// One text box → a note (the quick popover, D53): the first non-blank line is the title, the rest the body.
+/// `None` = only whitespace.
+pub fn split_note(text: &str) -> Option<(&str, &str)> {
+    let text = text.trim_start();
+    let (title, body) = text.split_once('\n').unwrap_or((text, ""));
+    let title = title.trim();
+    (!title.is_empty()).then(|| (title, body.trim_start_matches(['\r', '\n']).trim_end()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::{to_html, to_text};
@@ -224,5 +236,18 @@ mod tests {
                 "{bad} → {h}"
             );
         }
+    }
+
+    #[test]
+    fn split_note_takes_the_first_line_as_title() {
+        assert_eq!(
+            super::split_note("Vendor call\r\nwants 4 h\n#vendor\n"),
+            Some(("Vendor call", "wants 4 h\n#vendor"))
+        );
+        assert_eq!(
+            super::split_note("\n  only a title  "),
+            Some(("only a title", ""))
+        );
+        assert_eq!(super::split_note(" \n \t"), None);
     }
 }

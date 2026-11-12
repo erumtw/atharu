@@ -41,6 +41,17 @@ pub struct Page {
     pub date: String,
     pub kinds: &'static [(&'static str, &'static str, &'static str, &'static str)],
     pub saved: Option<Saved>,
+    /// The box is a quick note (D53): first line = title, the rest = body.
+    pub note_mode: bool,
+    /// The checked kind tile (index into KINDS).
+    pub kind: usize,
+    /// Prefill for the box that shows.
+    pub text: String,
+    /// The note form's `back`: here, on the same kind tile.
+    pub back_note: String,
+    pub error: Option<&'static str>,
+    /// Just saved: "✓ Saved note · Open".
+    pub saved_note: Option<i64>,
     pub running: Option<Running>,
     pub series: Vec<String>,
     pub todos: Vec<Todo>,

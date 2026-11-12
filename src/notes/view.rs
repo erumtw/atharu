@@ -131,3 +131,10 @@ pub struct PagesData {
 pub struct Pages {
     pub data: PagesData,
 }
+
+/// A rejected quick note (D53): the body of the popover's `#hint`.
+#[derive(Template)]
+#[template(path = "partials/hint_error.html")]
+pub struct HintError {
+    pub error: &'static str,
+}

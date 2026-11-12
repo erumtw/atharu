@@ -171,3 +171,68 @@ async fn start_and_end_meeting_come_back_to_the_popover() {
     assert_eq!(r.headers["location"], "/quick");
     assert!(get(&st, "/quick").await.body.contains("Start a meeting"));
 }
+
+#[tokio::test]
+async fn note_tile_saves_a_note_and_comes_back_on_the_kind() {
+    let st = state();
+    // Without JS the Note tile is a GET carrying the line form: the half-typed line moves into the note box.
+    let b = get(
+        &st,
+        "/quick?back=%2Fquick&kind=%21&line=vendor+call&mode=note",
+    )
+    .await
+    .body;
+    assert!(b.contains("data-mode=\"note\""));
+    assert!(b.contains("aria-pressed=\"true\""));
+    assert!(b.contains("autofocus>vendor call</textarea>"));
+    assert!(b.contains("name=\"back\" value=\"/quick?kind=%21\""));
+
+    // htmx or not, the save answers with a 303 to the popover on the same kind, carrying the note.
+    let r = post(
+        &st,
+        "/notes/new",
+        &form(&[
+            ("text", "Vendor call\nThey want 4 h windows #vendor"),
+            ("back", "/quick?kind=%2B"),
+        ]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 303);
+    assert_eq!(r.headers["location"], "/quick?kind=%2B&note=1");
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE id = 1 AND title = 'Vendor call'
+               AND body = 'They want 4 h windows #vendor' AND author = 'me'"
+        ),
+        1
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM taggings WHERE tag = 'vendor' AND item_type = 'note'"
+        ),
+        1
+    );
+    let b = get(&st, "/quick?kind=%2B&note=1").await.body;
+    assert!(b.contains("Saved note · <a href=\"/notes/1\">Open</a>"));
+    assert!(b.contains("value=\"+\" form=\"qline\" checked"));
+    assert!(b.contains("data-mode=\"line\""));
+    assert!(get(&st, "/notes").await.body.contains("Vendor call"));
+}
+
+#[tokio::test]
+async fn blank_quick_note_is_refused_into_the_hint() {
+    let st = state();
+    let blank = form(&[("text", " \n  "), ("back", "/quick?kind=")]);
+    let r = post(&st, "/notes/new", &blank, true).await;
+    assert_eq!(r.status, 422);
+    assert_eq!(r.headers["hx-retarget"], "#hint");
+    assert!(r.body.contains("Type the note’s title first."));
+    let r = post(&st, "/notes/new", &blank, false).await;
+    assert_eq!(r.headers["location"], "/quick?kind=&mode=note&err=1");
+    let b = get(&st, "/quick?kind=&mode=note&err=1").await.body;
+    assert!(b.contains("<span class=\"err\">Nothing to save."));
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM notes"), 0);
+}

@@ -142,13 +142,8 @@ pub fn create(conn: &Connection) -> rusqlite::Result<i64> {
     Ok(conn.last_insert_rowid())
 }
 
-/// Agent note (CLI). `author` is never `me`: the CLI refuses that name before it gets here.
-pub fn agent_create(
-    conn: &Connection,
-    title: &str,
-    body: &str,
-    author: &str,
-) -> rusqlite::Result<i64> {
+/// A whole note at once: an agent's from the CLI, or the owner's (`me`) from the quick popover (D53).
+pub fn insert(conn: &Connection, title: &str, body: &str, author: &str) -> rusqlite::Result<i64> {
     let tx = conn.unchecked_transaction()?;
     tx.execute(
         "INSERT INTO notes(title, body, author) VALUES (?1, ?2, ?3)",

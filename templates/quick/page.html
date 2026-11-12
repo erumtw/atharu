@@ -23,22 +23,34 @@
 <header class="qh"><svg class="mark" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><path d="M7.3 2.6A6.5 6.5 0 1 0 14.4 6.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="26 1.6 3 1.4 2"/><circle cx="9.9" cy="8.1" r="2.2"/></svg><b>Atharu</b><span class="small muted">{{ date }}</span><a class="ib" href="/" aria-label="Open Atharu" title="Open Atharu"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#open"/></svg></a></header>
 
 {#- Saving answers with a 303 back here (back=/quick); htmx follows it and takes only the hint and the to-dos, so the
-    form, its focus and capture.js stay. A rejected line answers 422 into #hint (the form keeps its text). #}
-<section class="qsec qcap" aria-label="Log a line">
-<form method="post" action="/entries" hx-post="/entries" hx-swap="none" hx-select-oob="#hint,#qtodo" hx-disinherit="*" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) this.reset()">
-<input type="hidden" name="back" value="/quick"><input type="hidden" name="notag" id="notag" value="">
+    form, its focus and capture.js stay. A rejected line answers 422 into #hint (the form keeps its text).
+    The tiles sit outside both forms (form="qline"): the line form posts them; the Note tile (D53) is a GET back here
+    with mode=note, which quick.js turns into an in-place switch; data-mode picks which form shows. #}
+<section class="qsec qcap" aria-label="Log a line" data-mode="{% if note_mode %}note{% else %}line{% endif %}">
 <fieldset class="kinds"><legend class="vh">Line kind</legend>
-{%- for (v, mark, class, word) in kinds %}<label class="kc"><input type="radio" name="kind" value="{{ v }}"{% if loop.first %} checked{% endif %}><span class="{{ class }}">{{ mark }}</span>{{ word }}</label>{% endfor -%}
+{%- for (v, mark, class, word) in kinds %}<label class="kc"><input type="radio" name="kind" value="{{ v }}" form="qline"{% if loop.index0 == kind %} checked{% endif %}><span class="{{ class }}">{{ mark }}</span>{{ word }}</label>{% endfor -%}
+<button class="kc nt" type="submit" form="qline" formmethod="get" formaction="/quick" formnovalidate name="mode" value="{% if !note_mode %}note{% endif %}" aria-pressed="{{ note_mode }}"><span class="k"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#note"/></svg></span>note</button>
 </fieldset>
+<form id="qline" method="post" action="/entries" hx-post="/entries" hx-swap="none" hx-select-oob="#hint,#qtodo" hx-disinherit="*" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) this.reset()">
+<input type="hidden" name="back" value="/quick"><input type="hidden" name="notag" id="notag" value="">
 <div class="qfield">
-<div class="fld"><input id="line" name="line" value="" placeholder="What did you do?" aria-label="Log a line" autocomplete="off" autofocus role="combobox" aria-expanded="false" aria-controls="tagsug" aria-autocomplete="list" hx-post="/parse-preview" hx-trigger="input changed delay:150ms, kindpick" hx-target="#hint" hx-swap="innerHTML"><button class="btn" type="submit">Log ↵</button></div>
+<div class="fld"><input id="line" name="line" value="{% if !note_mode %}{{ text }}{% endif %}" placeholder="What did you do?" aria-label="Log a line" autocomplete="off"{% if !note_mode %} autofocus{% endif %} role="combobox" aria-expanded="false" aria-controls="tagsug" aria-autocomplete="list" hx-post="/parse-preview" hx-trigger="input changed delay:150ms, kindpick" hx-target="#hint" hx-swap="innerHTML"><button class="btn" type="submit">Log ↵</button></div>
 <input type="date" id="bydate" data-for="line" hidden tabindex="-1" aria-label="Due date">
 <div id="tagsug"></div><div id="bysug"></div>
 </div>
 </form>
+{#- Posted by htmx even in the app: a plain POST is a navigation, which the popover hands to the main window. #}
+<form id="qnote" method="post" action="/notes/new" hx-post="/notes/new" hx-swap="none" hx-select-oob="#hint,#qtodo" hx-disinherit="*">
+<input type="hidden" name="back" value="{{ back_note }}">
+<div class="fld note"><textarea id="qtext" name="text" rows="3" required placeholder="Note title, then the body on the next lines" aria-label="Quick note"{% if note_mode %} autofocus{% endif %}>{% if note_mode %}{{ text }}{% endif %}</textarea><button class="btn" type="submit">Save ↵</button></div>
+</form>
 <div class="qhint" id="hint" aria-live="polite">
 {%- if let Some(s) = saved -%}
 <span class="tick">✓</span> Saved as <b>{{ s.kind }}</b>{% if let Some(k) = s.key %} on <span class="chip key">{{ k }}</span>{% endif %} · <form class="inline" method="post" action="/entries/{{ s.id }}/delete?back=/quick" hx-post="/entries/{{ s.id }}/delete?back=/quick" hx-swap="none" hx-select-oob="#hint,#qtodo"><button class="linkbtn" type="submit">Undo</button></form>
+{%- else if let Some(n) = saved_note -%}
+<span class="tick">✓</span> Saved note · <a href="/notes/{{ n }}">Open</a>
+{%- else if let Some(e) = error -%}
+<span class="err">{{ e }}</span>
 {%- endif -%}
 </div>
 </section>
