@@ -22,8 +22,11 @@ const close = () => {
 
 const place = () => {
   if (!menu || !input) return
-  const r = input.getBoundingClientRect()
-  const w = Math.min(Math.max(r.width, 220), 360)
+  // The rounded field around the input (it also holds e.g. the Start button), else the input itself.
+  const r = (input.closest('.fld') ?? input).getBoundingClientRect()
+  // The box's own width (owner: the native list was narrower than its field). Tiny boxes ("Filter by tag", 160)
+  // still get room for a name.
+  const w = Math.max(r.width, 220)
   menu.style.left = `${Math.max(8, Math.min(r.left, innerWidth - w - 8))}px`
   menu.style.top = `${r.bottom + 6}px`
   menu.style.width = `${w}px`

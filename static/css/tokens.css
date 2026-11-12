@@ -1,5 +1,11 @@
 /* Colour tokens, transcribed from the approved canvas (docs/design/boards/app.css). */
 :root {
+  /* Motion (DESIGN.md §6 "Motion", D61): Apple-subtle. Fast start, soft settle; only the to-do check overshoots. */
+  --dur-1: 120ms;  /* menus in, fades */
+  --dur-2: 200ms;  /* rows, toast, seg thumb */
+  --dur-3: 250ms;  /* glides between groups, banner height, page cross-fade */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
   --ink: #1d1d1f;
   --ink-2: #333333;
   --muted: #6e6e73;
