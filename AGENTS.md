@@ -74,8 +74,8 @@ atharu evidence <KEY|jira-url> <url> [--label …] --as claude  # impact link on
 atharu today [--day YYYY-MM-DD]                             # that day's lines + open plans
 atharu show <KEY|jira-url>                                  # epic + evidence + timeline
 atharu tags                                                 # {tags: [{tag, count, lastUsed}]}, most used first
-atharu version                                              # {version, sha, built}; no DB
-atharu update [--app] [--docker]                            # owner's tool: git pull --ff-only + scripts/install.sh
+atharu version                                              # {version, tag, sha, built}; tag null on a dev build; no DB
+atharu update [--app] [--docker]                            # owner's tool: newest release tag vX.Y.Z via scripts/install.sh, else {upToDate}
 atharu dump                                                 # data/dump.sql next to the DB (plain SQL backup)
 atharu help                                                 # this table (also -h / --help); bare `atharu` serves :7070
 ```
@@ -103,6 +103,9 @@ Prompts for the common jobs: `.claude/commands/{log,query,lint,ingest}.md`.
   every htmx action returns one partial and also works as a plain form POST (303 back). `src/cli/` is an entry
   point like `app.rs` and may call slices' queries. `src/layout/` is shared page chrome (sidebar, breadcrumb, look), not a
   feature: every slice may import it, like `web.rs`.
+- Releases (D40, D41): `scripts/release.sh X.Y.Z` on main (`--hotfix` on `release/X.Y`) bumps, writes CHANGELOG.md,
+  tags `vX.Y.Z`; install/update follow tags. Cutting or pushing a release is the owner's call; an agent asked to run it
+  sets `ATHARU_COAUTHOR` and answers N to the push prompt.
 - Schema changes: a new `migrations/00N_*.sql` appended in `src/db.rs`; never edit a shipped one.
 - Frontend JS: strict TypeScript in `editor/src/*.ts` (pinned Tiptap, esbuild) builds the committed `static/js/*.js`
   (`htmx.min.js` is vendored): `cd editor && npm ci && npm run check && node build.mjs`.

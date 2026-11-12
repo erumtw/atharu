@@ -4,10 +4,26 @@ Personal work log on localhost: one line per thing, epics, report. Spec: `docs/s
 
 ## Install / update
 
-`scripts/install.sh` once (`--app` also replaces /Applications/Atharu.app, `--docker` rebuilds the container) → `atharu` in `~/.cargo/bin`.
-It builds the last commit (from a temp worktree), never uncommitted edits: it says so when the tree is dirty and carries on. `--docker` still builds the working tree.
-`atharu update [--app] [--docker]` later: fast-forwards this checkout (refuses a dirty tree or diverged branch) and re-runs the script.
-`atharu version` prints version + git sha + build date, `atharu help` the command table; the script prints the PATH / ATHARU_DB lines to add, it never edits ~/.zshrc.
+`scripts/install.sh` once → `atharu` in `~/.cargo/bin`, built from source at the newest release tag `vX.Y.Z` (in a temp
+worktree: the working tree is never built or touched). `--version vX.Y.Z` pins a tag, `--dev` builds the last commit instead;
+`--app` also replaces /Applications/Atharu.app, `--docker` rebuilds and restarts the container from the same tag.
+`atharu update [--app] [--docker]` later: fetches tags and, when a newer release exists, installs it; else `{"upToDate":true}`.
+`atharu version` prints `{version, tag, sha, built}` (`tag` null on a `--dev` build), `atharu help` the command table;
+the script prints the PATH / ATHARU_DB lines to add, it never edits ~/.zshrc.
+
+## Release
+
+`main` is development; each minor line gets a branch `release/X.Y`. Releases are annotated tags, cut by script:
+
+```sh
+scripts/release.sh 0.2.0            # on main, clean tree: bump versions, CHANGELOG.md entry, commit, tag v0.2.0,
+                                    # release/0.2 created or fast-forwarded; then asks before pushing + `gh release create`
+scripts/release.sh --hotfix 0.2.1   # on release/0.2 after committing the fix there; prints the cherry-pick for main
+```
+
+It refuses a dirty tree, a non-semver or not-greater version, an existing tag, and the wrong branch. Without a terminal
+(or on "N") it pushes nothing and prints the `git push` / `gh release create` commands. `ATHARU_COAUTHOR="Name <email>"`
+adds a `Co-Authored-By` trailer (for agents).
 
 ## Run
 
