@@ -3,8 +3,18 @@ use atharu::{app, cli, config, db, dump};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let (cmd, cfg) =
-        config::Config::from_env_and_args(std::env::args().skip(1)).map_err(anyhow::Error::msg)?;
+    // Exit 2 like the CLI's own usage errors, so scripts can tell "bad call" from "refused".
+    let (cmd, cfg) = match config::Config::from_env_and_args(std::env::args().skip(1)) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("{e}");
+            std::process::exit(2);
+        }
+    };
+    if let config::Command::Help = cmd {
+        println!("{}", cli::HELP);
+        return Ok(());
+    }
     if let config::Command::Cli(args) = &cmd
         && matches!(args[0].as_str(), "version" | "update")
     {
@@ -34,6 +44,7 @@ async fn main() -> anyhow::Result<()> {
             );
             std::process::exit(code);
         }
+        config::Command::Help => unreachable!("handled before opening the DB"),
         config::Command::Dump => {
             let out = cfg.data_dir().join("dump.sql");
             dump::write(&conn, &out).with_context(|| format!("dump to {}", out.display()))?;

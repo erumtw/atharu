@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Installs or updates atharu from this checkout (D28). Safe to re-run: every step replaces, never appends.
+# Installs or updates atharu from this checkout's last commit (D28), never the working tree: agents
+# edit it mid-task, and a half-done edit must neither break the build nor ship. Safe to re-run.
 #   scripts/install.sh            CLI + server binary → ~/.cargo/bin/atharu
 #   scripts/install.sh --app      also the Mac app → /Applications/Atharu.app (its data dir is untouched)
 #   scripts/install.sh --docker   also rebuilds and restarts the compose service
@@ -31,11 +32,25 @@ if ! command -v cargo >/dev/null; then
   fi
 fi
 
+sha=$(git rev-parse --short HEAD)
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "note: building $sha; uncommitted changes are not included"
+fi
+# A detached worktree, not `git archive`: build.rs reads the sha from git.
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/atharu-install.XXXXXX")
+src=$tmp/src
+trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; rm -rf "$tmp"; git -C "$repo" worktree prune' EXIT
+git worktree add --quiet --detach "$src" HEAD
+# The repo's own target/ keeps the build incremental across temp worktrees.
+export CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$repo/target}
+# Baked in for `atharu update`: the temp worktree is gone by the time it runs.
+export ATHARU_REPO=$repo
+
 bin=${CARGO_INSTALL_ROOT:-${CARGO_HOME:-$HOME/.cargo}}/bin
 # A binary from before `version` existed exits non-zero: that reads as "none".
 old=$("$bin/atharu" version 2>/dev/null || echo none)
-echo "building atharu from $repo …"
-cargo install --path . --locked --quiet
+echo "building atharu $sha from $repo …"
+cargo install --path "$src" --locked --quiet
 new=$("$bin/atharu" version)
 echo "atharu: $old → $new"
 
@@ -44,8 +59,8 @@ if [ "$app" = 1 ]; then
     echo 'tauri-cli missing: cargo install tauri-cli --version "^2" --locked'
     exit 1
   fi
-  (cd src-tauri && cargo tauri build --bundles app)
-  built=$repo/target/release/bundle/macos/Atharu.app
+  (cd "$src/src-tauri" && cargo tauri build --bundles app)
+  built=$CARGO_TARGET_DIR/release/bundle/macos/Atharu.app
   dest=/Applications/Atharu.app
   # "if running" first: a bare `quit app` launches the app just to quit it.
   osascript -e 'if application "Atharu" is running then tell application "Atharu" to quit'
@@ -63,6 +78,8 @@ if [ "$app" = 1 ]; then
 fi
 
 if [ "$docker" = 1 ]; then
+  # ponytail: the working tree, not $sha: compose binds ./data next to the compose file, so running it
+  # from the temp worktree would start on an empty DB. Build from the commit if docker use grows.
   docker compose up -d --build
 fi
 

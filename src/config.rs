@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 pub enum Command {
     Serve,
     Dump,
+    /// `help` / `-h` / `--help`: print `cli::HELP`, no DB.
+    Help,
     /// Agent CLI: the subcommand and everything after it (see `cli`).
     Cli(Vec<String>),
 }
@@ -36,11 +38,10 @@ impl Config {
                     break;
                 }
                 "dump" => cmd = Command::Dump,
+                "help" | "-h" | "--help" => return Ok((Command::Help, cfg)),
                 "-db" | "--db" => cfg.db = args.next().ok_or("--db needs a path")?.into(),
                 other => {
-                    return Err(format!(
-                        "unknown argument {other:?}; usage: atharu [--db PATH] [dump | log | epic | note | evidence | today | show | version | update]"
-                    ));
+                    return Err(format!("unknown argument {other:?}\n{}", crate::cli::HELP));
                 }
             }
         }

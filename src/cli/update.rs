@@ -8,9 +8,14 @@ const USAGE: &str = "usage:
   atharu version
   atharu update [--app] [--docker]   (ATHARU_REPO overrides the checkout it pulls)";
 
-/// The checkout this binary was built from; `ATHARU_REPO` wins (e.g. the clone moved).
+/// The checkout to pull: `ATHARU_REPO` at run time (e.g. the clone moved), else the one baked in by
+/// install.sh (it builds from a temp worktree, so CARGO_MANIFEST_DIR is gone by then), else the source dir.
 pub fn repo() -> String {
-    std::env::var("ATHARU_REPO").unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").to_string())
+    std::env::var("ATHARU_REPO").unwrap_or_else(|_| {
+        option_env!("ATHARU_REPO")
+            .unwrap_or(env!("CARGO_MANIFEST_DIR"))
+            .to_string()
+    })
 }
 
 /// Same exit codes as `cli::run`: 0 JSON on `out`, 1 refused, 2 usage.
