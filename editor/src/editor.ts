@@ -61,6 +61,160 @@ const PageLink = Node.create({
   },
 })
 
+// Drawing block (D23/D24): `![Drawing](data:image/svg+xml;base64,…)` on its own line, scene embedded in the SVG.
+// Markdown.rs shows exactly that form as an <img>, so the note reads (and works without JS) with no Excalidraw at all.
+const DRAWING_LINE = /^!\[Drawing\]\((data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+)?\)[ \t]*(?:\n|$)/
+// A variable, not a literal: esbuild leaves import(x) alone, so the island stays out of this iife.
+const ISLAND = '/static/js/drawing/drawing.js'
+// Set by the `/` menu so the block it inserts opens the canvas at once (DESIGN.md §6 Insert).
+let openNew = false
+
+function button(label: string, cls: string, onClick: () => void): HTMLButtonElement {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.className = cls
+  b.textContent = label
+  b.addEventListener('click', onClick)
+  return b
+}
+
+async function editDrawing(start: string, set: (src: string) => void): Promise<void> {
+  if (!document.getElementById('excalidraw-css')) {
+    const l = document.createElement('link')
+    l.id = 'excalidraw-css'
+    l.rel = 'stylesheet'
+    l.href = '/static/excalidraw/index.css'
+    document.head.append(l)
+  }
+  ;(window as { EXCALIDRAW_ASSET_PATH?: string }).EXCALIDRAW_ASSET_PATH = '/static/excalidraw/'
+  const sheet = document.createElement('div')
+  sheet.className = 'drawsheet'
+  const host = document.createElement('div')
+  host.className = 'drawhost'
+  const saved = document.createElement('span')
+  saved.className = 'saved small'
+  saved.setAttribute('role', 'status')
+  const form = document.getElementById('note')
+  const md = document.getElementById('note-md')
+  let session: import('./drawing').Session | null = null
+  let timer = 0
+  let saving = false
+  let closed = false
+  const status = (text: string, err = false) => { saved.textContent = text; saved.classList.toggle('err', err) }
+  // The form's own htmx autosave posts the note; this only reports how the post went while the sheet is open.
+  const after = (e: Event) => {
+    if (!saving) return
+    if ((e as CustomEvent<{ successful: boolean }>).detail.successful) { saving = false; status('✓ saved just now') }
+    else {
+      status('Couldn’t save · retrying', true)
+      setTimeout(() => md?.dispatchEvent(new Event('input', { bubbles: true })), 3000)
+    }
+  }
+  form?.addEventListener('htmx:afterRequest', after)
+  const close = (src: string) => {
+    if (closed) return
+    closed = true
+    clearTimeout(timer)
+    // Done never waits on the network: the node changes now, the form posts it like any edit.
+    set(src)
+    session?.close()
+    sheet.remove()
+    form?.removeEventListener('htmx:afterRequest', after)
+  }
+  const bar = document.createElement('div')
+  bar.className = 'drawbar'
+  const cancel = button('Cancel', 'btn ghost', () => close(start))
+  cancel.title = 'Discard changes made since you opened it'
+  bar.append(saved, cancel, button('Done', 'btn', async () => close(session ? await session.src(true) : start)))
+  sheet.append(host, bar)
+  // Keys must not reach ProseMirror under the sheet: with the block selected, a typed letter would replace it.
+  ;(document.activeElement as HTMLElement | null)?.blur()
+  document.body.append(sheet)
+  const mod = await import(ISLAND) as typeof import('./drawing')
+  session = await mod.open(host, start, () => {
+    status('Saving…')
+    clearTimeout(timer)
+    timer = window.setTimeout(async () => {
+      if (!session || closed) return
+      const src = await session.src(false)
+      if (closed) return
+      saving = true
+      set(src)
+    }, 1000)
+  })
+}
+
+const PENCIL = 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4'
+
+const Drawing = Node.create({
+  name: 'drawing',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes: () => ({ src: { default: '' } }),
+  parseHTML: () => [{ tag: 'figure.drawing', getAttrs: (el: HTMLElement) => ({ src: el.querySelector('img')?.getAttribute('src') ?? '' }) }],
+  renderHTML: ({ node }) => ['figure', { class: 'drawing' }, ['img', { src: node.attrs.src, alt: 'Drawing' }]],
+  markdownTokenizer: {
+    name: 'drawing',
+    level: 'block',
+    start: (src: string) => src.indexOf('![Drawing]('),
+    tokenize: (src: string) => {
+      const m = DRAWING_LINE.exec(src)
+      if (m) return { type: 'drawing', raw: m[0], src: m[1] ?? '' }
+    },
+  },
+  parseMarkdown: (token, h) => h.createNode('drawing', { src: token.src }),
+  renderMarkdown: node => `![Drawing](${node.attrs?.src ?? ''})`,
+  addNodeView() {
+    return ({ node, getPos, editor }) => {
+      const dom = document.createElement('figure')
+      let src = ''
+      const set = (next: string) => {
+        const pos = getPos()
+        if (typeof pos === 'number') editor.view.dispatch(editor.state.tr.setNodeAttribute(pos, 'src', next))
+      }
+      const edit = () => void editDrawing(src, set)
+      const draw = (next: string) => {
+        src = next
+        dom.className = src ? 'drawing' : 'drawing empty'
+        if (src) {
+          const img = document.createElement('img')
+          img.src = src
+          img.alt = 'Drawing'
+          dom.replaceChildren(img, button('Edit drawing', 'btn ghost s edit', edit))
+        } else {
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+          svg.setAttribute('class', 'ic')
+          svg.setAttribute('viewBox', '0 0 24 24')
+          svg.setAttribute('aria-hidden', 'true')
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+          path.setAttribute('d', PENCIL)
+          svg.append(path)
+          const label = document.createElement('span')
+          label.className = 'small muted'
+          label.textContent = 'Empty drawing'
+          dom.replaceChildren(svg, label, button('Draw', 'btn ghost s', edit))
+        }
+      }
+      draw(node.attrs.src as string)
+      if (openNew && !src) { openNew = false; queueMicrotask(edit) }
+      return {
+        dom,
+        update: n => {
+          if (n.type.name !== 'drawing') return false
+          if (n.attrs.src !== src) draw(n.attrs.src as string)
+          return true
+        },
+        selectNode: () => dom.classList.add('sel'),
+        deselectNode: () => dom.classList.remove('sel'),
+        // The buttons are ours; ProseMirror would turn their clicks into a node selection.
+        stopEvent: e => e.target instanceof HTMLButtonElement,
+        ignoreMutation: () => true,
+      }
+    }
+  },
+})
+
 // One listbox renderer for both menus; text goes in via textContent, so page names can't inject markup.
 // `k` = the block's glyph tile; `group` = the `.mh` header drawn above each run of items.
 type Item = { title: string, hint?: string, k?: string, group: string }
@@ -158,6 +312,7 @@ const BLOCKS: Block[] = [
   { title: 'Callout', k: 'i', group, run: c => c.setCallout() },
   { title: 'Code block', k: '{}', group, run: c => c.setCodeBlock() },
   { title: 'Divider', k: '—', group, run: c => c.setHorizontalRule() },
+  { title: 'Drawing', k: '✎', hint: 'opens the canvas', group, run: c => { openNew = true; return c.insertContent({ type: 'drawing' }) } },
   { title: 'Link a page', k: '[[', group, run: c => c.insertContent('[[') },
 ]
 const PAGE_GROUP: Record<string, string> = { epic: 'Epics', topic: 'Topics', meeting: 'Meetings' }
@@ -214,6 +369,7 @@ if (el && md) {
       DetailsContent,
       Callout,
       PageLink,
+      Drawing,
       Menus,
       Markdown,
     ],
