@@ -115,23 +115,6 @@ pub struct Plans {
     pub other: Vec<Plan>,
 }
 
-pub struct ActiveMeeting {
-    pub id: i64,
-    pub name: String,
-}
-
-/// Fields `partials/meeting_banner.html` reads; start/end themselves live in the meetings slice.
-pub struct Banner {
-    pub active: Option<ActiveMeeting>,
-    pub series: Vec<String>,
-    pub name: String,
-    pub error: Option<String>,
-    pub back: String,
-    pub rec: crate::recording::Rec,
-    /// Only End's own answer sets it (meetings slice); a page load never shows "Ended".
-    pub ended: Option<ActiveMeeting>,
-}
-
 /// One "Needs you" line: a flagged epic or an overdue to-do.
 pub struct Need {
     /// `flag over` / `flag risk` / `flag stale`.
@@ -147,7 +130,7 @@ pub struct Need {
 #[template(path = "today/page.html")]
 pub struct Page {
     pub layout: Layout,
-    pub banner: Banner,
+    pub banner: crate::recording::Banner,
     pub today: NaiveDate,
     pub plans: Plans,
     pub needs: Vec<Need>,

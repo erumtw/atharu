@@ -1,12 +1,12 @@
 {#- The Mac app fires `atharu-sync` on this window after the menu-bar popover changes something (start, record, end…). #}
 <div hidden hx-get="/meetings/banner?back={{ banner.back|urlencode }}" hx-trigger="atharu-sync from:body" hx-target="#meeting" hx-swap="outerHTML"></div>
-{#- Body of #meeting. Needs `banner` (active?, series, name, error, back, rec). Start/End swap this section. -#}
-{%- if let Some(m) = banner.active %}
-{%- if let Some(r) = banner.rec.live %}{% if !banner.rec.blocked %}
+{#- Body of #meeting. Needs `banner` (recording::Banner: state, name, error, back, ended). Start/End swap this section. -#}
+{%- if let Some(m) = banner.state.running %}
+{%- if let Some(r) = banner.state.rec.live %}{% if !banner.state.rec.blocked %}
 {#- Recording (DESIGN.md §6): polls once a second for elapsed + meters; the swap without them ends the poll. -#}
 <div class="callout dark recb" style="align-items: center" hx-get="/meetings/banner?back={{ banner.back|urlencode }}" hx-trigger="every 1s" hx-target="#meeting" hx-swap="outerHTML">
 <span class="dot rec" aria-hidden="true"></span>
-{%- if banner.rec.mac %}
+{%- if banner.state.rec.mac %}
 <span><b>Recording</b> <span class="rect" aria-label="elapsed">{{ r.elapsed }}</span></span>
 <span class="lvl" role="meter" aria-label="Me level" aria-valuemin="0" aria-valuemax="6" aria-valuenow="{{ r.me_n }}">Me<b>{% for on in r.me %}<i{% if *on %} class="on"{% endif %}></i>{% endfor %}</b></span>
 <span class="lvl" role="meter" aria-label="Others level" aria-valuemin="0" aria-valuemax="6" aria-valuenow="{{ r.others_n }}">Others<b>{% for on in r.others %}<i{% if *on %} class="on"{% endif %}></i>{% endfor %}</b></span>
@@ -26,7 +26,7 @@
 <b>Two macOS permissions before the first recording</b>
 <span class="small muted">Asked once. Audio is transcribed on this Mac and deleted; nothing is uploaded.</span>
 <ol class="steps">
-<li{% if banner.rec.mic_ok %} class="ok"{% endif %}><span><b>Microphone</b> · your side of the call</span>{% if banner.rec.mic_ok %}<span class="pill ok">Allowed</span>{% else %}<a class="btn ghost s" href="x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone">Open System Settings</a>{% endif %}</li>
+<li{% if banner.state.rec.mic_ok %} class="ok"{% endif %}><span><b>Microphone</b> · your side of the call</span>{% if banner.state.rec.mic_ok %}<span class="pill ok">Allowed</span>{% else %}<a class="btn ghost s" href="x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone">Open System Settings</a>{% endif %}</li>
 <li><span><b>Screen &amp; System Audio Recording</b> · the other side. Turn on Atharu in <span class="path">System Settings › Privacy &amp; Security › Screen &amp; System Audio Recording</span></span><a class="btn ghost s" href="x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture">Open System Settings</a></li>
 <li><span><b>Quit &amp; Reopen</b> · macOS applies it on the next launch; the meeting is still here after</span><a class="btn" href="/app/restart">Quit &amp; Reopen</a></li>
 </ol>
@@ -35,10 +35,10 @@
 {%- else %}
 <div class="callout dark" style="align-items: center">
 <span class="dot" aria-hidden="true"></span>
-<span>In <a href="/meetings/{{ m.id }}"><b>{{ m.name }}</b></a> · lines you log now are saved to this meeting{% if banner.rec.finishing %} <span class="muted">· transcribing the last part…</span>{% endif %}</span>
+<span>In <a href="/meetings/{{ m.id }}"><b>{{ m.name }}</b></a> · lines you log now are saved to this meeting{% if banner.state.rec.finishing %} <span class="muted">· transcribing the last part…</span>{% endif %}</span>
 <span class="recbtns">
-{%- if banner.rec.mac %}<a class="btn ghost" href="/app/screenshot?meeting={{ m.id }}" aria-label="Screenshot into this meeting" title="Screenshot into this meeting"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.8"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></a>{% endif %}
-{%- if banner.rec.mac && banner.rec.model_ready && !banner.rec.finishing %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record" hx-post="/meetings/{{ m.id }}/record" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><button class="btn ghost" type="submit" title="Tell people you're recording before you start.">Record audio</button></form>{% endif -%}
+{%- if banner.state.rec.mac %}<a class="btn ghost" href="/app/screenshot?meeting={{ m.id }}" aria-label="Screenshot into this meeting" title="Screenshot into this meeting"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.8"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></a>{% endif %}
+{%- if banner.state.rec.mac && banner.state.rec.model_ready && !banner.state.rec.finishing %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record" hx-post="/meetings/{{ m.id }}/record" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><button class="btn ghost" type="submit" title="Tell people you're recording before you start.">Record audio</button></form>{% endif -%}
 <form class="inline" method="post" action="/meetings/{{ m.id }}/end" hx-post="/meetings/{{ m.id }}/end" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><button class="btn ghost" type="submit">End meeting</button></form></span>
 </div>
 {%- endif %}
@@ -46,15 +46,15 @@
 <span class="err" style="padding: 0 18px">{{ e }}</span>
 {%- endif %}
 {%- else %}
-{%- if let Some(e) = banner.ended %}
-<div class="callout row" role="status" style="align-items: center"><span class="tick" aria-hidden="true">✓</span><span>Ended <b>{{ e.name }}</b>. Its lines, notes and transcript are on the meeting page.</span><a class="btn ghost s" style="margin-left: auto" href="/meetings/{{ e.id }}">Open meeting</a></div>
+{%- if let Some((eid, ename)) = banner.ended %}
+<div class="callout row" role="status" style="align-items: center"><span class="tick" aria-hidden="true">✓</span><span>Ended <b>{{ ename }}</b>. Its lines, notes and transcript are on the meeting page.</span><a class="btn ghost s" style="margin-left: auto" href="/meetings/{{ eid }}">Open meeting</a></div>
 {%- endif %}
 <form id="start-meeting" class="fld{% if banner.error.is_some() %} bad{% endif %}" method="post" action="/meetings" hx-post="/meetings" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><input name="name" value="{{ banner.name }}" placeholder="Start a meeting, e.g. oms-sync" list="series" aria-label="Meeting name" autocomplete="off"{% if banner.error.is_some() %} aria-invalid="true"{% endif %}><button class="btn ghost" type="submit">Start</button></form>
-<datalist id="series">{% for s in banner.series %}<option value="{{ s }}"></option>{% endfor %}</datalist>
-{%- if banner.rec.mac %}
+<datalist id="series">{% for s in banner.state.series %}<option value="{{ s }}"></option>{% endfor %}</datalist>
+{%- if banner.state.rec.mac %}
 {#- Off by default every time (D31): recording is a choice per meeting. Consent swaps in by CSS, no JS. -#}
-<div class="recopt"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="start-meeting"{% if !banner.rec.model_ready %} disabled{% endif %} hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#recperm" hx-swap="innerHTML" hx-include="this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
-{%- if banner.rec.model_ready %}<span class="muted off">Transcribed on this Mac. Audio is deleted once it’s text.</span><span class="consent">Tell people you’re recording before you start.</span>
+<div class="recopt"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="start-meeting"{% if !banner.state.rec.model_ready %} disabled{% endif %} hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#recperm" hx-swap="innerHTML" hx-include="this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
+{%- if banner.state.rec.model_ready %}<span class="muted off">Transcribed on this Mac. Audio is deleted once it’s text.</span><span class="consent">Tell people you’re recording before you start.</span>
 {%- else %}<span class="muted">Needs the speech model (574 MB).</span> <a href="/settings#transcription">Download it in Settings</a>{% endif %}</div>
 <div id="recperm" style="padding: 0 18px"></div>
 {%- endif %}

@@ -17,15 +17,6 @@ pub struct Saved {
     pub key: Option<String>,
 }
 
-pub struct Running {
-    pub id: i64,
-    pub name: String,
-    /// `since 09:17 · 24 min`; empty when the start time is unknown.
-    pub since: String,
-    /// Recording state for the card's Record audio / Stop (Mac app only; the browser shows neither).
-    pub rec: crate::recording::Rec,
-}
-
 pub struct Todo {
     pub id: i64,
     pub text: String,
@@ -54,13 +45,13 @@ pub struct Page {
     pub error: Option<&'static str>,
     /// Just saved: "✓ Saved note · Open".
     pub saved_note: Option<i64>,
-    pub running: Option<Running>,
-    /// Start section's Record audio switch: shown in the app only, enabled once the model is on disk.
-    pub rec_app: bool,
-    pub model_ready: bool,
+    /// The meeting card / start box (series capped to the menu's length). Record audio and Stop show in the app
+    /// only (`rec.mac`), enabled once the model is on disk.
+    pub meeting: crate::recording::MeetingState,
+    /// `since 09:17 · 24 min` of the running meeting; empty when none or its start time is unknown.
+    pub since: String,
     /// Just ended from here: (id, name) for "Ended X · Open".
     pub ended: Option<(i64, String)>,
-    pub series: Vec<String>,
     pub todos: Vec<Todo>,
     pub overdue: usize,
     pub due_today: usize,

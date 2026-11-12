@@ -318,7 +318,7 @@ fn tray_menu(h: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     } = {
         let st = h.state::<app::AppState>();
         let conn = st.conn();
-        atharu::quick::tray_menu(&conn).unwrap_or_default()
+        atharu::quick::tray_menu(&conn, st.mac.as_deref()).unwrap_or_default()
     };
     let mut menu = MenuBuilder::new(h).text("open", "Open Atharu");
     menu = match running {
@@ -345,21 +345,17 @@ fn refresh_menu(h: &AppHandle) {
 /// Tray icon state: 0 idle, 1 meeting running, 2 recording. Only a change touches the icon.
 static TRAY_STATE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
-/// Menu-bar icon shows the meeting state: a badge dot while a meeting runs, the whole mark red while recording,
+/// Menu-bar icon shows the meeting state (`recording::MeetingState` via `quick::tray_menu`): a badge dot while a
+/// meeting runs, the whole mark red while audio is captured,
 /// with the recording's elapsed time as the item's title. Red can't be a template image (macOS would tint it), so
 /// that one is drawn in #ff3b30, readable on light and dark bars.
 fn tray_state(h: &AppHandle) {
     let (state, tip, title) = {
         let st = h.state::<app::AppState>();
-        let m = atharu::quick::tray_menu(&st.conn()).unwrap_or_default();
+        let m = atharu::quick::tray_menu(&st.conn(), st.mac.as_deref()).unwrap_or_default();
         match (m.running, m.recording) {
-            (Some((_, name)), Some(started)) => {
-                let secs = atharu::recording::secs_between(&started, &atharu::recording::now());
-                (
-                    2,
-                    format!("Atharu · Recording · {name}"),
-                    Some(atharu::recording::elapsed(secs)),
-                )
+            (Some((_, name)), Some(clock)) => {
+                (2, format!("Atharu · Recording · {name}"), Some(clock))
             }
             (Some((_, name)), None) => (1, format!("Atharu · Meeting · {name}"), None),
             (None, _) => (0, "Atharu".to_string(), None),

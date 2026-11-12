@@ -79,23 +79,6 @@ pub fn known_tags(conn: &Connection) -> rusqlite::Result<Vec<(String, i64)>> {
         .collect()
 }
 
-/// The running meeting, if any: (id, name).
-pub fn active_meeting(conn: &Connection) -> rusqlite::Result<Option<(i64, String)>> {
-    conn.query_row(
-        "SELECT id, name FROM meetings WHERE ended_at IS NULL",
-        [],
-        |r| Ok((r.get(0)?, r.get(1)?)),
-    )
-    .optional()
-}
-
-/// Series names for the start box's datalist, most recently met first.
-pub fn meeting_series(conn: &Connection) -> rusqlite::Result<Vec<String>> {
-    let mut stmt =
-        conn.prepare("SELECT name FROM meetings GROUP BY name ORDER BY MAX(day) DESC, name")?;
-    stmt.query_map([], |r| r.get(0))?.collect()
-}
-
 pub fn epic_keys(conn: &Connection) -> rusqlite::Result<Vec<String>> {
     let mut stmt = conn.prepare("SELECT key FROM epics ORDER BY key")?;
     stmt.query_map([], |r| r.get(0))?.collect()

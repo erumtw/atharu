@@ -11,6 +11,7 @@ use crate::{
     },
     error::{AppError, AppResult},
     layout::{Layout, TagFilter},
+    recording::{Banner, MeetingState},
     web,
 };
 use axum::{
@@ -280,16 +281,10 @@ fn render_page(
     }
     Ok(view::Page {
         layout: Layout::load(&conn, "today", "Today", vec![])?,
-        banner: view::Banner {
-            active: queries::active_meeting(&conn)?
-                .map(|(id, name)| view::ActiveMeeting { id, name }),
-            series: queries::meeting_series(&conn)?,
-            name: String::new(),
-            error: None,
-            back: format!("/?day={}", dates::iso(day)),
-            rec: crate::recording::Rec::load(&conn, st.mac.as_deref())?,
-            ended: None,
-        },
+        banner: Banner::new(
+            MeetingState::load(&conn, st.mac.as_deref())?,
+            format!("/?day={}", dates::iso(day)),
+        ),
         today: st.today(),
         needs: needs(&conn, &plans, st.today())?,
         plans,

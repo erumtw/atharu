@@ -416,7 +416,8 @@ the log scrolls under it.
 - **Meeting**: not running → "Start a meeting", the three most recent series as `.btn.ghost.s` pills (submit buttons: one click
   starts) + a `.fld.m` name box with a ghost **Start** (28). Running → the banner's opaque `.callout.dark`: dot · name (link) ·
   "since 09:17 · 24 min" (minutes, no ticking seconds) · **End meeting**. Recording (started in the app, once T51 ships) shows
-  `.dot.rec` + "Recording · 24 min"; the popover never starts a recording.
+  `.dot.rec` + "Recording · 24 min"; the popover never starts a recording. Capture blocked by a permission → plain dot +
+  "Not recording yet · **See the steps**" (links the meeting page in the main window, where the banner lists them), End only.
 - **To-dos**: today + overdue only, overdue first, late ones with the existing `.due.late`; rows 32 (check 20 · text with ellipsis ·
   due right). The list takes what is left of the 480 and scrolls on its own; header, capture and meeting never move. At most 8 rows;
   "+ N more open · Open Atharu" links `/todos`. Ticking posts at once; the struck row stays until the popover closes (untick = reopen).
@@ -426,7 +427,7 @@ the log scrolls under it.
   + N more; Shift+Tab: Note tile → kind tiles (one stop, ←→ picks) → Open Atharu. Enter saves (unless an option was arrowed to). Esc closes an open
   menu, else hides the popover; blur hides it; Ctrl+Opt+Space toggles it. Any link opens in the main window and hides the popover.
 - **Menu-bar icon states**: idle = the Dry brush mark (template, macOS tints it) · meeting running = the mark with a solid badge
-  dot bottom-right, cut out of the ring (template) · recording = the same in `#ff3b30` (not a template: red has to stay red; reads on
+  dot bottom-right, cut out of the ring (template; also while a recording finishes or is blocked) · capturing = the same in `#ff3b30` (not a template: red has to stay red; reads on
   light and dark bars), with the recording's elapsed time (`04:12`) as the item's title beside it. Tooltip names the state and
   meeting. The app polls every second, so a browser start/end shows too.
 - **Recording in the meeting card** (app only, same rules as the banner): model ready + not recording → **Record** ghost pill
