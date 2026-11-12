@@ -3,6 +3,7 @@ use crate::{
     app::AppState,
     domain::{
         dates,
+        parse::by_as_text,
         plan::{Bucket, PIN_CAP, Plan, link_label, parse_plan},
     },
     error::{AppError, AppResult},
@@ -209,6 +210,7 @@ pub async fn preview(State(st): State<AppState>, Form(f): Form<LineForm>) -> App
             Ok(e) => view::Hint {
                 error: None,
                 preview: Some(view::Preview {
+                    soft: by_as_text(&e),
                     key: e.epic_key,
                     link: e.link.as_deref().map(link_label),
                     due: e.due.map(dates::label),

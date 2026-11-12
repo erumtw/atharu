@@ -103,8 +103,8 @@ async fn log_tags_the_agent_and_refuses_bad_callers() {
         (code, err.as_str()),
         (1, "Nothing after “+”. Type what happened.\n")
     );
-    let (code, _, err) = cli(&st, &["log", "> x by someday", "--as", "claude"], None);
-    assert_eq!((code, err.as_str()), (1, "Can't read date ‘someday’\n"));
+    let (code, _, err) = cli(&st, &["log", "> x by 32 Nov", "--as", "claude"], None);
+    assert_eq!((code, err.as_str()), (1, "Can't read date ‘32 Nov’\n"));
     assert_eq!(
         count(&st, "SELECT COUNT(*) FROM entries"),
         2,

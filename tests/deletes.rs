@@ -234,13 +234,13 @@ async fn line_edit_reparses_and_keeps_identity() {
     let r = post(
         &st,
         "/entries/7",
-        &form(&[("line", "> x by someday")]),
+        &form(&[("line", "> x by 32 Nov")]),
         false,
     )
     .await;
     assert_eq!(r.status, 422);
     assert!(
-        r.body.contains("x by someday\"") && r.body.contains("read date ‘someday’"),
+        r.body.contains("x by 32 Nov\"") && r.body.contains("read date ‘32 Nov’"),
         "{}",
         r.body
     );

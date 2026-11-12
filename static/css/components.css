@@ -409,6 +409,8 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
    value carrier. "menu" brings the whole Liquid Glass recipe (rim, light, shadow, lens, RT/IC, --muted-tint), so looks.css needs no
    edit. A top-layer popover: fixed to the viewport, placed by the script (phone: the sheet below). */
 .dp{position:fixed;inset:auto;margin:0}
+/* .menu sets display:flex, which would beat the UA rule that hides a closed popover. */
+.dp:not(:popover-open){display:none}
 /* Floor 85%, not the menus' 60%: a month is 42 small numbers plus an accent ring and accent links. Measured (T75, half-covered ink
    pixel behind / darkest veiled wallpaper, each look at its glass floor): ink ≥ 13.58, --muted-tint ≥ 7.34, --accent ≥ 4.57 (Sumi,
    phone sheet over the backdrop dim), white on --accent 5.57 (7.12 tinted). At 60% --accent fell to 3.18. */

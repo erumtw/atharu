@@ -129,12 +129,27 @@ async fn preview_returns_kind_and_key() {
     let r = post(
         &st,
         "/parse-preview",
-        &form(&[("line", "> x by someday")]),
+        &form(&[("line", "> x by 32 Nov")]),
         true,
     )
     .await;
     assert!(
         r.body.contains("Can&#39;t read date") || r.body.contains("Can't read date"),
+        "{}",
+        r.body
+    );
+    // D44: words after `by` that aren't a date save as text, with a soft note instead of an error.
+    let r = post(
+        &st,
+        "/parse-preview",
+        &form(&[("line", "> refactor by hand")]),
+        true,
+    )
+    .await;
+    assert!(
+        r.body.contains("“refactor by hand”")
+            && r.body.contains("‘by hand’ isn't a date · saved as text")
+            && !r.body.contains("class=\"err\""),
         "{}",
         r.body
     );

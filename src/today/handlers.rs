@@ -4,7 +4,7 @@ use crate::{
     domain::{
         dates,
         flags::{self, Flag},
-        parse::parse,
+        parse::{by_as_text, parse},
         tags,
     },
     error::{AppError, AppResult},
@@ -482,6 +482,7 @@ pub async fn preview(State(st): State<AppState>, Form(f): Form<LineForm>) -> App
     match parse(&f.line, st.today()) {
         Ok(e) => {
             out.preview = Some(view::Preview {
+                soft: by_as_text(&e),
                 kind: e.kind.as_str(),
                 key: e.epic_key,
                 text: e.text,
