@@ -1,4 +1,5 @@
-use crate::domain::tags;
+use crate::domain::{entry::NoteRef, plan::Plan, tags};
+use chrono::NaiveDate;
 use rusqlite::Connection;
 use std::path::Path;
 
@@ -121,4 +122,33 @@ pub fn retag(
         ins.execute([t.as_str(), item_type, item_id])?;
     }
     Ok(())
+}
+
+/// A to-do row's columns (`FROM entries`, unaliased: callers append WHERE / ORDER BY), mapped by `plan`. Shared like
+/// `retag`: every list drawing `plan_row.html` (To-dos, Today, a meeting, an epic, a tag hub) loads the same row.
+/// Column 10 = the Jira chip label, the cached issue whose key ends a path/param segment of the link.
+pub const SELECT_PLAN: &str =
+    "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
+         (SELECT j.key || ' · ' || j.summary FROM jira_issues j
+           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1),
+         note_id, (SELECT title FROM notes WHERE notes.id = entries.note_id)
+         FROM entries";
+
+pub fn plan(r: &rusqlite::Row) -> rusqlite::Result<Plan> {
+    let date = |s: Option<String>| s.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+    Ok(Plan {
+        id: r.get(0)?,
+        day: date(r.get(1)?).unwrap_or_default(),
+        epic_key: r.get(2)?,
+        text: r.get(3)?,
+        link: r.get(4)?,
+        due: date(r.get(5)?),
+        pinned: r.get(6)?,
+        state: r.get(7)?,
+        closed_day: date(r.get(8)?),
+        jira: r.get(9)?,
+        note: NoteRef::from_cols(r.get(10)?, r.get(11)?),
+        // Only To-dos' filtered list selects it (13th column).
+        via: r.get(12).unwrap_or(None),
+    })
 }

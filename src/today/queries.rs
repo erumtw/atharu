@@ -1,3 +1,4 @@
+use crate::db::SELECT_PLAN;
 use crate::domain::{
     entry::{Entry, Kind, NoteRef},
     plan::Plan,
@@ -263,32 +264,11 @@ fn date(s: Option<String>) -> Option<NaiveDate> {
 /// Open plans from any day, plus pinned ones finished this week (they stay ticked in "This week").
 /// Pinned first, then oldest.
 pub fn plans(conn: &Connection, week_start: &str) -> rusqlite::Result<Vec<Plan>> {
-    let mut stmt = conn.prepare(
-        "SELECT e.id, e.day, e.epic_key, e.text, e.link, e.due, e.pinned, e.plan_state, e.closed_day,
-         (SELECT j.key || ' · ' || j.summary FROM jira_issues j
-           WHERE (e.link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1),
-         n.id, n.title
-         FROM entries e LEFT JOIN notes n ON n.id = e.note_id
-         WHERE e.plan_state = 'open' OR (e.pinned = 1 AND e.plan_state = 'done' AND e.closed_day >= ?1)
-         ORDER BY e.pinned DESC, e.day, e.id",
-    )?;
-    stmt.query_map([week_start], |r| {
-        Ok(Plan {
-            id: r.get(0)?,
-            day: date(r.get(1)?).unwrap_or_default(),
-            epic_key: r.get(2)?,
-            text: r.get(3)?,
-            link: r.get(4)?,
-            due: date(r.get(5)?),
-            pinned: r.get(6)?,
-            state: r.get(7)?,
-            closed_day: date(r.get(8)?),
-            jira: r.get(9)?,
-            via: None,
-            note: NoteRef::from_cols(r.get(10)?, r.get(11)?),
-        })
-    })?
-    .collect()
+    let mut stmt = conn.prepare(&format!(
+        "{SELECT_PLAN} WHERE plan_state = 'open' OR (pinned = 1 AND plan_state = 'done' AND closed_day >= ?1)
+         ORDER BY pinned DESC, day, id"
+    ))?;
+    stmt.query_map([week_start], crate::db::plan)?.collect()
 }
 
 /// Active epics with what the flag rules read (spec "Progress flags").

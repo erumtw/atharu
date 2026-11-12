@@ -1,5 +1,5 @@
 use crate::{
-    domain::entry::{Kind, NoteRef},
+    domain::{entry::LineRow, plan::Plan},
     layout::Layout,
 };
 use askama::Template;
@@ -101,21 +101,15 @@ pub struct Live {
     pub ev_error: Option<String>,
 }
 
-pub struct TimelineRow {
-    pub id: i64,
-    pub day: String,
-    pub kind: Kind,
-    pub topic: Option<String>,
-    pub text: String,
-    pub author: String,
-    /// The epic's tags this line doesn't type itself: drawn as inherited chips.
-    pub inh: Vec<String>,
-    pub note: Option<NoteRef>,
+/// A timeline row: to-dos draw as `plan_row.html` (check, Pin, Drop), every other line as `entry_row.html`.
+pub enum Item {
+    Line(LineRow),
+    Plan(Plan),
 }
 
 pub struct DayGroup {
     pub label: String,
-    pub rows: Vec<TimelineRow>,
+    pub rows: Vec<Item>,
 }
 
 #[derive(Template)]
@@ -129,6 +123,8 @@ pub struct Page {
     pub activity: Vec<i64>,
     pub live: Live,
     pub timeline: Vec<DayGroup>,
+    /// For the to-do rows' due / late labels.
+    pub today: NaiveDate,
     /// Top-bar status after a plain (no-JS) save failed: the reason.
     pub save_error: Option<&'static str>,
     /// Notes linking here with `[[…]]`: (id, title).

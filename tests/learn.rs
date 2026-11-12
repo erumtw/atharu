@@ -139,7 +139,8 @@ async fn autosave_writes_only_posted_fields() {
         1
     );
     let b = get(&st, "/learn/kafka").await.body;
-    assert!(b.contains("lag is rebalance</span><a href=\"/epics/OPS-118\">"));
+    // Learn lines draw through the shared entry_row.html: text span, then the epic chip.
+    assert!(b.contains("lag is rebalance</span> <a href=\"/epics/OPS-118\">"));
     assert!(b.contains("not rated yet"));
     assert_eq!(get(&st, "/learn/nope").await.status, 404);
 }

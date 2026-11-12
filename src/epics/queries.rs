@@ -1,4 +1,8 @@
-use crate::domain::entry::{Kind, NoteRef};
+use crate::db::SELECT_PLAN;
+use crate::domain::{
+    entry::{Kind, LineRow, NoteRef},
+    plan::Plan,
+};
 use rusqlite::{Connection, OptionalExtension, params};
 
 pub struct EpicRow {
@@ -146,18 +150,8 @@ pub fn delete_evidence(conn: &Connection, key: &str, id: i64) -> rusqlite::Resul
     )? > 0)
 }
 
-pub struct TimelineRow {
-    pub id: i64,
-    pub day: String,
-    pub kind: Kind,
-    pub topic: Option<String>,
-    pub text: String,
-    pub author: String,
-    pub note: Option<NoteRef>,
-}
-
 /// Newest day first, newest line first inside a day (same order as Today).
-pub fn timeline(conn: &Connection, key: &str) -> rusqlite::Result<Vec<TimelineRow>> {
+pub fn timeline(conn: &Connection, key: &str) -> rusqlite::Result<Vec<LineRow>> {
     let mut stmt = conn.prepare(
         "SELECT e.id, e.day, e.kind, e.topic, e.text, e.author, n.id, n.title
          FROM entries e LEFT JOIN notes n ON n.id = e.note_id WHERE e.epic_key = ?1
@@ -165,7 +159,7 @@ pub fn timeline(conn: &Connection, key: &str) -> rusqlite::Result<Vec<TimelineRo
     )?;
     stmt.query_map([key], |r| {
         let kind: String = r.get(2)?;
-        Ok(TimelineRow {
+        Ok(LineRow {
             id: r.get(0)?,
             day: r.get(1)?,
             kind: Kind::parse(&kind).unwrap_or(Kind::Done),
@@ -173,9 +167,18 @@ pub fn timeline(conn: &Connection, key: &str) -> rusqlite::Result<Vec<TimelineRo
             text: r.get(4)?,
             author: r.get(5)?,
             note: NoteRef::from_cols(r.get(6)?, r.get(7)?),
+            ..LineRow::default()
         })
     })?
     .collect()
+}
+
+/// The epic's to-dos, any state, for their `plan_row.html` rows in the timeline.
+pub fn plans(conn: &Connection, key: &str) -> rusqlite::Result<Vec<Plan>> {
+    let mut stmt = conn.prepare(&format!(
+        "{SELECT_PLAN} WHERE epic_key = ?1 AND kind = 'plan'"
+    ))?;
+    stmt.query_map([key], crate::db::plan)?.collect()
 }
 
 /// Days of every line on the epic since `from`, for the activity sparkline.

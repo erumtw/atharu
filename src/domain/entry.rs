@@ -1,8 +1,9 @@
 use chrono::NaiveDate;
 
 /// What a logged line is. Stored as the lowercase `entries.kind` string.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Kind {
+    #[default]
     Done,
     Decision,
     Blocker,
@@ -144,6 +145,32 @@ impl NoteRef {
             &self.title
         }
     }
+}
+
+/// One logged line as every list draws it (`partials/entry_row.html`): Today, the tag hub, the epic timeline,
+/// the meeting page and Learn map their rows into this, so a row feature lands once (to-dos use `plan::Plan` and
+/// `plan_row.html`). Each list fills only what it shows; empty = not drawn.
+#[derive(Default)]
+pub struct LineRow {
+    pub id: i64,
+    /// `YYYY-MM-DD` it was logged: the no-JS edit link opens that day.
+    pub day: String,
+    pub kind: Kind,
+    pub topic: Option<String>,
+    pub text: String,
+    /// `me`, or the agent that filed it (badge).
+    pub author: String,
+    /// Under a tag: the epic / series the tag comes from when the text lacks it.
+    pub via: Option<String>,
+    /// Epic chip, where no epic heading already says it.
+    pub epic: Option<String>,
+    /// Meeting series chip.
+    pub meeting: Option<String>,
+    pub note: Option<NoteRef>,
+    /// Lists spanning days: `today`, `Wed 11` (a tag hub adds why a merged line is there).
+    pub when: String,
+    /// The epic's tags the text doesn't type itself (epic page): inherited chips.
+    pub inh: Vec<String>,
 }
 
 impl Entry {
