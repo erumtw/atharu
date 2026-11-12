@@ -209,7 +209,11 @@ pub fn delete(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<(String
         .query_row(
             "SELECT name, json_object('id', id, 'day', day, 'name', name, 'notes', notes,
                'ended_at', ended_at,
-               'entries', json((SELECT json_group_array(e.id) FROM entries e WHERE e.meeting_id = m.id)))
+               'entries', json((SELECT json_group_array(e.id) FROM entries e WHERE e.meeting_id = m.id)),
+               'transcripts', json((SELECT json_group_array(json_object('started_at', t.started_at,
+                   'ended_at', t.ended_at, 'status', t.status, 'model', t.model, 'lang', t.lang,
+                   'segments', json(t.segments)))
+                 FROM meeting_transcripts t WHERE t.meeting_id = m.id)))
              FROM meetings m WHERE id = ?1",
             [id],
             |r| Ok((r.get(0)?, r.get(1)?)),
@@ -242,6 +246,17 @@ pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<i64
            AND id IN (SELECT value FROM json_each(?1, '$.entries'))",
         params![snap, id],
     )?;
+    // Transcripts cascade away with the meeting, so Undo brings them back from the snapshot. A recording
+    // that was still running comes back interrupted: its recorder stopped when the meeting went.
+    tx.execute(
+        "INSERT INTO meeting_transcripts(meeting_id, started_at, ended_at, status, model, lang, segments)
+         SELECT ?2, value ->> 'started_at', value ->> 'ended_at',
+                CASE WHEN value ->> 'status' IN ('live', 'finishing') THEN 'interrupted'
+                     ELSE value ->> 'status' END,
+                value ->> 'model', value ->> 'lang', json(value -> 'segments')
+         FROM json_each(?1, '$.transcripts')",
+        params![snap, id],
+    )?;
     tx.commit()?;
     Ok(Ok(id))
 }
@@ -265,4 +280,130 @@ pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
     let mut stmt =
         conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
     stmt.query_map([], |r| r.get(0))?.collect()
+}
+
+/// A new recording for a running meeting (the Mac app picks it up and starts capture).
+/// `false` = the meeting has ended, or another recording is still live or finishing.
+pub fn start_transcript(
+    conn: &Connection,
+    meeting: i64,
+    at: &str,
+    model: &str,
+    lang: &str,
+) -> rusqlite::Result<bool> {
+    Ok(conn.execute(
+        "INSERT INTO meeting_transcripts(meeting_id, started_at, model, lang)
+         SELECT id, ?2, ?3, ?4 FROM meetings WHERE id = ?1 AND ended_at IS NULL
+           AND NOT EXISTS (SELECT 1 FROM meeting_transcripts WHERE status IN ('live', 'finishing'))",
+        params![meeting, at, model, lang],
+    )? > 0)
+}
+
+/// Stop recording / End meeting: live → finishing; the app transcribes the tail, then posts `done`.
+pub fn stop_transcript(conn: &Connection, meeting: i64, at: &str) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE meeting_transcripts SET status = 'finishing', ended_at = ?2
+         WHERE meeting_id = ?1 AND status = 'live'",
+        params![meeting, at],
+    )?;
+    Ok(())
+}
+
+pub enum Append {
+    Saved,
+    NotFound,
+    /// Done or interrupted: a late post must not reopen it.
+    Closed,
+}
+
+/// The app's segments, one recording. A (speaker, t) already there is skipped, so a retried post
+/// (or an overlap window repeating a line) never doubles it. `done` closes the recording; one that
+/// ends with no lines at all is dropped, there is nothing to show.
+pub fn append_segments(
+    conn: &Connection,
+    tid: i64,
+    segs: &[(f64, String, String)],
+    done: bool,
+    at: &str,
+) -> rusqlite::Result<Append> {
+    let tx = conn.unchecked_transaction()?;
+    let status: Option<String> = tx
+        .query_row(
+            "SELECT status FROM meeting_transcripts WHERE id = ?1",
+            [tid],
+            |r| r.get(0),
+        )
+        .optional()?;
+    match status.as_deref() {
+        None => return Ok(Append::NotFound),
+        Some("live" | "finishing") => {}
+        Some(_) => return Ok(Append::Closed),
+    }
+    let mut add = tx.prepare_cached(
+        "UPDATE meeting_transcripts
+         SET segments = json_insert(segments, '$[#]', json_object('t', ?2, 'speaker', ?3, 'text', ?4))
+         WHERE id = ?1 AND NOT EXISTS (
+           SELECT 1 FROM json_each(segments)
+           WHERE value ->> 'speaker' = ?3 AND value ->> 't' = ?2)",
+    )?;
+    for (t, speaker, text) in segs {
+        add.execute(params![tid, t, speaker, text])?;
+    }
+    drop(add);
+    if done {
+        tx.execute(
+            "DELETE FROM meeting_transcripts WHERE id = ?1 AND json_array_length(segments) = 0",
+            [tid],
+        )?;
+        tx.execute(
+            "UPDATE meeting_transcripts SET status = 'done', ended_at = COALESCE(ended_at, ?2)
+             WHERE id = ?1",
+            params![tid, at],
+        )?;
+    }
+    tx.commit()?;
+    Ok(Append::Saved)
+}
+
+pub struct Transcript {
+    pub id: i64,
+    pub started_at: String,
+    pub ended_at: Option<String>,
+    pub status: String,
+    pub model: String,
+    pub lang: String,
+    /// (t, speaker, text), in time order.
+    pub segments: Vec<(f64, String, String)>,
+}
+
+/// A meeting's recordings, oldest first, each with its segments sorted by time.
+pub fn transcripts(conn: &Connection, meeting: i64) -> rusqlite::Result<Vec<Transcript>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, started_at, ended_at, status, model, lang FROM meeting_transcripts
+         WHERE meeting_id = ?1 ORDER BY id",
+    )?;
+    let mut out: Vec<Transcript> = stmt
+        .query_map([meeting], |r| {
+            Ok(Transcript {
+                id: r.get(0)?,
+                started_at: r.get(1)?,
+                ended_at: r.get(2)?,
+                status: r.get(3)?,
+                model: r.get(4)?,
+                lang: r.get(5)?,
+                segments: Vec::new(),
+            })
+        })?
+        .collect::<Result<_, _>>()?;
+    let mut segs = conn.prepare(
+        "SELECT j.value ->> 't', j.value ->> 'speaker', j.value ->> 'text'
+         FROM meeting_transcripts t, json_each(t.segments) j WHERE t.id = ?1
+         ORDER BY j.value ->> 't', j.id",
+    )?;
+    for t in &mut out {
+        t.segments = segs
+            .query_map([t.id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+            .collect::<Result<_, _>>()?;
+    }
+    Ok(out)
 }

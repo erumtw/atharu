@@ -3,8 +3,9 @@ use crate::{
     app::AppState,
     build_info, config,
     domain::look::{self, LOOKS},
-    error::AppResult,
+    error::{AppError, AppResult},
     layout::Layout,
+    recording::{self, Mac, Model},
     web,
 };
 use axum::{
@@ -36,7 +37,87 @@ fn full(st: &AppState, conn: &rusqlite::Connection, db: view::Db) -> AppResult<v
         sha: build_info::SHA,
         built: build_info::BUILT,
         db,
+        tr: transcription(st, conn)?,
     })
+}
+
+fn transcription(st: &AppState, conn: &rusqlite::Connection) -> AppResult<view::Transcription> {
+    let mac = st.mac.as_deref();
+    let model = mac.map_or(Model::Missing, Mac::model);
+    Ok(view::Transcription {
+        mac: mac.is_some(),
+        polling: matches!(model, Model::Downloading { .. } | Model::Checking),
+        model,
+        langs: &recording::LANGS,
+        lang: recording::lang(conn)?,
+        hint: queries::first_epic(conn)?.unwrap_or_default(),
+        perms: mac.is_some_and(|m| {
+            let p = m.perms.lock().unwrap_or_else(|e| e.into_inner());
+            p.0 && p.1
+        }),
+    })
+}
+
+fn tr_answer(st: &AppState, headers: &HeaderMap) -> AppResult<Response> {
+    if !web::is_htmx(headers) {
+        return Ok(web::back("/settings#transcription"));
+    }
+    web::html(&transcription(st, &st.conn())?)
+}
+
+/// The group alone, for the poll while downloading.
+pub async fn transcription_get(State(st): State<AppState>) -> AppResult<Response> {
+    web::html(&transcription(&st, &st.conn())?)
+}
+
+#[derive(Deserialize)]
+pub struct ModelForm {
+    act: String,
+}
+
+/// Download / Cancel (deletes the partial) / Delete the speech model. A browser has no model to manage.
+pub async fn model(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<ModelForm>,
+) -> AppResult<Response> {
+    let Some(mac) = &st.mac else {
+        return Err(AppError::NotFound);
+    };
+    match f.act.as_str() {
+        "download" => mac.download(),
+        "cancel" => mac.cancel(),
+        "delete" => mac.delete(),
+        _ => {
+            return Ok((
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Pick download, cancel or delete.",
+            )
+                .into_response());
+        }
+    }
+    tr_answer(&st, &headers)
+}
+
+#[derive(Deserialize)]
+pub struct LangForm {
+    lang: String,
+}
+
+pub async fn lang(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<LangForm>,
+) -> AppResult<Response> {
+    if !recording::LANGS.iter().any(|(v, _)| *v == f.lang) {
+        return Ok((
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Pick Auto, Thai or English.",
+        )
+            .into_response());
+    }
+    queries::set(&st.conn(), "transcribe_lang", &f.lang)?;
+    tr_answer(&st, &headers)
 }
 
 /// Settings key set once the "old Mac DB isn't merged" note is dismissed.

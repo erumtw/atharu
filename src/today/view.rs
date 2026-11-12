@@ -125,6 +125,7 @@ pub struct Banner {
     pub name: String,
     pub error: Option<String>,
     pub back: String,
+    pub rec: crate::recording::Rec,
 }
 
 /// One "Needs you" line: a flagged epic or an overdue to-do.

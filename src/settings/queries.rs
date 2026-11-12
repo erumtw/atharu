@@ -24,3 +24,13 @@ pub fn db_file(conn: &Connection) -> rusqlite::Result<String> {
         |r| r.get(0),
     )
 }
+
+/// `OPS-101 Checkout latency`: the Vocabulary row's example of what the glossary passes.
+pub fn first_epic(conn: &Connection) -> rusqlite::Result<Option<String>> {
+    conn.query_row(
+        "SELECT trim(key || ' ' || title) FROM epics WHERE status = 'active' ORDER BY key LIMIT 1",
+        [],
+        |r| r.get(0),
+    )
+    .optional()
+}

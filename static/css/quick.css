@@ -92,8 +92,6 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .qrun .t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qrun .t .small{font-variant-numeric:tabular-nums}
 .qrun .btn{flex:none}
-.dot.rec{background:var(--rec-on-dark);animation:rec 1.6s ease-in-out infinite}
-@keyframes rec{50%{opacity:.35}}
 
 /* To-dos take the rest of the 480 and scroll on their own; header, capture and meeting never move. */
 .qtodo{flex:1 1 auto;min-height:0;padding-bottom:0}
@@ -111,7 +109,6 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 
 /* Touch (browser /quick on a phone): the 44 floor responsive.css would have given. */
 @media (hover:none){.kc,.quick .fld{height:48px}.qt{min-height:44px}.qpills .btn,.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}}
-@media (prefers-reduced-motion: reduce){.dot.rec{animation:none}}
 /* Reduce Transparency: looks.css already makes .menu solid + hairline; the panel goes fully opaque too. */
 @media (prefers-reduced-transparency: reduce){.menu.quick{--lg-min:100%}
   html[data-glass=all] .quick .qsec{border-color:var(--line)}}

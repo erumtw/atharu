@@ -15,6 +15,7 @@ pub mod learn;
 pub mod meetings;
 pub mod notes;
 pub mod quick;
+pub mod recording;
 pub mod report;
 pub mod settings;
 pub mod tags;

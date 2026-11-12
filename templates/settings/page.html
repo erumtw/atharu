@@ -47,6 +47,9 @@
 <div class="gi"><div class="t"><b>Jira titles</b><span>Read-only. Base URL, email and API token in data/config.toml.</span></div>{% if jira %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
 </div>
 
+<h2 class="sec">Transcription</h2>
+{{ tr|safe }}
+
 <h2 class="sec">Accessibility</h2>
 <div class="grp">
 {#- A page can't read the OS setting, only match it: CSS shows whichever line is true. #}

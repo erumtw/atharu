@@ -21,6 +21,9 @@ use tauri::{
 };
 use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut, ShortcutState};
 
+#[cfg(feature = "recording")]
+pub mod recording;
+
 /// Quick popover (T81) size in points; DESIGN.md §6 "Quick popover" and quick.css `.menu.quick` match it.
 const QUICK: (f64, f64) = (360.0, 480.0);
 
@@ -119,10 +122,13 @@ pub fn run() {
         });
 }
 
-/// An http(s) URL off this machine goes to the default browser (`true` = handed off, cancel it here).
+/// An http(s) URL off this machine goes to the default browser, a System Settings pane to System Settings
+/// (`true` = handed off, cancel it here).
 fn to_browser(url: &tauri::Url) -> bool {
     let local = matches!(url.host_str(), Some("127.0.0.1" | "localhost" | "[::1]"));
-    if local || !matches!(url.scheme(), "http" | "https") {
+    // "Open System Settings" on the permission steps: a pane URL only Launch Services can open.
+    let settings = url.scheme() == "x-apple.systempreferences";
+    if !settings && (local || !matches!(url.scheme(), "http" | "https")) {
         return false;
     }
     // `open` hands the URL to Launch Services; no shell, so the URL can't inject a command.
@@ -147,7 +153,17 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
     // A restart inherits it unchanged, which is the same path again.
     unsafe { std::env::set_var(config::DB_POINTER_ENV, &pointer) };
     let conn = db::open(&db_path)?;
+    // Whatever was recording when the app last quit has no process now (D33 crash-safety).
+    #[cfg(feature = "recording")]
+    atharu::recording::interrupt_orphans(&conn)?;
     let mut state = app::AppState::new(conn);
+    // The model is the app's, not the DB's: it stays put when ATHARU_DB points elsewhere.
+    #[cfg(feature = "recording")]
+    let mac = {
+        let m = Arc::new(atharu::recording::Mac::new(app_dir.join("models")));
+        state.mac = Some(m.clone());
+        m
+    };
     if let Some(dir) = db_path.parent() {
         state.settings = Arc::new(FileConfig::load(&dir.join("config.toml")));
     }
@@ -159,6 +175,20 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     listener.set_nonblocking(true)?;
     let url = format!("http://{}/", listener.local_addr()?).parse()?;
+    #[cfg(feature = "recording")]
+    {
+        let rec = Arc::new(recording::Recorder::new(listener.local_addr()?, mac));
+        handle.manage(rec.clone());
+        // The DB is shared (D52): a browser on the server can End the meeting without any POST reaching us,
+        // so poll too. Our own Record / Stop / End still sync at once through the middleware below.
+        let st = state.clone();
+        std::thread::spawn(move || {
+            loop {
+                rec.sync(&st);
+                std::thread::sleep(std::time::Duration::from_secs(2));
+            }
+        });
+    }
 
     let (h, st) = (handle.clone(), state.clone());
     // The look picker is a plain POST /settings; re-read the look after it so the Dock follows. Any meeting write
@@ -172,6 +202,10 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
                 let look_saved = post && path == "/settings";
                 let meetings = post && path.starts_with("/meetings");
                 let res = next.run(req).await;
+                if meetings {
+                    #[cfg(feature = "recording")]
+                    sync_recording(&h);
+                }
                 if look_saved {
                     let st = st.clone();
                     let _ = h.run_on_main_thread(move || look_icon(&st));
@@ -192,6 +226,17 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
         }
     });
     Ok(url)
+}
+
+/// Start / stop capture to match the recording rows (Record, Stop, End just changed one). Blocking SCK calls,
+/// so off the async runtime.
+#[cfg(feature = "recording")]
+fn sync_recording(h: &AppHandle) {
+    let (rec, st) = (
+        h.state::<Arc<recording::Recorder>>().inner().clone(),
+        h.state::<app::AppState>().inner().clone(),
+    );
+    std::thread::spawn(move || rec.sync(&st));
 }
 
 fn tray(handle: &AppHandle) -> tauri::Result<()> {

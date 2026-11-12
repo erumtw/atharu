@@ -1,3 +1,4 @@
+use crate::recording::Model;
 use crate::{domain::look::Look, layout::Layout};
 use askama::Template;
 
@@ -16,6 +17,22 @@ pub struct Page {
     pub sha: &'static str,
     pub built: &'static str,
     pub db: Db,
+    pub tr: Transcription,
+}
+
+/// Settings › Transcription; polled while the model downloads.
+#[derive(Template)]
+#[template(path = "settings/transcription.html")]
+pub struct Transcription {
+    /// Atharu.app; a browser gets the one-line version.
+    pub mac: bool,
+    pub model: Model,
+    pub polling: bool,
+    pub langs: &'static [(&'static str, &'static str)],
+    pub lang: String,
+    /// `OPS-101 Checkout latency`: the first active epic, as an example of what is passed.
+    pub hint: String,
+    pub perms: bool,
 }
 
 /// Settings › About › Database file (T85); also the htmx partial `/settings/db` returns.
