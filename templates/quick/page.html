@@ -66,6 +66,9 @@
 {%- else if m.rec.mac && m.rec.model_ready %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit" title="Tell people you're recording before you start.">Record</button></form>
 {%- endif %}<form class="inline" method="post" action="/meetings/{{ m.id }}/end"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit">End meeting</button></form></div>
 {%- else %}
+{%- if let Some((eid, ename)) = ended %}
+<p class="small" role="status" style="margin: 0"><span class="tick" aria-hidden="true">✓</span> Ended <b>{{ ename }}</b> · <a href="/meetings/{{ eid }}">Open meeting</a></p>
+{%- endif %}
 <h2 class="qlbl" id="qm">Start a meeting</h2>
 {%- if !series.is_empty() %}
 <form method="post" action="/meetings" class="qpills"><input type="hidden" name="back" value="/quick">{#- Mirrors the switch below (one switch, two forms): disabled = not sent, since the server records on any `record`. #}<input type="hidden" id="qrec-p" name="record" value="1" disabled>{% for s in series %}<button class="btn ghost s" type="submit" name="name" value="{{ s }}">{{ s }}</button>{% endfor %}</form>

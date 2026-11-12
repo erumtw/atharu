@@ -58,6 +58,8 @@ pub struct Page {
     /// Start section's Record audio switch: shown in the app only, enabled once the model is on disk.
     pub rec_app: bool,
     pub model_ready: bool,
+    /// Just ended from here: (id, name) for "Ended X · Open".
+    pub ended: Option<(i64, String)>,
     pub series: Vec<String>,
     pub todos: Vec<Todo>,
     pub overdue: usize,

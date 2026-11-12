@@ -168,8 +168,10 @@ async fn start_and_end_meeting_come_back_to_the_popover() {
 
     let r = post(&st, "/meetings/1/end", &form(&[("back", "/quick")]), false).await;
     assert_eq!(r.status, 303);
-    assert_eq!(r.headers["location"], "/quick");
-    assert!(get(&st, "/quick").await.body.contains("Start a meeting"));
+    assert_eq!(r.headers["location"], "/quick?ended=1");
+    let b = get(&st, "/quick?ended=1").await.body;
+    assert!(b.contains("Start a meeting"));
+    assert!(b.contains("Ended <b>oms-sync</b> · <a href=\"/meetings/1\">Open meeting</a>"));
 }
 
 #[tokio::test]

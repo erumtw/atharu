@@ -45,6 +45,9 @@
 <span class="err" style="padding: 0 18px">{{ e }}</span>
 {%- endif %}
 {%- else %}
+{%- if let Some(e) = banner.ended %}
+<div class="callout row" role="status" style="align-items: center"><span class="tick" aria-hidden="true">✓</span><span>Ended <b>{{ e.name }}</b>. Its lines, notes and transcript are on the meeting page.</span><a class="btn ghost s" style="margin-left: auto" href="/meetings/{{ e.id }}">Open meeting</a></div>
+{%- endif %}
 <form id="start-meeting" class="fld{% if banner.error.is_some() %} bad{% endif %}" method="post" action="/meetings" hx-post="/meetings" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><input name="name" value="{{ banner.name }}" placeholder="Start a meeting, e.g. oms-sync" list="series" aria-label="Meeting name" autocomplete="off"{% if banner.error.is_some() %} aria-invalid="true"{% endif %}><button class="btn ghost" type="submit">Start</button></form>
 <datalist id="series">{% for s in banner.series %}<option value="{{ s }}"></option>{% endfor %}</datalist>
 {%- if banner.rec.mac %}

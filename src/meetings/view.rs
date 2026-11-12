@@ -20,6 +20,8 @@ pub struct Banner {
     /// Page a plain POST returns to.
     pub back: String,
     pub rec: crate::recording::Rec,
+    /// Just ended (End's own answer): "Ended X · Open meeting", so the result is one click away.
+    pub ended: Option<Active>,
 }
 
 /// Answer to the Record switch turning on: the Screen Recording step when it's still off (empty when allowed).

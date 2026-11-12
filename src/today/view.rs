@@ -126,6 +126,8 @@ pub struct Banner {
     pub error: Option<String>,
     pub back: String,
     pub rec: crate::recording::Rec,
+    /// Only End's own answer sets it (meetings slice); a page load never shows "Ended".
+    pub ended: Option<ActiveMeeting>,
 }
 
 /// One "Needs you" line: a flagged epic or an overdue to-do.

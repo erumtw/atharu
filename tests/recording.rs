@@ -444,3 +444,14 @@ async fn record_switch_asks_for_screen_recording_up_front() {
     assert_eq!(r.status, 200);
     assert!(!r.body.contains("One step before recording"));
 }
+
+#[tokio::test]
+async fn end_answers_with_a_link_to_the_meeting() {
+    let st = state();
+    post(&st, "/meetings", &form(&[("name", "oms-sync")]), true).await;
+    let r = post(&st, "/meetings/1/end", &form(&[("back", "/")]), true).await;
+    assert!(r.body.contains("Ended <b>oms-sync</b>"));
+    assert!(r.body.contains("href=\"/meetings/1\">Open meeting</a>"));
+    // A later page load doesn't repeat it.
+    assert!(!get(&st, "/").await.body.contains("Ended <b>"));
+}
