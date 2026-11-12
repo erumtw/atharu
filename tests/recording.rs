@@ -105,7 +105,9 @@ async fn record_switch_only_in_the_app_and_only_with_a_model() {
     // App with the model: off by default, consent copy ready; ticked → a live recording.
     let (st, mac) = mac_state("model", true);
     let b = get(&st, "/").await.body;
-    assert!(b.contains("name=\"record\" value=\"1\" form=\"start-meeting\">"));
+    assert!(b.contains(
+        "name=\"record\" value=\"1\" form=\"start-meeting\" hx-post=\"/meetings/permissions\""
+    ));
     assert!(b.contains("Tell people you’re recording before you start."));
     post(
         &st,
@@ -432,4 +434,13 @@ async fn wait(st: &AppState, needle: &str) -> String {
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
     panic!("never showed {needle}");
+}
+
+#[tokio::test]
+async fn record_switch_asks_for_screen_recording_up_front() {
+    // Browser: no recorder, nothing to ask.
+    let st = state();
+    let r = post(&st, "/meetings/permissions", "", true).await;
+    assert_eq!(r.status, 200);
+    assert!(!r.body.contains("One step before recording"));
 }

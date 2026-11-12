@@ -22,6 +22,13 @@ pub struct Banner {
     pub rec: crate::recording::Rec,
 }
 
+/// Answer to the Record switch turning on: the Screen Recording step when it's still off (empty when allowed).
+#[derive(Template)]
+#[template(path = "meetings/permission.html")]
+pub struct Permission {
+    pub needed: bool,
+}
+
 /// htmx answer to start / end.
 #[derive(Template)]
 #[template(path = "meetings/banner.html")]

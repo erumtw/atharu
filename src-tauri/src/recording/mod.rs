@@ -269,6 +269,14 @@ fn capture(tx: mpsc::Sender<(usize, Vec<f32>)>, mac: Arc<Mac>) -> Result<SCStrea
     Ok(st)
 }
 
+/// Screen & System Audio Recording allowed? If not, macOS's prompt (once per app) and false (`Mac::ask_screen`).
+pub fn screen_or_ask() -> bool {
+    perms::screen() || {
+        perms::ask_screen();
+        false
+    }
+}
+
 /// macOS privacy grants (TCC). Screen & System Audio Recording has a C API; the mic has only AVFoundation.
 mod perms {
     use objc2::{class, msg_send, runtime::AnyObject};

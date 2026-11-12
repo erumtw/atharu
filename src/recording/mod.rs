@@ -42,6 +42,10 @@ pub struct Mac {
     pub perms: Mutex<(bool, bool)>,
     /// The last Record couldn't start capture (a permission is off): the banner shows the steps.
     pub blocked: Mutex<bool>,
+    /// Set by the app: true when Screen & System Audio Recording is allowed, else shows macOS's prompt and returns
+    /// false. Asked when the Record switch turns on, before the meeting starts: that grant only applies after a
+    /// relaunch, so asking at Start meant quitting in the middle of the meeting.
+    pub ask_screen: std::sync::OnceLock<Box<dyn Fn() -> bool + Send + Sync>>,
 }
 
 enum Dl {
@@ -73,6 +77,7 @@ impl Mac {
             levels: Mutex::default(),
             perms: Mutex::default(),
             blocked: Mutex::default(),
+            ask_screen: std::sync::OnceLock::new(),
         }
     }
 
