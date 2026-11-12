@@ -1,0 +1,5 @@
+{#- What the line will save as, or why it won't. Body of #hint. -#}
+{%- if let Some(e) = error -%}<span class="err">{{ e }}</span>{%- endif -%}
+{%- if let Some(p) = preview -%}
+→ will save as <b>{{ p.kind }}</b>{% if let Some(k) = p.key %} on {{ k }}{% endif %} · “{{ p.text }}”{% if let Some(d) = p.due %} · due {{ d }}{% endif %}
+{%- endif -%}

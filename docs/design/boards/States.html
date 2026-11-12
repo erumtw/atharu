@@ -1,0 +1,40 @@
+Worklog · States|Main|<b>Interaction states</b><span class="small muted" style="margin-left: auto">every message the app can show</span>
+<main class="doc wide">
+<h1 class="ptitle">States</h1>
+<p class="lead">Each tile = one state of a real control, with the exact copy. Pages show their empty state when the list is empty.</p>
+
+<h3>Logging a line</h3>
+<div class="sgrid">
+<div class="card"><b class="small">Empty day</b><p class="muted small" style="margin: 0">Nothing logged yet. Type what you did in the box below, one thing per line. For example:</p><div class="mono small muted" style="line-height: 1.7">OPS-101 shipped index migration<br>OPS-101 ! keep sync path, no queue<br>&gt; write retention runbook<br>? vector-search: HNSW trades recall for speed</div><div class="newline" style="position: static; box-shadow: none"><input placeholder="Type a line…" aria-label="Line"></div></div>
+<div class="card"><b class="small">Parse error · line kept</b><div class="newline" style="position: static; box-shadow: none; border-color: #b3261e"><input class="mono" value="OPS-101 +" aria-label="Line"></div><span class="err">Nothing after “+”. Type what happened.</span></div>
+<div class="card"><b class="small">Saved</b><div class="row small"><span style="color: #0066cc">✓</span><span>Saved as impact on <span class="chip key">OPS-101</span></span><a href="#">Undo</a></div><span class="small muted">Undo = delete that line. Gone on next action.</span></div>
+<div class="card"><b class="small">New key</b><div class="row small"><span style="color: #0066cc">✓</span><span>Saved on new epic <span class="chip key">OPS-140</span> ·</span><a href="Epics.dc.html">name it</a></div></div>
+<div class="card"><b class="small">Line deleted</b><div class="row small"><span>Line deleted ·</span><a href="#">Undo</a></div></div>
+<div class="card"><b class="small">Backfill</b><div class="row small"><span class="chip">Logging for Mon 10 Nov</span><a href="Main.dc.html">Back to today</a></div><span class="small muted">Shown when the day picker isn't today.</span></div>
+</div>
+
+<h3>Meeting <span class="tag">P2</span></h3>
+<div class="sgrid">
+<div class="card"><b class="small">No meeting running</b><form class="row" style="flex-wrap: nowrap"><input class="util" style="flex: 1; min-height: 36px" placeholder="Meeting name, e.g. oms-sync" list="series" aria-label="Meeting name"><button class="btn ghost" type="submit">Start</button></form><datalist id="series"><option value="oms-sync"></option></datalist><span class="small muted">Reuse a name to group meetings into a series. “OMS Sync” is saved as oms-sync.</span></div>
+<div class="card" style="background: #272729; color: #fff; border: 0"><b class="small">Running</b><div class="row small"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 9999px; background: #2997ff"></span><span>In <b>oms-sync</b> · 3 lines</span><button class="btn ghost" type="button" style="margin-left: auto; color: #2997ff; border-color: #2997ff; background: transparent">End meeting</button></div></div>
+<div class="card"><b class="small">Second start blocked</b><span class="err">End oms-sync first.</span></div>
+</div>
+
+<h3>Plans <span class="tag">P2</span></h3>
+<div class="sgrid">
+<div class="card"><b class="small">Pin cap</b><span class="err">Top 3 is full. Unpin one first.</span></div>
+<div class="card"><b class="small">No open plans</b><p class="small muted" style="margin: 0">No open plans. Log a line starting with &gt;.</p></div>
+<div class="card"><b class="small">Dropped</b><div class="row small"><span class="done-text">reorder spike</span><span class="chip">dropped</span><a href="#">Undo</a></div></div>
+</div>
+
+<h3>Pages, autosave, copy</h3>
+<div class="sgrid">
+<div class="card"><b class="small">Impact line, metric empty</b><span class="small muted">Fill Metric, Before and After on this page to build your impact line.</span></div>
+<div class="card"><b class="small">This week empty</b><span class="small muted">No plans pinned. Pin an open plan to see it here.</span></div>
+<div class="card"><b class="small">Report empty</b><span class="small muted">Nothing logged in this range. Try</span><a class="small" href="#">This month</a></div>
+<div class="card"><b class="small">Notes empty</b><span class="small muted">No notes yet.</span><button class="btn" type="button" style="align-self: flex-start">New note</button></div>
+<div class="card"><b class="small">Field autosave</b><div class="row small"><span class="muted">Target</span><span>14 Nov</span><span style="color: #0066cc">✓ saved</span></div><span class="small muted">Top bar always says “Changes save as you type”. Error: “Couldn't save. Try again.” field stays red.</span></div>
+<div class="card"><b class="small">Copy</b><div class="row small"><button class="btn" type="button">✓ Copied</button><span class="muted">for 2 s, then back to “Copy”</span></div></div>
+<div class="card"><b class="small">Server error</b><span class="err">Something broke. Your line is still in the box.</span><span class="small muted">500 + log line, nothing lost.</span></div>
+</div>
+</main>

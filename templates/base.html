@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worklog · {{ layout.title }}</title>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/layout.css">
+<link rel="stylesheet" href="/static/css/components.css">
+{#- 422 = "your input needs fixing": swap it (the hint) like a success instead of dropping it. #}
+<meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":false}]}'>
+<script src="/static/js/htmx.min.js" defer></script>
+<script src="/static/js/copy.js" defer></script>
+</head>
+<body>
+<div class="wl">
+<nav class="side" aria-label="Pages">
+<div class="ws">Worklog</div>
+{#- Only pages that exist; each slice adds its link when it lands (spec UX 10 order). #}
+<a href="/"{% if layout.nav == "today" %} class="on"{% endif %}>Today</a>
+<a href="/epics"{% if layout.nav == "epics" %} class="on"{% endif %}>Epics</a>
+<a href="/report"{% if layout.nav == "report" %} class="on"{% endif %}>Report</a>
+{%- if !layout.epics.is_empty() %}
+<div class="lbl">Active epics</div>
+{%- for e in layout.epics %}
+<a class="sub" href="/epics/{{ e.key }}"><span class="mono">{{ e.key }}</span>{% if !e.title.is_empty() %} {{ e.title }}{% endif %}</a>
+{%- endfor %}
+{%- endif %}
+</nav>
+<div class="pg">
+<div class="crumb">
+{%- for c in layout.crumbs %}<a href="{{ c.href }}">{{ c.label }}</a><span>/</span>{% endfor %}<b>{{ layout.title }}</b>
+{%- block crumb_extra %}{% endblock %}
+</div>
+{% block content %}{% endblock %}
+</div>
+</div>
+</body>
+</html>

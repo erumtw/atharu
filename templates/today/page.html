@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block crumb_extra %}<span class="row small" style="margin-left: auto; gap: 6px"><a href="/?day={{ day.prev }}">← {{ day.prev_label }}</a><span>·</span><a href="/?day={{ day.next }}">{{ day.next_label }} →</a><form class="inline" method="get" action="/"><input class="util" type="date" name="day" value="{{ day.iso }}" aria-label="Log for another day" onchange="this.form.submit()"></form></span>{% endblock %}
+{% block content %}
+<main class="doc">
+<h1 class="ptitle">{{ day.label }}</h1>
+{%- if !day.is_today %}
+<div class="row small"><span class="chip">Logging for {{ day.label }}</span><a href="/">Back to today</a></div>
+{%- endif %}
+{% include "today/log.html" %}
+<div class="capture">
+<div id="toast" class="toast row small" role="status">{%- include "partials/toast.html" -%}</div>
+{#- Reset only after this form's own 2xx: the input's preview requests bubble here too. #}
+<form class="newline{% if error.is_some() %} bad{% endif %}" style="position: static" method="post" action="/entries" hx-post="/entries" hx-target="#log" hx-swap="outerHTML" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) { this.reset(); document.getElementById('hint').textContent = ''; }">
+<input type="hidden" name="day" value="{{ day.iso }}">
+<input id="line" name="line" list="keys" value="{{ line }}" aria-label="Log a line" placeholder="What did you do? e.g.  OPS-101 + checkout p95 1.8s → 0.6s" autocomplete="off" autofocus hx-post="/parse-preview" hx-trigger="input changed delay:150ms" hx-target="#hint" hx-swap="innerHTML">
+<datalist id="keys">{% for k in keys %}<option value="{{ k }}"></option>{% endfor %}</datalist>
+<button class="util" type="submit">Log ↵</button>
+</form>
+<div id="hint" class="hint row small" aria-live="polite">{%- include "partials/parse_hint.html" -%}</div>
+<div class="row small muted" style="gap: 12px; padding: 0 14px">
+<span>Start with an epic key (optional), then:</span>
+<span><span class="k">·</span> nothing = done</span><span><span class="k">!</span> decision</span><span><span class="k bl">x</span> blocker</span><span><span class="k imp">+</span> impact</span><span><span class="k">?</span> learned <span class="mono">topic:</span></span><span><span class="k">&gt;</span> plan</span>
+</div>
+</div>
+</main>
+{% endblock %}

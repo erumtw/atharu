@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block crumb_extra %}<span class="row" style="margin-left: auto; gap: 8px"><span class="small muted">copies the text from “{{ note.title }}” down</span><button class="btn" type="button" data-copy="#report-md">Copy as markdown</button></span>{% endblock %}
+{% block content %}
+<main class="doc">
+<div class="row between">
+<form class="seg" role="group" aria-label="Range" method="get" action="/report">
+{%- for (p, l) in [("week", "This week"), ("month", "This month"), ("quarter", "This quarter")] %}<button{% if preset == *p %} class="on"{% endif %} type="submit" name="preset" value="{{ p }}">{{ l }}</button>{% endfor -%}
+</form>
+<form class="row small muted" style="gap: 6px" method="get" action="/report"><input class="util" type="date" name="from" value="{{ from }}" aria-label="From" onchange="this.form.requestSubmit()">→<input class="util" type="date" name="to" value="{{ to }}" aria-label="To" onchange="this.form.requestSubmit()"><noscript><button class="util" type="submit">Show</button></noscript></form>
+</div>
+
+<div class="row" style="gap: 10px; align-items: stretch" aria-label="Numbers for this range, not copied">
+<div class="stat"><span class="small muted">Epics done</span><b>{{ epics_done }}</b></div>
+<div class="stat"><span class="small muted">Impact lines</span><b>{{ impact_lines }}</b></div>
+<div class="stat"><span class="small muted">Decisions</span><b>{{ decisions }}</b></div>
+</div>
+<p class="small muted" style="margin: 0">Numbers and charts are for you. Copy takes only the note below.</p>
+
+<hr class="hr">
+<h1 class="ptitle" style="font-size: 32px; margin-top: 0">{{ note.title }}</h1>
+{%- if is_empty() %}
+<div class="row"><span class="small muted">Nothing logged in this range.{% if wider.is_some() %} Try{% endif %}</span>{% if let Some((p, l)) = wider %}<a class="small" href="/report?preset={{ p }}">{{ l }}</a>{% endif %}</div>
+{%- endif %}
+{%- if !note.shipped.is_empty() %}
+
+<h3 style="margin-top: 4px">Shipped</h3>
+<ul style="margin: 0; padding-left: 22px">{% for s in note.shipped %}<li>{{ s }}</li>{% endfor %}</ul>
+{%- endif %}
+{%- for sec in note.sections %}
+
+<h3>{{ sec.heading }}</h3>
+<ul style="margin: 0; padding-left: 22px">{% for i in sec.items %}<li><b>{{ i.label }}</b> {{ i.text }}</li>{% endfor %}</ul>
+{%- endfor %}
+<textarea id="report-md" hidden readonly aria-hidden="true">{{ markdown }}</textarea>
+
+<hr class="hr">
+
+<details open>
+<summary>Charts <span class="muted" style="font-weight: 400">· not copied</span></summary>
+<div class="row" style="align-items: flex-start; gap: 28px; margin-top: 8px">
+<div style="flex: 1 1 220px"><div class="small muted">Epics by OKR</div>
+{%- if okrs.is_empty() %}<div class="small muted" style="margin-top: 6px">No epics yet.</div>{% endif %}
+{%- for b in okrs %}
+<div class="small" style="margin-top: 6px">{{ b.okr }}: {{ b.summary }}</div><div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden">{% for s in b.segs %}<span style="flex: {{ s.flex }}; background: {{ s.color }}"></span>{% endfor %}</div>
+{%- endfor %}</div>
+<div style="flex: 1 1 200px"><div class="small muted">Impact lines per week</div><div class="bars" aria-hidden="true">{% for p in weeks.pct %}<span style="height: {{ p }}%"></span>{% endfor %}</div><div class="row between small muted"><span>{{ weeks.first }}</span>{% if weeks.pct.len() > 1 %}<span>{{ weeks.last }}</span>{% endif %}</div></div>
+</div>
+</details>
+</main>
+{% endblock %}

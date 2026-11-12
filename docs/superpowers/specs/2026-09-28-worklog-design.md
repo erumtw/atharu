@@ -5,12 +5,13 @@
 ## Goal
 
 Personal work log → prove impact at OKR/perf review + track real understanding vs AI-surface knowledge.
-Jobs: ownership · progress · planning · meetings · impact evidence · deep learning · notes.
+Jobs: ownership · progress · planning · to-dos · meetings · calendar · impact evidence · deep learning · notes.
 
 Success:
 - capture ≤ 2 min/day, one line per thing
 - paste-ready weekly note / self-review / OKR draft from one page, no hand-writing summaries
 - plan hit rate + depth history show growth over time
+- self-explanatory: a first-time user can use every page with no tutorial or guide (empty states show the first action, the input teaches the line grammar, no unexplained jargon)
 
 Rule: never store what Jira already knows. Store plans, decisions, impact, learning only.
 
@@ -28,19 +29,24 @@ Each phase shippable + used daily before next starts.
 | Phase | Scope | Why this order |
 |---|---|---|
 | 1 | capture + grammar · epics · report | core loop, usable day 1 |
-| 2 | planning `>` · progress flags · meeting mode | builds on `entries` |
+| 2 | to-dos (`>` + link + due) · progress flags · meeting mode | builds on `entries` |
 | 3 | learn pages + depth heatmap | needs weeks of `?` data first |
-| 4 | notes + `[[links]]` | only if Obsidian/Notion not enough |
+| 4 | notes + `[[links]]` + LLM layer | only if Obsidian/Notion not enough; LLM needs notes + topics to work on |
+| 5 | calendar view → Google Calendar read-only (iCal) | needs due dates + meetings from P2 to have something to show |
 
 Phase 1 grammar already parses all prefixes (`>` and `?` saved as entries); their pages arrive in later phases.
 
 ## Architecture
 
-- one Go binary `worklog`, serves `http://localhost:7070`
-- stdlib `net/http` + `html/template`, templates via `embed`
-- deps: `modernc.org/sqlite` (pure Go, no cgo) · `github.com/yuin/goldmark` (phase 4 only, notes markdown)
-- server-rendered pages, plain `<form>` POSTs; JS only for copy-to-clipboard
-- heatmap / sparkline = CSS grid, no chart lib
+2026-11-11: Go → Rust (owner's choice: learning Rust is part of the point). Same shape: one binary, server-rendered.
+
+- one Rust binary `worklog`, serves `http://localhost:7070`
+- crates: `axum` (HTTP) · `askama` (Jinja-style templates, checked at compile time) · `rusqlite` with `bundled` (SQLite compiled in) · `rust-embed` (templates + CSS + htmx in the binary) · `pulldown-cmark` (phase 4 only, raw HTML off)
+- frontend = the wireframe canvas's own HTML/CSS ported to askama templates → design parity by construction; no CSS framework, no JS build
+- `htmx` (one vendored file, ~14 KB) for no-reload actions: log line, delete/undo, plan check/pin/drop, property autosave (`hx-trigger="change"`, Notion-style, no Save button); every action still works as a plain `<form>` POST without JS
+- other JS: copy-to-clipboard · `editor.js` (Tiptap, notes page only, P4)
+- heatmap / sparkline = CSS, no chart lib
+- design: canvas https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ (Apple DESIGN.md look + Liquid Glass on floating chrome, Notion UX patterns)
 - DB path: `./data/worklog.db` (flag `-db` overrides), created + migrated on start
 - `data/` gitignored — DB holds Freshket work data (epic keys, metrics); never pushed
 
@@ -84,12 +90,15 @@ CREATE TABLE entries (
   plan_state TEXT CHECK (plan_state IN ('open','done','dropped')),  -- kind='plan' only
   closed_day TEXT,                          -- plan done/dropped day
   pinned     INTEGER NOT NULL DEFAULT 0,    -- plan in "this week top 3"
+  due        TEXT,                          -- YYYY-MM-DD, kind='plan' only, optional
+  link       TEXT,                          -- first http(s) URL in the line: source task (Jira/Slack/PR/doc), any kind
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   CHECK ((kind = 'plan') = (plan_state IS NOT NULL))
 );
 CREATE INDEX entries_day     ON entries(day);
 CREATE INDEX entries_epic    ON entries(epic_key);
 CREATE INDEX entries_meeting ON entries(meeting_id);
+CREATE INDEX entries_open_plans ON entries(due) WHERE plan_state = 'open';
 
 CREATE TABLE evidence (
   id       INTEGER PRIMARY KEY,
@@ -111,10 +120,22 @@ CREATE TABLE depth_ratings (               -- append-only
   depth INTEGER NOT NULL CHECK (depth BETWEEN 1 AND 4)
 );
 
+CREATE TABLE events (                      -- P5: calendar; own events now, Google read-only later
+  id        INTEGER PRIMARY KEY,
+  source    TEXT NOT NULL DEFAULT 'own' CHECK (source IN ('own','google')),
+  ext_id    TEXT,                           -- iCal UID when source='google'; NULL for own
+  title     TEXT NOT NULL,
+  starts_at TEXT NOT NULL,                  -- local ISO datetime, or YYYY-MM-DD for all-day
+  ends_at   TEXT,
+  UNIQUE (source, ext_id)
+);
+CREATE INDEX events_start ON events(starts_at);
+
 CREATE TABLE notes (
   id         INTEGER PRIMARY KEY,
   title      TEXT NOT NULL,
   body       TEXT NOT NULL DEFAULT '',      -- markdown
+  author     TEXT NOT NULL DEFAULT 'me' CHECK (author IN ('me','llm')),  -- LLM pages shown apart, never mixed with mine
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
@@ -125,7 +146,7 @@ No attendee field on meetings — privacy (no personal data) + YAGNI. Team names
 
 ## Line grammar (parser) — phase 1
 
-`[EPIC-KEY] [prefix] text` — pure func `Parse(line string) (Entry, error)`.
+`[EPIC-KEY] [prefix] text [link] [by <when>]` — pure fn `parse(line: &str, today: NaiveDate) -> Result<Entry, ParseError>`.
 
 | prefix | kind |
 |---|---|
@@ -143,6 +164,8 @@ No attendee field on meetings — privacy (no personal data) + YAGNI. Team names
 - unknown key → stub epic row inserted (title empty) → listed as "unfiled"
 - `x` only a prefix when followed by space (so `xml parser fixed` = done)
 - active meeting exists → `meeting_id` set on save (handler, not parser)
+- first `http(s)://…` token anywhere → `link` (kept in text too); shown as a chip labelled by host: Jira · Slack · GitHub · Docs · else domain
+- `>` lines only: trailing `by <when>` → `due`; `<when>` = `today` · `tomorrow` · weekday (`fri` = next one, today counts) · `20 Nov` / `2026-11-20`; unparseable → error "Can't read date ‘…’", line kept
 
 ## Pages
 
@@ -162,7 +185,12 @@ Blockers = plain entries, no resolve state. Close by logging a follow-up line. A
 
 ### Phase 2
 
-**Planning** (on `/`)
+**To-dos** — a to-do is a `>` line; epic optional, source link optional, due optional
+- e.g. `> reply to vendor https://…slack.com/archives/… by fri` · `OPS-101 > profile join` · `> renew parking`
+- **`/todos`** — all open, grouped Overdue · Today · This week · Later · No date; row = checkbox · text · link chip · epic chip · due (date picker, autosave) · Pin · Drop; "Done this week" toggle at the bottom
+- Today keeps "This week" (pinned) + "Other open plans" toggle; overdue to-dos also appear in "Needs you"
+
+**Planning** (on `/` and `/todos`)
 - open plans list = all `plan_state='open'` any day → carry-over free, no row copying
 - order: pinned first ("this week top 3"), then oldest
 - actions: check → `done` + `closed_day=today` · drop → `dropped` + `closed_day` · pin/unpin
@@ -194,43 +222,115 @@ Report adds: heatmap topics × months (cell = latest depth as of month end, blan
 ### Phase 4
 
 **`/notes`** — flat list by `updated_at` desc · search `?q=` = `LIKE` on title + body (FTS5 later if slow).
-**`/notes/{id}`** — textarea + rendered preview (goldmark, raw HTML disabled).
+**`/notes/{id}`** — Notion-style editor (decided 2026-11-11, option B): **Tiptap** (MIT, ProseMirror) on this page only
+- type-to-format: `#` heading · `-` list · `[]` checkbox · `>` quote · `---` divider · `**bold**` · `` `code` ``
+- `/` menu: heading, to-do list, toggle, callout, code block, divider, link
+- `[[` → page picker (epics, topics, meetings) → inline chip; paste a URL → link
+- storage stays **markdown** in `notes.body` (Tiptap markdown extension) → search, `[[X]]` backlinks and the LLM layer read it unchanged; server render for read-only views via pulldown-cmark (raw HTML off)
+- autosave: debounced 1 s htmx POST of the markdown; "✓ saved" in the top bar
+- not taken: drag-to-reorder blocks, columns, databases, embeds (spec out of scope)
+- JS: one prebuilt `static/js/editor.js`, bundled once with `esbuild` from pinned npm versions and committed; not part of `cargo build`; other pages ship no editor JS
 - `[[X]]` in body → link at render: epic key regex → `/epics/X` · topic slug exists → `/learn/X` · meeting name exists → `/meetings?name=X` · else plain text
 - backlinks: epic / topic / meeting pages show "mentioned in notes" = `body LIKE '%[[X]]%'`, no link table
+- `author='llm'` notes: badge + separate section on `/notes`; editable by me (edit flips nothing, stays `llm`)
+
+### LLM layer (phase 4)
+
+Borrowed from Karpathy's LLM Wiki pattern (LLM maintains a linked wiki from sources, guided by a schema file), with one inversion: **the LLM never writes my understanding.** Depth tracking only means something if `topics.summary`, `own_words` and `depth_ratings` are mine.
+
+- LLM = a Claude Code session in this repo, not an API call from the binary → no key, no new dep, no code
+- `CLAUDE.md` in repo = the schema file: tables, grammar, and the write rules below; LLM reads the DB with `sqlite3 data/worklog.db`
+- write rules:
+
+| LLM may | LLM must not |
+|---|---|
+| read everything | write `entries`, `topics`, `depth_ratings`, `epics`, `evidence` |
+| insert/update `notes` with `author='llm'` | edit or delete `author='me'` notes |
+| suggest `[[X]]` links in chat for my notes | rate depth or write "own words" |
+
+Operations (each = a `.claude/commands/*.md` prompt, no app code):
+- **query** — "what did I decide about X", "what did I ship for OKR Y" → answers from `entries` + `notes`, cites entry ids/days. Free once `CLAUDE.md` exists.
+- **lint** — reports in chat, writes nothing:
+  - learn entries with near-duplicate topic slugs (`vector-search` vs `vectorsearch`) → suggest merge
+  - `[[X]]` in notes that resolves to nothing → typo or missing topic
+  - topic `summary` contradicted by later learn entries/notes → "re-explain this in your own words"
+  - learn entries with no topic, topics never rated → nudge, not fix
+- **ingest** — I give a URL/file → LLM writes one `author='llm'` note (summary + `[[topic]]` links to existing slugs) and lists questions I should answer myself on `/learn/{slug}`. It never fills the topic page.
+
+Deterministic checks (stale topic, unrated topic, dead `[[X]]`) stay in Rust on `/learn` + `/notes`; the LLM only does what needs judgment (duplicates, contradictions).
+
+### Phase 5 — calendar
+
+**`/calendar`** — week view (default) + month toggle; today highlighted. Shows, from data we already have:
+- to-dos by `due` · epic `target` dates · meetings (by day) · days with log entries (dot) · `events` rows
+- click a day → Today for that day (backfill) · click a meeting/event → start meeting mode with that name
+- own events: "+ Event" (title, date, optional time) → `events` with `source='own'`
+
+**Google read-only (P5b)** — the calendar's secret iCal address, fetched every 15 min, upsert by `ext_id`, never written back
+- URL lives in local config (`data/config.toml`, gitignored), never in the repo; it is a credential
+- check first: Google Calendar → Settings → your calendar → "Integrate calendar" → "Secret address in iCal format". Workspace admins often disable it → then Google API (OAuth) or skip; decide then
+- crates: `reqwest` + `icalendar` (P5b only)
+
+## UX decisions (2026-11-11, from the canvas)
+
+1. Sidebar = page list + active epics (meeting series / topics / notes on their pages); breadcrumbs on top
+2. After a line is logged: "Saved as impact on OPS-101 · Undo" (undo = delete)
+3. Epic key autocomplete = native `<datalist>` of known keys
+4. Today page order: meeting banner · this-week to-dos (pinned plans) · open plans (toggle) · "Needs you" flags · log grouped by epic · floating "Type a line…" bar
+5. Untitled keys get an inline title box on `/epics`
+6. Epic / topic / meeting = page with big title + inline properties, autosaved on change
+7. `/report` shows exactly what Copy gives; charts in a toggle, not copied
+8. Day nav `← prev · next →` + date picker for backfill
+9. Notes: Tiptap editor (type-to-format, `/` menu, `[[` picker), markdown storage; `author='llm'` notes in their own sidebar group
+10. Sidebar order: Today · To-dos · Calendar · Epics · Report · Meetings · Learn · Notes
 
 ## Error handling
 
-- DB open/migrate fail → exit non-zero with message
+- DB open/migrate fail → exit non-zero with message (`anyhow` in main only)
 - form validation errors → re-render page with message, input kept
 - handler DB error → 500 + log line; no retries (local single user)
 - 2nd active meeting (unique index violation) → message "end {name} first"
 
 ## Testing
 
-- `parse_test.go`: table-driven — each prefix incl `>`, no key, key + no prefix, `?` with/without topic, `xml` not blocker, empty, prefix-only
-- `report_test.go`: in-memory SQLite — date-range filter, done-in-range, plan hit rate (done/open/dropped), depth "as of month end"
-- `flags_test.go` (phase 2): stale / at risk / overdue against fixed "today"
-- `links_test.go` (phase 4): `[[X]]` resolution order + unknown → plain text
+All `cargo test`; DB tests use in-memory SQLite (`Connection::open_in_memory`).
+- `parse.rs` tests: table-driven — each prefix incl `>`, no key, key + no prefix, `?` with/without topic, `xml` not blocker, empty, prefix-only, link anywhere, `by fri` / `by 20 Nov` / bad date
+- `report.rs` tests: in-memory SQLite — date-range filter, done-in-range, plan hit rate (done/open/dropped), depth "as of month end"
+- `flags.rs` tests (phase 2): stale / at risk / overdue against fixed "today"
+- `links.rs` tests (phase 4): `[[X]]` resolution order + unknown → plain text
 - no UI tests
+- LLM layer: no automated tests (prompts, not code); check by running each command once on real data
 
 ## Out of scope
 
-auth · Jira sync · entry edit · blocker resolve · notifications · multi-device sync · charts lib · calendar sync · recurring meeting templates · time tracking · attendee tracking · Notion-style blocks/nesting/DB views.
-Add when: Jira sync → typing titles annoys; edit → delete+retype annoys; sync → second machine; calendar → meeting start typing annoys.
+auth · Jira sync · entry edit · blocker resolve · notifications · multi-device sync · charts lib · calendar write-back / Google API OAuth (P5b is read-only iCal) · task priority / subtasks · recurring meeting templates · time tracking · attendee tracking · Notion-style blocks/nesting/DB views · LLM API calls from the binary · embeddings/RAG · LLM writing topics/depth/entries · markdown wiki files (SQLite stays the single source).
+Add when: Jira sync → typing titles annoys; edit → delete+retype annoys; sync → second machine; Google API → iCal address disabled by admin and calendar is missed.
 
 ## Layout
 
+Vertical slices + pure core (decided 2026-11-11, option 4 of: full Clean Architecture · hexagonal-lite · layered · vertical slices).
+Rules: `domain/` imports nothing from features · features never import each other (shared → `domain/`) · SQL only in a feature's `queries.rs` · HTML only in `templates/` · each htmx action returns one partial · folders arrive with their phase · `cargo fmt` + `cargo clippy -D warnings` + `cargo test` before every commit.
+Not used: workspace / multiple crates, ORM, repository traits with one impl, JS build.
+
 ```
 personal-tracker/
-  main.go          serve + dump subcommand, routes
-  db.go            open, migrate, queries
-  parse.go         line grammar
-  report.go        report queries
-  flags.go         progress flags (phase 2)
-  links.go         [[X]] resolve (phase 4)
-  schema.sql
-  templates/*.html
-  static/app.css
-  *_test.go
-  data/            gitignored
+  Cargo.toml
+  migrations/001_init.sql
+  src/
+    main.rs  app.rs (router + state)  config.rs  error.rs (AppError → response)  db.rs (open + migrate only)
+    domain/            pure, unit-tested: entry.rs · parse.rs · dates.rs (`by fri`) · links.rs (P4) · flags.rs (P2) · depth.rs (P3)
+    today/             mod.rs (routes) · handlers.rs · queries.rs (SQL) · view.rs (askama structs)
+    epics/  report/    same 4 files
+    todos/  meetings/  (P2)   learn/ (P3)   notes/ (P4)   calendar/ (P5)
+  templates/
+    base.html          sidebar + breadcrumb + page sheet
+    <feature>/         one folder per feature: pages
+    partials/          entry_row · plan_row · link_chip · flag · toast · property
+  static/
+    css/ tokens.css · base.css · layout.css · components.css
+    js/  htmx.min.js (vendored, pinned) · copy.js
+  tests/               HTTP tests per feature, in-memory SQLite
+  CLAUDE.md            schema + LLM write rules (P4)
+  .claude/commands/{query,lint,ingest}.md   (P4)
+  data/                gitignored: worklog.db, config.toml
 ```

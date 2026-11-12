@@ -1,0 +1,11 @@
+/* Colour tokens, transcribed from the approved canvas (docs/design/boards/app.css). */
+:root {
+  --ink: #1d1d1f;
+  --ink-2: #333333;
+  --muted: #6e6e73;
+  --accent: #0066cc;
+  --line: #e0e0e0;
+  --fill: #f5f5f7;
+  --fill-2: #f0f0f0;
+  --err: #b3261e;
+}
