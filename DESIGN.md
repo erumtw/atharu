@@ -28,6 +28,7 @@ Approved wireframes: canvas https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ, H
 | `--accent-wash` | `#e8f1fb` | meeting events, selected menu option |
 | `--accent-soft` | `#4d8fd1` | bars, "done" OKR segment (never under text) |
 | `--accent-on-dark` | `#2997ff` | link, dot, End button on `--dark` (4.9:1, so `--dark` stays opaque) |
+| `--rec-on-dark` | `#ff5c52` | the recording dot on `--dark` only (4.90:1; `--err` is 2.28 there). Never text, never on white: the word "Recording" carries the state |
 | `--heat-1` / `--heat-2` / `--heat-4` | `#e3effc` / `#bcd6f2` / `#003d7a` | depth heat steps 1, 2, 4 (3 = `--accent`) |
 | `--dark` / `--on-dark-muted` | `#272729` / `#cccccc` | meeting banner, impact callout / muted text on it (9.3:1) |
 | `--fill-3` / `--now` | `#fafafc` / `#f5f9fe` | table hover, calendar heads, toast / today's calendar column |
@@ -169,6 +170,10 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Notes body | `.note-body` | Tiptap content as the board draws it (code on `--fill`, task lists, toggles, `.page` links) |
 | Drawing | `.drawing`, `.drawing.empty`, `.drawsheet` + `.drawbar` | see "Drawing block" below |
 | Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw` |
+| Recording banner | `.callout.dark.recb` > `.dot.rec` + `.rect` + `.lvl` ×2 | meeting banner while recording: pulsing dot, elapsed, one level meter per stream, Stop recording + End meeting |
+| Transcript | `.tx` > `.txhead` + `.txbody` > `.txrow` | white 12-radius box (content, no glass); search `.fld.s` + Copy in the head |
+| Progress | `progress.prog` | native `<progress>`, 6 px, `--accent` on `--sep` (4.6:1) |
+| Command chip | `.cmd` | a copyable CLI / slash command in a white pill with a Copy button inside |
 
 ### Drawing block (canvas row "Drawings · Excalidraw in notes", T41; D23, D24)
 
@@ -194,6 +199,39 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   reads it), and the UI font to the system stack (so its Assistant webfont is never fetched). Hint text takes `--muted` for AA.
   The colours *inside* a drawing (Excalidraw's stroke palette) are the user's content, not UI, so the one-blue rule doesn't apply there.
 - Text in a drawing uses Excalifont (vendored, inlined into the stored SVG at Done), so the read view needs no webfont.
+
+### Meeting recording (canvas row "Meeting recording", T51; D26, D27)
+
+- **Mac app only.** The browser and phone never capture; they show transcripts, and a running recording as "Recording on the Mac"
+  (no Stop). Settings › Transcription in the browser is one line saying so.
+- **Start**: under the meeting field, a `.sw` **Record audio** switch with a mic icon; **off by default every time** (recording is a
+  per-meeting choice). Switched on, the help line becomes the consent reminder in ink, not muted: "Tell people you're recording
+  before you start." No speech model yet → switch disabled + "Needs the speech model (574 MB). Download it in Settings".
+- **Banner while recording** (`#meeting`, also shown on the meeting page while it runs): `.dot.rec` (the only red; pulses, still under
+  `prefers-reduced-motion`) · **Recording** + elapsed in tabular mono · two level meters, **Me** (mic) and **Others** (system audio),
+  lit bars `--accent-on-dark`, so a muted mic shows in the first seconds · **Stop recording** (meeting keeps running) · **End meeting**
+  (also stops). The word "Recording" carries the state; the dot is decoration.
+- **Transcript** section on the meeting page, after Notes: `.tx` with a head (meta in muted: "Live · about 30 s behind · th · N
+  lines" / "Recorded 1 h 02 min · 812 lines · large-v3-turbo · th"), search (`GET ?q=`, server filters rows and wraps hits in
+  `<mark>` on `--accent-wash`; works without JS) and **Copy** (clipboard; a `.toast` "Copied N lines"). Rows: mono timestamp ·
+  **Me** / **Others** (12/600, repeated speaker hidden) · text. Live tail line: "Listening · the next lines arrive about 30 s after
+  they're said". The body scrolls in its own 440 px box and follows the bottom while live.
+- **Finishing**: after Stop / End, a `role=status` row under the last lines: "Transcribing the last part… about N min left · you can
+  close this page, it keeps going" + `progress.prog` (≈ 4–5 min per hour of meeting).
+- **Done**: a grey `.callout` above the transcript: "Ask Claude for notes: run `/meeting` in Claude Code…" + `.cmd` holding
+  `/meeting <id>` with Copy. No API key, no button that calls a model.
+- **Interrupted**: a grey callout "Atharu closed during this meeting. The transcript is saved up to hh:mm:ss; the rest of the audio
+  is gone."
+- **Permissions** (first Record): a grey callout with numbered `.steps`: Microphone (`.pill.ok` Allowed) → Screen & System Audio
+  Recording (path in 500 weight + **Open System Settings** glass pill) → **Quit & Reopen** (the view's one blue). The meeting starts
+  anyway, banner says "not recording yet". Denied → "Atharu can't hear this meeting", the path, the same two buttons. Mic dialog copy
+  (`NSMicrophoneUsageDescription`): "Atharu records your side of a meeting and turns it into text on this Mac. Audio is deleted once
+  it's transcribed."
+- **Settings › Transcription** (between Connections and Accessibility): Speech model (Download 574 MB = primary · downloading:
+  `progress.prog` + "212 of 574 MB · about 1 min left" + Cancel · "Checking the file…" · Ready `.pill.ok` + Delete `.dng` · checksum
+  failed `.err` + Try again) · Language `.seg.mac` Auto | Thai | English (Thai default; help says Auto can translate) · Vocabulary
+  `.pill` Automatic (meeting name + active epics as hints) · Permissions `.pill.ok` On · Audio "Deleted as soon as it's text".
+- RT / IC: the banner is already opaque `--dark`; `.tx` is content; glass bits (search field, Copy pill, crumb) follow the usual rules.
 
 ## 7. UX patterns (from Notion)
 
