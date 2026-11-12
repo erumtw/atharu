@@ -90,6 +90,10 @@ pub fn run() {
                             h.request_restart();
                             return false;
                         }
+                        if url.path() == "/app/screenshot" {
+                            screenshot(&h, url);
+                            return false;
+                        }
                         true
                     }
                 })
@@ -494,6 +498,7 @@ fn quick_nav(h: &AppHandle, url: &tauri::Url) -> bool {
     }
     match url.path() {
         "/quick/close" => hide_quick(h),
+        "/app/screenshot" => screenshot(h, url),
         "/quick" => return true,
         _ => {
             if let Some(m) = h.get_webview_window("main") {
@@ -504,6 +509,47 @@ fn quick_nav(h: &AppHandle, url: &tauri::Url) -> bool {
         }
     }
     false
+}
+
+/// Camera button on a running meeting (T89): macOS's own picker (`screencapture -i`: drag a region, Space for a
+/// window, Esc cancels), then the PNG goes to the meeting's screenshots. Off the main thread: the picker blocks
+/// until the user is done. The popover hides first so it isn't in the shot.
+fn screenshot(h: &AppHandle, url: &tauri::Url) {
+    let Some(id) = url
+        .query_pairs()
+        .find(|(k, _)| k == "meeting")
+        .and_then(|(_, v)| v.parse::<i64>().ok())
+    else {
+        return;
+    };
+    hide_quick(h);
+    let h = h.clone();
+    std::thread::spawn(move || {
+        let tmp = std::env::temp_dir().join(format!("atharu-shot-{}-{id}.png", std::process::id()));
+        let _ = std::fs::remove_file(&tmp);
+        let ok = std::process::Command::new("/usr/sbin/screencapture")
+            .args(["-i", "-x"])
+            .arg(&tmp)
+            .status()
+            .is_ok_and(|s| s.success());
+        // Esc leaves no file: nothing to save.
+        let png = if ok { std::fs::read(&tmp).ok() } else { None };
+        let _ = std::fs::remove_file(&tmp);
+        let Some(png) = png.filter(|b| !b.is_empty()) else {
+            return;
+        };
+        let st = h.state::<app::AppState>().inner().clone();
+        if let Err(e) = atharu::meetings::add_shot(&st, id, &png) {
+            eprintln!("screenshot: {e}");
+            return;
+        }
+        let h2 = h.clone();
+        let _ = h.run_on_main_thread(move || {
+            if let Some(w) = h2.get_webview_window("main") {
+                let _ = w.eval("document.body.dispatchEvent(new CustomEvent('atharu-sync'))");
+            }
+        });
+    });
 }
 
 fn hide_quick(h: &AppHandle) {

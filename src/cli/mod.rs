@@ -313,6 +313,15 @@ fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
         "lines": lines,
         "plans": plans,
         "transcripts": transcripts,
+        // Absolute paths, so an agent can open the images (T89).
+        "shots": crate::meetings::shots::root(conn)
+            .map(|r| {
+                crate::meetings::shots::list(&r, id)
+                    .into_iter()
+                    .map(|f| json!({"time": crate::meetings::shots::label(&f), "path": r.join(id.to_string()).join(f)}))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default(),
     }))
 }
 

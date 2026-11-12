@@ -2,6 +2,7 @@
 //! and the recordings the Mac app transcribes into it (T53).
 mod handlers;
 pub(crate) mod queries;
+pub mod shots;
 mod view;
 
 use crate::app::AppState;
@@ -28,4 +29,21 @@ pub fn routes() -> Router<AppState> {
         .route("/meetings/{id}/tags", post(handlers::set_tags))
         .route("/meetings/{id}/delete", post(handlers::delete))
         .route("/meetings/restore", post(handlers::restore))
+        .route("/meetings/{id}/shots", get(handlers::shots))
+        .route(
+            "/attachments/meetings/{id}/{file}",
+            get(handlers::shot_file),
+        )
+}
+
+/// The Mac app's screenshot button (T89): store a PNG it captured for meeting `id`. A plain function, not a
+/// route: the app holds the state, and an HTTP upload would only add a way in for any local page.
+pub fn add_shot(st: &AppState, id: i64, png: &[u8]) -> Result<String, String> {
+    let conn = st.conn();
+    queries::meeting(&conn, id)
+        .map_err(|e| e.to_string())?
+        .ok_or("No such meeting.")?;
+    let root = shots::root(&conn).ok_or("No folder next to the database.")?;
+    let now = chrono::Local::now().format("%H%M%S").to_string();
+    shots::save(&root, id, png, &now)
 }

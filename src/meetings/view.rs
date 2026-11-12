@@ -113,6 +113,22 @@ pub struct Page {
     /// Shown on top while this meeting is recording (D31), so Stop is where you are.
     pub banner: Option<Banner>,
     pub tx: TxSection,
+    pub shots: Shots,
+}
+
+/// Screenshots section (T89): file names + whether this view can take one (the Mac app, meeting running).
+#[derive(Template)]
+#[template(path = "meetings/shots.html")]
+pub struct Shots {
+    pub id: i64,
+    pub files: Vec<String>,
+    pub can_take: bool,
+}
+
+impl Shots {
+    pub fn label(&self, f: &str) -> String {
+        super::shots::label(f)
+    }
 }
 
 #[derive(Template)]

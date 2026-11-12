@@ -42,6 +42,7 @@
 <textarea id="mnotes" name="notes" class="ta" rows="5">{{ notes }}</textarea>
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
+{{ shots|safe }}
 {{ tx|safe }}
 {% include "partials/backlinks.html" %}
 <form method="post" action="/meetings/{{ id }}/delete" hx-post="/meetings/{{ id }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Its lines stay on their days">Delete meeting</button></form>
