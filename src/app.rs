@@ -55,12 +55,14 @@ pub fn router(state: AppState) -> Router {
         .merge(crate::meetings::routes())
         .merge(crate::learn::routes())
         .merge(crate::notes::routes())
+        .merge(crate::jira::routes())
+        .merge(crate::settings::routes())
         .route("/static/{*path}", get(static_file))
         .with_state(state)
 }
 
 /// Run `job` now and then every `period`, forever. Shared by every read-only integration
-/// (Google iCal now, Jira titles next): each brings its own `refresh`, this owns the timing.
+/// (Google iCal, Jira titles): each brings its own `refresh`, this owns the timing.
 pub fn every<F, Fut>(period: Duration, mut job: F)
 where
     F: FnMut() -> Fut + Send + 'static,
@@ -87,6 +89,17 @@ pub fn spawn_refreshers(state: &AppState) {
             async move {
                 if let Err(e) = crate::calendar::refresh(&st).await {
                     eprintln!("calendar refresh: {e}");
+                }
+            }
+        });
+    }
+    if state.settings.jira().is_some() {
+        let st = state.clone();
+        every(PERIOD, move || {
+            let st = st.clone();
+            async move {
+                if let Err(e) = crate::jira::refresh(&st).await {
+                    eprintln!("jira refresh: {e}");
                 }
             }
         });

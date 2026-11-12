@@ -52,6 +52,35 @@ pub fn create(conn: &Connection) -> rusqlite::Result<i64> {
     Ok(conn.last_insert_rowid())
 }
 
+/// Agent note (CLI). `author` is never `me`: the CLI refuses that name before it gets here.
+pub fn agent_create(
+    conn: &Connection,
+    title: &str,
+    body: &str,
+    author: &str,
+) -> rusqlite::Result<i64> {
+    conn.execute(
+        "INSERT INTO notes(title, body, author) VALUES (?1, ?2, ?3)",
+        params![title, body, author],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+/// Rewrites a note only if `author` wrote it; false = no such note of theirs (mine stay untouched).
+pub fn agent_update(
+    conn: &Connection,
+    id: i64,
+    title: &str,
+    body: &str,
+    author: &str,
+) -> rusqlite::Result<bool> {
+    Ok(conn.execute(
+        "UPDATE notes SET title = ?1, body = ?2, updated_at = datetime('now')
+         WHERE id = ?3 AND author = ?4",
+        params![title, body, id, author],
+    )? > 0)
+}
+
 /// Columns the editor form may write; anything else in the form is ignored.
 pub const EDITABLE: [&str; 2] = ["title", "body"];
 
@@ -124,4 +153,28 @@ pub fn pages(conn: &Connection, q: &str) -> rusqlite::Result<Vec<PageRow>> {
         }
     }
     Ok(out)
+}
+
+/// Deletes a note and hands back (title, JSON snapshot) for the Undo toast.
+pub fn delete(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String, String)>> {
+    conn.query_row(
+        "DELETE FROM notes WHERE id = ?1 RETURNING title,
+           json_object('id', id, 'title', title, 'body', body, 'author', author, 'updated_at', updated_at)",
+        [id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )
+    .optional()
+}
+
+/// Undo: re-inserts the snapshot under its old id (a new one if that id was reused meanwhile).
+pub fn restore(conn: &Connection, snap: &str) -> rusqlite::Result<i64> {
+    conn.execute(
+        "INSERT INTO notes(id, title, body, author, updated_at)
+         SELECT CASE WHEN EXISTS (SELECT 1 FROM notes WHERE id = j.id) THEN NULL ELSE j.id END,
+                j.title, j.body, j.author, j.updated_at
+         FROM (SELECT ?1 ->> 'id' AS id, ?1 ->> 'title' AS title, ?1 ->> 'body' AS body,
+                      ?1 ->> 'author' AS author, ?1 ->> 'updated_at' AS updated_at) j",
+        [snap],
+    )?;
+    Ok(conn.last_insert_rowid())
 }

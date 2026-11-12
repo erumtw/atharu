@@ -272,3 +272,52 @@ pub async fn save_notes(
     }
     web::html(&view::Saved)
 }
+
+/// Delete + Undo toast; the meeting's lines stay on their days, just no longer in a meeting.
+pub async fn delete(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> AppResult<Response> {
+    let (name, snap) = queries::delete(&mut st.conn(), id)?.ok_or(AppError::NotFound)?;
+    if !web::is_htmx(&headers) {
+        return Ok(web::back("/meetings"));
+    }
+    web::html(&deleted(format!("Meeting {name}"), snap, None))
+}
+
+fn deleted(what: String, snap: String, error: Option<String>) -> web::Deleted {
+    web::Deleted {
+        what,
+        restore: "/meetings/restore".into(),
+        snap,
+        back: "/meetings",
+        back_label: "All meetings",
+        error,
+    }
+}
+
+#[derive(Deserialize)]
+pub struct SnapForm {
+    snap: String,
+}
+
+pub async fn restore(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<SnapForm>,
+) -> AppResult<Response> {
+    let res = queries::restore(&mut st.conn(), &f.snap)?;
+    match res {
+        Ok(id) => Ok(web::restored(&headers, &format!("/meetings/{id}"))),
+        // Same copy as starting a second meeting.
+        Err(running) => web::html_status(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            &deleted(
+                "Meeting".into(),
+                f.snap,
+                Some(format!("End {running} first.")),
+            ),
+        ),
+    }
+}

@@ -1,12 +1,2 @@
-// Copy buttons: <button data-copy="#target">. Copies the target's value (textarea) or text,
-// then shows "✓ Copied" for 2 s (States board copy).
-document.addEventListener("click", async (ev) => {
-  const btn = ev.target.closest("[data-copy]");
-  if (!btn) return;
-  const el = document.querySelector(btn.dataset.copy);
-  if (!el) return;
-  await navigator.clipboard.writeText(el.value ?? el.textContent);
-  const label = btn.textContent;
-  btn.textContent = "✓ Copied";
-  setTimeout(() => (btn.textContent = label), 2000);
-});
+/* atharu copy buttons, built by editor/build.mjs from editor/src/copy.ts. */
+"use strict";(()=>{document.addEventListener("click",async n=>{let t=n.target?.closest("[data-copy]");if(!t?.dataset.copy)return;let e=document.querySelector(t.dataset.copy);if(!e)return;await navigator.clipboard.writeText(e instanceof HTMLTextAreaElement?e.value:e.textContent??"");let a=t.textContent;t.textContent="\u2713 Copied",setTimeout(()=>t.textContent=a,2e3)});})();

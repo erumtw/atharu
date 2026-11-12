@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
     "@floating-ui/dom": "1.8.0",
@@ -14,6 +15,7 @@
     "@tiptap/pm": "3.32.2",
     "@tiptap/starter-kit": "3.32.2",
     "@tiptap/suggestion": "3.32.2",
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
   }
 }

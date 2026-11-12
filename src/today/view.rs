@@ -114,6 +114,18 @@ pub struct Page {
     pub preview: Option<Preview>,
     pub saved: Option<Saved>,
     pub deleted: Option<Deleted>,
+    /// The log line open in its edit box (`/?edit=ID` without JS).
+    pub edit: Option<Edit>,
+}
+
+/// Inline edit box of one log line.
+#[derive(Template)]
+#[template(path = "partials/entry_edit.html")]
+pub struct Edit {
+    pub id: i64,
+    pub day: String,
+    pub line: String,
+    pub error: Option<String>,
 }
 
 /// htmx answer to save/delete: the log, plus the toast swapped out-of-band.
@@ -127,6 +139,7 @@ pub struct Swap {
     pub groups: Vec<Group>,
     pub saved: Option<Saved>,
     pub deleted: Option<Deleted>,
+    pub edit: Option<Edit>,
 }
 
 #[derive(Template)]

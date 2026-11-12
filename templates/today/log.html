@@ -13,7 +13,7 @@
 {%- endif %}
 <div class="blocks">
 {%- for row in g.rows %}
-{% include "partials/entry_row.html" %}
+{%- if let Some(ed) = edit %}{% if ed.id == row.id %}{{ ed|safe }}{% else %}{% include "partials/entry_row.html" %}{% endif %}{% else %}{% include "partials/entry_row.html" %}{% endif %}
 {%- endfor %}
 </div>
 {%- endfor %}

@@ -10,6 +10,8 @@ Ingest this source for my atharu notes: $ARGUMENTS
    in plain text instead).
 3. Never fill a topic page: no `topics`/`depth_ratings` writes, no "own words". Instead list 3–5 questions I
    should answer myself on `/learn/<slug>` (things the source claims that I should be able to explain or test).
-4. Saving the note: atharu has no command for notes yet, and raw SQL writes are not allowed. Show the note in
-   chat as a markdown block I can paste into a new note on /notes, and suggest the command
-   (`atharu note --title "…" --as claude < note.md`).
+4. Save it: write the markdown body to a temp file, then
+   `cargo run -q -- note "<title>" --file <tmp.md> --links <slug>,<slug> --as claude` (the `--links` are the
+   topic slugs you linked, if not already in the body). Never raw SQL. To revise a note you wrote earlier, add
+   `--id <its id>`; a note I wrote is refused, so make a new one instead.
+5. Report the saved note's id (`/notes/<id>`) and the questions from step 3.

@@ -1,0 +1,4 @@
+{#- Replaces the deleted page's <main>. Undo posts the row back; see web::Deleted. -#}
+<main class="doc">
+<div class="toast row small" role="status"><span>{{ what }} deleted ·</span><form class="inline" method="post" action="{{ restore }}" hx-post="{{ restore }}" hx-target="closest main" hx-swap="outerHTML"><input type="hidden" name="snap" value="{{ snap }}"><button class="linkbtn" type="submit">Undo</button></form><span>·</span><a href="{{ back }}">{{ back_label }}</a>{% if let Some(e) = error %}<span class="err">{{ e }}</span>{% endif %}</div>
+</main>

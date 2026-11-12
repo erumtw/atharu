@@ -1,12 +1,20 @@
 // Notes editor (spec P4): Tiptap with markdown as the stored format. Mounted on #editor;
 // the hidden #note-md textarea carries the markdown, so htmx autosave and no-JS posts are the same form.
 import { Editor, Extension, InputRule, Node, createBlockMarkdownSpec, mergeAttributes } from '@tiptap/core'
+import type { ChainedCommands } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { Details, DetailsContent, DetailsSummary } from '@tiptap/extension-details'
 import { Markdown } from '@tiptap/markdown'
 import Suggestion from '@tiptap/suggestion'
+import type { SuggestionKeyDownProps, SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
 import { PluginKey } from '@tiptap/pm/state'
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    callout: { setCallout: () => ReturnType }
+  }
+}
 
 // `:::callout` … `:::` in markdown, the same fenced-block syntax Details uses (server renders both).
 const Callout = Node.create({
@@ -30,34 +38,41 @@ const PageLink = Node.create({
   inline: true,
   atom: true,
   addAttributes: () => ({ id: { default: '' } }),
-  parseHTML: () => [{ tag: 'span[data-page]', getAttrs: el => ({ id: el.getAttribute('data-page') }) }],
+  parseHTML: () => [{ tag: 'span[data-page]', getAttrs: (el: HTMLElement) => ({ id: el.getAttribute('data-page') }) }],
   renderHTML: ({ node }) => ['span', { 'data-page': node.attrs.id, class: 'chip page' }, node.attrs.id],
   renderText: ({ node }) => `[[${node.attrs.id}]]`,
   markdownTokenizer: {
     name: 'pageLink',
     level: 'inline',
-    start: src => src.indexOf('[['),
-    tokenize: src => {
+    start: (src: string) => src.indexOf('[['),
+    tokenize: (src: string) => {
       const m = PAGE.exec(src)
-      if (m) return { type: 'pageLink', raw: m[0], id: m[1].trim() }
+      if (m?.[1]) return { type: 'pageLink', raw: m[0], id: m[1].trim() }
     },
   },
   parseMarkdown: (token, h) => h.createNode('pageLink', { id: token.id }),
-  renderMarkdown: node => `[[${node.attrs.id}]]`,
+  renderMarkdown: node => `[[${node.attrs?.id ?? ''}]]`,
   // Typing `[[X]]` by hand becomes a chip too. Not nodeInputRule: it would keep the brackets around the node.
   addInputRules() {
     return [new InputRule({
       find: /\[\[([^[\]\n]+)\]\]$/,
-      handler: ({ state, range, match }) => { state.tr.replaceWith(range.from, range.to, this.type.create({ id: match[1].trim() })) },
+      handler: ({ state, range, match }) => { state.tr.replaceWith(range.from, range.to, this.type.create({ id: (match[1] ?? '').trim() })) },
     })]
   },
 })
 
 // One listbox renderer for both menus; text goes in via textContent, so page names can't inject markup.
-function menu(label) {
+type Item = { title: string, hint?: string }
+
+function menu<I extends Item>(label: string): NonNullable<SuggestionOptions<I, I>['render']> {
   return () => {
-    let el, unmount, items = [], sel = 0, pick
+    let el: HTMLDivElement | null = null
+    let unmount: (() => void) | undefined
+    let items: I[] = []
+    let sel = 0
+    let pick: (it: I) => void = () => {}
     const draw = () => {
+      if (!el) return
       el.replaceChildren(...items.map((it, i) => {
         const o = document.createElement('div')
         o.setAttribute('role', 'option')
@@ -75,25 +90,27 @@ function menu(label) {
       }))
       el.hidden = items.length === 0
     }
-    const update = p => { items = p.items; pick = p.command; sel = 0; draw() }
+    const update = (p: SuggestionProps<I, I>) => { items = p.items; pick = p.command; sel = 0; draw() }
     return {
       onStart: p => {
-        el = document.createElement('div')
-        el.className = 'menu'
-        el.setAttribute('role', 'listbox')
-        el.setAttribute('aria-label', label)
+        const box = document.createElement('div')
+        box.className = 'menu'
+        box.setAttribute('role', 'listbox')
+        box.setAttribute('aria-label', label)
+        el = box
         update(p)
-        unmount = p.mount(el)
+        unmount = p.mount(box)
       },
       onUpdate: update,
-      onKeyDown: ({ event }) => {
+      onKeyDown: ({ event }: SuggestionKeyDownProps) => {
         if (!items.length) return false
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
           sel = (sel + (event.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length
           draw()
           return true
         }
-        if (event.key === 'Enter') { pick(items[sel]); return true }
+        const it = items[sel]
+        if (event.key === 'Enter' && it) { pick(it); return true }
         return false
       },
       onExit: () => { unmount?.(); el = null },
@@ -101,7 +118,11 @@ function menu(label) {
   }
 }
 
-const BLOCKS = [
+type Block = Item & { run: (c: ChainedCommands) => ChainedCommands }
+type Page = Item & { id: string }
+type PagesJson = { data: { pages: { id: string, name?: string | null, type: string }[] } }
+
+const BLOCKS: Block[] = [
   { title: 'Heading', hint: '#', run: c => c.setNode('heading', { level: 3 }) },
   { title: 'To-do list', hint: '[]', run: c => c.toggleTaskList() },
   { title: 'Toggle', run: c => c.setDetails() },
@@ -115,34 +136,34 @@ const Menus = Extension.create({
   name: 'menus',
   addProseMirrorPlugins() {
     return [
-      Suggestion({
+      Suggestion<Block, Block>({
         editor: this.editor,
         pluginKey: new PluginKey('slash'),
         char: '/',
         items: ({ query }) => BLOCKS.filter(b => b.title.toLowerCase().includes(query.toLowerCase())),
         command: ({ editor, range, props }) => props.run(editor.chain().focus().deleteRange(range)).run(),
-        render: menu('Insert block'),
+        render: menu<Block>('Insert block'),
       }),
-      Suggestion({
+      Suggestion<Page, Page>({
         editor: this.editor,
         pluginKey: new PluginKey('pages'),
         char: '[[',
         items: async ({ query, signal }) => {
           const r = await fetch('/api/pages?q=' + encodeURIComponent(query), { signal })
-          const { data } = await r.json()
+          const { data } = await r.json() as PagesJson
           return data.pages.map(p => ({ id: p.id, title: p.name ? `${p.id} · ${p.name}` : p.id, hint: p.type }))
         },
         command: ({ editor, range, props }) =>
           editor.chain().focus().deleteRange(range)
             .insertContent([{ type: 'pageLink', attrs: { id: props.id } }, { type: 'text', text: ' ' }]).run(),
-        render: menu('Link a page'),
+        render: menu<Page>('Link a page'),
       }),
     ]
   },
 })
 
 const el = document.getElementById('editor')
-const md = document.getElementById('note-md')
+const md = document.getElementById('note-md') as HTMLTextAreaElement | null
 if (el && md) {
   md.hidden = true
   el.replaceChildren()

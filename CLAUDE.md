@@ -47,12 +47,13 @@ existing meeting name → `/meetings?name=X`, else nothing (a dead link).
 | You may | You must not |
 |---|---|
 | read everything | write `topics` or `depth_ratings` |
-| write `entries` and `epics` **only through the `atharu` CLI**, as yourself (`--as <your name>`) | write any table with raw SQL |
-| suggest `[[X]]` links in chat for the owner's notes | edit or delete rows with `author = 'me'` |
+| write `entries`, `epics`, `evidence` and your own `notes` **only through the `atharu` CLI**, as yourself (`--as <your name>`) | write any table with raw SQL |
+| update a note you wrote (`atharu note … --id N`) | edit or delete rows with `author = 'me'`, or another agent's note |
+| suggest `[[X]]` links in chat for the owner's notes | delete or edit anything: deletes and line edits are the owner's, on the web only |
 | | rate depth or write "own words": depth only means something if it is the owner's |
 
-Asked for something the CLI can't do yet (evidence, to-do done/pin/drop, meetings, topics, notes, events, report):
-say "atharu has no command for that yet", suggest the command (e.g. `atharu evidence OPS-101 <url> --as claude`),
+Asked for something the CLI can't do yet (to-do done/pin/drop, meetings, topics, events, report):
+say "atharu has no command for that yet", suggest the command (e.g. `atharu plan done 42 --as claude`),
 and stop. Never fall back to SQL writes.
 
 ## CLI
@@ -63,12 +64,17 @@ Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No serv
 ```sh
 atharu log "<line>" [--day YYYY-MM-DD] --as claude        # one line, same grammar as above
 atharu epic <KEY|jira-url> [--title …] [--okr …] --as claude  # upsert; key from …/browse/ABC-123
+atharu note "<title>" [--file PATH] [--links a,b] [--id N] --as claude  # agent note; body from stdin without --file
+atharu evidence <KEY|jira-url> <url> [--label …] --as claude  # impact link on an existing epic, http(s) only
 atharu today [--day YYYY-MM-DD]                             # that day's lines + open plans
 atharu show <KEY|jira-url>                                  # epic + evidence + timeline
 ```
 
 - Every write needs `--as <agent>` or `ATHARU_AGENT=<agent>`: a lowercase slug (`claude`, `codex`). `me` is refused.
 - `epic` never overwrites a field the owner set: it only fills an empty title / OKR.
+- `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`.
+  `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
+- `evidence` needs the epic to exist (file it with `epic` first) and an `http://` / `https://` link.
 - Output: one JSON document on stdout (camelCase keys; a referenced epic is nested as `epic{key, …}`).
 - Exit codes: `0` saved/printed · `1` rejected, with the app's own message on stderr (e.g.
   `Nothing after “+”. Type what happened.`, `Can't read date ‘someday’`) · `2` usage, incl. a missing `--as`
@@ -86,7 +92,7 @@ Prompts for the common jobs: `.claude/commands/{log,query,lint,ingest}.md`.
   every htmx action returns one partial and also works as a plain form POST (303 back). `src/cli/` is an entry
   point like `app.rs` and may call slices' queries.
 - Schema changes: a new `migrations/00N_*.sql` appended in `src/db.rs`; never edit a shipped one.
-- Notes editor: `editor/` (pinned Tiptap, esbuild) builds the committed `static/js/editor.js`:
-  `cd editor && npm ci && node build.mjs`.
+- Frontend JS: strict TypeScript in `editor/src/*.ts` (pinned Tiptap, esbuild) builds the committed `static/js/*.js`
+  (`htmx.min.js` is vendored): `cd editor && npm ci && npm run check && node build.mjs`.
 - JSON (HTTP and CLI): camelCase keys, references nested (`epic{key, title}`), HTTP collections as
   `data.<resource>[]`; query params snake_case.

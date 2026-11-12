@@ -35,5 +35,6 @@
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
 {% include "partials/backlinks.html" %}
+<form method="post" action="/meetings/{{ id }}/delete" hx-post="/meetings/{{ id }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="util" type="submit" title="Its lines stay on their days">Delete meeting</button></form>
 </main>
 {% endblock %}

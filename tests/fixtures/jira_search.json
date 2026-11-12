@@ -1,0 +1,9 @@
+{
+  "issues": [
+    {"id": "10001", "key": "OPS-101", "self": "https://acme.atlassian.net/rest/api/3/issue/10001",
+     "fields": {"summary": "Faster checkout", "status": {"name": "In Progress", "id": "3"}}},
+    {"id": "10002", "key": "OPS-7", "self": "https://acme.atlassian.net/rest/api/3/issue/10002",
+     "fields": {"summary": "Fix invoice rounding", "status": {"name": "Done", "id": "10000"}}}
+  ],
+  "isLast": true
+}

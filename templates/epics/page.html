@@ -3,14 +3,17 @@
 {% block content %}
 <main class="doc">
 <div class="row"><span class="chip key">{{ epic.key }}</span>{% if let Some(f) = flag %}<span class="{{ f.class }}">{{ f.label }}</span><span class="small muted">{{ f.reason }}</span>{% endif %}</div>
+{%- if let Some(j) = epic.jira %}
+<p class="small muted" style="margin: 4px 0 0" title="From Jira, read-only">Jira: {{ j }}</p>
+{%- endif %}
 {#- Every change PATCHes the whole form (unchanged fields rewrite their own value); no-JS posts it via Save. #}
 <form method="post" action="/epics/{{ epic.key }}" hx-patch="/epics/{{ epic.key }}" hx-trigger="change, submit" hx-target="#live" hx-swap="outerHTML">
 <h1 class="ptitle" style="margin-top: 0"><input class="pin" name="title" value="{{ epic.title }}" placeholder="Untitled" aria-label="Title" style="font: inherit; letter-spacing: inherit; width: 100%"></h1>
 <dl class="props">
-<dt><label for="role">Role</label></dt><dd><select id="role" name="role" class="pin" style="flex: 0">{% for o in ["owner", "contributor"] %}<option{% if epic.role.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
-<dt><label for="status">Status</label></dt><dd><select id="status" name="status" class="pin" style="flex: 0">{% for o in ["active", "done", "dropped"] %}<option{% if epic.status.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+<dt><label for="role">Role</label></dt><dd><select id="role" name="role" class="pin" style="flex: none">{% for o in ["owner", "contributor"] %}<option{% if epic.role.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+<dt><label for="status">Status</label></dt><dd><select id="status" name="status" class="pin" style="flex: none">{% for o in ["active", "done", "dropped"] %}<option{% if epic.status.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
 <dt><label for="okr">OKR</label></dt><dd><input id="okr" name="okr" class="pin" value="{{ epic.okr }}" placeholder="e.g. O1 · Faster ordering"></dd>
-<dt>Dates</dt><dd><span class="small muted">start</span><input class="pin" type="date" name="start" value="{{ epic.start }}" style="flex: 0" aria-label="Start"><span class="small muted">target</span><input class="pin" type="date" name="target" value="{{ epic.target }}" style="flex: 0" aria-label="Target"><span class="small muted">done on</span><input class="pin" type="date" name="done_on" value="{{ epic.done_on }}" style="flex: 0" aria-label="Done on"></dd>
+<dt>Dates</dt><dd><span class="small muted">start</span><input class="pin" type="date" name="start" value="{{ epic.start }}" style="flex: none" aria-label="Start"><span class="small muted">target</span><input class="pin" type="date" name="target" value="{{ epic.target }}" style="flex: none" aria-label="Target"><span class="small muted">done on</span><input class="pin" type="date" name="done_on" value="{{ epic.done_on }}" style="flex: none" aria-label="Done on"></dd>
 <dt>Metric</dt><dd><input class="pin" name="metric" value="{{ live.metric }}" placeholder="e.g. checkout p95" style="flex: 0 1 140px" aria-label="Metric name"><span class="small muted">before</span><input class="pin" name="before" value="{{ live.before }}" style="flex: 0 0 48px" aria-label="Before"><span class="small muted">after</span><input class="pin" name="after" value="{{ live.after }}" style="flex: 0 0 48px" aria-label="After"></dd>
 <dt>Activity</dt><dd><div class="bars" style="width: 120px; height: 20px" aria-hidden="true">{% for p in activity %}<span style="height: {{ p }}%"></span>{% endfor %}</div><span class="small muted">logs/week, 8 wks</span></dd>
 </dl>
@@ -34,5 +37,6 @@
 </div>
 {%- endfor %}
 {% include "partials/backlinks.html" %}
+<form class="row small" method="post" action="/epics/{{ epic.key }}/delete" hx-post="/epics/{{ epic.key }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="util" type="submit" title="Only while nothing is logged on it">Delete epic</button><span id="epic-del" class="err">{% if let Some(e) = delete_error %}{{ e }}{% endif %}</span></form>
 </main>
 {% endblock %}

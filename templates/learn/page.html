@@ -39,5 +39,6 @@
 </div>
 {%- endif %}
 {% include "partials/backlinks.html" %}
+<form method="post" action="/learn/{{ slug }}/delete" hx-post="/learn/{{ slug }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="util" type="submit" title="Ratings go with it; its ? lines go back to the inbox">Delete topic</button></form>
 </main>
 {% endblock %}

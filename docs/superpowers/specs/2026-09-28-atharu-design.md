@@ -266,7 +266,7 @@ Operations (each = a `.claude/commands/*.md` prompt, no app code):
   - `atharu epic <KEY|jira-url> [--title …] [--okr …]` → upsert epic (key from `…/browse/ABC-123`); never overwrites a field I set
   - `atharu today [--day]` · `atharu show <KEY>` → JSON on stdout for reading
   - `atharu note "<title>" [--file|stdin] --as <agent>` (agent-authored note; `--id` updates only its own) · `atharu evidence <KEY> <url> --as <agent>` (http(s) only) — added 2026-11-12 so ingest/log can save
-  - core set only (2026-11-11): `log` already covers to-dos (`>`), learn (`?`) and every line kind via the grammar. Not in the CLI yet: evidence, to-do done/pin/drop, meetings, topics, notes, events, report. An agent asked for one of those says "atharu has no command for that yet" and suggests the command; it never falls back to raw SQL writes. Add a command when an instruction actually needs it.
+  - core set only (2026-11-11): `log` already covers to-dos (`>`), learn (`?`) and every line kind via the grammar. Not in the CLI yet: to-do done/pin/drop, meetings, topics, events, report. An agent asked for one of those says "atharu has no command for that yet" and suggests the command; it never falls back to raw SQL writes. Add a command when an instruction actually needs it.
   - errors → exit 1 + the same copy as the States board on stderr
 - every write needs `--as <agent>` (or env `ATHARU_AGENT`), lowercase slug (`claude`, `codex`, …); missing → exit 2 "Say who is writing: --as claude". `me` is refused from the CLI's agent flag so an agent can't pose as me.
 - migration 002: `author TEXT NOT NULL DEFAULT 'me'` on `entries`, `epics`, `evidence`; `notes.author` CHECK widened to `'me'` or a slug (rebuild the empty table)

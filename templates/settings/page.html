@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block head %}<script src="/static/js/glass.js" defer></script>{% endblock %}
+{% block content %}
+<main class="doc">
+<h1 class="ptitle">Settings</h1>
+<p class="lead">Pick a look. It sets the wallpaper behind every page and the tab icon.</p>
+{#- Submits on change; the Save button is for no-JS. #}
+<form method="post" action="/settings" onchange="this.requestSubmit()">
+<fieldset class="looks">
+<legend>Look</legend>
+{%- for l in looks %}
+<label class="look-opt" data-look="{{ l.slug }}"><input type="radio" name="look" value="{{ l.slug }}"{% if layout.look == l.slug %} checked{% endif %}><img src="/static/icon/{{ l.slug }}.svg" width="48" height="48" alt=""><span><b>{{ l.name }}</b> <span class="muted">{{ l.jp }}</span><br><span class="small muted">{{ l.blurb }}</span></span></label>
+{%- endfor %}
+</fieldset>
+<noscript><button class="btn" type="submit">Save</button></noscript>
+</form>
+{#- htmx saves on change / preset click (204); glass.js previews while dragging; without JS the Save button posts it all. #}
+<form id="glass" class="glass-set" method="post" action="/settings/glass" hx-post="/settings/glass" hx-trigger="change, submit" hx-swap="none">
+<fieldset>
+<legend>Glass</legend>
+<label class="row"><input type="checkbox" name="glass_all" value="1"{% if layout.glass_all %} checked{% endif %}><span><b>Glass everywhere</b><br><span class="small muted">The page sheet and its cards turn to glass too. Off keeps content on an opaque sheet, Apple's default for legibility.</span></span></label>
+<label class="row" for="glass-a"><b>Opacity</b> <output id="glass-out" for="glass-a">{{ layout.glass_a }}%</output></label>
+{#- min = this look's measured AA floor, so the slider can't reach unreadable. #}
+<input id="glass-a" type="range" name="glass_opacity" min="{{ glass_floor }}" max="100" value="{{ layout.glass_a }}" aria-describedby="glass-help">
+<div class="row">
+<button class="seg-btn" type="submit" name="preset" value="clear" aria-pressed="{% if layout.tinted %}false{% else %}true{% endif %}">Clear</button>
+<button class="seg-btn" type="submit" name="preset" value="tinted" aria-pressed="{% if layout.tinted %}true{% else %}false{% endif %}">Tinted</button>
+</div>
+<p id="glass-help" class="small muted">Clear is more transparent; Tinted increases opacity and adds the look's colour, adding contrast to content and controls. The slider stops at {{ glass_floor }}% on this look so text stays readable.</p>
+</fieldset>
+<noscript><button class="btn" type="submit">Save</button></noscript>
+</form>
+<p class="small muted">With “Reduce transparency” on (System Settings → Accessibility → Display) the wallpaper turns plain and the glass opaque.</p>
+</main>
+{% endblock %}

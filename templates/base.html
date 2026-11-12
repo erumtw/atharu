@@ -1,13 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-look="{{ layout.look }}"{% if layout.glass_all %} data-glass="all"{% endif %}{% if layout.tinted %} data-tint="tinted"{% endif %} style="--glass-a:{{ layout.glass_a }}%">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Atharu · {{ layout.title }}</title>
 <link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/base.css">
 <link rel="stylesheet" href="/static/css/layout.css">
 <link rel="stylesheet" href="/static/css/components.css">
+<link rel="stylesheet" href="/static/css/looks.css">
+<link rel="stylesheet" href="/static/css/responsive.css">
+<link rel="icon" type="image/svg+xml" href="/static/icon/{{ layout.look }}.svg">
 {#- 422 = "your input needs fixing": swap it (the hint) like a success instead of dropping it. #}
 <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":false}]}'>
 <script src="/static/js/htmx.min.js" defer></script>
@@ -16,17 +19,20 @@
 </head>
 <body>
 <div class="wl">
-<nav class="side" aria-label="Pages">
-<div class="ws">Atharu</div>
+{#- One nav for every width: inline sidebar / 64 px rail, and on phones a popover drawer opened by the crumb's menu button
+    (native popover = Esc, light dismiss and focus return with no JS). responsive.css undoes the UA popover box. #}
+<nav class="side m-pop" id="side" popover aria-label="Pages">
+<div class="ws"><span>Atharu</span><button class="ib m-only" type="button" popovertarget="side" popovertargetaction="hide" aria-label="Close pages"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#close"/></svg></button></div>
 {#- Only pages that exist; each slice adds its link when it lands (spec UX 10 order). #}
-<a href="/"{% if layout.nav == "today" %} class="on"{% endif %}>Today</a>
-<a href="/todos"{% if layout.nav == "todos" %} class="on"{% endif %}>To-dos</a>
-<a href="/calendar"{% if layout.nav == "calendar" %} class="on"{% endif %}>Calendar</a>
-<a href="/epics"{% if layout.nav == "epics" %} class="on"{% endif %}>Epics</a>
-<a href="/report"{% if layout.nav == "report" %} class="on"{% endif %}>Report</a>
-<a href="/meetings"{% if layout.nav == "meetings" %} class="on"{% endif %}>Meetings</a>
-<a href="/learn"{% if layout.nav == "learn" %} class="on"{% endif %}>Learn</a>
-<a href="/notes"{% if layout.nav == "notes" %} class="on"{% endif %}>Notes</a>
+<a href="/" title="Today"{% if layout.nav == "today" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#today"/></svg><span class="lb">Today</span></a>
+<a href="/todos" title="To-dos"{% if layout.nav == "todos" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#todos"/></svg><span class="lb">To-dos</span></a>
+<a href="/calendar" title="Calendar"{% if layout.nav == "calendar" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#calendar"/></svg><span class="lb">Calendar</span></a>
+<a href="/epics" title="Epics"{% if layout.nav == "epics" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#epics"/></svg><span class="lb">Epics</span></a>
+<a href="/report" title="Report"{% if layout.nav == "report" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#report"/></svg><span class="lb">Report</span></a>
+<a href="/meetings" title="Meetings"{% if layout.nav == "meetings" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#meetings"/></svg><span class="lb">Meetings</span></a>
+<a href="/learn" title="Learn"{% if layout.nav == "learn" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#learn"/></svg><span class="lb">Learn</span></a>
+<a href="/notes" title="Notes"{% if layout.nav == "notes" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#notes"/></svg><span class="lb">Notes</span></a>
+<a href="/settings" title="Settings"{% if layout.nav == "settings" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#settings"/></svg><span class="lb">Settings</span></a>
 {%- block side %}{% endblock %}
 {%- if !layout.epics.is_empty() %}
 <div class="lbl">Active epics</div>
@@ -37,7 +43,8 @@
 </nav>
 <div class="pg">
 <div class="crumb">
-{%- for c in layout.crumbs %}<a href="{{ c.href }}">{{ c.label }}</a><span>/</span>{% endfor %}<b>{{ layout.title }}</b>
+<button class="ib m-only" type="button" popovertarget="side" aria-label="Open pages"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#menu"/></svg></button>
+{%- for c in layout.crumbs %}<a class="trail" href="{{ c.href }}">{{ c.label }}</a><span class="trail">/</span>{% endfor %}<b>{{ layout.title }}</b>
 {%- block crumb_extra %}{% endblock %}
 </div>
 {% block content %}{% endblock %}

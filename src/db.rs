@@ -5,6 +5,9 @@ use std::path::Path;
 const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/001_init.sql"),
     include_str!("../migrations/002_author.sql"),
+    include_str!("../migrations/003_jira.sql"),
+    include_str!("../migrations/004_settings.sql"),
+    include_str!("../migrations/005_hardening.sql"),
 ];
 
 pub fn open(path: &Path) -> rusqlite::Result<Connection> {
@@ -12,7 +15,11 @@ pub fn open(path: &Path) -> rusqlite::Result<Connection> {
         std::fs::create_dir_all(dir)
             .map_err(|e| rusqlite::Error::ToSqlConversionFailure(e.into()))?;
     }
-    prepare(Connection::open(path)?)
+    let conn = Connection::open(path)?;
+    // WAL: the CLI (and `sqlite3` reads) don't block the server's readers, and vice versa.
+    // File DBs only; in-memory ones can't use it. Persistent, so this is a no-op after the first open.
+    let _mode: String = conn.pragma_update_and_check(None, "journal_mode", "WAL", |r| r.get(0))?;
+    prepare(conn)
 }
 
 pub fn open_in_memory() -> rusqlite::Result<Connection> {

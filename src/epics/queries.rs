@@ -19,14 +19,16 @@ pub struct EpicRow {
     pub open_plans: i64,
     /// `me`, or the agent that created it via the CLI.
     pub author: String,
+    /// `summary · status` from the Jira cache, shown only while our title is empty.
+    pub jira: Option<String>,
 }
 
 const SELECT_EPIC: &str =
     "SELECT ep.key, ep.title, ep.role, ep.okr, ep.status, ep.start, ep.target, ep.done_on,
         ep.metric, ep.before, ep.after, (SELECT MAX(e.day) FROM entries e WHERE e.epic_key = ep.key),
         (SELECT COUNT(*) FROM entries e WHERE e.epic_key = ep.key AND e.plan_state = 'open'),
-        ep.author
- FROM epics ep";
+        ep.author, j.summary || ' · ' || j.status
+ FROM epics ep LEFT JOIN jira_issues j ON j.key = ep.key";
 
 fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
     Ok(EpicRow {
@@ -44,6 +46,7 @@ fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
         last_log: r.get(11)?,
         open_plans: r.get(12)?,
         author: r.get(13)?,
+        jira: r.get(14)?,
     })
 }
 
@@ -107,12 +110,18 @@ pub fn evidence(conn: &Connection, key: &str) -> rusqlite::Result<Vec<EvidenceRo
     .collect()
 }
 
-pub fn add_evidence(conn: &Connection, key: &str, url: &str, note: &str) -> rusqlite::Result<()> {
+pub fn add_evidence(
+    conn: &Connection,
+    key: &str,
+    url: &str,
+    note: &str,
+    author: &str,
+) -> rusqlite::Result<i64> {
     conn.execute(
-        "INSERT INTO evidence(epic_key, url, note) VALUES (?1, ?2, ?3)",
-        params![key, url, note],
+        "INSERT INTO evidence(epic_key, url, note, author) VALUES (?1, ?2, ?3, ?4)",
+        params![key, url, note, author],
     )?;
-    Ok(())
+    Ok(conn.last_insert_rowid())
 }
 
 /// Scoped by key so a stale form on one epic page can't delete another epic's evidence.
@@ -190,4 +199,62 @@ pub fn agent_upsert(
         }
     }
     Ok(created)
+}
+
+/// Outcome of deleting an epic: lines keep it alive (spec: mark it Done or Dropped instead).
+pub enum Deleted {
+    Gone(String),
+    HasLines,
+    Missing,
+}
+
+/// Deletes an epic with no lines (its evidence cascades); hands back a JSON snapshot for Undo.
+pub fn delete(conn: &mut Connection, key: &str) -> rusqlite::Result<Deleted> {
+    let tx = conn.transaction()?;
+    let snap: Option<(String, bool)> = tx
+        .query_row(
+            "SELECT json_object('key', key, 'title', title, 'role', role, 'okr', okr,
+               'status', status, 'start', start, 'target', target, 'done_on', done_on,
+               'metric', metric, 'before', before, 'after', after, 'author', author,
+               'evidence', json((SELECT json_group_array(json_array(v.url, v.note, v.author))
+                                 FROM evidence v WHERE v.epic_key = ep.key))),
+               EXISTS (SELECT 1 FROM entries e WHERE e.epic_key = ep.key)
+             FROM epics ep WHERE key = ?1",
+            [key],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .optional()?;
+    let out = match snap {
+        None => Deleted::Missing,
+        Some((_, true)) => Deleted::HasLines,
+        Some((s, false)) => {
+            tx.execute("DELETE FROM epics WHERE key = ?1", [key])?;
+            Deleted::Gone(s)
+        }
+    };
+    tx.commit()?;
+    Ok(out)
+}
+
+/// Undo. `Ok(Err(key))` = the key exists again (a new line re-created it); nothing restored.
+pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<String, String>> {
+    let tx = conn.transaction()?;
+    let key: String = tx.query_row("SELECT ?1 ->> 'key'", [snap], |r| r.get(0))?;
+    if epic(&tx, &key)?.is_some() {
+        return Ok(Err(key));
+    }
+    tx.execute(
+        "INSERT INTO epics(key, title, role, okr, status, start, target, done_on, metric, before, after, author)
+         VALUES (?1 ->> 'key', ?1 ->> 'title', ?1 ->> 'role', ?1 ->> 'okr', ?1 ->> 'status',
+                 ?1 ->> 'start', ?1 ->> 'target', ?1 ->> 'done_on', ?1 ->> 'metric',
+                 ?1 ->> 'before', ?1 ->> 'after', ?1 ->> 'author')",
+        [snap],
+    )?;
+    tx.execute(
+        "INSERT INTO evidence(epic_key, url, note, author)
+         SELECT ?1 ->> 'key', value ->> 0, value ->> 1, value ->> 2 FROM json_each(?1, '$.evidence')",
+        [snap],
+    )?;
+    tx.commit()?;
+    Ok(Ok(key))
 }
