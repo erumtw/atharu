@@ -34,6 +34,13 @@ pub fn recording(conn: &Connection, meeting: i64) -> rusqlite::Result<Option<Str
     .optional()
 }
 
+pub fn meeting_name(conn: &Connection, id: i64) -> rusqlite::Result<Option<String>> {
+    conn.query_row("SELECT name FROM meetings WHERE id = ?1", [id], |r| {
+        r.get(0)
+    })
+    .optional()
+}
+
 /// Series names, most recently started first (ids only grow, so the newest meeting of a series ranks it).
 pub fn recent_series(conn: &Connection, n: usize) -> rusqlite::Result<Vec<String>> {
     let mut stmt =

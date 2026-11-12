@@ -30,6 +30,7 @@ fn banner(
         name,
         error,
         back,
+        ended: None,
     })
 }
 
@@ -191,7 +192,18 @@ pub async fn end(
     }
     // End also stops the recorder; the tail keeps transcribing after the meeting is over.
     queries::stop_transcript(&st.conn(), id, &at)?;
-    swap_banner(&st, &headers, back)
+    if !web::is_htmx(&headers) {
+        // The popover shows its own "Ended X · Open" from this.
+        let back = if back == "/quick" {
+            format!("/quick?ended={id}")
+        } else {
+            back
+        };
+        return Ok(web::back(&back));
+    }
+    let mut b = banner(&st, &st.conn(), back, String::new(), None)?;
+    b.ended = queries::meeting(&st.conn(), id)?.map(|m| view::Active { id, name: m.name });
+    web::html(&view::BannerSwap { banner: b })
 }
 
 fn swap_banner(st: &AppState, headers: &HeaderMap, back: String) -> AppResult<Response> {

@@ -32,6 +32,8 @@ pub struct PageQuery {
     line: Option<String>,
     /// A quick note that was only whitespace (plain POST; htmx gets the hint directly).
     err: Option<String>,
+    /// Set by End meeting from here: "Ended X · Open".
+    ended: Option<i64>,
 }
 
 /// `/quick?kind=…` for the note form's `back`: the prefixes are `!x+?>`, and `+` would read as a space.
@@ -93,6 +95,10 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         running,
         rec_app,
         model_ready,
+        ended: match q.ended {
+            Some(id) => queries::meeting_name(&conn, id)?.map(|n| (id, n)),
+            None => None,
+        },
         series: queries::recent_series(&conn, SERIES)?,
         overdue,
         due_today: all.len() - overdue,
