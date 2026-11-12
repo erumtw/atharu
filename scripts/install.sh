@@ -71,13 +71,21 @@ else
 fi
 
 # A detached worktree, not `git archive`: build.rs reads the sha and tag from git.
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/atharu-install.XXXXXX")
-src=$tmp/src
-trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; rm -rf "$tmp"; git -C "$repo" worktree prune' EXIT
+# Same path every run (inside target/, gitignored and kept out of Spotlight): cargo keys a local crate's
+# cache by its path, so a fresh temp dir each time rebuilt atharu + the app from scratch.
+src=$repo/target/install-src
+git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || rm -rf "$src"
+git -C "$repo" worktree prune
+trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; git -C "$repo" worktree prune' EXIT
 git worktree add --quiet --detach "$src" "$ref"
-# The repo's own target/ keeps the build incremental across temp worktrees.
+# The repo's own target/ keeps the build incremental across runs.
 export CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$repo/target}
-# Baked in for `atharu update`: the temp worktree is gone by the time it runs.
+if [ "$dev" = 1 ]; then
+  # --dev is for trying a change: skip the release profile's fat LTO + 1 codegen unit (most of the build
+  # time, for a binary a little bigger and no slower to use). Release tags keep the full profile.
+  export CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 CARGO_PROFILE_RELEASE_INCREMENTAL=true
+fi
+# Baked in for `atharu update`: the build worktree is gone by the time it runs.
 export ATHARU_REPO=$repo
 
 bin=${CARGO_INSTALL_ROOT:-${CARGO_HOME:-$HOME/.cargo}}/bin
