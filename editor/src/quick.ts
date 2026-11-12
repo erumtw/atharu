@@ -14,8 +14,52 @@ if (line && tiles) {
   })
   // The line didn't change, so the preview's `changed` filter wouldn't fire: ask for it by name.
   tiles.addEventListener('change', () => line.dispatchEvent(new Event('kindpick')))
-  // A pointer pick goes back to typing; arrow keys stay on the tiles (←→ picks).
-  tiles.addEventListener('click', ev => { if (ev.detail > 0) line.focus() })
+  // A pointer pick goes back to typing; arrow keys stay on the tiles (←→ picks). The Note tile focuses its own box.
+  tiles.addEventListener('click', ev => {
+    if (ev.detail > 0 && !(ev.target as Element).closest('.nt')) line.focus()
+  })
+}
+
+// Note tile (D53): without JS a GET to /quick?mode=note; here the box switches in place. The kind radio keeps its
+// check, so after saving the box is back on the kind it had.
+const qcap = document.querySelector<HTMLElement>('.qcap')
+const nt = qcap?.querySelector<HTMLButtonElement>('.kc.nt')
+const text = document.getElementById('qtext') as HTMLTextAreaElement | null
+if (qcap && nt && text && line && tiles) {
+  const noteMode = (on: boolean) => {
+    qcap.dataset.mode = on ? 'note' : 'line'
+    nt.setAttribute('aria-pressed', String(on))
+    if (on) {
+      // The line's preview says nothing about a note; a half-typed line becomes the note's first line.
+      document.getElementById('hint')?.replaceChildren()
+      if (line.value.trim() && !text.value.trim()) {
+        text.value = line.value
+        line.value = ''
+      }
+    }
+    ;(on ? text : line).focus()
+  }
+  nt.addEventListener('click', ev => {
+    ev.preventDefault()
+    noteMode(qcap.dataset.mode !== 'note')
+  })
+  tiles.addEventListener('click', ev => {
+    if (qcap.dataset.mode === 'note' && !nt.contains(ev.target as Node)) noteMode(false)
+  })
+  // Enter saves, Shift+Enter is a new line (an IME's Enter only commits the word).
+  text.addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) return
+    ev.preventDefault()
+    text.form?.requestSubmit()
+  })
+  // Saved: the hint already reads "✓ Saved note · Open" (swapped out of band); the box goes back to the line.
+  text.form?.addEventListener('htmx:afterRequest', ev => {
+    // A 422 counts as `successful` (it swaps into the hint), so check the status, as the line form does.
+    const d = (ev as CustomEvent<{ elt: Element; xhr: XMLHttpRequest }>).detail
+    if (d.elt !== text.form || d.xhr.status >= 300) return
+    text.value = ''
+    noteMode(false)
+  })
 }
 
 // Esc with no menu open (capture.ts claims it while one is) hides the popover. Only in Atharu.app: the window's

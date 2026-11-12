@@ -1,5 +1,11 @@
 use super::{queries, view};
-use crate::{app::AppState, domain::dates, error::AppResult, layout::Layout, web};
+use crate::{
+    app::AppState,
+    domain::{dates, markdown},
+    error::AppResult,
+    layout::Layout,
+    web,
+};
 use axum::{
     extract::{Query, State},
     response::Response,
@@ -16,6 +22,22 @@ const TODOS: usize = 8;
 pub struct PageQuery {
     /// Set by `POST /entries` with `back=/quick`: the line to confirm with Undo.
     saved: Option<i64>,
+    /// Set by `POST /notes/new`: the note to offer "Open" on (D53).
+    note: Option<i64>,
+    /// `note` = the box is a quick note (the Note tile without JS is a GET here, carrying the form's fields).
+    mode: Option<String>,
+    /// The kind tile to check: the one picked before Note, so the box goes back to it.
+    kind: Option<String>,
+    /// What was in the line when Note was picked: it moves into the note box.
+    line: Option<String>,
+    /// A quick note that was only whitespace (plain POST; htmx gets the hint directly).
+    err: Option<String>,
+}
+
+/// `/quick?kind=…` for the note form's `back`: the prefixes are `!x+?>`, and `+` would read as a space.
+fn back_to_kind(kind: &str) -> String {
+    let enc: String = kind.bytes().map(|b| format!("%{b:02X}")).collect();
+    format!("/quick?kind={enc}")
 }
 
 pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> AppResult<Response> {
@@ -51,9 +73,19 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
             }
         })
         .collect();
+    let kind = view::KINDS
+        .iter()
+        .position(|(v, ..)| q.kind.as_deref() == Some(v))
+        .unwrap_or(0);
     web::html(&view::Page {
         date: dates::label(today),
         kinds: &view::KINDS,
+        note_mode: q.mode.as_deref() == Some("note"),
+        back_note: back_to_kind(view::KINDS[kind].0),
+        kind,
+        text: q.line.unwrap_or_default(),
+        error: q.err.is_some().then_some(markdown::NO_TITLE),
+        saved_note: q.note,
         saved,
         running,
         series: queries::recent_series(&conn, SERIES)?,
@@ -100,5 +132,7 @@ mod tests {
             NaiveDateTime::parse_from_str("2026-11-12 09:41:00", "%Y-%m-%d %H:%M:%S").unwrap();
         assert_eq!(since("2026-11-12 09:17:30", now), "since 09:17 · 23 min");
         assert_eq!(since("junk", now), "");
+        assert_eq!(back_to_kind("+"), "/quick?kind=%2B");
+        assert_eq!(back_to_kind(""), "/quick?kind=");
     }
 }

@@ -612,6 +612,13 @@
       "w": 1280,
       "x": 4980,
       "y": 38748
+    },
+    "Quick.Note.dc.html": {
+      "h": 700,
+      "title": "Quick.Note · 7th tile Note: picked, typing, saved (back to the kind), empty",
+      "w": 1840,
+      "x": 8280,
+      "y": 35348
     }
   },
   "createdOnFiles": {
@@ -992,6 +999,7 @@
     "Quick.Meeting.dc.html",
     "Quick.Todos.dc.html",
     "Quick.Menu.dc.html",
+    "Quick.Note.dc.html",
     "Quick.Notes.dc.html",
     "Quick.RT.dc.html",
     "Quick.IC.dc.html",

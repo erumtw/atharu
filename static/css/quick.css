@@ -39,11 +39,13 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .qlbl{margin:0;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0;display:flex;align-items:center;gap:6px;line-height:1}
 .qlbl .n{font-weight:500}
 
-/* Kind chips: one row of six 44-tall tiles (key square over the word), a radio group posting `kind`. A typed prefix wins;
+/* Kind chips: one row of six 44-tall tiles (key square over the word) + the Note tile, a radio group posting `kind`. A typed prefix wins;
    capture.ts mirrors it onto the chip, so the chip never disagrees with the line. */
 /* 8 between tiles, field and hint: the section's own gap (DESIGN §3), else the tiles sit on the field. */
 .qcap form{display:flex;flex-direction:column;gap:8px}
-.kinds{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;border:0;margin:0;padding:0;min-width:0}
+/* Seven equal tiles left 45 px and "decision" is 46 at 600 in Chrome (wider in WebKit's SF): fixed weights by word length,
+   so a pick never reflows the row (decision 54, note 39). */
+.kinds{display:grid;grid-template-columns:1fr 1.25fr 1.1fr 1fr 1.1fr 1fr .9fr;gap:3px;border:0;margin:0;padding:0;min-width:0}
 .kc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:44px;border-radius:10px;
   background:rgba(0,0,0,.05);font-size:11px;font-weight:500;line-height:1;color:var(--ink);cursor:pointer;letter-spacing:0;position:relative}
 .kc input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
@@ -52,6 +54,22 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 /* Selected = the menus' --accent-wash + an inset accent ring (4.44, ≥ 3) + 600: weight and ring, not colour alone. */
 .kc:has(:checked){background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
 .kc:has(:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+
+/* Note tile (T86, D53): a 7th tile that turns the box into a note (first line = title, the rest = markdown body). Not a
+   line kind: a submit button (GET /quick?mode=note, so it works without JS) that quick.ts toggles in place. */
+.kc.nt{border:0;padding:0;margin:0;font-family:inherit}
+.kc.nt .k .ic{width:14px;height:14px;stroke-width:2}
+.kc[aria-pressed=true]{background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
+.kc.nt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Note mode: the kind radio keeps its check (the box goes back to that kind after saving) but stops looking picked. */
+.qcap[data-mode=note] .kc:has(:checked){background:rgba(0,0,0,.05);box-shadow:none;font-weight:500}
+.qcap[data-mode=note] #qline,.qcap[data-mode=line] #qnote{display:none}
+/* AA: the same surfaces and tokens as the line field and the kind tiles (DESIGN §6 Quick popover), nothing new to measure.
+   Three lines: the pill turns into a 14-radius box (a 9999 radius on 76 px reads as a blob), Save stays bottom right. */
+.quick .fld.note{height:auto;align-items:flex-end;border-radius:14px;padding:8px 4px 4px 14px}
+.fld.note textarea{flex:1;min-width:0;height:60px;border:0;outline:0;padding:0;margin:0 0 4px;background:transparent;font:inherit;
+  font-size:15px;line-height:20px;color:inherit;resize:none}
+.fld.note textarea::placeholder{color:var(--muted-tint)}
 
 .qfield{position:relative}
 /* The 44 field holds the 36 primary (DESIGN §6). Flat glass: it sits inside the panel, no rim. */
@@ -98,4 +116,6 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 @media (prefers-reduced-transparency: reduce){.menu.quick{--lg-min:100%}
   html[data-glass=all] .quick .qsec{border-color:var(--line)}}
 @media (prefers-contrast: more){.qsec,html[data-glass=all] .quick .qsec{border-color:var(--ink)}.kc{box-shadow:inset 0 0 0 1px var(--ink)}.kc:has(:checked){box-shadow:inset 0 0 0 2px var(--accent)}
-  .quick .check{border-color:var(--ink)}}
+  .quick .check{border-color:var(--ink)}
+  .kc[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--accent)}
+  .qcap[data-mode=note] .kc:has(:checked){box-shadow:inset 0 0 0 1px var(--ink)}}

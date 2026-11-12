@@ -381,6 +381,16 @@ the log scrolls under it.
   stays open. **`#` and `by ` menus open down** inside the window over the sections below (the window can't grow up into the menu
   bar), opaque white (`--lg-min:100%`, no blur: a blurred menu over the glass panel would be glass on glass), same options, footers and
   keys as the capture bar (T70, T80).
+- **Note tile** (T86, D53; board Quick.Note): a 7th tile **note** after the six (the `note` glyph in the key square), not a kind:
+  a submit button (`aria-pressed`) that without JS GETs `/quick?mode=note` with the line form's fields, and quick.ts switches in
+  place. Tile widths are fixed weights by word length (`1 1.25 1.1 1 1.1 1 .9`, gap 3: decision 54, note 39), so "decision" at 600
+  fits and a pick never reflows the row. Picked = the selected recipe; the kind radio keeps its check (not drawn as picked), so after
+  saving the box is back on that kind. The field becomes a 3-line `.fld.note` (14 radius, textarea 15/20, **Save ↵** bottom right),
+  placeholder "Note title, then the body on the next lines"; a half-typed line moves into it. First non-blank line = title, the rest =
+  markdown body (empty ok), saved as the owner via `POST /notes/new` (htmx even in the app: a plain POST would be a navigation);
+  `#tags` in the body tag it, as in the editor. Enter saves, Shift+Enter = new line. Saved → hint "✓ Saved note · **Open**" (opens
+  `/notes/<id>` in the main window). Only whitespace → "Nothing to save. Type the note’s title first." in the hint, the text stays.
+  AA: same surfaces and tokens as the line field and the tiles, nothing new.
 - **Meeting**: not running → "Start a meeting", the three most recent series as `.btn.ghost.s` pills (submit buttons: one click
   starts) + a `.fld.m` name box with a ghost **Start** (28). Running → the banner's opaque `.callout.dark`: dot · name (link) ·
   "since 09:17 · 24 min" (minutes, no ticking seconds) · **End meeting**. Recording (started in the app, once T51 ships) shows
@@ -391,7 +401,7 @@ the log scrolls under it.
   Empty: "**Nothing due today** · No overdue to-dos either. Add one: start a line with `>`" + "N open to-dos · Open Atharu";
   the lines wrap balanced (WebKit's SF ran the one-liner past 360) with the `>` chip glued to "with".
 - **Keyboard**: opens focused in the line. Tab from the line: Log ↵ → series pills → name → Start / End meeting → each check →
-  + N more; Shift+Tab: kind tiles (one stop, ←→ picks) → Open Atharu. Enter saves (unless an option was arrowed to). Esc closes an open
+  + N more; Shift+Tab: Note tile → kind tiles (one stop, ←→ picks) → Open Atharu. Enter saves (unless an option was arrowed to). Esc closes an open
   menu, else hides the popover; blur hides it; Ctrl+Opt+Space toggles it. Any link opens in the main window and hides the popover.
 - **Right-click menu** (native NSMenu, follows system light/dark): **Open Atharu** · **Start meeting ›** the 3 recent series ·
   while one runs, **End meeting · name** instead · separator · **Quit Atharu ⌘Q**. "Quick capture" goes (left click is it now).
@@ -402,7 +412,7 @@ the log scrolls under it.
   Glass 4.88; app Sumi 4.56 · Sora 4.68 · Wakaba 4.66 · Glass 4.57. Rings ≥ 3.59. Opaque pairs unchanged (white on `--accent` 5.57,
   dark callout as the banner: white 14.91, muted 9.28, End 4.94, rec dot 4.90).
 - **Canvas drift**: the Quick boards still show the T81 white 90% panel with the tiles touching the field; the app (above) is the
-  source of truth until the boards are redrawn.
+  source of truth until the boards are redrawn. Quick.Note (T86) is drawn from the current `static/css`.
 
 ### Line notes (canvas row "Line notes · the note is the detail page", T84; D49)
 

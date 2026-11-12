@@ -340,7 +340,7 @@ fn note(
     }
     let (id, updated) = match id {
         None => (
-            notes::agent_create(conn, &title, &body, author).map_err(db)?,
+            notes::insert(conn, &title, &body, author).map_err(db)?,
             false,
         ),
         Some(id) => {

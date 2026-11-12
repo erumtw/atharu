@@ -9,7 +9,7 @@ use crate::{
 use axum::{
     Json,
     extract::{Form, Path, Query, State},
-    http::HeaderMap,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
 };
 use chrono::{NaiveDate, NaiveDateTime};
@@ -211,6 +211,45 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
 pub async fn create(State(st): State<AppState>) -> AppResult<Response> {
     let id = queries::create(&st.conn())?;
     Ok(web::back(&format!("/notes/{id}")))
+}
+
+#[derive(Deserialize)]
+pub struct TextForm {
+    text: String,
+    back: Option<String>,
+}
+
+/// One text box → the owner's note (the quick popover, D53). With `back` it answers there with `note=<id>` (the
+/// popover's "✓ Saved note · Open"), else on the new note.
+pub async fn create_text(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<TextForm>,
+) -> AppResult<Response> {
+    let back = f.back.as_deref().map(|b| web::safe_back(Some(b), "/notes"));
+    let sep = |to: &str| if to.contains('?') { '&' } else { '?' };
+    let Some((title, body)) = markdown::split_note(&f.text) else {
+        if web::is_htmx(&headers) {
+            // htmx keeps the text (it only resets on 2xx); only the hint changes, as for a rejected line.
+            let retarget = [("hx-retarget", "#hint"), ("hx-reswap", "innerHTML")];
+            let hint = view::HintError {
+                error: markdown::NO_TITLE,
+            };
+            return Ok((
+                retarget,
+                web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &hint)?,
+            )
+                .into_response());
+        }
+        // Nothing but whitespace was typed, so dropping it loses nothing: back to the box, in note mode.
+        let to = back.unwrap_or("/notes");
+        return Ok(web::back(&format!("{to}{}mode=note&err=1", sep(to))));
+    };
+    let id = queries::insert(&st.conn(), title, body, "me")?;
+    Ok(match back {
+        Some(to) => web::back(&format!("{to}{}note={id}", sep(to))),
+        None => web::back(&format!("/notes/{id}")),
+    })
 }
 
 fn resolver(conn: &Connection) -> rusqlite::Result<impl Fn(&str) -> Option<String>> {
