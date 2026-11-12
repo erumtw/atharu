@@ -15,6 +15,7 @@ const entries = {
   capture: '/* atharu capture-bar tag suggestions, built by editor/build.mjs from editor/src/capture.ts. */',
   tags: '/* atharu Make tag + Tags prop keys, built by editor/build.mjs from editor/src/tags.ts. */',
   datepicker: '/* atharu date popover, built by editor/build.mjs from editor/src/datepicker.ts. */',
+  quick: '/* atharu menu-bar quick popover, built by editor/build.mjs from editor/src/quick.ts. */',
 }
 
 // One build per entry: esbuild's banner is per build, and each file names what it bundles.

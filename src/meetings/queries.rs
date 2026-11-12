@@ -32,7 +32,8 @@ pub fn start(conn: &Connection, day: &str, name: &str) -> rusqlite::Result<Resul
         return Ok(Err(running));
     }
     conn.execute(
-        "INSERT INTO meetings(day, name) VALUES (?1, ?2)",
+        "INSERT INTO meetings(day, name, started_at)
+         VALUES (?1, ?2, strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))",
         params![day, name],
     )?;
     Ok(Ok(conn.last_insert_rowid()))

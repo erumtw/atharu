@@ -4,7 +4,7 @@ use crate::{
     domain::{
         dates,
         flags::{self, Flag},
-        parse::{by_as_text, parse},
+        parse::{by_as_text, parse, with_kind},
         tags,
     },
     error::{AppError, AppResult},
@@ -40,6 +40,11 @@ pub struct LineForm {
     notag: Option<String>,
     /// Inline edit via "Make tag": the word that just became a tag.
     made: Option<String>,
+    /// Quick popover kind tile: the prefix to use when the line has none (`domain::parse::with_kind`).
+    kind: Option<String>,
+    /// Set by a capture box on another page (/quick): saving answers with a 303 there, htmx or not, so that page
+    /// re-renders itself instead of receiving Today's log partial.
+    back: Option<String>,
 }
 
 /// How the log is shown: grouping + tag filter.
@@ -358,7 +363,7 @@ pub async fn create(
 ) -> AppResult<Response> {
     let today = st.today();
     let day = pick_day(f.day.as_deref(), today);
-    let entry = match parse(&f.line, today) {
+    let entry = match parse(&with_kind(&f.line, f.kind.as_deref()), today) {
         Ok(e) => e,
         Err(e) if web::is_htmx(&headers) => {
             // Form keeps its text (htmx only resets on 2xx); only the hint under it changes.
@@ -387,6 +392,11 @@ pub async fn create(
     };
 
     let (id, new_epic) = queries::insert_entry(&mut st.conn(), &dates::iso(day), &entry, "me")?;
+    if let Some(b) = f.back.as_deref() {
+        let to = web::safe_back(Some(b), "/");
+        let sep = if to.contains('?') { '&' } else { '?' };
+        return Ok(web::back(&format!("{to}{sep}saved={id}")));
+    }
     if !web::is_htmx(&headers) {
         return Ok(web::back(&format!("/?day={}", dates::iso(day))));
     }
@@ -416,12 +426,22 @@ pub async fn delete(
     State(st): State<AppState>,
     headers: HeaderMap,
     Path(id): Path<i64>,
+    Query(q): Query<BackQuery>,
 ) -> AppResult<Response> {
     let (day, snap) = queries::delete_entry(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    // In the query, not the body: htmx sends DELETE without one. Same rule as `back` on create.
+    if let Some(b) = q.back.as_deref() {
+        return Ok(web::back(web::safe_back(Some(b), "/")));
+    }
     if !web::is_htmx(&headers) {
         return Ok(web::back(&format!("/?day={day}")));
     }
     log_swap(&st, &headers, &day, Some(view::Deleted { snap }))
+}
+
+#[derive(Deserialize)]
+pub struct BackQuery {
+    back: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -479,7 +499,7 @@ pub async fn preview(State(st): State<AppState>, Form(f): Form<LineForm>) -> App
     if f.line.trim().is_empty() {
         return web::html(&out);
     }
-    match parse(&f.line, st.today()) {
+    match parse(&with_kind(&f.line, f.kind.as_deref()), st.today()) {
         Ok(e) => {
             out.preview = Some(view::Preview {
                 soft: by_as_text(&e),

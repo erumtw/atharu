@@ -19,6 +19,7 @@
   --accent-wash: #e8f1fb;    /* meeting events, selected menu option: ink on it 14.8:1 */
   --accent-soft: #4d8fd1;    /* bars and the "done" OKR segment, never under text */
   --accent-on-dark: #2997ff; /* link + dot on --dark: 4.9:1, so --dark stays opaque even with Glass everywhere */
+  --rec-on-dark: #ff5c52;    /* recording dot on --dark: 4.90:1 (non-text 3:1; --err is 2.28 there). Never text, never on white */
   --now: #f5f9fe;            /* today's calendar column */
   --heat-1: #e3effc;         /* depth steps; 3 is --accent, white on 4 is 10.8:1 */
   --heat-2: #bcd6f2;

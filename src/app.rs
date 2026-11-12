@@ -62,6 +62,7 @@ pub fn router(state: AppState) -> Router {
         .merge(crate::notes::routes())
         .merge(crate::jira::routes())
         .merge(crate::settings::routes())
+        .merge(crate::quick::routes())
         .route("/static/{*path}", get(static_file))
         .layer(middleware::from_fn_with_state(state.clone(), guard))
         .with_state(state)
