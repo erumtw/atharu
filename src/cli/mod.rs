@@ -21,7 +21,12 @@ use std::{
     io::{Read, Write},
 };
 
-pub const COMMANDS: [&str; 6] = ["log", "epic", "note", "evidence", "today", "show"];
+pub mod update;
+
+/// `version` and `update` need no DB: main hands them to `update::run` before opening one.
+pub const COMMANDS: [&str; 8] = [
+    "log", "epic", "note", "evidence", "today", "show", "version", "update",
+];
 
 const USAGE: &str = "usage:
   atharu log \"<line>\" [--day YYYY-MM-DD] --as <agent>
@@ -30,6 +35,7 @@ const USAGE: &str = "usage:
   atharu evidence <KEY|jira-url> <url> [--label …] --as <agent>
   atharu today [--day YYYY-MM-DD]
   atharu show <KEY|jira-url>
+  atharu version · atharu update [--app] [--docker]
 --as can come from ATHARU_AGENT instead.";
 
 /// Exit code + message for stderr. 1 = input rejected (same copy as the web), 2 = usage.

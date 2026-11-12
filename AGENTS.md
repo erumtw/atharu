@@ -68,6 +68,8 @@ atharu note "<title>" [--file PATH] [--links a,b] [--id N] --as claude  # agent 
 atharu evidence <KEY|jira-url> <url> [--label …] --as claude  # impact link on an existing epic, http(s) only
 atharu today [--day YYYY-MM-DD]                             # that day's lines + open plans
 atharu show <KEY|jira-url>                                  # epic + evidence + timeline
+atharu version                                              # {version, sha, built}; no DB
+atharu update [--app] [--docker]                            # owner's tool: git pull --ff-only + scripts/install.sh
 ```
 
 - Every write needs `--as <agent>` or `ATHARU_AGENT=<agent>`: a lowercase slug (`claude`, `codex`). `me` is refused.

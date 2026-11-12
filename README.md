@@ -2,6 +2,12 @@
 
 Personal work log on localhost: one line per thing, epics, report. Spec: `docs/superpowers/specs/2026-09-28-atharu-design.md`.
 
+## Install / update
+
+`scripts/install.sh` once (`--app` also replaces /Applications/Atharu.app, `--docker` rebuilds the container) → `atharu` in `~/.cargo/bin`.
+`atharu update [--app] [--docker]` later: fast-forwards this checkout (refuses a dirty tree or diverged branch) and re-runs the script.
+`atharu version` prints version + git sha + build date; the script prints the PATH / ATHARU_DB lines to add, it never edits ~/.zshrc.
+
 ## Run
 
 ```sh
