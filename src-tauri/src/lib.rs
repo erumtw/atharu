@@ -212,7 +212,19 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
                 let path = req.uri().path();
                 let look_saved = post && path == "/settings";
                 let meetings = post && path.starts_with("/meetings");
+                // A write from the popover (or the tray menu, which posts through it): the main window would keep
+                // showing the old state, so tell it to re-fetch its live parts (`atharu-sync` refreshers).
+                let from_quick = post
+                    && req
+                        .headers()
+                        .get(axum::http::header::REFERER)
+                        .and_then(|v| v.to_str().ok())
+                        .and_then(|r| r.parse::<axum::http::Uri>().ok())
+                        .is_some_and(|u| u.path().starts_with("/quick"));
                 let res = next.run(req).await;
+                if from_quick && let Some(w) = h.get_webview_window("main") {
+                    let _ = w.eval("document.body.dispatchEvent(new CustomEvent('atharu-sync'))");
+                }
                 if meetings {
                     #[cfg(feature = "recording")]
                     sync_recording(&h);
@@ -351,24 +363,71 @@ fn tray_state(h: &AppHandle) {
     let Some(tray) = h.tray_by_id("main") else {
         return;
     };
-    // Every tick while recording (the clock moves); otherwise only on a change of state.
     let changed = TRAY_STATE.swap(state, std::sync::atomic::Ordering::Relaxed) != state;
-    if changed || title.is_some() {
-        let _ = tray.set_title(title.as_deref());
+    if changed {
+        let bytes: &[u8] = match state {
+            2 => include_bytes!("../icons/tray-rec.png"),
+            1 => include_bytes!("../icons/tray-meeting.png"),
+            _ => include_bytes!("../icons/tray.png"),
+        };
+        if let Ok(img) = Image::from_bytes(bytes) {
+            let _ = tray.set_icon(Some(img));
+            let _ = tray.set_icon_as_template(state != 2);
+        }
     }
-    if !changed {
-        return;
+    // Every tick while recording (the clock moves); otherwise only on a change of state. After the icon: a new image
+    // must not reset the title.
+    match title {
+        Some(t) => red_title(&tray, t),
+        None if changed => {
+            let _ = tray.set_title(None::<&str>);
+        }
+        None => {}
     }
-    let bytes: &[u8] = match state {
-        2 => include_bytes!("../icons/tray-rec.png"),
-        1 => include_bytes!("../icons/tray-meeting.png"),
-        _ => include_bytes!("../icons/tray.png"),
-    };
-    if let Ok(img) = Image::from_bytes(bytes) {
-        let _ = tray.set_icon(Some(img));
-        let _ = tray.set_icon_as_template(state != 2);
+    if changed {
+        let _ = tray.set_tooltip(Some(tip));
     }
-    let _ = tray.set_tooltip(Some(tip));
+}
+
+/// The recording clock in system red, like the icon. Tauri's set_title is plain text (the bar's own colour),
+/// so this sets the status item button's attributed title; tabular digits keep the item from jiggling each second.
+#[cfg(target_os = "macos")]
+fn red_title(tray: &tauri::tray::TrayIcon, text: String) {
+    let _ = tray.with_inner_tray_icon(move |inner| {
+        use objc2::{AllocAnyThread, MainThreadMarker, runtime::AnyObject};
+        use objc2_app_kit::{
+            NSColor, NSFont, NSFontAttributeName, NSFontWeightRegular,
+            NSForegroundColorAttributeName,
+        };
+        use objc2_foundation::{NSAttributedString, NSDictionary, NSString};
+        let (Some(item), Some(mtm)) = (inner.ns_status_item(), MainThreadMarker::new()) else {
+            return;
+        };
+        let Some(button) = item.button(mtm) else {
+            return;
+        };
+        let color = NSColor::systemRedColor();
+        let font =
+            unsafe { NSFont::monospacedDigitSystemFontOfSize_weight(13.0, NSFontWeightRegular) };
+        let (kc, kf) = unsafe { (NSForegroundColorAttributeName, NSFontAttributeName) };
+        let attrs = NSDictionary::<NSString, AnyObject>::from_slices(
+            &[kc, kf],
+            &[color.as_ref() as &AnyObject, font.as_ref() as &AnyObject],
+        );
+        let s = unsafe {
+            NSAttributedString::initWithString_attributes(
+                NSAttributedString::alloc(),
+                &NSString::from_str(&format!(" {text}")),
+                Some(&attrs),
+            )
+        };
+        button.setAttributedTitle(&s);
+    });
+}
+
+#[cfg(not(target_os = "macos"))]
+fn red_title(tray: &tauri::tray::TrayIcon, text: String) {
+    let _ = tray.set_title(Some(text));
 }
 
 fn show(app: &AppHandle) {

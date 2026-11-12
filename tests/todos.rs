@@ -222,5 +222,5 @@ async fn due_or_pin_change_asks_the_page_to_regroup() {
     assert_eq!(r.status, 422);
     assert!(r.headers.get("hx-trigger").is_none());
     let b = get(&st, "/todos").await.body;
-    assert!(b.contains(r#"hx-trigger="plans-changed from:body""#));
+    assert!(b.contains(r#"hx-trigger="plans-changed from:body, atharu-sync from:body""#));
 }

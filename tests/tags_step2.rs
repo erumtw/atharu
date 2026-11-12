@@ -424,12 +424,9 @@ async fn make_tag_then_tag_older_lines() {
     assert_eq!(text(&st, 2), "paired with Nok on the Expenses export bug");
     assert_eq!(tags_of(&st, "entry"), ["expense:4"]);
     // Today's log refetches itself on `tagged`.
-    assert!(
-        get(&st, "/")
-            .await
-            .body
-            .contains(r#"hx-trigger="tagged from:body, plans-changed from:body""#)
-    );
+    assert!(get(&st, "/").await.body.contains(
+        r#"hx-trigger="tagged from:body, plans-changed from:body, atharu-sync from:body""#
+    ));
 }
 
 #[tokio::test]

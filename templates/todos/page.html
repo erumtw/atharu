@@ -15,7 +15,7 @@
 <span class="err">{{ n }}</span>
 {%- endif %}
 <div class="row" style="gap: 8px; flex-wrap: wrap" role="group" aria-label="Filter">{% include "partials/tag_filter.html" %}<form class="row small" style="margin-left: auto; gap: 8px" method="get" action="/todos">{% if !filter.tags.is_empty() %}<input type="hidden" name="tag" value="{{ filter.joined() }}">{% endif %}<label class="row" style="gap: 8px">Group by tag<input class="sw" type="checkbox" role="switch" name="group" value="tag"{% if by_tag %} checked{% endif %} onchange="this.form.requestSubmit()"></label><noscript><button class="btn ghost s" type="submit">Show</button></noscript></form></div>
-<div hidden hx-get="/todos?{% if !filter.tags.is_empty() %}tag={{ filter.joined() }}&{% endif %}{% if by_tag %}group=tag{% endif %}" hx-trigger="plans-changed from:body" hx-target="#todos" hx-select="#todos" hx-swap="outerHTML"></div>
+<div hidden hx-get="/todos?{% if !filter.tags.is_empty() %}tag={{ filter.joined() }}&{% endif %}{% if by_tag %}group=tag{% endif %}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#todos" hx-select="#todos" hx-swap="outerHTML"></div>
 {%- if !filter.tags.is_empty() %}
 <p class="small muted" style="margin: 0">{{ shown }} of {{ open_total }} open to-dos · showing {% for t in filter.tags %}<span class="chip tag">{{ t }}</span> {% endfor %}(in the text, or on its epic)</p>
 {%- endif %}

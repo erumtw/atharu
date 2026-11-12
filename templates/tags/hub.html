@@ -41,7 +41,7 @@
 <section class="hsec"><h3>From the topic</h3><p class="small" style="margin: 0">{{ t.own_words }} <span class="muted">· your own words</span></p></section>
 {%- endif %}{% endif %}
 {#- To-do rows edit and delete like log lines (D51); their edit / Undo answers `plans-changed`, which re-fetches this block. #}
-<div hidden hx-get="{{ back() }}" hx-trigger="plans-changed from:body" hx-target="#htodos" hx-select="#htodos" hx-swap="outerHTML"></div>
+<div hidden hx-get="{{ back() }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#htodos" hx-select="#htodos" hx-swap="outerHTML"></div>
 <div id="htodos">
 {%- if !todos.is_empty() %}
 <section class="hsec"><h3>Open to-dos <span class="small muted normal">· {{ todos.len() }}</span></h3><div class="blocks">
