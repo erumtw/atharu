@@ -1,0 +1,5 @@
+{#- Tags prop body (layout::TagField as `field`). Plain submits, so it works without JS: Enter / leaving the box adds,
+    × removes. The first, off-screen button is the form's default, so Enter anywhere else never hits a ×. -#}
+<button type="submit" class="vh" tabindex="-1" aria-hidden="true"></button><input type="hidden" name="tags" value="{{ field.joined() }}">
+{%- for t in field.tags %}<span class="chip tag"><a href="/tags/{{ t }}">{{ t }}</a><button class="rm" type="submit" name="tags_drop" value="{{ t }}" aria-label="Remove tag #{{ t }}">×</button></span>{% endfor -%}
+<input id="{{ field.id }}" class="pin" name="tags_add" list="{{ field.id }}-list" placeholder="add a tag" style="flex: 0 1 140px" autocomplete="off" data-tagf><datalist id="{{ field.id }}-list">{% for t in field.known %}{% if !field.tags.contains(t) %}<option value="{{ t }}"></option>{% endif %}{% endfor %}</datalist>

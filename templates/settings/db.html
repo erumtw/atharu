@@ -1,0 +1,19 @@
+{#- T85 (D52): the SQLite file this server opened. Only the Mac app (it sets ATHARU_DB_POINTER) can change it:
+    Change writes its db-path pointer, which the next start reads. #}
+<div id="db" class="gform">
+{%- if change %}
+<form class="gi col" method="post" action="/settings/db" hx-post="/settings/db" hx-target="#db" hx-swap="outerHTML">
+<label class="t" for="db-path"><b>Database file</b><span>Shared with the browser, the CLI and agents. Type another path to switch.</span></label>
+<div class="fld m{% if error.is_some() %} bad{% endif %}"><input id="db-path" class="mono" name="path" value="{{ input }}" autocomplete="off" spellcheck="false" required{% if error.is_some() %} aria-invalid="true" aria-describedby="db-err"{% endif %}><button class="btn ghost" type="submit">Change</button></div>
+{%- if let Some(e) = error %}<span id="db-err" class="err" role="alert">{{ e }}</span>{% endif %}
+</form>
+{%- if pending %}
+<div class="gi"><div class="t"><b>Restart Atharu to switch</b><span>Until then it keeps using the old file.</span></div><a class="btn" href="/app/restart">Restart</a></div>
+{%- endif %}
+{%- if note %}
+<form id="db-note" class="gi" method="post" action="/settings/db/note" hx-post="/settings/db/note" hx-target="this" hx-swap="outerHTML"><div class="t"><b>Old Mac app data</b><span>Before this version the Mac app kept its own database. It only held settings, so it isn't merged.</span></div><button class="btn ghost s" type="submit">Got it</button></form>
+{%- endif %}
+{%- else %}
+<div class="gi col"><label class="t" for="db-path"><b>Database file</b><span>Set with ATHARU_DB or --db, then restart.</span></label><input id="db-path" class="fld m mono" value="{{ path }}" readonly></div>
+{%- endif %}
+</div>

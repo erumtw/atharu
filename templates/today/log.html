@@ -1,0 +1,26 @@
+{#- The day's log; htmx save/delete swap this whole section so new epic groups appear. #}
+<section id="log">
+<h3>{% if day.is_today %}Logged today{% else %}Logged on {{ day.label }}{% endif %}</h3>
+{%- if groups.is_empty() %}
+<p class="muted small" style="margin: 0">Nothing logged yet. Type what you did in the box below, one thing per line. For example:</p>
+<div class="mono small muted" style="line-height: 1.7">OPS-101 shipped index migration<br>OPS-101 ! keep sync path, no queue<br>&gt; write retention runbook<br>? vector-search: HNSW trades recall for speed</div>
+{%- endif %}
+{%- for g in groups %}
+{%- if g.by_tag %}
+{%- if let Some(t) = g.tag %}
+<h4><a class="chip tag" href="/tags/{{ t }}">{{ t }}</a> <span class="small muted normal">· {{ g.rows.len() }}</span></h4>
+{%- else %}
+<h4 class="muted">No tag <span class="small normal">· {{ g.rows.len() }}</span></h4>
+{%- endif %}
+{%- else if let Some(key) = g.key %}
+<h4><a href="/epics/{{ key }}"><span class="chip key">{{ key }}</span></a> {% if g.title.is_empty() %}<span class="muted normal">no title yet ·</span> <a class="small normal" href="/epics">name it</a>{% else %}{{ g.title }}{% endif %}</h4>
+{%- else %}
+<h4 class="muted">Not filed under an epic</h4>
+{%- endif %}
+<div class="blocks">
+{%- for row in g.rows %}
+{%- if let Some(ed) = edit %}{% if ed.id == row.id %}{{ ed|safe }}{% else %}{% include "partials/entry_row.html" %}{% endif %}{% else %}{% include "partials/entry_row.html" %}{% endif %}
+{%- endfor %}
+</div>
+{%- endfor %}
+</section>

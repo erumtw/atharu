@@ -1,0 +1,5 @@
+{% include "epics/live.html" %}
+<span id="saved" class="saved" style="margin-left: auto" hx-swap-oob="true">{%- include "epics/saved.html" -%}{% if save_error.is_none() %}<span class="m-hide"> · </span><span class="tick">✓ saved</span>{% endif %}</span>
+{%- if let Some(field) = field %}
+<dd class="tagf" id="tagf" hx-swap-oob="true">{% include "partials/tag_field.html" %}<span class="small muted">every line on this epic counts under these tags</span></dd>
+{%- endif %}

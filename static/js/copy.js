@@ -1,0 +1,2 @@
+/* atharu copy buttons, built by editor/build.mjs from editor/src/copy.ts. */
+"use strict";(()=>{document.addEventListener("click",async n=>{let t=n.target?.closest("[data-copy]");if(!t?.dataset.copy)return;let e=document.querySelector(t.dataset.copy);if(!e)return;await navigator.clipboard.writeText(e instanceof HTMLTextAreaElement?e.value:e.textContent??"");let a=t.textContent;t.textContent="\u2713 Copied",setTimeout(()=>t.textContent=a,2e3)});})();

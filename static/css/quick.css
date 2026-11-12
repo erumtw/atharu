@@ -1,0 +1,119 @@
+/* Menu-bar quick popover (T81, D46; DESIGN.md §6 "Quick popover"). Linked only by templates/quick/page.html, which
+   loads tokens, base, components, looks and this file but NOT layout.css or responsive.css: the window is 360 px wide,
+   and the < 640 phone rules (44 px controls, bottom sheets, .m-only) must not fire on a pointer surface. */
+
+html.q,html.q body{background:transparent;margin:0;min-height:0;height:100%;overflow:hidden}
+
+/* The panel = the .menu glass recipe (rim, light, shadow, lens, RT/IC, --muted-tint, --err-tint) at the user's --glass-a
+   like the sidebar (+5%): the look's wallpaper paints inside the window, so the look's own AA floor holds (aa81b.py). */
+.menu.quick{--lg-min:0%;--s:5%;position:relative;width:360px;max-height:480px;height:100%;border-radius:18px;padding:4px 12px 8px;gap:0;z-index:auto;
+  font-size:14px}
+/* Atharu.app: the window is the panel; the native popover material (window-vibrancy) is the base, the look's wallpaper
+   paints over it at .8 (looks.css), the glass on top. A smooth mesh gains nothing from a CSS blur, so it's dropped.
+   Floor 35%: the 20% the wallpaper leaves to the material is modelled as black, and Sumi's 18% floor would put
+   --accent-2 at 3.88 there (aa81b.py: 35% → worst 4.5+ in every look). */
+html[data-app=mac] .menu.quick{--lg-min:35%;height:100vh;max-height:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:var(--lg-light)}
+/* body::before is the window-sized wallpaper; round it to the native material's 18 or its corners show. */
+html.q[data-app=mac] body::before{border-radius:18px}
+/* Glass everywhere: the panel is the sheet (−5%) and each section a card on it (+10%), as on the main pages. */
+html[data-glass=all] .menu.quick{--s:-5%}
+html[data-glass=all] .quick .qsec{border:1px solid var(--glass-edge);border-radius:12px;padding:10px 12px;margin-top:8px;
+  background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + 10%),transparent)}
+html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
+/* In the panel: links and the hint one blue step darker (--accent 4.44 over a black desktop), check ring --muted (5.92;
+   --ctl-edge 2.12 fails the 3:1 non-text floor here). */
+.quick a,.quick .linkbtn{color:var(--accent-2)}
+.quick .check{border-color:var(--muted)}
+/* Fields and pills inside the panel: the solid sheet's --line edge (a white glass edge vanishes on 90% white, and fully under RT). */
+.quick :is(.btn.ghost,.fld):not(:focus-within):not(.bad){border-color:var(--line)}
+.quick .check:checked{border-color:var(--accent)}
+
+.qh{display:flex;align-items:center;gap:8px;height:40px;flex:none}
+.qh .mark{width:18px;height:18px;flex:none}
+.qh b{font-size:15px;font-weight:600}
+.qh .ib{margin-left:auto;color:var(--ink)}
+/* .ic's stroke recipe lives in responsive.css, which this page doesn't load. */
+.quick .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.qsec{border-top:1px solid rgba(0,0,0,.08);padding:10px 0;display:flex;flex-direction:column;gap:8px;flex:none}
+.qlbl{margin:0;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0;display:flex;align-items:center;gap:6px;line-height:1}
+.qlbl .n{font-weight:500}
+
+/* Kind chips: one row of six 44-tall tiles (key square over the word) + the Note tile, a radio group posting `kind`. A typed prefix wins;
+   capture.ts mirrors it onto the chip, so the chip never disagrees with the line. */
+/* 8 between tiles, field and hint: the section's own gap (DESIGN §3), else the tiles sit on the field. */
+.qcap form{display:flex;flex-direction:column;gap:8px}
+/* Seven equal tiles left 45 px and "decision" is 46 at 600 in Chrome (wider in WebKit's SF): fixed weights by word length,
+   so a pick never reflows the row (decision 54, note 39). */
+.kinds{display:grid;grid-template-columns:1fr 1.25fr 1.1fr 1fr 1.1fr 1fr .9fr;gap:3px;border:0;margin:0;padding:0;min-width:0}
+.kc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:44px;border-radius:10px;
+  background:rgba(0,0,0,.05);font-size:11px;font-weight:500;line-height:1;color:var(--ink);cursor:pointer;letter-spacing:0;position:relative}
+.kc input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.kc .k{width:20px;height:20px;font-size:12px}
+.kc:hover{background:rgba(0,0,0,.08)}
+/* Selected = the menus' --accent-wash + an inset accent ring (4.44, ≥ 3) + 600: weight and ring, not colour alone. */
+.kc:has(:checked){background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
+.kc:has(:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+
+/* Note tile (T86, D53): a 7th tile that turns the box into a note (first line = title, the rest = markdown body). Not a
+   line kind: a submit button (GET /quick?mode=note, so it works without JS) that quick.ts toggles in place. */
+.kc.nt{border:0;padding:0;margin:0;font-family:inherit}
+.kc[aria-pressed=true]{background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
+.kc.nt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Note mode: the kind radio keeps its check (the box goes back to that kind after saving) but stops looking picked. */
+.qcap[data-mode=note] .kc:has(:checked){background:rgba(0,0,0,.05);box-shadow:none;font-weight:500}
+.qcap[data-mode=note] #qline,.qcap[data-mode=line] #qnote{display:none}
+/* AA: the same surfaces and tokens as the line field and the kind tiles (DESIGN §6 Quick popover), nothing new to measure.
+   Three lines: the pill turns into a 14-radius box (a 9999 radius on 76 px reads as a blob), Save stays bottom right. */
+.quick .fld.note{height:auto;align-items:flex-end;border-radius:14px;padding:8px 4px 4px 14px}
+.fld.note textarea{flex:1;min-width:0;height:60px;border:0;outline:0;padding:0;margin:0 0 4px;background:transparent;font:inherit;
+  font-size:15px;line-height:20px;color:inherit;resize:none}
+.fld.note textarea::placeholder{color:var(--muted-tint)}
+
+.qfield{position:relative}
+/* The 44 field holds the 36 primary (DESIGN §6). Flat glass: it sits inside the panel, no rim. */
+.quick .fld input{font-size:15px}
+.qhint{min-height:18px;font-size:13px;line-height:1.4;color:var(--accent-2);padding:0 4px}
+.qhint .tick{color:var(--accent-2);font-weight:600}
+.qhint .err{font-size:13px}
+
+/* # and `by ` menus (the capture bar's `.menu.up` markup) open DOWN here, inside the window (it can't grow past the
+   screen top), over the sections below. Opaque white (floor 100%) with the rim + shadow: a blurred menu over the glass
+   panel would be glass on glass. */
+.quick .qfield .menu{--lg-min:100%;top:calc(100% + 6px);left:0;right:0;width:auto;z-index:5;backdrop-filter:none;-webkit-backdrop-filter:none}
+
+.qpills{display:flex;flex-wrap:wrap;gap:6px}
+.qpills .btn{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;line-height:30px}
+
+/* Running meeting: the banner's opaque --dark, so its colours are the banner's (AA from T51, not the glass). */
+.qrun{padding:10px 8px 10px 14px;align-items:center;gap:10px;border-radius:12px}
+.qrun .t{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.3}
+.qrun .t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qrun .t .small{font-variant-numeric:tabular-nums}
+.qrun .btn{flex:none}
+
+/* To-dos take the rest of the 480 and scroll on their own; header, capture and meeting never move. */
+.qtodo{flex:1 1 auto;min-height:0;padding-bottom:0}
+.qlist{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;margin:0 -12px;padding:0 12px}
+.qt{display:flex;align-items:center;gap:10px;min-height:32px;flex:none}
+.qt form{display:contents}
+.qt .qtx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qt .due{flex:none}
+.qt .done-text{color:var(--muted)}
+.qmore{font-size:13px;padding:6px 0 0;flex:none}
+.qempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:13px;color:var(--muted);padding:12px 0}
+.qempty b{color:var(--ink);font-weight:600;font-size:14px}
+/* WebKit's SF is wider than Chrome's fallback and the one-liner ran past 360: wrap, balanced, chip glued to "with". */
+.qempty>*{max-width:100%;text-wrap:balance}
+
+/* Touch (browser /quick on a phone): the 44 floor responsive.css would have given. */
+@media (hover:none){.kc,.quick .fld{height:48px}.qt{min-height:44px}.qpills .btn,.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}}
+/* Reduce Transparency: looks.css already makes .menu solid + hairline; the panel goes fully opaque too. */
+@media (prefers-reduced-transparency: reduce){.menu.quick{--lg-min:100%}
+  html[data-glass=all] .quick .qsec{border-color:var(--line)}}
+@media (prefers-contrast: more){.qsec,html[data-glass=all] .quick .qsec{border-color:var(--ink)}.kc{box-shadow:inset 0 0 0 1px var(--ink)}.kc:has(:checked){box-shadow:inset 0 0 0 2px var(--accent)}
+  .quick .check{border-color:var(--ink)}
+  .kc[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--accent)}
+  .qcap[data-mode=note] .kc:has(:checked){box-shadow:inset 0 0 0 1px var(--ink)}}
+/* Record audio switch under Start: the shared .recopt, at the popover's inset. */
+.qrec{padding:2px 2px 0;font-size:12px;gap:8px}

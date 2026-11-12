@@ -1,0 +1,5 @@
+{%- let n = rate.depth_now %}
+<dt>Depth now</dt><dd>{% let d = n.now %}{% include "learn/meter.html" %}<span>{% if d.depth > 0 %}{{ d.depth }} · {% endif %}{{ d.label }}</span>{% if !n.rated.is_empty() %}<span class="small muted">{{ n.rated }}</span>{% endif %}</dd>
+{%- if !n.history.is_empty() %}
+<dt>History</dt><dd class="small">{% for h in n.history %}{% if !loop.first %}→{% endif %}<span class="chip">{{ h.day }} · {{ h.depth.depth }} {{ h.depth.label }}</span>{% endfor %}</dd>
+{%- endif %}

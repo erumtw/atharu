@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto">{%- include "epics/saved.html" -%}</span>{% endblock %}
+{% block content %}
+<main class="doc">
+<div class="row"><span class="chip key">{{ epic.key }}</span>{% if let Some(f) = flag %}<span class="{{ f.class }}">{{ f.label }}</span><span class="small muted">{{ f.reason }}</span>{% endif %}</div>
+{%- if let Some(j) = epic.jira %}
+<p class="small muted" style="margin: 4px 0 0" title="From Jira, read-only">Jira: {{ j }}</p>
+{%- endif %}
+{#- Every change PATCHes the whole form (unchanged fields rewrite their own value); no-JS posts it via Save. #}
+{#- novalidate: min/max only grey the picker's days; a typed backwards date still posts, so the server's message shows instead of htmx silently not saving. #}
+<form method="post" action="/epics/{{ epic.key }}" hx-patch="/epics/{{ epic.key }}" hx-trigger="change, submit" hx-target="#live" hx-swap="outerHTML" novalidate>
+<h1 class="ptitle" style="margin-top: 0"><input class="pin" name="title" value="{{ epic.title }}" placeholder="Untitled" aria-label="Title"></h1>
+<dl class="props">
+<dt><label for="role">Role</label></dt><dd><select id="role" name="role" class="pin" style="flex: none">{% for o in ["owner", "contributor"] %}<option{% if epic.role.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+<dt><label for="status">Status</label></dt><dd><select id="status" name="status" class="pin" style="flex: none">{% for o in ["active", "done", "dropped"] %}<option{% if epic.status.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+<dt><label for="tags">Tags</label></dt><dd class="tagf" id="tagf">{% include "partials/tag_field.html" %}<span class="small muted">every line on this epic counts under these tags</span></dd>
+<dt><label for="okr">OKR</label></dt><dd><input id="okr" name="okr" class="pin" value="{{ epic.okr }}" placeholder="e.g. O1 · Faster ordering"></dd>
+<dt>Dates</dt><dd><span class="small muted">start</span><input class="pin" type="date" name="start" value="{{ epic.start }}"{% if !epic.target.is_empty() %} max="{{ epic.target }}"{% endif %} onchange="this.form.elements.target.min = this.value" style="flex: none" aria-label="Start"><span class="small muted">target</span><input class="pin" type="date" name="target" value="{{ epic.target }}"{% if !epic.start.is_empty() %} min="{{ epic.start }}"{% endif %} onchange="this.form.elements.start.max = this.value" style="flex: none" aria-label="Target"><span class="small muted">done on</span><input class="pin" type="date" name="done_on" value="{{ epic.done_on }}" style="flex: none" aria-label="Done on"></dd>
+<dt>Metric</dt><dd><input class="pin" name="metric" value="{{ live.metric }}" placeholder="e.g. checkout p95" style="flex: 0 1 140px" aria-label="Metric name"><span class="small muted">before</span><input class="pin" name="before" value="{{ live.before }}" style="flex: 0 0 48px" aria-label="Before"><span class="small muted">after</span><input class="pin" name="after" value="{{ live.after }}" style="flex: 0 0 48px" aria-label="After"></dd>
+<dt>Activity</dt><dd><div class="bars" style="width: 120px; height: 20px" aria-hidden="true">{% for p in activity %}<span style="height: {{ p }}%"></span>{% endfor %}</div><span class="small muted">logs/week, 8 wks</span></dd>
+</dl>
+<noscript><button class="btn" type="submit">Save</button></noscript>
+</form>
+{% include "partials/backlinks.html" %}
+
+<hr class="hr">
+
+{% include "epics/live.html" %}
+
+<h3>Timeline</h3>
+{%- if timeline.is_empty() %}
+<p class="small muted">Nothing logged on {{ epic.key }} yet. Start a line with {{ epic.key }} on Today.</p>
+{%- endif %}
+{#- To-do lines edit and delete like log lines (D51); their edit / Undo answers `plans-changed`, which re-fetches the timeline. #}
+<div hidden hx-get="/epics/{{ epic.key }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#timeline" hx-select="#timeline" hx-swap="outerHTML"></div>
+<div id="timeline">
+{%- for g in timeline %}
+<h4 class="muted small">{{ g.label }}</h4>
+<div class="blocks">
+{%- for r in g.rows %}
+{%- let line_id = r.id %}{% let note_ref = r.note.as_ref() %}
+{%- if r.kind == crate::domain::entry::Kind::Plan %}
+{%- let edit_href = "/?day={}&edit={}"|format(r.day, r.id) %}
+<div class="blk" id="plan-{{ r.id }}"><span class="{{ r.kind.badge_class() }}" title="{{ r.kind.tooltip() }}">{{ r.kind.mark() }}</span><span class="ltext">{% for s in crate::domain::tags::segments(r.text) %}{% if let Some(t) = s.tag %}<a class="chip tag" href="/tags/{{ t }}">{{ t }}</a>{% else %}<a class="edit-line" href="{{ edit_href }}" hx-get="/entries/{{ r.id }}/edit?plan=1" hx-target="#plan-{{ r.id }}" hx-swap="outerHTML" title="Click to edit">{{ s.text }}</a>{% endif %}{% endfor %}</span>{% for t in r.inh %}<a class="chip tag inh" href="/tags/{{ t }}" title="From this epic">{{ t }}</a>{% endfor %}{% let row = r %}{% include "partials/author.html" %}<span class="end">{% include "partials/note_btn.html" %}<button class="ib more m-only" type="button" popovertarget="more-t{{ r.id }}" aria-label="More actions for this to-do"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#more"/></svg></button><span class="acts m-pop" id="more-t{{ r.id }}" popover>{% include "partials/note_sheet.html" %}<a class="btn ghost s m-only" href="{{ edit_href }}" hx-get="/entries/{{ r.id }}/edit?plan=1" hx-target="#plan-{{ r.id }}" hx-swap="outerHTML">Edit line</a><form class="inline" method="post" action="/entries/{{ r.id }}/delete?back=%2Fepics%2F{{ epic.key }}" hx-delete="/entries/{{ r.id }}?plan=1" hx-target="#plan-{{ r.id }}" hx-swap="outerHTML"><button class="x" type="submit" title="Delete line" aria-label="Delete line">×<span class="m-only"> Delete line</span></button></form></span></span></div>
+{%- else %}
+<div class="blk"><span class="{{ r.kind.badge_class() }}" title="{{ r.kind.tooltip() }}">{{ r.kind.mark() }}</span><span>{% if let Some(t) = r.topic %}<span class="mono">{{ t }}</span> {% endif %}{% let text = r.text.as_str() %}{% include "partials/tag_text.html" %}</span>{% for t in r.inh %}<a class="chip tag inh" href="/tags/{{ t }}" title="From this epic">{{ t }}</a>{% endfor %}{% let row = r %}{% include "partials/author.html" %}<span class="end">{% include "partials/note_btn.html" %}</span></div>
+{%- endif %}
+{%- endfor %}
+</div>
+{%- endfor %}
+</div>
+<form class="row small" method="post" action="/epics/{{ epic.key }}/delete" hx-post="/epics/{{ epic.key }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Only while nothing is logged on it">Delete epic</button><span id="epic-del" class="err">{% if let Some(e) = delete_error %}{{ e }}{% endif %}</span></form>
+</main>
+{% endblock %}

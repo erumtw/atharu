@@ -1,0 +1,105 @@
+<!doctype html>
+{#- The menu-bar popover (T81, DESIGN.md §6 "Quick popover"). Own lean page: no sidebar, and no layout.css /
+    responsive.css, so the 360 px window never trips the phone rules. Every form posts to its slice with back=/quick. #}
+<html lang="en" class="q" data-look="{{ layout.look }}"{% if layout.glass_all %} data-glass="all"{% endif %}{% if layout.tinted %} data-tint="tinted"{% endif %}{% if layout.text_blur %} data-blur="text"{% endif %} style="--glass-a:{{ layout.glass_a }}%">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atharu · Quick</title>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/components.css">
+<link rel="stylesheet" href="/static/css/looks.css">
+<link rel="stylesheet" href="/static/css/quick.css">
+<link rel="icon" type="image/svg+xml" href="/static/icon/{{ layout.look }}.svg">
+<meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":false}]}'>
+<script src="/static/js/htmx.min.js" defer></script>
+<script src="/static/js/datepicker.js" defer></script>
+<script src="/static/js/capture.js" defer></script>
+<script src="/static/js/quick.js" defer></script>
+</head>
+<body>
+<div class="menu quick" role="dialog" aria-label="Atharu quick capture">
+<header class="qh">{#- Inline, not ui.svg#mark: an external <use> drew nothing in the app's WKWebView popover (owner screenshot). Same path as ui.svg#mark. #}<svg class="mark" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><path d="M8.27 2.04 L9.25 1.87 L10.26 1.83 L11.29 1.95 L12.31 2.21 L13.30 2.62 L14.22 3.20 L14.98 3.99 L15.61 4.87 L16.13 5.83 L16.50 6.85 L16.72 7.91 L16.80 9.00 L16.72 10.09 L16.50 11.15 L16.13 12.17 L15.61 13.13 L14.98 14.01 L14.22 14.80 L13.36 15.47 L12.42 16.01 L11.41 16.42 L10.35 16.68 L9.27 16.80 L8.18 16.76 L7.11 16.57 L6.08 16.22 L5.14 15.69 L4.28 15.04 L3.53 14.28 L2.90 13.43 L2.39 12.51 L2.02 11.54 L1.80 10.53 L1.72 9.51 L1.78 8.49 L1.98 7.51 L2.31 6.56 L2.77 5.69 L3.34 4.89 L4.01 4.18 L4.76 3.58 L5.36 4.34 L4.79 4.93 L4.31 5.59 L3.93 6.31 L3.66 7.06 L3.50 7.83 L3.46 8.61 L3.52 9.38 L3.68 10.13 L3.95 10.84 L4.31 11.50 L4.75 12.09 L5.26 12.61 L5.84 13.05 L6.46 13.40 L7.12 13.65 L7.79 13.85 L8.48 13.97 L9.17 14.00 L9.87 13.92 L10.55 13.76 L11.19 13.49 L11.80 13.15 L12.35 12.72 L12.83 12.21 L13.24 11.65 L13.57 11.03 L13.81 10.38 L13.95 9.70 L14.00 9.00 L13.95 8.30 L13.81 7.62 L13.57 6.97 L13.24 6.35 L12.83 5.79 L12.35 5.28 L11.85 4.77 L11.30 4.29 L10.66 3.88 L9.96 3.56 L9.20 3.34 L8.39 3.23Z"/><circle cx="10.4" cy="7.8" r="1.6"/></svg><b>Atharu</b><span class="small muted">{{ date }}</span><a class="ib" href="/" aria-label="Open Atharu" title="Open Atharu"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#open"/></svg></a></header>
+
+{#- Saving answers with a 303 back here (back=/quick); htmx follows it and takes only the hint and the to-dos, so the
+    form, its focus and capture.js stay. A rejected line answers 422 into #hint (the form keeps its text).
+    The tiles sit outside both forms (form="qline"): the line form posts them; the Note tile (D53) is a GET back here
+    with mode=note, which quick.js turns into an in-place switch; data-mode picks which form shows. #}
+<section class="qsec qcap" aria-label="Log a line" data-mode="{% if note_mode %}note{% else %}line{% endif %}">
+<fieldset class="kinds"><legend class="vh">Line kind</legend>
+{%- for (v, mark, class, word) in kinds %}<label class="kc"><input type="radio" name="kind" value="{{ v }}" form="qline"{% if loop.index0 == kind %} checked{% endif %}><span class="{{ class }}">{{ mark }}</span>{{ word }}</label>{% endfor -%}
+<button class="kc nt" type="submit" form="qline" formmethod="get" formaction="/quick" formnovalidate name="mode" value="{% if !note_mode %}note{% endif %}" aria-pressed="{{ note_mode }}"><span class="k">n</span>note</button>
+</fieldset>
+<form id="qline" method="post" action="/entries" hx-post="/entries" hx-swap="none" hx-select-oob="#hint,#qtodo" hx-disinherit="*" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) this.reset()">
+<input type="hidden" name="back" value="/quick"><input type="hidden" name="notag" id="notag" value="">
+<div class="qfield">
+<div class="fld"><input id="line" name="line" value="{% if !note_mode %}{{ text }}{% endif %}" placeholder="What did you do?" aria-label="Log a line" autocomplete="off"{% if !note_mode %} autofocus{% endif %} role="combobox" aria-expanded="false" aria-controls="tagsug" aria-autocomplete="list" hx-post="/parse-preview" hx-trigger="input changed delay:150ms, kindpick" hx-target="#hint" hx-swap="innerHTML"><button class="btn" type="submit">Log ↵</button></div>
+<input type="date" id="bydate" data-for="line" hidden tabindex="-1" aria-label="Due date">
+<div id="tagsug"></div><div id="bysug"></div>
+</div>
+</form>
+{#- Posted by htmx even in the app: a plain POST is a navigation, which the popover hands to the main window. #}
+<form id="qnote" method="post" action="/notes/new" hx-post="/notes/new" hx-swap="none" hx-select-oob="#hint,#qtodo" hx-disinherit="*">
+<input type="hidden" name="back" value="{{ back_note }}">
+<div class="fld note"><textarea id="qtext" name="text" rows="3" required placeholder="Note title, then the body on the next lines" aria-label="Quick note"{% if note_mode %} autofocus{% endif %}>{% if note_mode %}{{ text }}{% endif %}</textarea><button class="btn" type="submit">Save ↵</button></div>
+</form>
+<div class="qhint" id="hint" aria-live="polite">
+{%- if let Some(s) = saved -%}
+<span class="tick">✓</span> Saved as <b>{{ s.kind }}</b>{% if let Some(k) = s.key %} on <span class="chip key">{{ k }}</span>{% endif %} · <form class="inline" method="post" action="/entries/{{ s.id }}/delete?back=/quick" hx-post="/entries/{{ s.id }}/delete?back=/quick" hx-swap="none" hx-select-oob="#hint,#qtodo"><button class="linkbtn" type="submit">Undo</button></form>
+{%- else if let Some(n) = saved_note -%}
+<span class="tick">✓</span> Saved note · <a href="/notes/{{ n }}">Open</a>
+{%- else if let Some(e) = error -%}
+<span class="err">{{ e }}</span>
+{%- endif -%}
+</div>
+</section>
+
+{#- Plain forms: quick.js posts them without HX-Request, so the meetings slice answers its 303 back here (with it, it
+    would answer Today's banner partial) and swaps in the fresh section. #}
+<section class="qsec qmeet" id="qmeet" aria-labelledby="qm">
+{%- if let Some(m) = running %}
+<h2 class="qlbl vh" id="qm">Meeting</h2>
+<div class="callout dark qrun"><span class="dot{% if m.rec.live.is_some() %} rec{% endif %}" aria-hidden="true"></span><span class="t"><a href="/meetings/{{ m.id }}"><b>{{ m.name }}</b></a>{% if let Some(l) = m.rec.live %}<span class="small muted">Recording · {{ l.elapsed }}</span>{% else if !m.since.is_empty() %}<span class="small muted">{{ m.since }}</span>{% endif %}</span>{#- Same rules as the banner: Record only in the app with the model ready; while live, Stop keeps the meeting running. #}
+{%- if let Some(l) = m.rec.live %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record/stop"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit" title="Recording {{ l.elapsed }}">Stop</button></form>
+{%- else if m.rec.finishing %}<span class="small muted">Transcribing…</span>
+{%- else if m.rec.mac && m.rec.model_ready %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit" title="Tell people you're recording before you start.">Record</button></form>
+{%- endif %}<form class="inline" method="post" action="/meetings/{{ m.id }}/end"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit">End meeting</button></form></div>
+{%- else %}
+{%- if let Some((eid, ename)) = ended %}
+<p class="small" role="status" style="margin: 0"><span class="tick" aria-hidden="true">✓</span> Ended <b>{{ ename }}</b> · <a href="/meetings/{{ eid }}">Open meeting</a></p>
+{%- endif %}
+<h2 class="qlbl" id="qm">Start a meeting</h2>
+{%- if !series.is_empty() %}
+<form method="post" action="/meetings" class="qpills"><input type="hidden" name="back" value="/quick">{#- Mirrors the switch below (one switch, two forms): disabled = not sent, since the server records on any `record`. #}<input type="hidden" id="qrec-p" name="record" value="1" disabled>{% for s in series %}<button class="btn ghost s" type="submit" name="name" value="{{ s }}">{{ s }}</button>{% endfor %}</form>
+{%- endif %}
+<form method="post" action="/meetings" class="fld m" id="qstart"><input type="hidden" name="back" value="/quick"><input name="name" value="" placeholder="{% if series.is_empty() %}Name it, e.g. oms-sync{% else %}or a new name, e.g. vendor-call{% endif %}" aria-label="Meeting name" autocomplete="off" required><button class="btn ghost" type="submit">Start</button></form>
+{%- if rec_app %}
+{#- Same switch as Today's start (D31): off every time, consent line in ink once on. #}
+<div class="recopt qrec"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="qstart" autocomplete="off"{% if !model_ready %} disabled{% endif %} onchange="document.getElementById('qrec-p').disabled = !this.checked" hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#qrecperm" hx-swap="innerHTML" hx-include="this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
+{%- if model_ready %}<span class="consent">Tell people you’re recording.</span>{% else %}<span class="muted">Needs the speech model.</span> <a href="/settings#transcription">Settings</a>{% endif %}</div>
+<div id="qrecperm"></div>
+{%- endif %}
+{%- endif %}
+</section>
+
+<section class="qsec qtodo" id="qtodo" aria-labelledby="qt">
+{%- if todos.is_empty() %}
+<h2 class="qlbl" id="qt">To-dos</h2>
+<div class="qempty"><b>Nothing due today</b><span>No overdue to-dos either. Add one: start a line with&nbsp;<span class="k">&gt;</span></span>{% if more > 0 %}<a href="/todos">{{ more }} open to-do{% if more != 1 %}s{% endif %} · Open Atharu</a>{% endif %}</div>
+{%- else %}
+<h2 class="qlbl" id="qt">To-dos<span class="n">· {{ overdue }} overdue, {{ due_today }} today</span></h2>
+<div class="qlist" role="list">
+{%- for t in todos %}
+{#- Ticking posts at once; the row stays (struck) until the popover reloads, so a mis-tick can be unticked = reopened. #}
+<div class="qt" role="listitem"><form method="post" action="/plans/{{ t.id }}" hx-post="/plans/{{ t.id }}" hx-trigger="change" hx-swap="none"><input type="hidden" name="back" value="/quick"><input type="hidden" name="state" value="done"><input class="check" type="checkbox" aria-label="Mark done: {{ t.text }}" hx-on:change="this.form.elements.state.value = this.checked ? 'done' : 'open'; this.closest('.qt').querySelector('.qtx').classList.toggle('done-text', this.checked)"><noscript><button class="btn ghost s" type="submit">Done</button></noscript></form><span class="qtx">{{ t.text }}</span><span class="due{% if t.late %} late{% endif %}">due {{ t.due }}</span>
+{#- A link opens the main window (the app's navigation hook); the add form is fetched by quick.ts, then the same. #}
+{%- let line_id = t.id %}{% let note_ref = t.note.as_ref() %}{% include "partials/note_btn.html" %}</div>
+{%- endfor %}
+</div>
+{%- if more > 0 %}<a class="qmore" href="/todos">+ {{ more }} more open · Open Atharu</a>{% endif %}
+{%- endif %}
+</section>
+</div>
+</body>
+</html>

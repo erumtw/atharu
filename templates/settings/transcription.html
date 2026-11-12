@@ -1,0 +1,26 @@
+{#- Settings › Transcription (Settings.Transcription board). Polls itself while the model downloads or is checked. -#}
+<div id="transcription" class="grp"{% if polling %} hx-get="/settings/transcription" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %}>
+{%- if !mac %}
+<div class="gi"><div class="t"><b>Transcription</b><span>Recording and transcribing run in the Mac app. Transcripts made there show on every meeting page here.</span></div></div>
+{%- else %}
+{%- match model %}
+{%- when Model::Missing %}
+<div class="gi"><div class="t"><b>Speech model</b><span>Whisper large-v3-turbo · 574 MB, downloaded once. Until then Record audio is off.</span></div><form class="inline" method="post" action="/settings/transcription/model" hx-post="/settings/transcription/model" hx-target="#transcription" hx-swap="outerHTML"><button class="btn" type="submit" name="act" value="download">Download 574 MB</button></form></div>
+{%- when Model::Downloading { got_mb, total_mb, left } %}
+<form class="gi col" method="post" action="/settings/transcription/model" hx-post="/settings/transcription/model" hx-target="#transcription" hx-swap="outerHTML"><div class="t between"><b>Speech model</b><button class="btn ghost s" type="submit" name="act" value="cancel" style="margin-left: auto">Cancel</button></div>
+<progress class="prog" max="{{ total_mb }}" value="{{ got_mb }}" aria-label="Downloading speech model">{{ got_mb }} of {{ total_mb }} MB</progress>
+<span class="help">{{ got_mb }} of {{ total_mb }} MB{{ left }} · you can leave this page</span></form>
+{%- when Model::Checking %}
+<div class="gi"><div class="t"><b>Speech model</b><span>Comparing the SHA-256 with the pinned one.</span></div><span class="small muted">Checking the file…</span></div>
+{%- when Model::Ready %}
+<div class="gi"><div class="t"><b>Speech model</b><span>Whisper large-v3-turbo · 574 MB · checked (SHA-256) · runs on this Mac, nothing is uploaded.</span></div><span class="pill ok">Ready</span><form class="inline" method="post" action="/settings/transcription/model" hx-post="/settings/transcription/model" hx-target="#transcription" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" name="act" value="delete">Delete</button></form></div>
+{%- when Model::Failed %}
+<div class="gi"><div class="t"><b>Speech model</b><span><span class="err" style="font-size: 13px">The file didn’t match its checksum, so it was deleted. Nothing was kept.</span></span></div><form class="inline" method="post" action="/settings/transcription/model" hx-post="/settings/transcription/model" hx-target="#transcription" hx-swap="outerHTML"><button class="btn ghost s" type="submit" name="act" value="download">Try again</button></form></div>
+{%- endmatch %}
+<form class="gi" method="post" action="/settings/transcription/lang" hx-post="/settings/transcription/lang" hx-target="#transcription" hx-swap="outerHTML"><div class="t"><b>Language</b><span>Thai keeps English terms in English. Auto guesses per 30 s and can turn Thai into an English translation.</span></div>
+<div class="seg mac" role="group" aria-label="Transcript language">{% for (v, l) in langs %}<button type="submit" name="lang" value="{{ v }}" aria-pressed="{% if lang == **v %}true{% else %}false{% endif %}">{{ l }}</button>{% endfor %}</div></form>
+<div class="gi"><div class="t"><b>Vocabulary</b><span>The meeting name and your active epics{% if !hint.is_empty() %} ({{ hint }}, …){% endif %} are passed as hints, so keys and terms come out spelled right.</span></div><span class="pill">Automatic</span></div>
+<div class="gi"><div class="t"><b>Permissions</b><span>Microphone for you, Screen &amp; System Audio Recording for the other side.</span></div>{% if perms %}<span class="pill ok">On</span>{% else %}<span class="pill">Asked on the first recording</span>{% endif %}</div>
+<div class="gi"><div class="t"><b>Audio</b><span>Deleted as soon as it’s text. Only the transcript is kept.</span></div></div>
+{%- endif %}
+</div>

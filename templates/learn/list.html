@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block side %}{% include "learn/side.html" %}{% endblock %}
+{% block content %}
+<main class="doc wide">
+<h1 class="ptitle">Learn</h1>
+<p class="lead">What you really understand, rated by you. Depth: 1 heard of it · 2 can explain · 3 can build without AI · 4 can teach.</p>
+{%- if inbox_count() > 0 %}
+
+<div class="callout">
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0">
+<b>New topics from your log · {{ inbox_count() }}</b><span class="small muted">Lines like <span class="mono">? pgvector: …</span> land here. Make a topic to track how well you know it.</span>
+{%- for t in new_topics %}
+<form class="row small" method="post" action="/learn"><span class="chip key">{{ t.slug }}</span><span class="muted">{{ t.lines }} line{% if t.lines != 1 %}s{% endif %}</span><input type="hidden" name="slug" value="{{ t.slug }}"><button class="btn ghost s" type="submit" style="margin-left: auto">Make topic</button></form>
+{%- endfor %}
+{%- if untopic.len() == 1 %}
+<div class="row small"><span class="muted">1 learned line has no topic. To file it, delete it on</span><a href="/?day={{ untopic[0] }}">its day</a><span class="muted">and retype as <span class="mono">? topic: …</span></span></div>
+{%- else if untopic.len() > 1 %}
+<div class="row small"><span class="muted">{{ untopic.len() }} learned lines have no topic. To file one, delete it on its day</span>{% for d in untopic %}<a href="/?day={{ d }}">{{ d }}</a>{% endfor %}<span class="muted">and retype as <span class="mono">? topic: …</span></span></div>
+{%- endif %}
+</div>
+</div>
+{%- endif %}
+
+<h3>Your topics <span class="small muted normal">· not re-rated in 30 days come first</span></h3>
+{%- if rows.is_empty() %}
+<p class="small muted" style="margin: 0">No topics yet. Log a line like <span class="mono">? vector-search: HNSW trades recall for speed</span> on <a href="/">Today</a>, then make it a topic here.</p>
+{%- else %}
+<div class="tw"><table>
+<tr><th>Topic</th><th>Depth</th><th></th><th>Last rated</th><th>Lines logged</th></tr>
+{%- for r in rows %}
+{%- let d = r.depth %}
+<tr><td><a class="mono" href="/learn/{{ r.slug }}">{{ r.slug }}</a></td><td>{% include "learn/meter.html" %}</td><td class="muted">{{ d.label }}</td><td>{% if r.last_rated.is_empty() %}<span class="muted">—</span>{% else %}{{ r.last_rated }}{% endif %}{% if !r.stale.is_empty() %} <span class="flag stale">{{ r.stale }}</span>{% endif %}</td><td class="muted">{{ r.lines }}</td></tr>
+{%- endfor %}
+</table></div>
+{%- endif %}
+</main>
+{% endblock %}

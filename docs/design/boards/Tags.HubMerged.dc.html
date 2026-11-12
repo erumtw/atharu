@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atharu · Tags · one name, one hub</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/* Generated for T70 from static/css/*.css verbatim (html/:root scoped to .dcroot) + the tag proposal below. Sample data is made up. */
+/* Colour tokens, transcribed from the approved canvas (docs/design/boards/app.css). */
+.dcroot {
+  --ink: #1d1d1f;
+  --ink-2: #333333;
+  --muted: #6e6e73;
+  --accent: #0066cc;
+  --line: #e0e0e0;
+  --fill: #f5f5f7;
+  --fill-2: #f0f0f0;
+  --err: #b3261e;
+  /* Grouped list + controls (canvas "Settings · appearance", Apple System Settings greys). Text never sits on
+     --off / --hatch-*; ink on --sep is 13.2:1. */
+  --sep: #e3e3e8;
+  --off: #d1d1d6;
+  --hatch-a: #c7c7cc;
+  --hatch-b: #e5e5ea;
+  /* Blue family: still the one accent, in steps (T28 folded these in from the components, canvas note s9). */
+  --accent-2: #0055b3;       /* hover / pressed primary, tinted accent: white on it 7.1:1 */
+  --accent-wash: #e8f1fb;    /* meeting events, selected menu option: ink on it 14.8:1 */
+  --accent-soft: #4d8fd1;    /* bars and the "done" OKR segment, never under text */
+  --accent-on-dark: #2997ff; /* link + dot on --dark: 4.9:1, so --dark stays opaque even with Glass everywhere */
+  --now: #f5f9fe;            /* today's calendar column */
+  --heat-1: #e3effc;         /* depth steps; 3 is --accent, white on 4 is 10.8:1 */
+  --heat-2: #bcd6f2;
+  --heat-4: #003d7a;
+  /* Neutrals. */
+  --dark: #272729;           /* meeting banner + impact callout: white on it 14.9:1 */
+  --on-dark-muted: #cccccc;  /* muted text on --dark: 9.3:1 */
+  --fill-3: #fafafc;         /* table row hover, calendar heads, toast */
+  --ctl-edge: #8e8e93;       /* unchecked control rings: 3.3:1 on white, the 3:1 floor for non-text UI */
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.2 6.4 5 9.1 9.8 3.2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --faint: #b0b0b5;          /* dashed rules and out-of-month day numbers, never body text */
+  --chrome-bg: #eef0f5;      /* behind the sheet when no look is set */
+  --muted-look: #5e5e63;     /* --muted on a look's wallpaper */
+  --muted-tint: #48484d;     /* --muted with Tinted glass */
+  --muted-hc: #3a3a3c;       /* --muted under Increase Contrast */
+  --err-tint: #a32019;       /* --err with Tinted glass: #b3261e drops to 4.48:1 on the Glass look's tinted glass sheet, this is 5.18 */
+}
+
+/* Element defaults + text utilities. */
+body{margin:0}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+h3{font-size:20px;font-weight:600;letter-spacing:-.2px;margin:14px 0 0;line-height:1.3}
+h4{font-size:15px;font-weight:600;margin:8px 0 0;display:flex;gap:8px;align-items:center}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+/* Weight steps under a bold heading: aside text (.normal), a quieter summary (.mid). */
+.normal{font-weight:400}
+.mid{font-weight:500}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--fill-2);white-space:nowrap}
+tr:hover td{background:var(--fill-3)}
+summary{cursor:pointer;font-weight:600;padding:4px 0}
+
+/* Page chrome: sidebar, sheet, breadcrumb, document column. Glass only on floating chrome. */
+.wl{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:var(--ink);font-size:15px;line-height:1.47;letter-spacing:-.2px;min-height:100vh;display:flex;flex-wrap:wrap}
+.side{flex:1 1 220px;max-width:248px;background:var(--fill);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:1px;font-size:14px;box-sizing:border-box}
+.ws{font-weight:600;font-size:15px;padding:6px 10px 12px;letter-spacing:-.224px}
+.side a{display:flex;gap:8px;align-items:center;padding:6px 10px;border-radius:8px;color:var(--ink-2);min-height:32px;box-sizing:border-box;text-decoration:none}
+.side a:hover{color:var(--ink)}
+.side a.on{color:var(--ink);font-weight:600}
+.side a.sub{padding-block:0;padding-left:32px;font-size:13px;color:var(--muted);min-height:28px;gap:6px}
+.side a.sub .mono{font-size:12px;flex:none}
+/* One line per epic: a long title ellipsizes instead of doubling the row (full title in the tooltip). */
+.side a.sub .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side .lbl{font-size:12px;font-weight:600;color:var(--muted);padding:16px 10px 4px}
+/* Full height so the spacer can pin Settings to the bottom (.wl pads 12 top + bottom). */
+.side{min-height:calc(100vh - 24px)}
+.side .gap{flex:1;min-height:24px}
+.side svg{flex:none;color:var(--muted)}
+.side a.on svg{color:var(--ink)}
+.cnt{margin-left:auto;font-size:11px;font-weight:600;background:var(--accent);color:#fff;border-radius:9999px;padding:0 6px;min-width:18px;text-align:center;letter-spacing:0}
+.pg{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
+.crumb{display:flex;gap:8px;align-items:center;padding:10px 24px;font-size:13px;color:var(--muted);min-height:52px;box-sizing:border-box;flex-wrap:wrap}
+.crumb a{color:var(--muted)}.crumb b{color:var(--ink);font-weight:500}
+.doc{max-width:860px;width:100%;margin:0 auto;box-sizing:border-box;padding:24px 48px 72px;display:flex;flex-direction:column;gap:14px}
+.doc.wide{max-width:1080px}
+.ptitle{font-size:40px;font-weight:600;letter-spacing:-.5px;line-height:1.1;margin:8px 0 0}
+/* A mono slug and a report title read too big at 40px. */
+.ptitle.t36{font-size:36px}
+.ptitle.t32{font-size:32px}
+.lead{font-size:15px;color:var(--muted);margin:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.tw{overflow-x:auto}
+/* Liquid Glass: only floating chrome is glass; content stays on an opaque sheet for legibility */
+.wl{background:var(--chrome-bg) radial-gradient(60% 50% at 0% 0%,rgba(0,102,204,.16),transparent 70%),radial-gradient(50% 40% at 100% 100%,rgba(0,102,204,.08),transparent 70%);padding:12px;gap:12px;box-sizing:border-box}
+.side{border-radius:22px;border:1px solid rgba(255,255,255,.7);backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);align-self:flex-start}
+/* Selected row: lit from inside (illumination), embedded in the sidebar so no rim of its own. */
+.side a.on{background:rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,inset 0 0 8px rgba(255,255,255,.6),0 1px 4px rgba(0,0,0,.06)}
+.side a:hover{background:rgba(255,255,255,.6)}
+.pg{background:#fff;border-radius:22px;border:1px solid rgba(0,0,0,.06);overflow:clip;position:relative}
+/* A bar flush with the sheet, not a floating slab: no rim or shadow, just the glass and a lit top edge. */
+.crumb{position:sticky;top:0;z-index:2;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);border-bottom:1px solid rgba(0,0,0,.05);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.cnt{background:none;color:var(--muted);font-weight:500;padding:0}
+
+/* Content components. */
+.props{display:grid;grid-template-columns:150px minmax(0,1fr);gap:0 8px;margin:4px 0 0;font-size:14px}
+.props dt{color:var(--muted);padding:7px 0;display:flex;gap:8px;align-items:center}
+.props dd{margin:0;padding:3px 8px;border-radius:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-height:30px}
+.props dd:hover{background:var(--fill)}
+.pin{font:inherit;border:0;background:transparent;padding:2px 0;color:var(--ink);min-width:0;flex:1}
+.pin:focus{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+select.pin{cursor:pointer}
+/* Inline edit (a log line, an untitled epic): the dashed rule says "type here"; it hides behind the focus ring. */
+/* A title edited in place looks like the heading it sits in. */
+.ptitle .pin{letter-spacing:inherit;width:100%}
+.pin.dash{border-bottom:1px dashed var(--faint)}
+.pin.dash:focus{border-bottom-color:transparent}
+.pin.bad{outline:2px solid var(--err);outline-offset:2px;border-radius:4px}
+.hr{border:0;border-top:1px solid var(--line);margin:6px 0;width:100%}
+.blocks{display:flex;flex-direction:column}
+.blk{display:flex;gap:10px;align-items:center;padding:3px 6px;margin:0 -6px;border-radius:6px;min-height:32px;box-sizing:border-box}
+/* Rows of 32 px controls (plan Pin/Drop, due date): 4 px each side so stacked pills get an 8 px gap instead of touching (owner, 2026-11-12). */
+.blk:has(.btn.s,.fld.s){padding-block:4px}
+.blk:hover{background:var(--fill)}
+.x{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex:none;opacity:0;padding:0}
+.x:hover{color:var(--ink);background:rgba(0,0,0,.05)}
+.blk:hover .x,.x:focus{opacity:1}
+.k{font-family:ui-monospace,'SF Mono',Menlo,monospace;display:inline-flex;justify-content:center;align-items:center;width:22px;height:22px;border-radius:6px;background:var(--fill-2);color:var(--ink);font-size:12px;font-weight:600;line-height:1;flex:none;letter-spacing:0}
+.k.imp{background:var(--accent);color:#fff}
+.k.bl{background:var(--ink);color:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--ink-2);background:var(--fill-2);white-space:nowrap;letter-spacing:0}
+.chip.key{font-family:ui-monospace,'SF Mono',Menlo,monospace}
+.chip.llm{background:#fff;color:var(--ink);border:1px solid var(--ink);padding:0 7px}
+/* A chip inside a link (epic key, note row) answers the hover too, not just the underline. */
+a:hover>.chip{background:var(--sep)}
+.lchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:12px;color:var(--accent);background:#fff;white-space:nowrap;letter-spacing:0}
+.lchip:hover{border-color:var(--accent);text-decoration:none}
+.flag{display:inline-flex;font-size:12px;border-radius:9999px;padding:1px 10px;font-weight:500;white-space:nowrap;letter-spacing:0}
+.flag.stale{background:var(--fill-2);color:var(--ink-2)}
+.flag.risk{background:#fff;color:var(--ink);border:1px solid var(--ink)}
+.flag.over{background:var(--ink);color:#fff}
+.callout{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;border-radius:12px;background:var(--fill)}
+.callout.dark{background:var(--dark);color:#fff}
+.callout.dark .muted{color:var(--on-dark-muted)}
+.callout.dark a{color:var(--accent-on-dark)}
+.dot{width:8px;height:8px;border-radius:9999px;background:var(--accent-on-dark);flex:none}
+/* Impact line figures: before → after, the after in the on-dark blue. */
+.num{font-size:34px;font-weight:600;letter-spacing:-.374px}
+.callout.dark .num.up{color:var(--accent-on-dark)}
+.card{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.err{color:var(--err);font-size:13px}
+.tick{color:var(--accent)}
+.ink{color:var(--ink)}
+.saved{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+/* To-do check = Apple Reminders circle, not the native square (owner, 2026-11-12). Ring is --ctl-edge, not --faint:
+   non-text UI needs 3:1 on white (WCAG 1.4.11), --faint is 2.1. The tick is a mask, so it takes the fill colour. */
+.check{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin:0;flex:none;cursor:pointer;border-radius:50%;
+  border:1.5px solid var(--ctl-edge);background:#fff;display:inline-grid;place-content:center;transition:transform .1s,background-color .15s}
+.check::after{content:"";width:12px;height:12px;background:#fff;transform:scale(0);transition:transform .15s;
+  -webkit-mask:var(--tick) center/contain no-repeat;mask:var(--tick) center/contain no-repeat}
+.check:checked{background:var(--accent);border-color:var(--accent)}
+.check:checked::after{transform:scale(1)}
+.check:hover{box-shadow:0 0 0 4px rgba(0,0,0,.05)}
+.check:active{transform:scale(.96)}
+.check:disabled{cursor:not-allowed;opacity:.45}
+@media (prefers-contrast:more){.check{border-color:var(--ink)}}
+.done-text{text-decoration:line-through;color:var(--muted)}
+.due{font-size:12px;color:var(--muted);white-space:nowrap}.due.late{color:var(--err);font-weight:600}
+.meter{display:inline-flex;gap:3px}
+.meter i{width:14px;height:6px;border-radius:3px;background:var(--line);display:block}
+.meter i.on{background:var(--accent)}
+.bars{display:flex;gap:6px;align-items:flex-end;height:56px}
+.bars span{flex:1;background:var(--accent-soft);border-radius:4px 4px 0 0}
+/* Report charts: OKR status bar (status by weight, not hue: active blue, done lighter, the rest grey) + depth heat. */
+.obar{display:flex;height:8px;border-radius:4px;overflow:hidden}
+.obar .active{background:var(--accent)}.obar .done{background:var(--accent-soft)}.obar .other{background:var(--faint)}
+.heat1{background:var(--heat-1)}.heat2{background:var(--heat-2)}.heat3{background:var(--accent);color:#fff}.heat4{background:var(--heat-4);color:#fff}
+.stat{flex:1 1 120px;padding:12px 16px;border-radius:12px;background:var(--fill)}
+.stat b{display:block;font-size:28px;font-weight:600;letter-spacing:-.28px;line-height:1.15}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* Controls (canvas "Components · controls"): one height per context, 32 chrome / 36 page / 44 phone, label centred
+   with flex + line-height 1 (never padding guesswork). One blue primary; everything else is a glass pill whose
+   background comes from the shared glass rule in looks.css (--s = its step over --glass-a). */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;box-sizing:border-box;padding:0 16px;border-radius:9999px;border:1px solid transparent;
+  font:inherit;font-size:14px;line-height:1;letter-spacing:-.1px;white-space:nowrap;cursor:pointer;text-decoration:none;
+  color:#fff;background:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.btn:hover{background:var(--accent-2);text-decoration:none}
+.btn:active{background:var(--accent-2);transform:scale(.96)}
+.btn.ghost{--s:10%;color:var(--ink);border-color:var(--glass-edge);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06);
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+.btn.ghost:hover{--s:25%}
+/* Liquid Glass press: the slab swells and glows (the blue primary still sinks to .96). */
+.btn.ghost:active{--s:35%;transform:scale(1.04);box-shadow:inset 0 0 12px rgba(255,255,255,.7),0 4px 12px rgba(0,0,0,.1)}
+.btn.dng{color:var(--err)}
+.btn.s,.crumb .btn{height:32px;padding:0 12px;font-size:13px}
+.callout.dark .btn.ghost{color:var(--accent-on-dark);border-color:var(--accent-on-dark);background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.callout.dark .btn.ghost:hover{background:rgba(255,255,255,.08)}
+.linkbtn{font:inherit;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;border-radius:4px}
+.linkbtn:hover{text-decoration:underline}
+.linkbtn:active{opacity:.6}
+:is(.btn,.linkbtn,.ib,.x,.check,.sw,.dnav>*,.edit-line,h4 a,a.ink,.crumb a.trail):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Inset: the sidebar clips an outset ring at its edge. */
+.side a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+:is(.btn,.linkbtn,.ib):disabled{opacity:.45;cursor:not-allowed;transform:none}
+/* Loading: htmx puts .htmx-request on the requesting form (or element); its submit shows a spinner. */
+.htmx-request :is(.btn,.linkbtn)[type=submit],.htmx-request:is(.btn,.linkbtn){cursor:progress;opacity:.75}
+.htmx-request .btn[type=submit]::before,.btn.htmx-request::before{content:"";width:12px;height:12px;box-sizing:border-box;border-radius:9999px;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+.htmx-request>label:has(.check){opacity:.6;cursor:progress}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.htmx-request .btn[type=submit]::before,.btn.htmx-request::before{animation:none;opacity:.5}}
+
+/* Glass field: a pill with its action inside on the right; focus = blue ring, 422 = red ring with the input kept.
+   On an input itself (date, title) it is the same pill without the inner layout. */
+.fld{--s:12%;display:flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 4px 0 18px;border-radius:9999px;border:1px solid var(--glass-edge);color:var(--ink);
+  box-shadow:inset 0 1px 0 #fff,0 6px 20px rgba(0,0,0,.06);backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+.fld:hover{--s:25%}
+.fld input{flex:1;min-width:0;height:100%;border:0;outline:0;padding:0;margin:0;background:transparent;font:inherit;font-size:16px;color:inherit}
+.fld .btn{height:36px}
+.fld .ic{width:16px;height:16px;color:var(--muted)}
+input.fld{font:inherit;font-size:14px;padding:0 14px;outline:0}
+.fld.m{height:36px;padding:0 14px}.fld.m input{font-size:14px}
+.fld.m:has(.btn){padding-right:3px}.fld.m .btn{height:28px}
+.fld.s{height:32px;padding:0 12px;gap:6px;font-size:13px}.fld.s input{font-size:13px}
+.fld:has(:disabled),input.fld:disabled{opacity:.5}
+/* --muted-tint, not --muted: Clear glass blurs 4px, and --muted-look over half-sharp text behind is 4.40:1. */
+:is(.fld,input.fld,.newline,.ta,.note-md)::placeholder,.fld input::placeholder,.newline input::placeholder{color:var(--muted-tint)}
+:is(.fld,.newline,.ta,.note-md):focus-within{border-color:var(--accent);box-shadow:inset 0 1px 0 #fff,0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
+:is(.fld,.newline,.ta,.note-md).bad{border-color:var(--err);box-shadow:inset 0 1px 0 #fff,0 0 0 4px color-mix(in srgb,var(--err) 14%,transparent)}
+/* A datalist's ▼ (Chrome) is noise: the suggestions still open as you type. */
+input[list]::-webkit-calendar-picker-indicator{display:none !important}
+/* Capture bar: the 52 px glass pill that holds the one primary. */
+.newline{--s:10%;display:flex;gap:8px;align-items:center;height:52px;box-sizing:border-box;padding:0 4px 0 20px;border-radius:9999px;border:1px solid var(--glass-edge);
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+.newline:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent),var(--lg-light),var(--lg-shadow)}
+.newline input{font:inherit;font-size:16px;border:0;outline:0;flex:1;min-width:0;height:100%;padding:0;background:transparent;color:var(--ink)}
+.newline .btn{height:44px}
+.capture{position:sticky;bottom:16px;z-index:2;display:flex;flex-direction:column;gap:8px}
+.hint{padding:0 20px;color:var(--accent);min-height:18px;line-height:1.4}
+.hint .err{color:var(--err)}
+/* Legend: every chip centred on one baseline; wraps as whole items. */
+.legend{gap:8px 16px;padding:0 20px}
+.legend>span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+/* Multi-line field: a glass box, 12 radius; autosaves, so no Save button unless JS is off. */
+.ta,.note-md{--s:12%;display:block;width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--glass-edge);padding:10px 14px;font:inherit;font-size:15px;line-height:1.5;
+  color:var(--ink);resize:vertical;outline:0;box-shadow:inset 0 1px 0 #fff,0 6px 20px rgba(0,0,0,.06)}
+/* "Own words" is long-form writing: a size up from the form fields. */
+.ta.prose{font-size:16px;line-height:1.6}
+.note-md{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px}
+/* display:block above beats the UA [hidden] rule, so the mounted editor's textarea stayed visible. */
+.note-md[hidden]{display:none}
+/* Day nav: one glass capsule, Today | ‹ | date ▾ | ›, hairlines between. The date is a native date input laid over
+   its label, so a click opens the OS picker and the keyboard still types a date. */
+.dnav{--s:10%;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;border-radius:9999px;border:1px solid var(--glass-edge);overflow:hidden;font-size:13px;flex:none;
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06)}
+.dnav>*{display:inline-flex;align-items:center;gap:6px;height:100%;padding:0 12px;margin:0;line-height:1;text-decoration:none;position:relative;box-sizing:border-box}
+.crumb .dnav>*{color:var(--ink)}
+.dnav>*+*{border-left:1px solid rgba(0,0,0,.08)}
+.dnav>:hover{background:rgba(255,255,255,.6);text-decoration:none}
+.dnav>:active{background:rgba(0,0,0,.06)}
+.dnav>:has(:focus-visible){outline:2px solid var(--accent);outline-offset:-3px;border-radius:9999px}
+.dnav .i{padding:0 10px}
+.dnav .ic{width:14px;height:14px}
+.dnav .ic.dn{width:12px;height:12px;color:var(--muted)}
+.dnav input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;cursor:pointer;font:inherit}
+.dnav input[type=date]::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:auto;height:auto;cursor:pointer}
+/* Icon button: 32 in chrome, 44 on phone (responsive.css). Always has an aria-label. */
+.ib{width:32px;height:32px;border:0;background:transparent;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;flex:none;padding:0}
+.ib:hover{background:rgba(0,0,0,.05)}
+.ib:active,.ib:popover-open{background:rgba(0,0,0,.1)}
+
+/* Segmented: iOS pill track, 36 tall with 30 segments (32/26 in chrome); .mac = 8-radius macOS control for settings. */
+.seg{display:inline-flex;gap:2px;align-items:center;height:36px;box-sizing:border-box;background:rgba(120,120,128,.12);box-shadow:inset 0 1px 1px rgba(0,0,0,.04);border-radius:9999px;padding:3px}
+.seg button{font:inherit;font-size:13px;line-height:1;border:0;background:none;border-radius:9999px;padding:0 12px;height:30px;display:inline-flex;align-items:center;cursor:pointer;color:var(--ink-2);white-space:nowrap}
+.seg button:hover{background:rgba(255,255,255,.5)}
+.seg button:active{background:rgba(255,255,255,.75)}
+.seg :is(.on,[aria-pressed=true]){background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 1px 0 #fff,0 2px 8px rgba(0,0,0,.08)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+.crumb .seg{height:32px}.crumb .seg button{height:26px}
+
+/* Tiptap mounts the menu on <body>, outside .wl, so it restates .wl's type (else Times, black). */
+.menu{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:var(--ink);line-height:1.47;letter-spacing:-.2px;position:absolute;width:260px;box-sizing:border-box;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px;z-index:3}
+.menu [role=option]{padding:0 10px;min-height:32px;display:flex;align-items:center;gap:10px;border-radius:8px;cursor:pointer}
+.menu [role=option]:hover{background:rgba(0,0,0,.04)}
+.menu [aria-selected=true]{background:var(--accent-wash)}
+.menu .k{width:24px;height:24px}
+.menu .mh{font-size:12px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:0}
+.menu [aria-disabled=true]{cursor:default;background:none}
+
+/* Toast, parse hint and htmx-only bits not on the canvas. */
+.toast{align-self:flex-start;gap:6px;background:color-mix(in srgb,var(--fill-3) 90%,transparent);border-radius:9999px;padding:4px 12px;border:1px solid var(--line)}
+.toast:empty{display:none}
+form.inline{display:inline}
+/* Swap targets wrap board markup; contents keeps the .doc gap the board was drawn with. */
+.doc > section{display:contents}
+/* HIG: respect Reduce Transparency / Increase Contrast */
+@media (prefers-reduced-transparency: reduce){:is(.side,.crumb,.newline,.menu,.btn.ghost,.fld,.dnav,.ta,.note-md){backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media (prefers-contrast: more){:is(.side,.crumb,.newline,.card,.pg,.btn.ghost,.fld,.dnav,.ta,.note-md){border-color:var(--ink)}.muted{color:var(--muted-hc)}}
+
+/* Calendar. */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal .dh{font-size:12px;font-weight:600;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);background:var(--fill-3)}
+.cal .dh.now{color:var(--accent)}
+.cal .dc{min-height:300px;padding:8px;border-right:1px solid var(--fill-2);display:flex;flex-direction:column;gap:6px}
+.cal .dc.now{background:var(--now)}
+.ev{font-size:12px;border-radius:6px;padding:4px 6px;line-height:1.3;display:block;color:var(--ink)}
+.ev.meet{background:var(--accent-wash);border-left:3px solid var(--accent)}
+.ev.todo{background:#fff;border:1px solid var(--line)}
+.ev.tgt{background:var(--fill-2)}
+.ev.own{background:#fff;border:1px dashed var(--faint)}
+.ev.late{color:var(--err)}
+.logdot{font-size:11px;color:var(--muted)}
+/* Calendar extras not on the board: month grid, linked headers, events as start-meeting buttons, "+ Event" popover. */
+.cal .dh a,.cal .dn{color:inherit}
+.cal .dn{font-size:12px;font-weight:600;color:var(--muted)}
+.cal .dn.now{color:var(--accent)}
+.cal.month .dc{min-height:110px}
+.cal .dc.out{background:var(--fill-3)}
+.evrow{display:flex;align-items:flex-start;gap:4px}
+.evrow form:first-child{flex:1;min-width:0}
+.evbtn{font:inherit;border:0;background:none;padding:0;text-align:left;cursor:pointer;color:inherit;width:100%}
+.evrow .x{width:18px;height:18px}
+.evrow:hover .x{opacity:1}
+.evadd{position:relative}
+.evadd>summary{list-style:none}
+.evadd>summary::-webkit-details-marker{display:none}
+.evadd>form{position:absolute;right:0;top:calc(100% + 6px);z-index:5;width:260px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.edit-line{color:inherit;text-decoration:none;cursor:text}.edit-line:hover{text-decoration:underline dotted var(--faint)}
+
+/* Notes editor (P4): the body as the board draws it, plus the `/` and `[[` menus. */
+.note-body{display:flex;flex-direction:column;gap:10px;font-size:16px;line-height:1.6;min-height:240px}
+.note-body .ProseMirror{display:flex;flex-direction:column;gap:10px;outline:0;min-height:240px}
+.note-body h1,.note-body h2,.note-body h3{margin:4px 0 0}
+.note-body p,.note-body ul,.note-body ol,.note-body blockquote,.note-body pre{margin:0}
+.note-body code{font-family:ui-monospace,'SF Mono',Menlo,monospace;background:var(--fill);padding:1px 5px;border-radius:4px}
+.note-body pre{background:var(--fill);padding:10px 14px;border-radius:8px;overflow-x:auto}
+.note-body pre code{padding:0;background:none}
+.note-body blockquote{border-left:3px solid var(--line);padding-left:14px;color:var(--ink-2)}
+.note-body .callout{padding:10px 14px;flex-direction:column;gap:6px}
+.note-body ul[data-type=taskList],.note-body li:has(>input[type=checkbox]){list-style:none}
+.note-body ul[data-type=taskList]{padding-left:0}
+.note-body ul[data-type=taskList] li{display:flex;gap:10px;align-items:flex-start}
+.note-body ul[data-type=taskList] li[data-checked=true]>div{text-decoration:line-through;color:var(--muted)}
+.note-body input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);margin:4px 0 0}
+.note-body summary{font-weight:500;cursor:pointer}
+.note-body summary p{display:inline}
+.note-body [data-type=details]{display:flex;gap:6px}
+.note-body [data-type=details]>button{border:0;background:none;cursor:pointer;color:var(--muted);padding:0;align-self:flex-start;line-height:1.6}
+.note-body [data-type=details]>button::before{content:'▸'}
+.note-body [data-type=details].is-open>button::before{content:'▾'}
+.note-body .page{color:var(--accent)}
+
+/* Drawing block (DESIGN.md §6, boards Drawing.*): content, so white and no glass; the SVG is an <img> (D24). */
+.note-body .drawing{position:relative;margin:0;border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;display:flex;justify-content:center}
+.drawing img{display:block;max-width:100%;height:auto;max-height:480px}
+.drawing .edit{position:absolute;top:8px;right:8px;opacity:0}
+.drawing:is(:hover,:focus-within) .edit{opacity:1}
+@media (hover:none){.drawing .edit{opacity:1}}
+.drawing.sel{outline:2px solid var(--accent);outline-offset:2px}
+.drawing.empty{border:1px dashed var(--faint);min-height:160px;box-sizing:border-box;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.drawing.empty .ic{width:28px;height:28px;color:var(--muted)}
+/* Editor sheet: opaque (it is content), Excalidraw fills it; our bar floats top-right where Library was. */
+.drawsheet{position:fixed;inset:0;z-index:50;background:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+.drawhost{position:absolute;inset:0}
+.drawbar{--s:25%;--g:color-mix(in srgb,var(--glass-c) max(var(--lg-min),min(100%,var(--glass-a) + var(--s))),transparent);--muted:var(--muted-tint);--err:var(--err-tint);
+  position:absolute;top:12px;right:16px;z-index:5;display:flex;align-items:center;gap:6px;height:44px;box-sizing:border-box;padding:0 4px 0 14px;border-radius:9999px;border:1px solid transparent;
+  background:linear-gradient(var(--g),var(--g)) padding-box,var(--lg-rim) border-box;box-shadow:var(--lg-light),var(--lg-shadow);
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+.drawbar .saved{margin-right:4px;white-space:nowrap;color:var(--muted)}
+.drawbar .saved.err{color:var(--err)}
+.drawsheet .default-sidebar-trigger{display:none}
+@media not all{
+  .drawbar{top:8px;left:8px;right:8px;justify-content:space-between;padding:0 4px}
+  .drawbar .btn{height:44px}
+  .drawbar .ghost{order:-1}
+  .drawbar .saved .more{display:none}
+  /* Excalidraw's top toolbar moves below our full-width bar. */
+  .drawsheet .App-top-bar{margin-top:52px}
+}
+@media (prefers-reduced-transparency: reduce){.drawbar{background:#fff;border-color:var(--line);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:var(--lg-shadow)}}
+/* Excalidraw themed, not restyled: the one blue + system type through the variables it reads (beats its .excalidraw rule). */
+.drawsheet .excalidraw{--color-primary:var(--accent);--color-primary-darker:var(--accent-2);--color-primary-darkest:var(--accent-2);--color-primary-hover:var(--accent-2);
+  --color-primary-light:var(--accent-wash);--color-on-primary-container:var(--accent-2);--color-selection:var(--accent);
+  --ui-font:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+.drawsheet .HintViewer{color:var(--muted)}
+
+/* Settings (canvas "Settings · appearance", D18): Apple grouped inset list, Notion label + help left, one control right.
+   Help text = --muted on --fill: 4.66 (plain), 5.92 (look), 8.35 (tinted). */
+.doc.set{max-width:712px}
+.sec{font-size:13px;font-weight:600;color:var(--muted);margin:18px 4px -6px;letter-spacing:0}
+.grp{background:var(--fill);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.gform{display:contents}
+.gi{display:flex;gap:16px;align-items:center;padding:12px 16px;min-height:52px;box-sizing:border-box;position:relative;margin:0}
+/* Hairline inset from the left between rows; the forms are display:contents, so "not the group's first row" it is. */
+.gi::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:1px solid var(--sep)}
+.grp>.gi:first-child::before{content:none}
+.gi .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.gi .t b{font-weight:500}
+.gi .t>span,.gi .help{font-size:13px;color:var(--muted);line-height:1.35}
+.gi .t.between{flex-direction:row;align-items:center}
+.gi.col{flex-direction:column;align-items:stretch;gap:12px}
+/* Look: app-icon tiles, the picked one ringed in accent like macOS Appearance. The radio stays a real form field. */
+.looks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.lk{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;cursor:pointer;position:relative;text-align:center}
+.lk input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.lk img{width:64px;height:64px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,.12);outline:3px solid transparent;outline-offset:3px}
+.lk:hover img{box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.lk:has(:checked){font-weight:600}
+.lk:has(:checked) img{outline-color:var(--accent)}
+.lk:has(:focus-visible) img{outline-color:var(--accent);outline-style:dashed}
+.lk small{font-size:11px;color:var(--muted);font-weight:400}
+/* macOS switch: a native checkbox (role=switch), so it still posts without JS. 38x22 desktop, 51x31 phone.
+   Pressed stretches the knob toward the side it is leaving, like macOS. */
+.sw{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:9999px;background:var(--off);position:relative;cursor:pointer;flex:none;margin:0;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:9999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s,width .2s}
+.sw:hover{background:var(--hatch-a)}
+.sw:checked{background:var(--accent)}.sw:checked:hover{background:var(--accent-2)}.sw:checked::after{transform:translateX(16px)}
+.sw:active::after{width:22px}.sw:checked:active::after{transform:translateX(12px)}
+.sw:disabled{opacity:.45;cursor:not-allowed}
+/* .seg.mac: macOS segmented control (8 radius, 30 tall), for settings; the pill .seg stays for page views. */
+.seg.mac{border-radius:8px;padding:2px;height:30px;flex:none;box-shadow:none}
+.seg.mac button{border-radius:6px;padding:0 14px;height:26px;color:var(--ink);font-weight:400}
+.seg.mac [aria-pressed=true]{font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+/* Opacity slider: native range on the true 0–100 scale. Stops follow the thumb centre (th/2 … 100% − th/2), so
+   the hatch (below the floor --f) and the accent fill end exactly under it. */
+.sl{display:flex;align-items:center;gap:12px;color:var(--muted)}
+.sl svg{flex:none}
+.rng{--th:22px;--px:calc(var(--th) / 2 + (100% - var(--th)) * var(--v) / 100);--pf:calc(var(--th) / 2 + (100% - var(--th)) * var(--f) / 100);
+  appearance:none;-webkit-appearance:none;flex:1;min-width:0;height:var(--th);margin:0;background:transparent;cursor:pointer}
+.rng::-webkit-slider-runnable-track{height:4px;border-radius:9999px;
+  background:repeating-linear-gradient(135deg,var(--hatch-a) 0 3px,var(--hatch-b) 3px 6px) 0 0/var(--pf) 100% no-repeat,
+    linear-gradient(90deg,transparent var(--pf),var(--accent) var(--pf) var(--px),var(--off) var(--px))}
+.rng::-moz-range-track{height:4px;border-radius:9999px;
+  background:repeating-linear-gradient(135deg,var(--hatch-a) 0 3px,var(--hatch-b) 3px 6px) 0 0/var(--pf) 100% no-repeat,
+    linear-gradient(90deg,transparent var(--pf),var(--accent) var(--pf) var(--px),var(--off) var(--px))}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:var(--th);height:var(--th);margin-top:calc(2px - var(--th) / 2);border-radius:9999px;background:#fff;border:0;box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.06);transition:transform .1s}
+.rng::-moz-range-thumb{width:var(--th);height:var(--th);border-radius:9999px;background:#fff;border:0;box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.06)}
+.rng:active::-webkit-slider-thumb{transform:scale(1.15)}
+.rng:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:9999px}
+.rng:disabled{opacity:.45;cursor:not-allowed}
+.val{font-variant-numeric:tabular-nums;font-size:13px;color:var(--ink);min-width:38px;text-align:right}
+/* Preview tile: the look's wallpaper behind a mini sidebar (same alpha step as .side) and sheet. */
+.prev{border-radius:12px;height:110px;position:relative;overflow:hidden;background:var(--wall,var(--fill-2))}
+.prev .pane,.prev .sheet{position:absolute;top:14px;bottom:14px;border-radius:14px;padding:10px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.prev .pane{left:14px;width:150px;border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+  background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + 5%),transparent);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)}
+.prev .sheet{left:178px;right:14px;background:#fff;border:1px solid rgba(0,0,0,.05)}
+.dcroot[data-glass=all] .prev .sheet{background:color-mix(in srgb,var(--glass-c) max(0%,var(--glass-a) - 5%),transparent);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)}
+.prev i{display:block;height:8px;border-radius:4px;background:rgba(29,29,31,.55)}
+.prev .sheet i{background:rgba(29,29,31,.4)}
+.prev i:nth-of-type(1){width:70%}.prev i:nth-of-type(2){width:55%}.prev i:nth-of-type(3){width:62%}
+.prev .sheet i:nth-of-type(1){width:40%}.prev .sheet i:nth-of-type(2){width:85%}
+.chev{color:var(--muted);font-size:13px;flex:none}
+.rt-on{display:none}
+@media (prefers-reduced-transparency: reduce){.rt-on{display:inline}.rt-off{display:none}.prev .pane,.prev .sheet{backdrop-filter:none;-webkit-backdrop-filter:none}}
+/* Status, not colour: On = solid ink, Not set up = grey (DESIGN §1). */
+.pill{font-size:12px;border-radius:9999px;padding:1px 10px;background:var(--sep);color:var(--ink);white-space:nowrap;flex:none}
+.pill.ok{background:var(--ink);color:#fff}
+
+/* Looks (spec "Looks"): a fixed mesh wallpaper behind every page, colours from docs/design/icon/options..dcroot INKS.
+   The glass chrome keeps its own backdrop-filter; it just has something to blur now. The page sheet stays opaque.
+   AA check (evidence T20): sidebar text over the worst wallpaper spot through the glass ≥ 4.6:1, which is why
+   the wallpaper has a white veil, the sidebar glass is --glass-a + 5% (see Glass below), --muted is a step darker, and Glass drops the
+   icon's deepest blob. */
+.dcroot[data-look]{--muted:var(--muted-look);--veil:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,.45))}
+.dcroot[data-look] .wl{background:transparent}
+.dcroot[data-look]::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--wall)}
+
+.dcroot[data-look=sumi]{--base:#f6f1e6;--wall:radial-gradient(circle 60vmax at 90% 10%,#ece3cf,transparent),#f6f1e6}
+.dcroot[data-look=sora]{--base:#63b6ff;--wall:var(--veil),
+  radial-gradient(circle 45vmax at 84% 18%,#8ef5b8,transparent),radial-gradient(circle 41vmax at 86% 88%,#4fd6f2,transparent),
+  radial-gradient(circle 47vmax at 16% 55%,#3d8ff0,transparent),radial-gradient(circle 29vmax at 51% 51%,#7fd0ff,transparent),#63b6ff}
+.dcroot[data-look=wakaba]{--base:#94f7b6;--wall:var(--veil),
+  radial-gradient(circle 37vmax at 88% 25%,#2fc49a,transparent),radial-gradient(circle 41vmax at 12% 55%,#62b6ff,transparent),
+  radial-gradient(circle 35vmax at 86% 92%,#45d4f0,transparent),radial-gradient(circle 31vmax at 51% 41%,#a4fcb4,transparent),#94f7b6}
+.dcroot[data-look=glass]{--base:#2466ea;--wall:var(--veil),
+  radial-gradient(circle 43vmax at 29% 25%,rgba(143,230,255,.75),transparent),linear-gradient(135deg,#5aa6ff,#2466ea 50%,#1340b5)}
+
+/* Reduce transparency: no mesh, one flat colour (veiled like the mesh so contrast holds). */
+@media (prefers-reduced-transparency: reduce){
+  .dcroot[data-look]::before{background:var(--veil),var(--base)}
+  .dcroot[data-look=sumi]::before{background:var(--base)}
+}
+
+/* Glass (D17, T24): one alpha, --glass-a (inline on <html>, already clamped to the look's AA floor by
+   domain::look::glass_alpha), drives every glass surface; --s is each surface's fixed step from it.
+   Floors were measured against the weakest surface (the glass sheet, a - 5%), so every other step only adds contrast. */
+.dcroot{--glass-a:60%;--glass-c:#fff;--glass-edge:rgba(255,255,255,.7)}
+.side{--s:5%}.crumb{--s:0%}.newline{--s:10%}.menu,.acts{--s:25%}
+/* Controls set their own --s in components.css: glass pills +10% (hover +25%, pressed +35%), fields and text boxes +12%. */
+.side,.crumb,.newline,.menu,.acts:popover-open,.btn.ghost,.fld,.dnav,.ta,.note-md{--g:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + var(--s)),transparent);background:var(--g)}
+
+/* Liquid Glass (T30, D22): Apple's highlight / illumination / shadow layers in plain CSS, so WebKit (Safari and the
+   Mac app) gets the whole look; edge lensing is a Chromium-only extra at the end. Clear (default) blurs 4px so what
+   is behind stays readable; Tinted is Apple's Regular: 12px, saturated. */
+.dcroot{--lg-blur:4px;--lg-sat:140%;--lg-filter:blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.04);
+  --lg-rim:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,.15) 72%,rgba(255,255,255,.6));
+  --lg-light:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),inset 0 -6px 12px -8px rgba(255,255,255,.8);
+  --lg-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.12);
+  /* 4px blur leaves text behind half-sharp, so glass that floats over content never drops below this (AA: worst
+     backdrop = a half-covered ink pixel; err-tint 4.70 on Wakaba Tinted is the lowest pair, evidence T30). */
+  --lg-min:60%}
+.dcroot[data-tint=tinted]{--lg-blur:12px;--lg-sat:180%}
+/* Floating layers (never the controls embedded in them: no glass on glass) get the specular rim: a gradient in the
+   transparent border, bright top-left and bottom-right, instead of a flat white line. */
+.side,.newline,.menu,.acts:popover-open{border-color:transparent;background:linear-gradient(var(--g),var(--g)) padding-box,var(--lg-rim) border-box}
+.side,.newline,.menu{box-shadow:var(--lg-light),var(--lg-shadow)}
+/* Over scrolling content: the legibility floor above, and muted/error text a step darker (muted-look would be 4.40). */
+.crumb,.newline,.menu,.acts:popover-open,.side:popover-open{--muted:var(--muted-tint);--err:var(--err-tint);
+  --g:color-mix(in srgb,var(--glass-c) max(var(--lg-min),min(100%,var(--glass-a) + var(--s))),transparent)}
+/* Tinted: the look's colour in the glass, stronger edges, full-ink chrome, and muted/links a step darker
+   (measured: the tint alone drops the Glass look's links to 3.7:1, #0055b3 brings them back to 4.9). */
+.dcroot[data-tint=tinted]{--glass-c:color-mix(in srgb,var(--base) 15%,#fff);--glass-edge:rgba(0,0,0,.14);--muted:var(--muted-tint);--accent:var(--accent-2);--err:var(--err-tint)}
+/* :not(focus/bad): the focus ring and the 422 red must win in every look. */
+.dcroot[data-tint=tinted] :is(.side,.crumb,.newline,.menu):not(:focus-within):not(.bad){border-color:var(--glass-edge)}
+/* On the solid sheet (Glass everywhere off) the white glass edge vanishes, so controls take the line border. */
+.dcroot:not([data-glass=all]) .pg :is(.btn.ghost,.fld,.dnav,.newline,.ta,.note-md):not(:focus-within):not(.bad){border-color:var(--line)}
+.dcroot[data-tint=tinted] :is(.side a,.side svg,.crumb a){color:var(--ink)}
+/* Glass everywhere: the sheet joins the glass; cards and callouts sit a step more opaque on it, dark callouts stay dark. */
+.dcroot[data-glass=all] .pg{--s:-5%;--g:color-mix(in srgb,var(--glass-c) max(0%,var(--glass-a) + var(--s)),transparent);
+  background:linear-gradient(var(--g),var(--g)) padding-box,var(--lg-rim) border-box;border-color:transparent;box-shadow:var(--lg-light);
+  backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
+.dcroot[data-glass=all] .pg :is(.card,.stat,.cal,.callout:not(.dark)){--s:10%;background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + var(--s)),transparent)}
+/* The dark callout stays solid: at the board's 85% its #2997ff link drops to 3.1:1 over a light sheet. */
+.dcroot[data-glass=all] .pg .callout.dark{background:var(--dark)}
+/* On glass a grey hover/edge reads as dirt; lift with white like the sidebar rows. */
+.dcroot[data-glass=all] .pg :is(.blk,.props dd):hover{background:rgba(255,255,255,.6)}
+.dcroot[data-glass=all] .pg :is(.card,.cal){border-color:var(--glass-edge)}
+/* "Blur text boxes" (D25, off by default): text boxes take the glass material too. Off they are tint only, because
+   blurring what sits behind long-form writing costs paint for no legibility gain. AA (T33) at each look's floor over its
+   darkest wallpaper: ink ≥ 13.61, placeholder ≥ 7.35 (Glass Tinted). Reduce Transparency's rule in components.css is
+   restated below because this selector outranks it. */
+.dcroot[data-blur=text] :is(.ta,.note-md){backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+/* Reduce Transparency: every glass surface opaque (beats the inline --glass-a). */
+@media (prefers-reduced-transparency: reduce){
+  .dcroot{--glass-a:100% !important}
+  .dcroot[data-glass=all] .pg{--s:0%;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .dcroot[data-blur=text] :is(.ta,.note-md){backdrop-filter:none;-webkit-backdrop-filter:none}
+  /* Opaque white: the rim would be white on white, so the hairline comes back. */
+  .side,.newline,.menu,.acts:popover-open,.dcroot[data-glass=all] .pg{background:var(--g);border-color:var(--line)}
+}
+@media (prefers-contrast: more){.side,.newline,.menu,.acts:popover-open,.dcroot[data-glass=all] .pg{background:var(--g);border-color:var(--ink)}}
+/* Lensing: SVG #lg-lens (templates/base.html) bends the backdrop at the edges. Chromium only: WebKit accepts url() in
+   backdrop-filter (CSS.supports says true) and then drops the WHOLE filter, blur included (measured in WKWebView,
+   T30), so it must never see it; -webkit-app-region parses only in Chromium. */
+@supports (-webkit-app-region:drag){@media (prefers-reduced-transparency: no-preference){
+  .side,.newline,.menu,.acts:popover-open{backdrop-filter:url(#lg-lens) var(--lg-filter)}
+}}
+
+/* Mac app (T18): the window sits on macOS sidebar vibrancy, so the wallpaper turns partly see-through and the
+   desktop shows through the glass chrome. Kept mostly opaque: the AA numbers above assume this wallpaper. */
+.dcroot[data-app=mac]::before{opacity:.8}
+@media (prefers-reduced-transparency: reduce){.dcroot[data-app=mac]::before{opacity:1}}
+
+/* Mac app chrome (T27): overlay title bar, traffic lights drawn by macOS at lib.rs LIGHTS (x 20–74, centre y 30).
+   Their row tops the sidebar brand row; the rail and the phone crumb make room the same way. The brand row and the
+   crumb are drag regions (data-tauri-drag-region, inert in a browser), so they get the title bar's arrow, not an I-beam. */
+.dcroot[data-app=mac] .ws{padding-top:34px}
+.dcroot[data-app=mac] [data-tauri-drag-region]{cursor:default;-webkit-user-select:none;user-select:none}
+@media not all{.dcroot[data-app=mac] .side{padding-top:40px}}
+@media not all{.dcroot[data-app=mac] .crumb{padding-left:82px}}
+
+/* Responsive (canvas row "Responsive · phone", D16): ≥1024 desktop as drawn · 640–1023 64 px icon rail ·
+   <640 glass top bar + pages drawer, capture bar pinned bottom. Same templates; the hooks are .m-pop, .m-only, .ib, .ic. */
+
+/* .m-pop = a native popover on phones, plain inline content everywhere else. Author styles beat the UA's [popover]
+   box at any specificity, so :where() resets it without outranking each element's own rules (.side keeps its glass). */
+:where(.m-pop){position:static;inset:auto;width:auto;height:auto;margin:0;padding:0;border:0;overflow:visible;color:inherit;background:none}
+.acts{display:contents}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* Desktop sidebar: 16 px icon + label (Components.Navigation board); rail and drawer keep the 20 px icon. */
+@media (min-width:1024px){.side a .ic{width:16px;height:16px}}
+.tw>.cal{min-width:760px}
+.cal:not(.month) .dc>.dn{display:none}
+pre{max-width:100%;overflow-x:auto}
+
+@media all{.m-only{display:none !important}}
+
+/* Touch screens have no hover: the hover-only × is always shown. */
+@media (hover:none){.x{opacity:1}}
+
+/* Rail: labels become tooltips (title attr); sub-lists live on their pages. */
+@media not all{
+  .wl{flex-wrap:nowrap}
+  .side{flex:none;width:64px;padding:10px 8px;position:sticky;top:12px;align-items:center}
+  .side .ws,.side .lb,.side .lbl,.side a.sub,.side .cnt{display:none}
+  .side a{justify-content:center;padding:0;width:44px;min-height:44px;border-radius:12px}
+  /* Section labels become thin dividers; the screen reader still reads the label text. */
+  .side .lbl.nh{display:block;font-size:0;width:32px;height:1px;padding:0;margin:6px 0;background:var(--line)}
+  .pg{flex:1 1 0}
+  .doc{padding:24px 32px 72px}
+}
+
+@media not all{
+  .check{width:24px;height:24px}.check::after{width:14px;height:14px}
+  .m-pop:not(:popover-open){display:none}
+  /* iOS zooms into inputs under 16 px; max() keeps bigger ones (the title input) as they are. */
+  /* !important: .fld.s / .fld.m / .dnav input set 13–14px at higher specificity; no field may undercut this. */
+  .wl :is(input,select,textarea){font-size:max(16px,1em) !important}
+  .wl{display:block;padding:8px 0 0}
+  .pg{border-radius:22px 22px 0 0;border-bottom:0;min-height:calc(100vh - 8px)}
+  .doc,.doc.wide{padding:16px 16px 48px}
+  .ptitle,.ptitle.t32,.ptitle.t36{font-size:30px}
+
+  /* Top bar: the crumb, minus the trail (the drawer covers navigation). */
+  .crumb{padding:8px;gap:4px;min-height:60px}
+  .crumb .trail{display:none}
+  .crumb>b{font-size:17px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .crumb>span,.crumb>form{max-width:100%}
+  .crumb .m-hide,.m-hide{display:none}
+
+  /* Controls: the phone context is 44 (touch target); an action inside a field stays a step smaller than the field. */
+  .ib{width:44px;height:44px;border-radius:12px}
+  .btn,.btn.s,.crumb .btn{height:44px;padding:0 18px;font-size:16px}
+  .fld.m,.fld.s{height:44px}
+  .fld.m .btn{height:36px}
+  .dnav{height:44px}
+  .dnav>*{padding:0 14px}
+  .seg:not(.mac){height:44px}.seg:not(.mac) button{height:38px}
+
+  /* Drawer: the sidebar in the top layer. */
+  .side:popover-open{position:fixed;inset:8px auto 8px 8px;width:min(300px,calc(100vw - 32px));max-width:none;overflow-y:auto;z-index:5;padding:8px;display:flex;
+    --s:12%;box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
+  .side::backdrop{background:rgba(20,20,30,.28)}
+  .side .ws{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px 12px;font-size:17px}
+  .side a{min-height:48px;padding:0 12px;border-radius:12px;font-size:16px}
+  .side a.sub{min-height:44px;font-size:14px;padding-left:24px}
+
+  /* ⋯ menu: the row's actions as a bottom action sheet. */
+  .acts:popover-open{position:fixed;inset:auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;z-index:6;display:flex;flex-direction:column;gap:6px;padding:10px;
+    border-radius:22px;border:1px solid transparent;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
+  .acts::backdrop{background:rgba(20,20,30,.2)}
+  /* !important: the forms carry an inline margin-left:auto for the desktop row. */
+  .acts>*{margin:0 !important;display:flex}
+  .acts *{box-sizing:border-box}
+  .blk .acts .x,.acts .btn,.acts .linkbtn,.acts input{flex:1;min-height:48px;height:auto;width:100%;justify-content:center;align-items:center;border-radius:14px;opacity:1}
+  .acts .x{gap:6px;background:#fff;border:1px solid var(--line);color:var(--err);font-size:16px;height:auto}
+  .blk{min-height:44px;flex-wrap:wrap}
+  .blk .x{opacity:1;width:44px;height:44px}
+  .blk label.row{flex-wrap:nowrap;align-items:flex-start}
+  .blk label.row>span{min-width:0;overflow-wrap:anywhere}
+  .blk>.edit-line,.blk>form:first-child,.blk>span:not([class]){flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+
+  /* Capture bar: pinned to the bottom, clear of the home indicator; the grammar legend opens from ?. */
+  .doc:has(>.capture){padding-bottom:180px}
+  .capture{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top,rgba(255,255,255,.95) 55%,rgba(255,255,255,0))}
+  .newline{padding:0 4px 0 16px}
+  .legend:popover-open{position:fixed;inset:auto 8px calc(120px + env(safe-area-inset-bottom)) 8px;margin:0;padding:14px !important;display:flex;
+    border-radius:18px;background:color-mix(in srgb,var(--fill-3) 95%,transparent);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.18);color:var(--ink-2)}
+
+  /* Settings: the phone board's touch sizes (iOS switch 51x31, 28 px thumb). */
+  .looks{gap:8px}
+  .lk img{width:56px;height:56px;border-radius:13px}
+  .gi{min-height:56px}
+  .sw{width:51px;height:31px}.sw::after{width:27px;height:27px}.sw:checked::after{transform:translateX(20px)}
+  /* auto: the 32 px touch segments would overflow the 30 px desktop track. */
+  .seg.mac{height:auto}.seg.mac button{min-height:32px;padding:4px 16px}
+  .rng{--th:28px}
+
+  /* Props stack label over value. */
+  .props{grid-template-columns:minmax(0,1fr);gap:2px}
+  .props dt{padding:8px 10px 0;font-size:12px}
+  .props dd{padding:0 10px 8px;min-height:24px}
+
+  /* Tables scroll inside their own box; grids go one column. */
+  table{display:block;overflow-x:auto}
+  .sgrid{grid-template-columns:minmax(0,1fr)}
+
+  /* Calendar: week = agenda list, month = 7 columns of day numbers with a dot. */
+  .tw>.cal{min-width:0}
+  .cal:not(.month){display:flex;flex-direction:column;gap:6px;border:0;border-radius:0}
+  .cal:not(.month) .dh{display:none}
+  .cal:not(.month) .dc{min-height:0;border:1px solid var(--fill-2);border-radius:12px;padding:10px 12px}
+  .cal:not(.month) .dc>.dn{display:block;font-size:14px;color:var(--ink)}
+  .cal:not(.month) .dc:not(:has(.ev,.logdot)){padding:8px 12px}
+  .cal .ev{font-size:14px;padding:8px 10px}
+  .cal.month{gap:2px;border:0}
+  .cal.month .dh{padding:4px 0;text-align:center;border:0;background:none;font-size:11px}
+  .cal.month .dc{min-height:44px;padding:0;border:0;align-items:center;justify-content:center;gap:2px;border-radius:10px}
+  .cal.month .dc>:not(.dn){display:none}
+  .cal.month .dn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:44px;font-size:13px;color:var(--ink)}
+  .cal.month .dc:has(.ev,.logdot) .dn::after{content:"";width:5px;height:5px;border-radius:9999px;background:var(--accent)}
+  .cal.month .dc.now{background:var(--accent)}
+  .cal.month .dc.now .dn{color:#fff}
+  .cal.month .dc.now .dn::after{background:#fff}
+  .cal.month .dc.out .dn{color:var(--muted)}
+}
+
+@media (prefers-reduced-transparency: reduce){.side:popover-open,.acts:popover-open{backdrop-filter:none;-webkit-backdrop-filter:none}}
+
+.dcroot{position:relative;isolation:isolate;min-height:100%}
+.dcroot[data-look]::before{position:absolute}
+
+
+/* ---- T70 proposal: tag chip, tag offer, hub (T72 moves this into components.css) ---- */
+/* Tag chip = the .chip family: --fill-2, 6 radius, 12px. Text --ink-2 11.09:1; the "#" is the only accent, 4.88:1 on --fill-2
+   (6.25 tinted, where --accent is #0055b3). Opaque fill, so the numbers hold on every look and over glass. */
+.chip.tag{gap:0;color:var(--ink-2);text-decoration:none;vertical-align:baseline}
+.chip.tag::before{content:"#";color:var(--accent);font-weight:600;margin-right:1px}
+/* Hover --sep: --accent drops to 4.35 there, so the # steps to --accent-2 (5.57); text 9.88. */
+a.chip.tag:hover,a.chip.tag.hov{background:var(--sep);text-decoration:none}
+a.chip.tag:hover::before,a.chip.tag.hov::before{color:var(--accent-2)}
+a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* Inherited (from the epic / meeting series, not in the line's text): white + dashed --ctl-edge ring (3.3:1, non-text floor). */
+.chip.tag.inh{background:#fff;border:1px dashed var(--ctl-edge);padding:0 7px}
+/* Active filter: --accent-wash = "selected" (as in menus); text 11.07, # 4.88; × removes it (a plain GET link). */
+.chip.tag.fl{background:var(--accent-wash);padding:1px 4px 1px 8px;gap:2px}
+.chip.tag.fl .rm{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9999px;color:var(--ink-2);text-decoration:none}
+.chip.tag.fl .rm:hover{background:rgba(0,0,0,.06)}
+/* Line text: plain segments are the edit link, each #tag is its own link to the hub (no link inside a link). */
+.ltext{min-width:0}
+.ltext .edit-line{display:inline}
+/* "Tag as #expense?" offer under the capture bar: opaque white (sits over glass), dashed ring, Tab accepts, × = not a tag. */
+.tagask{display:inline-flex;align-items:center;gap:6px;height:28px;box-sizing:border-box;padding:0 4px 0 10px;border-radius:9999px;border:1px dashed var(--ctl-edge);background:#fff;color:var(--ink);font:inherit;font-size:13px;line-height:1;cursor:pointer}
+.tagask:hover{border-style:solid}
+.kbd{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;line-height:1;padding:3px 5px;border:1px solid var(--line);border-radius:4px;color:var(--muted);background:#fff;letter-spacing:0}
+.tagask .x{opacity:1;width:20px;height:20px;font-size:14px}
+/* Suggestions: the .menu, opened upward from the capture bar; count right-aligned in --muted (menus take --muted-tint). */
+.menu.up{bottom:60px;left:16px;width:300px}
+.menu [role=option] .n{margin-left:auto;font-size:12px;color:var(--muted)}
+.menu .mf{font-size:12px;color:var(--muted);padding:4px 10px 2px;border-top:1px solid rgba(0,0,0,.06);margin-top:2px;letter-spacing:0}
+/* Selected word in the inline edit (drawn; the app uses the native selection). */
+.selw{background:var(--heat-2);border-radius:2px}
+.fakein{flex:1;font:inherit;padding:0 8px;min-height:30px;display:flex;align-items:center;border-radius:6px;border:1px dashed var(--faint);background:#fff}
+/* Hub */
+.ptitle .hash{color:var(--accent);margin-right:2px}
+.hsec{display:flex;flex-direction:column;gap:6px}
+.hsec h3{margin:10px 0 0}
+.hi{background:var(--fill);border-radius:12px;padding:8px 14px}
+.hi .blk:hover{background:rgba(0,0,0,.04)}
+.via{font-size:12px;color:var(--muted);white-space:nowrap;display:inline-flex;gap:4px;align-items:center}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 28px}
+.board-note{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:var(--fill);color:var(--ink);font-size:13px;line-height:1.47;padding:16px 24px;display:flex;flex-direction:column;gap:14px}
+.board-note .lbl2{font-size:12px;font-weight:600;color:var(--muted)}
+.board-note .st{display:flex;flex-direction:column;gap:6px;min-width:0}
+.board-note .capture{position:relative;bottom:auto}
+
+.dcroot .wl{min-height:900px}.dcroot .side{min-height:876px}
+
+</style>
+</helmet>
+<svg width="0" height="0" style="position: absolute" aria-hidden="true"><filter id="lg-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="7" result="a"></feGaussianBlur><feComponentTransfer in="a" result="m"><feFuncA type="linear" slope="1" intercept="-0.5"></feFuncA></feComponentTransfer><feDisplacementMap in="SourceGraphic" in2="m" scale="22" xChannelSelector="A" yChannelSelector="A"></feDisplacementMap></filter></svg>
+<div class="dcroot" data-look="wakaba" style="--glass-a:60%"><div class="wl">
+<nav class="side m-pop" id="side" popover="" aria-label="Pages">
+<div class="ws"><span>Atharu</span><button class="ib m-only" type="button" popovertarget="side" popovertargetaction="hide" aria-label="Close pages"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+<a href="Main.dc.html" title="Today"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg><span class="lb">Today</span></a>
+<a href="Todos.dc.html" title="To-dos"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span class="lb">To-dos</span></a>
+<a href="Calendar.dc.html" title="Calendar"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="lb">Calendar</span></a>
+<a href="MeetingsList.dc.html" title="Meetings"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5M21 20a6 6 0 0 0-4-5.6"/></svg><span class="lb">Meetings</span></a>
+<div class="lbl nh">Track</div>
+<a href="Epics.dc.html" title="Epics"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"/></svg><span class="lb">Epics</span></a>
+<a href="Report.dc.html" title="Report"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V7M17 16V9"/></svg><span class="lb">Report</span></a>
+<a href="Tags.List.dc.html" title="Tags" class="on"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h15M4 15h15M10 4 8 20M16 4l-2 16"/></svg><span class="lb">Tags</span></a>
+<div class="lbl nh">Grow</div>
+<a href="Learn.dc.html" title="Learn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5a2 2 0 0 1 2-2h14v14H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h14"/></svg><span class="lb">Learn</span></a>
+<a href="NotesList.dc.html" title="Notes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg><span class="lb">Notes</span></a>
+<div class="lbl">Active epics</div>
+<a class="sub" href="Epic.dc.html"><span class="mono">OPS-092</span> Log retention</a>
+<a class="sub" href="Epic.dc.html"><span class="mono">OPS-101</span> Checkout latency</a>
+<a class="sub" href="Epic.dc.html"><span class="mono">OPS-118</span> Reorder from history</a>
+<a class="sub" href="Epic.dc.html"><span class="mono">OPS-130</span></a>
+<span class="gap"></span>
+<a href="Settings.dc.html" title="Settings"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span class="lb">Settings</span></a>
+</nav>
+<div class="pg">
+<div class="crumb"><button class="ib m-only" type="button" popovertarget="side" aria-label="Open pages"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="trail" href="Tags.List.dc.html">Tags</a><span class="trail">/</span><b>#cms-profile</b></div>
+<main class="doc">
+<h1 class="ptitle" style="margin-top: 0"><span class="hash">#</span>cms-profile</h1><div class="callout"><div style="display: flex; flex-direction: column; gap: 4px"><b>One name, one page</b><span class="small">The tag <span class="chip tag">cms-profile</span>, the topic <span class="mono">cms-profile</span> and the meeting series <span class="chip">cms-profile</span> share this hub. <span class="mono">[[cms-profile]]</span> in a note lands here.</span></div></div><dl class="props"><dt>Used</dt><dd class="small">14 lines · 1 open to-do · 3 meetings · last used Wed 11</dd><dt>Topic</dt><dd class="small"><span class="meter" aria-label="Depth 2 of 4"><i class="on"></i><i class="on"></i><i></i><i></i></span><span>can explain</span><a href="Topic.dc.html">Open topic page →</a></dd><dt>Series</dt><dd class="small"><span>3 meetings · last Wed 11 Nov</span><a href="MeetingsList.dc.html">All cms-profile meetings →</a></dd></dl><section class="hsec"><h3>From the topic</h3><p class="small" style="margin: 0">Profile reads go through the read model; writes stay on the OMS primary. <span class="muted">· your own words, 4 Nov</span></p></section><section class="hsec"><h3>Decisions, blockers, impact <span class="small muted" style="font-weight: 400">· 2</span></h3><div class="hi blocks"><div class="blk"><span class="k" title="decision">!</span><span class="ltext"><a class="edit-line" href="Tags.Retag.dc.html" title="Click to edit">profile v2 keeps nested supplier{id, name}</a> <a class="chip tag" href="Tags.Hub.dc.html">cms-profile</a></span> <span class="small muted">Wed 11 · in cms-profile</span><button style="margin-left: auto" class="ib more m-only" type="button" aria-label="More actions for this line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.6"/></svg></button></div><div class="blk"><span class="k imp" title="impact">+</span><span class="ltext"><a class="edit-line" href="Tags.Retag.dc.html" title="Click to edit">profile p95 900ms → 240ms after the read model</a> <a class="chip tag" href="Tags.Hub.dc.html">cms-profile</a></span> <span class="small muted">Mon 9</span><button style="margin-left: auto" class="ib more m-only" type="button" aria-label="More actions for this line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.6"/></svg></button></div></div></section><section class="hsec"><h3>Recent lines <span class="small muted" style="font-weight: 400">· 14</span></h3><div class="blocks"><div class="blk"><span class="k" title="learn">?</span><span class="ltext"><a class="edit-line" href="Tags.Retag.dc.html" title="Click to edit">cms-profile: cursor paging beats offset past 10k rows</a></span> <span class="small muted">Tue 10 · topic line</span><button style="margin-left: auto" class="ib more m-only" type="button" aria-label="More actions for this line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.6"/></svg></button></div><div class="blk"><span class="k" title="done">·</span><span class="ltext"><a class="edit-line" href="Tags.Retag.dc.html" title="Click to edit">walked QA through the profile merge rules</a></span> <span class="small muted">Wed 11 · in cms-profile</span><button style="margin-left: auto" class="ib more m-only" type="button" aria-label="More actions for this line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.6"/></svg></button></div></div></section><p class="small muted" style="margin: 0">Order when a name is several things: epic key → topic → meeting series → tag. An epic key never merges (keys look like OPS-101, tags can’t).</p>
+
+</main>
+</div>
+</div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

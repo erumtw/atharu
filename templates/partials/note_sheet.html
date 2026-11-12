@@ -1,0 +1,6 @@
+{#- The phone ⋯ sheet's note item, above Edit line (the add button leaves the row < 640). Same inputs as note_btn.html. -#}
+{%- if let Some(n) = note_ref -%}
+<a class="btn ghost s m-only" href="/notes/{{ n.id }}">Open note</a>
+{%- else -%}
+<form class="inline m-only" method="post" action="/entries/{{ line_id }}/note"><button class="btn ghost s" type="submit">Add a note</button></form>
+{%- endif -%}

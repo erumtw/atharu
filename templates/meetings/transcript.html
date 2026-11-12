@@ -1,0 +1,39 @@
+{#- Transcript section (DESIGN.md §6). Polls itself while a recording is live or finishing; the search box keeps
+    what you typed across polls (hx-preserve). Search is a plain GET (?q=), so it works without JS. -#}
+<section id="tx"{% if polling %} hx-get="/meetings/{{ meeting }}/transcript?q={{ q|urlencode }}" hx-trigger="every 5s" hx-swap="outerHTML scroll:.txbody.follow:bottom"{% endif %}>
+{%- if !list.is_empty() %}
+<h3 id="transcript">Transcript{% if !mac %} <span class="small muted normal">· recorded in the Mac app; view only here</span>{% endif %}</h3>
+{%- endif %}
+{%- for t in list %}
+{%- if t.done %}
+<div class="callout" style="align-items: center; flex-wrap: wrap">
+<span style="flex: 1; min-width: 280px"><b>Ask Claude for notes:</b> run <span class="mono">/meeting</span> in Claude Code. It reads this transcript and files a summary note plus decisions and plans, marked <span class="chip llm">claude</span>.</span>
+<span class="cmd"><code id="cmd-{{ t.id }}">/meeting {{ meeting }}</code><button class="btn ghost s" type="button" data-copy="#cmd-{{ t.id }}" aria-label="Copy command">Copy</button></span>
+</div>
+{%- endif %}
+{%- if let Some(at) = t.interrupted %}
+<div class="callout"><span>Atharu closed during this meeting. The transcript is saved up to <span class="mono">{{ at }}</span>; the rest of the audio is gone.</span></div>
+{%- endif %}
+<div class="tx">
+<div class="txhead"><span class="small muted" style="flex: 1; min-width: 140px">{{ t.meta }}</span>
+<form class="fld s" role="search" method="get" action="/meetings/{{ meeting }}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#search"/></svg><input id="txq-{{ t.id }}" hx-preserve name="q" value="{{ q }}" placeholder="Search transcript" aria-label="Search transcript"></form>
+<textarea id="txcopy-{{ t.id }}" hidden>{{ t.copy }}</textarea><button class="btn ghost s" type="button" data-copy="#txcopy-{{ t.id }}" aria-label="Copy {{ t.lines }} lines">Copy</button></div>
+<div class="txbody{% if t.live %} follow{% endif %}" tabindex="0" aria-label="Transcript">
+{%- for r in t.rows %}
+<div class="txrow{% if r.cont %} cont{% endif %}"><time>{{ r.time }}</time><span class="who">{{ r.who }}</span><span>{% for (p, hit) in r.parts %}{% if *hit %}<mark>{{ p }}</mark>{% else %}{{ p }}{% endif %}{% endfor %}</span></div>
+{%- endfor %}
+{%- if t.rows.is_empty() && !q.is_empty() %}
+<p class="small muted">No line has “{{ q }}”. <a href="/meetings/{{ meeting }}#transcript">Show all</a></p>
+{%- endif %}
+{%- if t.live %}
+<div class="txlive"><span class="dot" aria-hidden="true"></span>{% if mac %}Listening · the next lines arrive about 30 s after they’re said{% else %}About 30 s behind{% endif %}</div>
+{%- endif %}
+{%- if let Some((pct, left)) = t.finishing %}
+<div class="txfin" role="status">
+<span class="small"><b>Transcribing the last part…</b> <span class="muted">about {{ left }} left · you can close this page, it keeps going</span></span>
+<progress class="prog" max="100" value="{{ pct }}" aria-label="Transcribing">{{ pct }}%</progress>
+</div>
+{%- endif %}
+</div></div>
+{%- endfor %}
+</section>

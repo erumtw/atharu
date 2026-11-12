@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block side %}{% include "meetings/side.html" %}{% endblock %}
+{% block content %}
+{%- let full = false %}{% let pin_error = false %}
+<main class="doc">
+{%- if let Some(banner) = banner %}
+<section id="meeting">{% include "partials/meeting_banner.html" %}</section>
+{%- endif %}
+<h1 class="ptitle">{{ name }}</h1>
+<dl class="props">
+<dt>Day</dt><dd>{{ day }}</dd>
+<dt>State</dt><dd>{% if let Some(t) = ended %}<span class="chip">ended {{ t }}</span>{% else %}<span class="chip">running</span><form class="inline" method="post" action="/meetings/{{ id }}/end"><input type="hidden" name="back" value="{{ back }}"><button class="btn ghost s" type="submit">End meeting</button></form>{% endif %}</dd>
+<dt>Series</dt><dd class="small">{% for (i, l) in siblings %}<a href="/meetings/{{ i }}">{{ l }}</a>·{% endfor %}<a href="/meetings?name={{ name }}">all {{ series_count }}</a></dd>
+</dl>
+{% include "meetings/tags.html" %}
+<hr class="hr">
+{%- if plans.is_empty() && groups.is_empty() %}
+<p class="small muted" style="margin: 0">Nothing logged in this meeting.</p>
+{%- endif %}
+{#- A to-do row's edit / Undo (D51) answers `plans-changed`: re-fetch this list, as Today and To-dos do theirs. #}
+<div hidden hx-get="/meetings/{{ id }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#mplans" hx-select="#mplans" hx-swap="outerHTML"></div>
+<div id="mplans">
+{%- if !plans.is_empty() %}
+<h3 style="margin-top: 0">Action items <span class="small muted normal">· plans you logged in this meeting</span></h3>
+<div class="blocks">
+{%- for p in plans %}
+{% include "partials/plan_row.html" %}
+{%- endfor %}
+</div>
+{%- endif %}
+</div>
+{%- for g in groups %}
+<h3>{{ g.title }}</h3>
+<div class="blocks">
+{%- for l in g.lines %}
+<div class="blk"><span class="{{ l.kind.badge_class() }}" title="{{ l.kind.tooltip() }}">{{ l.kind.mark() }}</span><span>{% if let Some(t) = l.topic %}<span class="mono">{{ t }}</span> {% endif %}{{ l.text }}</span>{% if let Some(k) = l.epic_key %}<a href="/epics/{{ k }}"><span class="chip key">{{ k }}</span></a>{% endif %}</div>
+{%- endfor %}
+</div>
+{%- endfor %}
+<h3><label for="mnotes">Notes</label> <span id="notes-saved" class="saved normal">saves as you type</span></h3>
+<form style="display: flex; flex-direction: column; gap: 8px" method="post" action="/meetings/{{ id }}/notes" hx-post="/meetings/{{ id }}/notes" hx-trigger="input changed delay:1s, change" hx-target="#notes-saved" hx-swap="innerHTML">
+<textarea id="mnotes" name="notes" class="ta" rows="5">{{ notes }}</textarea>
+<noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
+</form>
+{{ tx|safe }}
+{% include "partials/backlinks.html" %}
+<form method="post" action="/meetings/{{ id }}/delete" hx-post="/meetings/{{ id }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Its lines stay on their days">Delete meeting</button></form>
+</main>
+{% endblock %}
