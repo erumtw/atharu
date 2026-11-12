@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.6 — 2026-11-12
+
+### Fixes
+
+- a hidden menu stays hidden (popover series menu was always open)
+
+### Other
+
+- Merge pull request #7 from erumtw/feat/worklog
+- refactor: one line-row module, entry_row.html + plan_row.html the only row markup
+- refactor: one meeting-state module behind recording::MeetingState
+
 ## v0.1.5 — 2026-11-12
 
 ### Fixes
