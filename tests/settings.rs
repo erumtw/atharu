@@ -242,3 +242,15 @@ async fn connections_show_status_from_config_never_secrets() {
     }
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[tokio::test]
+async fn about_shows_the_running_version_and_the_update_command() {
+    let b = get(&state(), "/settings").await.body;
+    let v = atharu::build_info::TAG.map_or_else(
+        || format!("{} · dev build", atharu::build_info::VERSION),
+        str::to_string,
+    );
+    assert!(b.contains(&v), "version {v}");
+    assert!(b.contains(atharu::build_info::SHA));
+    assert!(b.contains("<code id=\"upd-cmd\">atharu update</code>"));
+}
