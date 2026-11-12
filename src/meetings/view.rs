@@ -44,6 +44,10 @@ pub struct SideSeries {
 pub struct ListRow {
     pub id: i64,
     pub day: String,
+    /// `15:02–15:20`, `15:02 · running`, or empty (no start time recorded): tells same-day meetings apart.
+    pub time: String,
+    /// `16 lines` of transcript, or empty.
+    pub transcript: String,
     pub decisions: i64,
     pub learned: i64,
     /// `1 open · 1 done`, or `—`.

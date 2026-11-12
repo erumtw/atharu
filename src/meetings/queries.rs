@@ -62,6 +62,10 @@ pub struct MeetingRow {
     pub name: String,
     pub notes: String,
     pub ended_at: Option<String>,
+    /// NULL for meetings from before migration 007.
+    pub started_at: Option<String>,
+    /// Transcript lines across its recordings (0 = never recorded).
+    pub tx_lines: i64,
     pub decisions: i64,
     pub learned: i64,
     pub open: i64,
@@ -77,7 +81,10 @@ pub fn meetings(conn: &Connection, name: Option<&str>) -> rusqlite::Result<Vec<M
                 COUNT(CASE WHEN e.kind = 'learn' THEN 1 END),
                 COUNT(CASE WHEN e.plan_state = 'open' THEN 1 END),
                 COUNT(CASE WHEN e.plan_state = 'done' THEN 1 END),
-                COUNT(CASE WHEN e.plan_state = 'dropped' THEN 1 END)
+                COUNT(CASE WHEN e.plan_state = 'dropped' THEN 1 END),
+                m.started_at,
+                (SELECT COALESCE(SUM(json_array_length(t.segments)), 0) FROM meeting_transcripts t
+                  WHERE t.meeting_id = m.id)
          FROM meetings m LEFT JOIN entries e ON e.meeting_id = m.id
          WHERE ?1 IS NULL OR m.name = ?1
          GROUP BY m.id
@@ -96,6 +103,8 @@ pub fn meetings(conn: &Connection, name: Option<&str>) -> rusqlite::Result<Vec<M
             open: r.get(7)?,
             done: r.get(8)?,
             dropped: r.get(9)?,
+            started_at: r.get(10)?,
+            tx_lines: r.get(11)?,
         })
     })?
     .collect()
