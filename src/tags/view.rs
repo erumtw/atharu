@@ -1,6 +1,6 @@
 use super::queries::{HubEpic, HubTopic, TagRow};
 use crate::{
-    domain::entry::{Kind, NoteRef},
+    domain::{entry::LineRow, plan::Plan},
     layout::Layout,
 };
 use askama::Template;
@@ -33,24 +33,6 @@ impl List {
     }
 }
 
-pub struct Line {
-    pub id: i64,
-    /// `YYYY-MM-DD` it was logged: a to-do's no-JS edit link opens that day.
-    pub day: String,
-    pub kind: Kind,
-    pub topic: Option<String>,
-    pub text: String,
-    /// `today`, `Wed 11`.
-    pub when: String,
-    pub via: Option<String>,
-    pub via_epic: bool,
-    pub author: String,
-    /// To-dos: `Fri 13 Nov`, and whether that is past.
-    pub due: Option<String>,
-    pub late: bool,
-    pub note: Option<NoteRef>,
-}
-
 #[derive(Template)]
 #[template(path = "tags/hub.html")]
 pub struct Hub {
@@ -60,12 +42,14 @@ pub struct Hub {
     pub used: String,
     /// (item_type, id): epics, series and topics whose tags field holds it.
     pub tagged_by: Vec<(String, String)>,
-    pub todos: Vec<Line>,
+    /// For the to-do rows' due / late labels.
+    pub today: chrono::NaiveDate,
+    pub todos: Vec<Plan>,
     /// Decisions, blockers, impact: the highlighted block.
-    pub hi: Vec<Line>,
-    pub recent: Vec<Line>,
+    pub hi: Vec<LineRow>,
+    pub recent: Vec<LineRow>,
     /// Past the first page of recent lines, folded.
-    pub older: Vec<Line>,
+    pub older: Vec<LineRow>,
     pub epics: Vec<HubEpic>,
     /// (id, title, author, `9 Nov` / `today`).
     pub notes: Vec<(i64, String, String, String)>,

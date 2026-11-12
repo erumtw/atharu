@@ -649,12 +649,7 @@ pub async fn page(
             Kind::Blocker => 3,
             _ => 4,
         };
-        groups[i].lines.push(view::Line {
-            kind: l.kind,
-            epic_key: l.epic_key,
-            topic: l.topic,
-            text: l.text,
-        });
+        groups[i].lines.push(l);
     }
     groups.retain(|g| !g.lines.is_empty());
     let day = NaiveDate::parse_from_str(&m.day, "%Y-%m-%d")

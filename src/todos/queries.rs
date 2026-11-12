@@ -1,39 +1,6 @@
-use crate::domain::{
-    entry::{Entry, NoteRef},
-    plan::Plan,
-};
-use chrono::NaiveDate;
-use rusqlite::{Connection, OptionalExtension, Row, params};
-
-// Last column: Jira chip label, the cached issue whose key ends a path/param segment of the link.
-const SELECT_PLAN: &str =
-    "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
-         (SELECT j.key || ' · ' || j.summary FROM jira_issues j
-           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1),
-         note_id, (SELECT title FROM notes WHERE notes.id = entries.note_id)
-         FROM entries";
-
-fn date(s: Option<String>) -> Option<NaiveDate> {
-    s.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok())
-}
-
-fn plan(r: &Row) -> rusqlite::Result<Plan> {
-    Ok(Plan {
-        id: r.get(0)?,
-        day: date(r.get(1)?).unwrap_or_default(),
-        epic_key: r.get(2)?,
-        text: r.get(3)?,
-        link: r.get(4)?,
-        due: date(r.get(5)?),
-        pinned: r.get(6)?,
-        state: r.get(7)?,
-        closed_day: date(r.get(8)?),
-        jira: r.get(9)?,
-        note: NoteRef::from_cols(r.get(10)?, r.get(11)?),
-        // Only the filtered list selects it (13th column).
-        via: r.get(12).unwrap_or(None),
-    })
-}
+use crate::db::{SELECT_PLAN, plan};
+use crate::domain::{entry::Entry, plan::Plan};
+use rusqlite::{Connection, OptionalExtension, params};
 
 /// Every open plan from any day (carry-over is free): pinned first, then by due, then oldest.
 /// `filter` = only plans carrying any of these tags, typed or inherited (D29); empty = all.

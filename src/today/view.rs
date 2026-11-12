@@ -1,32 +1,14 @@
 use crate::{
-    domain::{
-        dates,
-        entry::{Kind, NoteRef},
-        plan::Plan,
-    },
+    domain::{dates, entry::LineRow, plan::Plan},
     layout::{Layout, TagFilter},
 };
 use askama::Template;
 use chrono::NaiveDate;
 
-pub struct Row {
-    pub id: i64,
-    pub kind: Kind,
-    pub topic: Option<String>,
-    pub text: String,
-    pub meeting: Option<String>,
-    pub author: String,
-    /// Grouped by tag: where this group's tag comes from when the text doesn't have it.
-    pub via: Option<String>,
-    /// Grouped by tag: the line's epic, shown on the row since no epic header says it.
-    pub epic: Option<String>,
-    pub note: Option<NoteRef>,
-}
-
 pub struct Group {
     pub key: Option<String>,
     pub title: String,
-    pub rows: Vec<Row>,
+    pub rows: Vec<LineRow>,
     /// Group by tag (D29): `tag` heads the group, `None` = "No tag".
     pub by_tag: bool,
     /// Group by type: `title` is the kind's plural ("Decisions").

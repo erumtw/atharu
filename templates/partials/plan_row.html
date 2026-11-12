@@ -1,4 +1,5 @@
-{#- One plan row. Needs `p` (domain::plan::Plan), `today`, `back` (page a plain POST returns to),
+{#- One plan row, the only to-do markup (To-dos, Today, a meeting, an epic timeline, a tag hub), so a swapped row
+    matches its neighbours. Needs `p` (domain::plan::Plan), `today`, `back` (page a plain POST returns to),
     `full` (/todos: date picker on every row), `pin_error`. Plan actions swap just this row; edit and delete work like
     a log line's (D51): the edit box stands in for the row, a delete leaves "Line deleted · Undo" in its place. -#}
 <div class="blk ln" id="plan-{{ p.id }}">

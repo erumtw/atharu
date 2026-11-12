@@ -334,7 +334,7 @@ fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
     let lines: Vec<Value> = meetings::lines(conn, id)
         .map_err(db)?
         .into_iter()
-        .map(|l| json!({"kind": l.kind.as_str(), "topic": l.topic, "text": l.text, "epic": l.epic_key.map(|k| json!({"key": k}))}))
+        .map(|l| json!({"kind": l.kind.as_str(), "topic": l.topic, "text": l.text, "epic": l.epic.map(|k| json!({"key": k}))}))
         .collect();
     let plans: Vec<Value> = meetings::plans(conn, id)
         .map_err(db)?

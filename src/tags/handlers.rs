@@ -3,7 +3,8 @@ use crate::{
     app::AppState,
     domain::{
         dates,
-        entry::Kind,
+        entry::{Kind, LineRow},
+        plan::Plan,
         tags::{self, parse_list},
     },
     error::{AppError, AppResult},
@@ -17,6 +18,7 @@ use axum::{
 };
 use chrono::NaiveDate;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 /// Recent lines shown before the fold.
 const RECENT: usize = 8;
@@ -111,17 +113,16 @@ fn render_hub(
     all.sort_by(|a, b| b.day.cmp(&a.day).then(b.id.cmp(&a.id)));
     let last_line = all.first().map(|l| l.day.clone());
     let total = all.len();
-    let (mut todos, mut hi, mut recent) = (Vec::new(), Vec::new(), Vec::new());
+    let (mut todo_via, mut hi, mut recent) = (Vec::new(), Vec::new(), Vec::new());
     for l in all {
-        let due = l
-            .due
-            .as_deref()
-            .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
-        let open = l.plan_state.as_deref() == Some("open");
+        if l.kind == Kind::Plan && l.plan_state.as_deref() == Some("open") {
+            todo_via.push((l.id, l.via));
+            continue;
+        }
         let w = when(&l.day, today);
-        let line = view::Line {
+        let line = LineRow {
             id: l.id,
-            day: l.day.clone(),
+            day: l.day,
             kind: l.kind,
             topic: l.topic,
             text: l.text,
@@ -130,18 +131,25 @@ fn render_hub(
                 None => w,
             },
             via: l.via,
-            via_epic: l.via_epic,
             author: l.author,
-            due: due.map(dates::label),
-            late: open && due.is_some_and(|d| d < today),
             note: l.note_ref,
+            ..LineRow::default()
         };
         match l.kind {
-            Kind::Plan if open => todos.push(line),
             Kind::Decision | Kind::Blocker | Kind::Impact => hi.push(line),
             _ => recent.push(line),
         }
     }
+    // Open to-dos draw as `plan_row.html`, like everywhere else: load them whole, keep the hub's order and `via`.
+    let ids: Vec<i64> = todo_via.iter().map(|(id, _)| *id).collect();
+    let mut by_id: HashMap<i64, Plan> = queries::plans(conn, &ids)?
+        .into_iter()
+        .map(|p| (p.id, p))
+        .collect();
+    let todos: Vec<Plan> = todo_via
+        .into_iter()
+        .filter_map(|(id, via)| by_id.remove(&id).map(|p| Plan { via, ..p }))
+        .collect();
     let older = recent.split_off(recent.len().min(RECENT));
     let notes_raw = queries::notes(conn, &tag)?;
     let last_note = notes_raw.iter().map(|x| x.3.clone()).max();
@@ -213,6 +221,7 @@ fn render_hub(
         });
     let title = format!("#{tag}");
     Ok(view::Hub {
+        today,
         layout: Layout::load(conn, "tags", title, vec![crumb("Tags", "/tags")])?,
         used: used.join(" · "),
         tagged_by: queries::tagged_by(conn, &tag)?,

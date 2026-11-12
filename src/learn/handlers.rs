@@ -1,7 +1,10 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, depth, entry::is_slug},
+    domain::{
+        dates, depth,
+        entry::{LineRow, is_slug},
+    },
     error::{AppError, AppResult},
     layout::{Layout, crumb},
     web,
@@ -113,12 +116,11 @@ pub async fn page(State(st): State<AppState>, Path(slug): Path<String>) -> AppRe
     let t = queries::topic(&conn, &slug)?.ok_or(AppError::NotFound)?;
     let lines = queries::lines(&conn, &slug)?
         .into_iter()
-        .map(|l| view::Line {
-            day: NaiveDate::parse_from_str(&l.day, "%Y-%m-%d")
+        .map(|l| LineRow {
+            when: NaiveDate::parse_from_str(&l.day, "%Y-%m-%d")
                 .map(short)
-                .unwrap_or(l.day),
-            text: l.text,
-            epic_key: l.epic_key,
+                .unwrap_or_else(|_| l.day.clone()),
+            ..l
         })
         .collect();
     web::html(&view::Page {
