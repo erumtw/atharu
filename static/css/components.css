@@ -100,12 +100,13 @@ summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-
 /* Inset: the sidebar clips an outset ring at its edge. */
 .side a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 :is(.btn,.linkbtn,.ib):disabled{opacity:.45;cursor:not-allowed;transform:none}
-/* Loading: htmx puts .htmx-request on the requesting form (or element); its submit shows a spinner. */
-.htmx-request :is(.btn,.linkbtn)[type=submit],.htmx-request:is(.btn,.linkbtn){cursor:progress;opacity:.75}
-.htmx-request .btn[type=submit]::before,.btn.htmx-request::before{content:"";width:12px;height:12px;box-sizing:border-box;border-radius:9999px;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+/* Loading: htmx puts .htmx-request on the requesting form (or element); its submit shows a spinner. Forms only: a
+   polling container (the recording banner, every 1 s) would otherwise flash a spinner on every button inside it. */
+form.htmx-request :is(.btn,.linkbtn)[type=submit],.htmx-request:is(.btn,.linkbtn){cursor:progress;opacity:.75}
+form.htmx-request .btn[type=submit]::before,.btn.htmx-request::before{content:"";width:12px;height:12px;box-sizing:border-box;border-radius:9999px;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
 .htmx-request>label:has(.check){opacity:.6;cursor:progress}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion: reduce){.htmx-request .btn[type=submit]::before,.btn.htmx-request::before{animation:none;opacity:.5}}
+@media (prefers-reduced-motion: reduce){form.htmx-request .btn[type=submit]::before,.btn.htmx-request::before{animation:none;opacity:.5}}
 
 /* Glass field: a pill with its action inside on the right; focus = blue ring, 422 = red ring with the input kept.
    On an input itself (date, title) it is the same pill without the inner layout. */
