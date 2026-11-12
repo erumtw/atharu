@@ -1,7 +1,10 @@
 //! Meeting recording (T53, DESIGN.md §6) as the server sees it. The server never records: `AppState.mac`
 //! is `Some` only inside Atharu.app, which captures + transcribes on the Mac and posts segments back
-//! over HTTP. Shared like `layout`: the meeting banner on Today and on the meeting pages reads it.
+//! over HTTP. Shared like `layout`: Today, the meeting pages, the popover and the tray read it through `state`.
 mod queries;
+mod state;
+
+pub use state::{Banner, MeetingState, Running};
 
 use rusqlite::Connection;
 use std::{
@@ -255,7 +258,7 @@ pub fn now() -> String {
     chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
-/// The meeting banner's recording part; Today and the meetings pages both carry one.
+/// The recording part of `MeetingState` (loaded only through it).
 #[derive(Default)]
 pub struct Rec {
     /// Inside Atharu.app: the Record switch and Stop show; the browser only watches.
@@ -281,7 +284,7 @@ pub struct Live {
 }
 
 impl Rec {
-    pub fn load(conn: &Connection, mac: Option<&Mac>) -> rusqlite::Result<Rec> {
+    fn load(conn: &Connection, mac: Option<&Mac>) -> rusqlite::Result<Rec> {
         let mut rec = Rec {
             mac: mac.is_some(),
             model_ready: mac.is_some_and(Mac::ready),

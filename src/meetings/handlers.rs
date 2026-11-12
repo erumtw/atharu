@@ -4,7 +4,7 @@ use crate::{
     domain::{dates, entry::Kind, entry::slugify},
     error::{AppError, AppResult},
     layout::{Layout, crumb},
-    recording::{self, Rec},
+    recording::{self, Banner, MeetingState},
     web,
 };
 use axum::{
@@ -22,15 +22,11 @@ fn banner(
     back: String,
     name: String,
     error: Option<String>,
-) -> rusqlite::Result<view::Banner> {
-    Ok(view::Banner {
-        rec: Rec::load(conn, st.mac.as_deref())?,
-        active: queries::active(conn)?.map(|(id, name)| view::Active { id, name }),
-        series: queries::series(conn)?.into_iter().map(|(n, _)| n).collect(),
+) -> rusqlite::Result<Banner> {
+    Ok(Banner {
         name,
         error,
-        back,
-        ended: None,
+        ..Banner::new(MeetingState::load(conn, st.mac.as_deref())?, back)
     })
 }
 
@@ -78,7 +74,7 @@ pub struct ListQuery {
     name: Option<String>,
 }
 
-fn render_list(st: &AppState, filter: Option<String>, b: view::Banner) -> AppResult<view::List> {
+fn render_list(st: &AppState, filter: Option<String>, b: Banner) -> AppResult<view::List> {
     let conn = st.conn();
     let mut groups: Vec<view::SeriesGroup> = Vec::new();
     for m in queries::meetings(&conn, filter.as_deref())? {
@@ -202,7 +198,7 @@ pub async fn end(
         return Ok(web::back(&back));
     }
     let mut b = banner(&st, &st.conn(), back, String::new(), None)?;
-    b.ended = queries::meeting(&st.conn(), id)?.map(|m| view::Active { id, name: m.name });
+    b.ended = queries::meeting(&st.conn(), id)?.map(|m| (id, m.name));
     web::html(&view::BannerSwap { banner: b })
 }
 
@@ -627,8 +623,8 @@ pub async fn page(
         String::new(),
         None,
     )?;
-    let recording_here =
-        b.active.as_ref().is_some_and(|a| a.id == id) && (b.rec.live.is_some() || b.rec.finishing);
+    let recording_here = b.state.running.as_ref().is_some_and(|a| a.id == id)
+        && (b.state.rec.live.is_some() || b.state.rec.finishing);
     let conn = st.conn();
     let m = queries::meeting(&conn, id)?.ok_or(AppError::NotFound)?;
     let siblings = queries::siblings(&conn, &m.name, id)?;

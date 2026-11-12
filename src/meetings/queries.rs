@@ -9,16 +9,6 @@ fn date(s: Option<String>) -> Option<NaiveDate> {
     s.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok())
 }
 
-/// The running meeting, if any: (id, name).
-pub fn active(conn: &Connection) -> rusqlite::Result<Option<(i64, String)>> {
-    conn.query_row(
-        "SELECT id, name FROM meetings WHERE ended_at IS NULL",
-        [],
-        |r| Ok((r.get(0)?, r.get(1)?)),
-    )
-    .optional()
-}
-
 /// (name, meetings) per series, most recently met first.
 pub fn series(conn: &Connection) -> rusqlite::Result<Vec<(String, i64)>> {
     let mut stmt = conn.prepare(
@@ -28,10 +18,20 @@ pub fn series(conn: &Connection) -> rusqlite::Result<Vec<(String, i64)>> {
         .collect()
 }
 
+/// The one-running-meeting guard of start / restore, read inside their write; pages read `recording::MeetingState`.
+fn running_name(conn: &Connection) -> rusqlite::Result<Option<String>> {
+    conn.query_row(
+        "SELECT name FROM meetings WHERE ended_at IS NULL",
+        [],
+        |r| r.get(0),
+    )
+    .optional()
+}
+
 /// `Err(name)` = another meeting is still running. Checked first so the copy can name it;
 /// the unique partial index is the backstop.
 pub fn start(conn: &Connection, day: &str, name: &str) -> rusqlite::Result<Result<i64, String>> {
-    if let Some((_, running)) = active(conn)? {
+    if let Some(running) = running_name(conn)? {
         return Ok(Err(running));
     }
     conn.execute(
@@ -309,7 +309,7 @@ pub fn delete(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<(String
 pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<i64, String>> {
     let tx = conn.transaction()?;
     let running: bool = tx.query_row("SELECT (?1 ->> 'ended_at') IS NULL", [snap], |r| r.get(0))?;
-    if running && let Some((_, name)) = active(&tx)? {
+    if running && let Some(name) = running_name(&tx)? {
         return Ok(Err(name));
     }
     tx.execute(

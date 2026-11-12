@@ -1,51 +1,11 @@
 use crate::domain::entry::NoteRef;
 use rusqlite::{Connection, OptionalExtension};
 
-pub struct Running {
-    pub id: i64,
-    pub name: String,
-    /// `YYYY-MM-DD HH:MM:SS` local; NULL for meetings started before migration 007.
-    pub started_at: Option<String>,
-}
-
-pub fn running(conn: &Connection) -> rusqlite::Result<Option<Running>> {
-    conn.query_row(
-        "SELECT id, name, started_at FROM meetings WHERE ended_at IS NULL",
-        [],
-        |r| {
-            Ok(Running {
-                id: r.get(0)?,
-                name: r.get(1)?,
-                started_at: r.get(2)?,
-            })
-        },
-    )
-    .optional()
-}
-
-/// When the running meeting's live recording started (the tray shows its elapsed time); None = not recording.
-pub fn recording(conn: &Connection, meeting: i64) -> rusqlite::Result<Option<String>> {
-    conn.query_row(
-        "SELECT started_at FROM meeting_transcripts
-         WHERE meeting_id = ?1 AND status = 'live' ORDER BY id DESC LIMIT 1",
-        [meeting],
-        |r| r.get(0),
-    )
-    .optional()
-}
-
 pub fn meeting_name(conn: &Connection, id: i64) -> rusqlite::Result<Option<String>> {
     conn.query_row("SELECT name FROM meetings WHERE id = ?1", [id], |r| {
         r.get(0)
     })
     .optional()
-}
-
-/// Series names, most recently started first (ids only grow, so the newest meeting of a series ranks it).
-pub fn recent_series(conn: &Connection, n: usize) -> rusqlite::Result<Vec<String>> {
-    let mut stmt =
-        conn.prepare("SELECT name FROM meetings GROUP BY name ORDER BY MAX(id) DESC LIMIT ?1")?;
-    stmt.query_map([n as i64], |r| r.get(0))?.collect()
 }
 
 pub struct DuePlan {
