@@ -3,7 +3,7 @@
 Canvas "Atharu Design": https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ (rules in `DESIGN.md`; Apple look + Liquid Glass
 chrome, Notion UX patterns).
 
-`boards/` is a copy of the canvas's `project/` folder (synced at canvas version 31; page boards' CSS re-synced to the T30 glass):
+`boards/` is a copy of the canvas's `project/` folder (synced at canvas version 33; page boards' CSS re-synced to the T30 glass):
 
 - `canvas.json` = the canvas index: each board's frame (`x`, `y`, `w`, `h`, `title`), board `order`, and the title / sticky
   notes. Edit it only through the canvas, or keep every key you don't change.
@@ -17,6 +17,9 @@ chrome, Notion UX patterns).
   responses for each state (422s, toasts, empty pages).
 - Hand-drawn: Flows, Sitemap, Controls, Components.* (the T28 component sheet; a T30 block at the end of each brings it to
   Liquid Glass). LiquidGlass = every glass surface in Clear / Tinted, states, RT / IC, built from `static/css` verbatim.
+- Drawing.* + Mobile.Drawing* (T41): `static/css` verbatim (Reduce Transparency forced on Drawing.RT) + the proposed drawing CSS
+  in each board's `<helmet>`, the Notes chrome, and a real Excalidraw 0.18.1 `exportToSvg` of a made-up scene; Excalidraw's UI is
+  redrawn in HTML (themed to `--accent`).
 
 Source of truth is `templates/` + `static/css/`; when a board and the app differ, the app wins and the board is
 regenerated. `boards/app.css` is the original wireframe stylesheet that `tokens.css` was transcribed from; no board uses it now.

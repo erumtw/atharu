@@ -212,6 +212,55 @@
       "w": 1280,
       "x": 0,
       "y": 17978
+    },
+    "Drawing.Read.dc.html": {
+      "h": 900,
+      "title": "Drawing · note read view (stored SVG)",
+      "w": 1280,
+      "x": 0,
+      "y": 21400
+    },
+    "Drawing.Edit.dc.html": {
+      "h": 1000,
+      "title": "Drawing · editing (Excalidraw over the note, Done / Cancel, autosave)",
+      "w": 1280,
+      "x": 1360,
+      "y": 21400
+    },
+    "Drawing.Insert.dc.html": {
+      "h": 900,
+      "title": "Drawing · insert from the / menu",
+      "w": 1280,
+      "x": 2720,
+      "y": 21400
+    },
+    "Drawing.Empty.dc.html": {
+      "h": 900,
+      "title": "Drawing · empty + selected",
+      "w": 1280,
+      "x": 4080,
+      "y": 21400
+    },
+    "Drawing.RT.dc.html": {
+      "h": 1100,
+      "title": "Drawing · Reduce Transparency",
+      "w": 1280,
+      "x": 5440,
+      "y": 21400
+    },
+    "Mobile.Drawing.dc.html": {
+      "h": 844,
+      "title": "Phone · note with a drawing",
+      "w": 390,
+      "x": 6800,
+      "y": 21400
+    },
+    "Mobile.DrawingEdit.dc.html": {
+      "h": 844,
+      "title": "Phone · drawing editor",
+      "w": 390,
+      "x": 7270,
+      "y": 21400
     }
   },
   "createdOnFiles": {
@@ -242,7 +291,9 @@
     "s8",
     "t9",
     "s9",
-    "t10"
+    "t10",
+    "t11",
+    "s10"
   ],
   "notes": {
     "s0": {
@@ -395,6 +446,21 @@
       "w": 240,
       "x": 0,
       "y": 17698
+    },
+    "t11": {
+      "kind": "title1",
+      "maxW": 7660,
+      "text": "Drawings · Excalidraw in notes",
+      "w": 240,
+      "x": 0,
+      "y": 21120
+    },
+    "s10": {
+      "fill": "teal",
+      "w": 420,
+      "x": 7740,
+      "y": 21400,
+      "text": "Drawing block (T41, D23/D24)\n· Read: the stored SVG in a white 12-radius figure, no glass (content). Shown as <img>, so no script and no JS needed. Edit drawing = glass pill top-right on hover/focus, always on touch.\n· Insert: / menu → Drawing opens the editor at once. Empty = dashed placeholder + Draw. Selected = 2px blue ring; Backspace deletes like any block.\n· Edit: Excalidraw full-screen on an opaque white sheet; our one glass capsule top-right (Library hidden): status · Cancel (discard since opening) · Done (the one blue). Autosaves into the note 1 s after a change.\n· Excalidraw themed via its CSS vars to the one blue + system font; colours inside a drawing are user content.\n· Lazy: Excalidraw (434 KB gz) loads only on Edit / Draw; a note without a drawing loads none of it."
     }
   },
   "order": [
@@ -424,7 +490,14 @@
     "Components.Controls.dc.html",
     "Components.Navigation.dc.html",
     "Components.Content.dc.html",
-    "LiquidGlass.dc.html"
+    "LiquidGlass.dc.html",
+    "Drawing.Read.dc.html",
+    "Drawing.Edit.dc.html",
+    "Drawing.Insert.dc.html",
+    "Drawing.Empty.dc.html",
+    "Drawing.RT.dc.html",
+    "Mobile.Drawing.dc.html",
+    "Mobile.DrawingEdit.dc.html"
   ],
   "pages": [],
   "title": "Atharu Design"

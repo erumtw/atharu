@@ -161,7 +161,29 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Calendar | `.cal`, `.dh`, `.dc`, `.ev`, `.logdot`, `.evadd` | meetings = blue left rule on `--accent-wash`; `.ev.todo` outline (`.late` red text), `.ev.tgt` grey, `.ev.own` dashed; `.logdot` = lines logged; `.evadd` = "+ Event" popover form |
 | Menus | `.menu [role=option]` | glass +25%, 32 px options, selected `--accent-wash`; `/` block menu and `[[` picker |
 | Notes body | `.note-body` | Tiptap content as the board draws it (code on `--fill`, task lists, toggles, `.page` links) |
+| Drawing | `.drawing`, `.drawing.empty`, `.drawsheet` + `.drawbar` | see "Drawing block" below |
 | Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw` |
+
+### Drawing block (canvas row "Drawings · Excalidraw in notes", T41; D23, D24)
+
+- **Read view** `.drawing`: a figure in `.note-body`, white, `--line` border, 12 radius, 16 padding; the stored SVG centred,
+  `max-width:100%`, `max-height:480px`. It is content, so no glass. The SVG is shown as an `<img>` (no script, no fetches) and works
+  without JS. **Edit drawing** = `.btn.ghost.s` top-right, shown on hover / focus-within (always on touch).
+- **Selected** (one click; Backspace deletes it like any block): 2px `--accent` outline, offset 2.
+- **Empty** `.drawing.empty`: dashed `--faint` border, 160 tall, pencil icon + "Empty drawing" in `--muted` + a **Draw** glass pill.
+- **Insert**: `/` menu → **Drawing** (`✎` key tile, hint "opens the canvas"), which opens the editor at once.
+- **Editing** `.drawsheet`: Excalidraw full-screen over the note on an opaque white sheet (content, not chrome). Our controls sit in
+  one floating glass capsule `.drawbar` top-right, where Excalidraw's Library button was (hidden): `.saved` status + **Cancel**
+  (glass pill, discards changes made since opening) + **Done** (the view's one blue primary). 44 tall, buttons 36; phone: full-width
+  bar at the top, Cancel left, Done right, 44 buttons. Glass recipe = `.menu` (`--s` 25%, rim + light + shadow, `--lg-min` floor,
+  `--muted-tint` / `--err-tint`); Reduce Transparency → white + `--line` hairline.
+- **Autosave**: the scene saves into the note 1 s after a change; the bar says "Saving…" → "✓ saved just now" (same copy as the
+  crumb) or "Couldn’t save · retrying" in `--err`; Done never waits on the network.
+- **Excalidraw is themed, not restyled**: on its container set `--color-primary` `--accent`, `--color-primary-darker` and
+  `--color-on-primary-container` `--accent-2`, `--color-primary-light` `--accent-wash`, `--color-selection` `--accent` (the canvas
+  reads it), and the UI font to the system stack (so its Assistant webfont is never fetched). Hint text takes `--muted` for AA.
+  The colours *inside* a drawing (Excalidraw's stroke palette) are the user's content, not UI, so the one-blue rule doesn't apply there.
+- Text in a drawing uses Excalifont (vendored, inlined into the stored SVG at Done), so the read view needs no webfont.
 
 ## 7. UX patterns (from Notion)
 
