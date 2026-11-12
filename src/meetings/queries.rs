@@ -376,7 +376,7 @@ pub struct Transcript {
     pub segments: Vec<(f64, String, String)>,
 }
 
-/// A meeting's recordings, oldest first, each with its segments sorted by time.
+/// A meeting's recordings, oldest first, each with its segments sorted by time, mic echo of the call hidden.
 pub fn transcripts(conn: &Connection, meeting: i64) -> rusqlite::Result<Vec<Transcript>> {
     let mut stmt = conn.prepare(
         "SELECT id, started_at, ended_at, status, model, lang FROM meeting_transcripts
@@ -401,9 +401,10 @@ pub fn transcripts(conn: &Connection, meeting: i64) -> rusqlite::Result<Vec<Tran
          ORDER BY j.value ->> 't', j.id",
     )?;
     for t in &mut out {
-        t.segments = segs
-            .query_map([t.id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
-            .collect::<Result<_, _>>()?;
+        t.segments = crate::domain::echo::drop_echo(
+            segs.query_map([t.id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+                .collect::<Result<_, _>>()?,
+        );
     }
     Ok(out)
 }
