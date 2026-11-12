@@ -570,6 +570,48 @@
       "w": 470,
       "x": 1970,
       "y": 36208
+    },
+    "LineNotes.Rows.dc.html": {
+      "h": 1900,
+      "title": "Line notes · the note button on Today rows (every state), To-dos, tag hub, epic timeline, quick popover",
+      "w": 1280,
+      "x": 0,
+      "y": 38228
+    },
+    "LineNotes.Header.dc.html": {
+      "h": 1720,
+      "title": "Line notes · /notes/<id> header: 3 lines, 1 to-do, done, line deleted, many",
+      "w": 1280,
+      "x": 1360,
+      "y": 38228
+    },
+    "LineNotes.List.dc.html": {
+      "h": 1240,
+      "title": "Line notes · Notes list kind badge + “Linked to lines” filter",
+      "w": 1280,
+      "x": 2720,
+      "y": 38228
+    },
+    "Mobile.LineNotes.dc.html": {
+      "h": 844,
+      "title": "Phone · Add a note in the ⋯ sheet · note header at 390",
+      "w": 820,
+      "x": 4080,
+      "y": 38228
+    },
+    "LineNotes.RT.dc.html": {
+      "h": 420,
+      "title": "Line notes · Reduce Transparency",
+      "w": 1280,
+      "x": 4980,
+      "y": 38228
+    },
+    "LineNotes.IC.dc.html": {
+      "h": 760,
+      "title": "Line notes · Increase Contrast + AA",
+      "w": 1280,
+      "x": 4980,
+      "y": 38748
     }
   },
   "createdOnFiles": {
@@ -612,7 +654,9 @@
     "t15",
     "s14",
     "t16",
-    "s15"
+    "s15",
+    "t17",
+    "s16"
   ],
   "notes": {
     "s0": {
@@ -855,6 +899,21 @@
       "x": 2540,
       "y": 36208,
       "text": "Quick popover (T81, D46)\n· Tray left click / ⌃⌥Space → /quick in a 360×480 borderless window, 6 px under the bar, left edge on the item, clamped 8 px in; macOS 26 style, no arrow, 18 radius. Right click = native menu.\n· Panel = .menu glass, floor 90% (AA over a black desktop); native popover material does the blur in the app; forced light appearance.\n· Order: header · capture · meeting · to-dos. Only to-dos scroll.\n· Kind tiles: one row of six 44-tall radio tiles posting kind; a typed prefix wins and moves the tile.\n· # and by menus open DOWN inside the window, opaque (no glass on glass). Enter → “✓ Saved as … · Undo” in the hint row, stays open.\n· Meeting: 3 recent series as one-click pills + name + Start; running = the dark banner, minutes, End meeting.\n· To-dos: today + overdue, overdue first (.due.late), 32 rows, max 8, “+ N more · Open Atharu”.\n· Desktop control sizes at 360 px: the page skips responsive.css.\n· AA worst: --accent-2 links/hint 4.63, --muted-tint 5.92; --accent (4.44) and --ctl-edge ring (2.12) rejected in the panel."
+    },
+    "t17": {
+      "kind": "title1",
+      "maxW": 6800,
+      "text": "Line notes · the note is the detail page",
+      "w": 240,
+      "x": 0,
+      "y": 37948
+    },
+    "s16": {
+      "fill": "teal",
+      "w": 440,
+      "x": 6340,
+      "y": 38228,
+      "text": "Line notes (T84, D49)\n· New ui.svg symbol `note` (page + fold + 2 lines); one glyph, two states via --note-fill / --note-line.\n· Row button .ib.note, 28 like ×, first in the row’s right cluster so filled icons share a column. Has note = <a> in --accent fill, always shown (“Open note”). No note = POST button, --muted outline, shown on row hover / focus like × (“Add a note”); creates + links + 303 to /notes/<id>.\n· Phone: Add a note / Open note in the ⋯ sheet; a filled 44 button stays in the row.\n· Note header: white card + --line hairline under the title (a --fill panel failed AA). Each line: kind square or round check · text + tags · epic · due field / done · “logged Thu 12 Nov” day link. Deleted line = dashed square + Undo while the undo lives.\n· List: the first line’s .k before the title + “3 lines”; filter chip “Linked to lines” (?linked=1) = the .fl chip without #.\n· AA worst: text 4.66 (--muted on --fill row hover), non-text 3.26 (check ring on the card)."
     }
   },
   "order": [
@@ -935,7 +994,13 @@
     "Quick.Menu.dc.html",
     "Quick.Notes.dc.html",
     "Quick.RT.dc.html",
-    "Quick.IC.dc.html"
+    "Quick.IC.dc.html",
+    "LineNotes.Rows.dc.html",
+    "LineNotes.Header.dc.html",
+    "LineNotes.List.dc.html",
+    "Mobile.LineNotes.dc.html",
+    "LineNotes.RT.dc.html",
+    "LineNotes.IC.dc.html"
   ],
   "pages": [],
   "title": "Atharu Design"
