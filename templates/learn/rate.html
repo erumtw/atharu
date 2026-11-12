@@ -1,0 +1,3 @@
+{#- htmx answer to rate / undo: the buttons, plus Depth now + History out of band. -#}
+{% include "learn/rate_box.html" %}
+<div id="depth" hx-swap-oob="true" style="display: contents">{% include "learn/depth.html" %}</div>

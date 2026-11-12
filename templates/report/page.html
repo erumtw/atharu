@@ -33,6 +33,11 @@
 <h3>{{ sec.heading }}</h3>
 <ul style="margin: 0; padding-left: 22px">{% for i in sec.items %}<li><b>{{ i.label }}</b> {{ i.text }}{% if let Some(m) = i.meeting %} <span class="muted">({{ m }})</span>{% endif %}</li>{% endfor %}</ul>
 {%- endfor %}
+{%- if !note.learning.is_empty() %}
+
+<h3>Learning</h3>
+<ul style="margin: 0; padding-left: 22px">{% for l in note.learning %}<li>{{ l }}</li>{% endfor %}</ul>
+{%- endif %}
 <textarea id="report-md" hidden readonly aria-hidden="true">{{ markdown }}</textarea>
 
 <hr class="hr">
@@ -46,6 +51,12 @@
 <div class="small" style="margin-top: 6px">{{ b.okr }}: {{ b.summary }}</div><div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden">{% for s in b.segs %}<span style="flex: {{ s.flex }}; background: {{ s.color }}"></span>{% endfor %}</div>
 {%- endfor %}</div>
 <div style="flex: 1 1 200px"><div class="small muted">Impact lines per week</div><div class="bars" aria-hidden="true">{% for p in weeks.pct %}<span style="height: {{ p }}%"></span>{% endfor %}</div><div class="row between small muted"><span>{{ weeks.first }}</span>{% if weeks.pct.len() > 1 %}<span>{{ weeks.last }}</span>{% endif %}</div></div>
+<div style="flex: 1 1 220px"><div class="small muted">Depth by month</div><div class="small muted">1 heard of it · 2 can explain · 3 can build without AI · 4 can teach</div>
+{%- if heat.is_empty() %}<div class="small muted" style="margin-top: 6px">No topics rated yet.</div>{% else %}
+<table class="small" style="margin-top: 4px"><tr><th>Topic</th>{% for m in heat_months %}<th>{{ m }}</th>{% endfor %}</tr>
+{%- for h in heat %}
+<tr><td class="mono">{{ h.topic }}</td>{% for c in h.cells %}{% if *c == 0 %}<td class="muted">–</td>{% else %}<td style="{{ crate::report::view::heat_style(c) }}">{{ c }}</td>{% endif %}{% endfor %}</tr>
+{%- endfor %}</table>{% endif %}</div>
 </div>
 </details>
 </main>

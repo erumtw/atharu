@@ -1,0 +1,6 @@
+<form class="seg" role="group" aria-label="Rate depth today" method="post" action="/learn/{{ rate.slug }}/rate" hx-post="/learn/{{ rate.slug }}/rate" hx-target="#rate" hx-swap="innerHTML">
+{%- for s in rate.scale %}<button{% if rate.today == s.depth %} class="on"{% endif %} type="submit" name="depth" value="{{ s.depth }}">{{ s.depth }} · {{ s.label }}</button>{% endfor -%}
+</form>
+{%- if rate.today > 0 %}
+<div class="row small" role="status"><span style="color: #0066cc">✓</span><span>Rated {{ rate.today }} today ·</span><form class="inline" method="post" action="/learn/{{ rate.slug }}/unrate" hx-post="/learn/{{ rate.slug }}/unrate" hx-target="#rate" hx-swap="innerHTML"><button class="linkbtn" type="submit">Undo</button></form></div>
+{%- endif %}

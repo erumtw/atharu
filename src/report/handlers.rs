@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, impact::impact_line, plan::hit_rate},
+    domain::{dates, depth, impact::impact_line, plan::hit_rate},
     error::AppResult,
     layout::Layout,
     web,
@@ -113,10 +113,45 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
         }
     }
 
+    // Depth: heatmap (as of each month end) + changes in range, one pass per topic.
+    let months = depth::months(from, to);
+    let last_end = months.last().map_or(t.clone(), |m| dates::iso(m.1));
+    let mut per_topic: Vec<(String, Vec<depth::Rating>)> = Vec::new();
+    for (topic, day, d) in queries::ratings(&conn, &last_end)? {
+        let Some(day) = date(Some(&day)) else {
+            continue;
+        };
+        let r = depth::Rating { day, depth: d };
+        match per_topic.last_mut() {
+            Some((tp, rs)) if *tp == topic => rs.push(r),
+            _ => per_topic.push((topic, vec![r])),
+        }
+    }
+    let mut learning = Vec::new();
+    let mut heat = Vec::new();
+    for (topic, rs) in &per_topic {
+        if let Some((a, b)) = depth::change(rs, from, to) {
+            let moved = if a == b {
+                b.to_string()
+            } else {
+                format!("{a} → {b}")
+            };
+            learning.push(format!("{topic}: depth {moved} ({})", depth::label(b)));
+        }
+        let cells = depth::by_month(rs, &months);
+        if cells.iter().any(Option::is_some) {
+            heat.push(view::HeatRow {
+                topic: topic.clone(),
+                cells: cells.into_iter().map(|c| c.unwrap_or(0)).collect(),
+            });
+        }
+    }
+
     let note = view::Note {
         title: title(preset, from, to),
         shipped,
         sections: sections.into_iter().map(|(_, s)| s).collect(),
+        learning,
     };
     let markdown = view::NoteMd { note: &note }.render()?;
 
@@ -193,5 +228,10 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
         },
         okrs,
         weeks: week_bars,
+        heat_months: months
+            .iter()
+            .map(|m| m.0.format("%b").to_string())
+            .collect(),
+        heat,
     })
 }

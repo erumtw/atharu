@@ -2,7 +2,7 @@ mod common;
 use common::*;
 
 /// Today = Wed 11 Nov 2026; this week ends Sun 15 Nov.
-fn seed(st: &athar::app::AppState) {
+fn seed(st: &atharu::app::AppState) {
     exec(
         st,
         "INSERT INTO epics(key, title) VALUES ('OPS-101', 'Checkout latency');

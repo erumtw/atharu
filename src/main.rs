@@ -1,5 +1,5 @@
 use anyhow::Context;
-use athar::{app, config, db, dump};
+use atharu::{app, config, db, dump};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
             let listener = tokio::net::TcpListener::bind(&addr)
                 .await
                 .with_context(|| format!("bind {addr}"))?;
-            println!("athar on http://{addr}");
+            println!("atharu on http://{addr}");
             axum::serve(listener, app::router(state)).await?;
         }
     }

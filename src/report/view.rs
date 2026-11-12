@@ -19,6 +19,8 @@ pub struct Note {
     pub title: String,
     pub shipped: Vec<String>,
     pub sections: Vec<Section>,
+    /// `vector-search: depth 2 → 3 (can build without AI)`.
+    pub learning: Vec<String>,
 }
 
 #[derive(Template)]
@@ -71,10 +73,31 @@ pub struct Page {
     pub wider: Option<(&'static str, &'static str)>,
     pub okrs: Vec<OkrBar>,
     pub weeks: WeekBars,
+    /// `Sep`, one per month touching the range.
+    pub heat_months: Vec<String>,
+    pub heat: Vec<HeatRow>,
+}
+
+pub struct HeatRow {
+    pub topic: String,
+    /// Depth as of each month end; 0 = not rated yet (blank cell).
+    pub cells: Vec<u8>,
+}
+
+/// Cell colours from the canvas (1–3); 4 is one step darker than 3.
+pub fn heat_style(depth: &u8) -> &'static str {
+    match depth {
+        1 => "background: #e3effc",
+        2 => "background: #bcd6f2",
+        3 => "background: #0066cc; color: #fff",
+        _ => "background: #003d7a; color: #fff",
+    }
 }
 
 impl Page {
     pub fn is_empty(&self) -> bool {
-        self.note.shipped.is_empty() && self.note.sections.is_empty()
+        self.note.shipped.is_empty()
+            && self.note.sections.is_empty()
+            && self.note.learning.is_empty()
     }
 }
