@@ -176,7 +176,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Transcript | `.tx` > `.txhead` (+ `.txspk`) + `.txbody` > `.txrow` | white 12-radius box (content, no glass); search `.fld.s` + Copy in the head; `.txspk` names split voices |
 | Meeting notes | `#notes` > `form#note` > `#editor.note-body` | the Notes editor in place on the meeting page (T90): same blocks, `[[links]]`, #tags, drawings; "saves as you type" + **Open as note**; a meeting without one shows **Start notes** (ghost pill) |
 | Meeting title | `.ttl` > `h1.ptitle` > `textarea` | the series name, editable in place: looks like the h1, `--fill-2` on hover/focus + accent ring; Enter or leaving saves (renames every meeting in the series + its tags), Esc restores; refusal in `#ttl-err` (T92) |
-| Suggest menu | `.menu.sugm` (suggest.ts) | every `list=` input (tag filter, meeting start, series tags, tag merge): our opaque menu fixed under the box, 220–360 wide, up to 12, substring filter, ↑↓ then ↵/Tab/click picks (nothing preselected); replaces the unstylable native datalist dropdown. #line and the popover keep their own menus |
+| Suggest menu | `.menu.sugm` (suggest.ts) | every `list=` input (tag filter, meeting start, series tags, tag merge): a glass menu fixed under the box, exactly its width (220 min), compact 28 px rows like the native list, up to 12, substring filter, ↑↓ then ↵/Tab/click picks (nothing preselected); replaces the unstylable native datalist dropdown. #line and the popover keep their own menus |
 | Screenshots | `#shots` > `.shots` > `a` > `img` + caption | meeting page under Notes: 160×100 cover thumbnails (8 radius, `--line` border), `HH:MM` caption, click = full PNG; **Take screenshot** ghost pill (app, meeting running); the camera `.btn.ghost` on the banner and the popover card runs macOS's picker (T89) |
 | Progress | `progress.prog` | native `<progress>`, 6 px, `--accent` on `--sep` (4.6:1) |
 | Command chip | `.cmd` | a copyable CLI / slash command in a white pill with a Copy button inside |
@@ -493,6 +493,25 @@ and it lists its lines at the top.
   `--fill` row hover (4.27 on the `.hi` hover, non-text floor 3) · filled button `--accent` 5.11, its white lines 5.57 · header
   label, day link, done and deleted text `--muted` 5.07 · Undo `--accent` 5.57 · check ring `--ctl-edge` 3.26 on the card ·
   list "3 lines" 4.66 on hover · filter chip text 9.88 off, 11.07 on.
+
+### Motion (0.1.4; D61, grilled with the owner 2026-11-12)
+
+Apple-subtle: motion says where something went, never performs. Tokens in `tokens.css`: `--dur-1` 120 ms (menus, fades) ·
+`--dur-2` 200 ms (rows, toast, switch thumb) · `--dur-3` 250 ms (glides, banner height, page cross-fade) · `--ease-out`
+(fast start, soft settle) · `--ease-spring` (the to-do check only). Movement 4–8 px at most. CSS + `motion.ts`; no library.
+
+| Where | Motion |
+|---|---|
+| Logged line / new to-do (any list htmx re-renders) | the rows that weren't there before fade in + rise 6 px (`.fresh`, `--dur-2`) |
+| To-do tick / regroup (due, pin, state) | check: fill + tick spring (`--ease-spring`); rows that moved glide from their old place (FLIP, `--dur-3`) |
+| Menus (`#`, `by`, suggest, date picker, popover series, `[popover]`) | fade + 4 px drop in (`--dur-1`, `@starting-style`); out immediately |
+| Toast / Undo | rises 6 px + fades in (`--dur-2`) |
+| Segmented switches (every `.seg`) | one white thumb slides to the picked option (`--dur-2`); the page behind it cross-fades |
+| Meeting banner (start / record / end) | its height animates from old to new (`--dur-3`); the 1 s polls don't move it (same height) |
+| Page to page | cross-document view transition: root cross-fade (`--dur-3`) |
+
+**Reduce Motion**: no movement anywhere (no rise, glide, slide, height, spring); opacity fades stay, ≤ 100 ms. `motion.ts`
+skips FLIP and height morphs entirely. Polling never animates (the banner every 1 s, transcripts every 5 s).
 
 ## 7. UX patterns (from Notion)
 
