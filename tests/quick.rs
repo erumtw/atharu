@@ -236,3 +236,24 @@ async fn blank_quick_note_is_refused_into_the_hint() {
     assert!(b.contains("<span class=\"err\">Nothing to save."));
     assert_eq!(count(&st, "SELECT COUNT(*) FROM notes"), 0);
 }
+
+#[tokio::test]
+async fn a_tag_on_the_title_line_tags_the_note() {
+    // D54: a one-line quick note keeps its tag in the title, so the title counts like the body.
+    let st = state();
+    let r = post(
+        &st,
+        "/notes/new",
+        &form(&[("text", "vendor call recap #expense"), ("back", "/quick")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 303);
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM taggings WHERE tag = 'expense' AND item_type = 'note'"
+        ),
+        1
+    );
+}

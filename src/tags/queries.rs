@@ -296,7 +296,8 @@ type Snap = Vec<(String, String, String)>;
 fn load(conn: &Connection, ty: &str, id: &str) -> rusqlite::Result<Option<String>> {
     let sql = match ty {
         "entry" => "SELECT text FROM entries WHERE id = ?1",
-        "note" => "SELECT body FROM notes WHERE id = ?1",
+        // Title + body as one text (title is one line), so rename / delete / Undo reach both (D54).
+        "note" => "SELECT title || char(10) || body FROM notes WHERE id = ?1",
         "event" => "SELECT title FROM events WHERE id = ?1",
         "epic" => "SELECT tags FROM epics WHERE key = ?1",
         "topic" => "SELECT tags FROM topics WHERE slug = ?1",
@@ -311,7 +312,10 @@ fn load(conn: &Connection, ty: &str, id: &str) -> rusqlite::Result<Option<String
 fn store(conn: &Connection, ty: &str, id: &str, v: &str) -> rusqlite::Result<()> {
     let sql = match ty {
         "entry" => "UPDATE entries SET text = ?2 WHERE id = ?1",
-        "note" => "UPDATE notes SET body = ?2 WHERE id = ?1",
+        "note" => {
+            "UPDATE notes SET title = substr(?2, 1, instr(?2, char(10)) - 1),
+                              body = substr(?2, instr(?2, char(10)) + 1) WHERE id = ?1"
+        }
         "event" => "UPDATE events SET title = ?2 WHERE id = ?1",
         "epic" => "UPDATE epics SET tags = ?2 WHERE key = ?1",
         "topic" => "UPDATE topics SET tags = ?2 WHERE slug = ?1",
