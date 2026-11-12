@@ -28,6 +28,8 @@ select.pin{cursor:pointer}
    container instead of pushing the row apart. The full name is in the title / the page it links to. */
 .chip{display:inline-block;vertical-align:middle;max-width:100%;overflow:hidden;text-overflow:ellipsis;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--ink-2);background:var(--fill-2);white-space:nowrap;letter-spacing:0;box-sizing:border-box}
 .blk>.chip,.blk>a>.chip{flex:0 1 auto;min-width:0;max-width:60%}
+/* Short fixed labels never clip: the agent badge and epic keys ("cla…" read as nothing). */
+.chip.llm,.chip.key{flex:none;max-width:none}
 .blk>span:not(.chip){min-width:0}
 /* One-line clip for a long name inside a flex row (sidebar series, crumbs). */
 .ell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
