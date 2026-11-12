@@ -1,5 +1,9 @@
 use crate::{
-    domain::{dates, entry::Kind, plan::Plan},
+    domain::{
+        dates,
+        entry::{Kind, NoteRef},
+        plan::Plan,
+    },
     layout::{Layout, TagFilter},
 };
 use askama::Template;
@@ -16,6 +20,7 @@ pub struct Row {
     pub via: Option<String>,
     /// Grouped by tag: the line's epic, shown on the row since no epic header says it.
     pub epic: Option<String>,
+    pub note: Option<NoteRef>,
 }
 
 pub struct Group {
@@ -167,6 +172,17 @@ pub struct Edit {
     pub day: String,
     pub line: String,
     pub error: Option<String>,
+    /// Opened from a to-do row (D51): it stands in for `#plan-<id>` and saves with no swap.
+    pub plan: bool,
+}
+
+/// A to-do row just deleted (D51): it stays in place as "Line deleted · Undo" until the list re-fetches.
+#[derive(Template)]
+#[template(path = "partials/plan_gone.html")]
+pub struct Gone {
+    pub id: i64,
+    pub text: String,
+    pub snap: String,
 }
 
 /// htmx answer to save/delete: the log, plus the toast swapped out-of-band.

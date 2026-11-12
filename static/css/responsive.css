@@ -150,5 +150,15 @@ pre{max-width:100%;overflow-x:auto}
   .dp .dpf .today{margin-left:0}
   .dp .dpf .done{display:inline-flex;height:44px;margin-left:auto}
 }
+/* Line notes on phone: the add button moves into the ⋯ sheet ("Add a note"); a line with a note keeps its filled
+   button in the row at 44. The header's day link drops under the text. */
+@media (max-width:639px){
+  .blk .ib.note:not(.has){display:none}
+  .ib.note{width:44px;height:44px;border-radius:12px}
+  .ib.note .ic{width:22px;height:22px}
+  .lnh{padding:4px 12px 8px}
+  .lnh .blk{flex-wrap:wrap}
+  .lnh .day,.lnh :is(.due-f,.when)+.day{margin-left:32px;flex-basis:calc(100% - 32px)}
+}
 /* After the phone block, so it beats the bar's keyboard ride. */
 @media (prefers-reduced-motion: reduce){.capture{transition:none}}

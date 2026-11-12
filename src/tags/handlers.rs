@@ -121,6 +121,7 @@ fn render_hub(
         let w = when(&l.day, today);
         let line = view::Line {
             id: l.id,
+            day: l.day.clone(),
             kind: l.kind,
             topic: l.topic,
             text: l.text,
@@ -133,6 +134,7 @@ fn render_hub(
             author: l.author,
             due: due.map(dates::label),
             late: open && due.is_some_and(|d| d < today),
+            note: l.note_ref,
         };
         match l.kind {
             Kind::Plan if open => todos.push(line),

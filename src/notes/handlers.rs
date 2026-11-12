@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{links, markdown},
+    domain::{dates, entry::Kind, links, markdown},
     error::{AppError, AppResult},
     layout::{Layout, TagFilter, crumb},
     web,
@@ -12,7 +12,7 @@ use axum::{
     http::HeaderMap,
     response::{IntoResponse, Response},
 };
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use rusqlite::Connection;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -119,15 +119,45 @@ pub struct ListQuery {
     /// Tag filter, comma list (any of them); `add` = the filter row's add box.
     tag: Option<String>,
     add: Option<String>,
+    /// `1` = only notes linked to lines (D49).
+    linked: Option<String>,
+}
+
+/// `/notes?…` from the filters that are set (empty ones left out).
+fn list_url(q: &str, tags: &[String], linked: bool) -> String {
+    let mut parts = Vec::new();
+    if !q.is_empty() {
+        parts.push(format!("q={}", encode(q)));
+    }
+    if !tags.is_empty() {
+        parts.push(format!("tag={}", tags.join(",")));
+    }
+    if linked {
+        parts.push("linked=1".into());
+    }
+    if parts.is_empty() {
+        "/notes".into()
+    } else {
+        format!("/notes?{}", parts.join("&"))
+    }
+}
+
+/// The list badge's "Linked to a … line": the word the capture bar's kind tiles use.
+fn kind_name(k: Kind) -> &'static str {
+    match k {
+        Kind::Plan => "to-do",
+        k => k.tooltip(),
+    }
 }
 
 pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> AppResult<Response> {
     let q = lq.q.unwrap_or_default().trim().to_string();
     let conn = st.conn();
-    let all = queries::list(&conn, "", &[])?;
+    let all = queries::list(&conn, "", &[], false)?;
     let tags = TagFilter::pick(lq.tag.as_deref(), lq.add.as_deref());
+    let linked = lq.linked.as_deref() == Some("1");
     let (mut mine, mut agents) = (Vec::new(), Vec::new());
-    for n in queries::list(&conn, &q, &tags)? {
+    for n in queries::list(&conn, &q, &tags, linked)? {
         let (before, hit, after) = snippet(&markdown::to_text(&n.body), &q);
         let row = view::ListRow {
             id: n.id,
@@ -137,6 +167,9 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
             hit,
             after,
             ago: ago(&n.updated_at),
+            kind: n.first_kind,
+            kind_name: n.first_kind.map_or("", kind_name),
+            lines: n.lines,
         };
         if row.agent.is_none() {
             mine.push(row);
@@ -144,21 +177,28 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
             agents.push(row);
         }
     }
+    let mut keep = Vec::new();
+    if !q.is_empty() {
+        keep.push(("q", q.clone()));
+    }
+    if linked {
+        keep.push(("linked", "1".to_string()));
+    }
+    let base = list_url(&q, &[], linked);
     web::html(&view::List {
         layout: Layout::load(&conn, "notes", "Notes", vec![])?,
         side: side(&all, 0),
+        linked_on: list_url(&q, &tags, true),
+        linked_off: list_url(&q, &tags, false),
+        linked,
         filter: TagFilter {
+            path: if base.contains('?') {
+                format!("{base}&")
+            } else {
+                format!("{base}?")
+            },
             tags,
-            path: if q.is_empty() {
-                "/notes?".into()
-            } else {
-                format!("/notes?q={}&", encode(&q))
-            },
-            keep: if q.is_empty() {
-                Vec::new()
-            } else {
-                vec![("q", q.clone())]
-            },
+            keep,
             known: queries::tag_names(&conn)?,
         },
         q,
@@ -199,7 +239,8 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
     let title = title_or_untitled(&n.title);
     web::html(&view::Page {
         layout: Layout::load(&conn, "notes", title, vec![crumb("Notes", "/notes")])?,
-        side: side(&queries::list(&conn, "", &[])?, id),
+        side: side(&queries::list(&conn, "", &[], false)?, id),
+        head: head(&st, &conn, id)?,
         html: markdown::to_html(&links::rewrite(&n.body, &resolve)),
         agent: agent(&n.author),
         ago: ago(&n.updated_at),
@@ -208,6 +249,70 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
         body: n.body,
         links,
     })
+}
+
+/// The header's lines: newest five shown, the rest folded; lines deleted in their Undo window first.
+fn head(st: &AppState, conn: &Connection, id: i64) -> rusqlite::Result<view::Lines> {
+    let today = st.today();
+    let label = |d: &str| match NaiveDate::parse_from_str(d, "%Y-%m-%d") {
+        Ok(d) if d == today => "today".to_string(),
+        Ok(d) => dates::label(d),
+        Err(_) => d.to_string(),
+    };
+    let mut shown: Vec<view::HeadLine> = queries::lines(conn, id)?
+        .into_iter()
+        .map(|l| view::HeadLine {
+            closed: match (l.plan_state.as_deref(), l.closed_day.as_deref()) {
+                (Some(s @ ("done" | "dropped")), Some(d)) => format!("{s} {}", label(d)),
+                (Some(s @ ("done" | "dropped")), None) => s.to_string(),
+                _ => String::new(),
+            },
+            day_label: label(&l.day),
+            id: l.id,
+            kind: l.kind,
+            topic: l.topic,
+            text: l.text,
+            epic_key: l.epic_key,
+            plan_state: l.plan_state,
+            due: l.due.unwrap_or_default(),
+            day: l.day,
+        })
+        .collect();
+    let live: Vec<i64> = shown.iter().map(|l| l.id).collect();
+    let more = shown.split_off(shown.len().min(HEAD_LINES));
+    Ok(view::Lines {
+        id,
+        // A line restored under its old id is listed live again; don't show it twice.
+        gone: st
+            .gone_lines(id)
+            .into_iter()
+            .filter(|g| !live.contains(&g.line))
+            .map(|g| (g.text, g.snap))
+            .collect(),
+        shown,
+        more,
+    })
+}
+
+/// Header lines shown before "N more lines".
+const HEAD_LINES: usize = 5;
+
+/// The header alone: re-fetched when a to-do in it is ticked or re-dated.
+pub async fn lines(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
+    let conn = st.conn();
+    queries::note(&conn, id)?.ok_or(AppError::NotFound)?;
+    web::html(&head(&st, &conn, id)?)
+}
+
+/// A line's note button (D49): its note, made first if it has none. htmx follows HX-Redirect,
+/// a plain form the 303; either way you land on the note, where you type next.
+pub async fn for_line(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> AppResult<Response> {
+    let note = queries::note_for_line(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    Ok(web::restored(&headers, &format!("/notes/{note}")))
 }
 
 /// Autosave: the editor form posts title + markdown; only the fields it carries are written.

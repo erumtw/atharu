@@ -19,4 +19,6 @@
 <symbol id="down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
 <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/></symbol>
 <symbol id="open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+<!-- One glyph, two states: the row sets --note-fill / --note-line (filled = the line has a note). -->
+<symbol id="note" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" style="fill:var(--note-fill,none)"/><path d="M15 3v4h4M9 12h6M9 16h4" style="stroke:var(--note-line,currentColor)"/></symbol>
 </svg>

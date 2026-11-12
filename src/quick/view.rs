@@ -1,4 +1,4 @@
-use crate::layout::Layout;
+use crate::{domain::entry::NoteRef, layout::Layout};
 use askama::Template;
 
 /// The six kind tiles: (posted prefix, key mark, key class, word). `""` = done, no prefix.
@@ -30,6 +30,7 @@ pub struct Todo {
     /// `today`, `Tue`, `3 Nov`.
     pub due: String,
     pub late: bool,
+    pub note: Option<NoteRef>,
 }
 
 #[derive(Template)]

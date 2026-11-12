@@ -1,4 +1,4 @@
-use crate::domain::entry::Kind;
+use crate::domain::entry::{Kind, NoteRef};
 use rusqlite::{Connection, OptionalExtension, params};
 
 pub struct EpicRow {
@@ -153,13 +153,15 @@ pub struct TimelineRow {
     pub topic: Option<String>,
     pub text: String,
     pub author: String,
+    pub note: Option<NoteRef>,
 }
 
 /// Newest day first, newest line first inside a day (same order as Today).
 pub fn timeline(conn: &Connection, key: &str) -> rusqlite::Result<Vec<TimelineRow>> {
     let mut stmt = conn.prepare(
-        "SELECT id, day, kind, topic, text, author FROM entries WHERE epic_key = ?1
-         ORDER BY day DESC, id DESC",
+        "SELECT e.id, e.day, e.kind, e.topic, e.text, e.author, n.id, n.title
+         FROM entries e LEFT JOIN notes n ON n.id = e.note_id WHERE e.epic_key = ?1
+         ORDER BY e.day DESC, e.id DESC",
     )?;
     stmt.query_map([key], |r| {
         let kind: String = r.get(2)?;
@@ -170,6 +172,7 @@ pub fn timeline(conn: &Connection, key: &str) -> rusqlite::Result<Vec<TimelineRo
             topic: r.get(3)?,
             text: r.get(4)?,
             author: r.get(5)?,
+            note: NoteRef::from_cols(r.get(6)?, r.get(7)?),
         })
     })?
     .collect()

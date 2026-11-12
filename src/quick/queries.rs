@@ -1,3 +1,4 @@
+use crate::domain::entry::NoteRef;
 use rusqlite::{Connection, OptionalExtension};
 
 pub struct Running {
@@ -29,15 +30,29 @@ pub fn recent_series(conn: &Connection, n: usize) -> rusqlite::Result<Vec<String
     stmt.query_map([n as i64], |r| r.get(0))?.collect()
 }
 
+pub struct DuePlan {
+    pub id: i64,
+    pub text: String,
+    pub due: String,
+    pub note: Option<NoteRef>,
+}
+
 /// Open to-dos due today or earlier, overdue first.
-pub fn due_plans(conn: &Connection, today: &str) -> rusqlite::Result<Vec<(i64, String, String)>> {
+pub fn due_plans(conn: &Connection, today: &str) -> rusqlite::Result<Vec<DuePlan>> {
     let mut stmt = conn.prepare(
-        "SELECT id, text, due FROM entries
-         WHERE kind = 'plan' AND plan_state = 'open' AND due <= ?1
-         ORDER BY due, id",
+        "SELECT e.id, e.text, e.due, n.id, n.title FROM entries e LEFT JOIN notes n ON n.id = e.note_id
+         WHERE e.kind = 'plan' AND e.plan_state = 'open' AND e.due <= ?1
+         ORDER BY e.due, e.id",
     )?;
-    stmt.query_map([today], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
-        .collect()
+    stmt.query_map([today], |r| {
+        Ok(DuePlan {
+            id: r.get(0)?,
+            text: r.get(1)?,
+            due: r.get(2)?,
+            note: NoteRef::from_cols(r.get(3)?, r.get(4)?),
+        })
+    })?
+    .collect()
 }
 
 /// The line just saved, for "✓ Saved as … · Undo": (kind, epic key).

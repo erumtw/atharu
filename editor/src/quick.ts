@@ -29,6 +29,15 @@ document.addEventListener('keydown', ev => {
 // header it would answer Today's banner partial); the fresh #qmeet is swapped in. Without JS they are plain forms.
 document.addEventListener('submit', async ev => {
   const form = ev.target as HTMLFormElement
+  // A to-do's "Add a note": a plain POST would land the new note in the popover. Fetched instead, its HX-Redirect
+  // becomes a navigation, which the app's hook hands to the main window (as it does for an existing note's link).
+  if (form.closest('.qt') && form.action.endsWith('/note')) {
+    ev.preventDefault()
+    const res = await fetch(form.action, { method: 'POST', headers: { 'HX-Request': 'true' } })
+    const to = res.headers.get('HX-Redirect')
+    if (to) location.assign(to)
+    return
+  }
   if (!form.closest('#qmeet')) return
   ev.preventDefault()
   const body = new URLSearchParams(new FormData(form, ev.submitter) as unknown as Record<string, string>)

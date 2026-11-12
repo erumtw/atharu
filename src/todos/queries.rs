@@ -1,4 +1,7 @@
-use crate::domain::{entry::Entry, plan::Plan};
+use crate::domain::{
+    entry::{Entry, NoteRef},
+    plan::Plan,
+};
 use chrono::NaiveDate;
 use rusqlite::{Connection, OptionalExtension, Row, params};
 
@@ -6,7 +9,8 @@ use rusqlite::{Connection, OptionalExtension, Row, params};
 const SELECT_PLAN: &str =
     "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
          (SELECT j.key || ' · ' || j.summary FROM jira_issues j
-           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1)
+           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1),
+         note_id, (SELECT title FROM notes WHERE notes.id = entries.note_id)
          FROM entries";
 
 fn date(s: Option<String>) -> Option<NaiveDate> {
@@ -25,8 +29,9 @@ fn plan(r: &Row) -> rusqlite::Result<Plan> {
         state: r.get(7)?,
         closed_day: date(r.get(8)?),
         jira: r.get(9)?,
-        // Only the filtered list selects it (11th column).
-        via: r.get(10).unwrap_or(None),
+        note: NoteRef::from_cols(r.get(10)?, r.get(11)?),
+        // Only the filtered list selects it (13th column).
+        via: r.get(12).unwrap_or(None),
     })
 }
 

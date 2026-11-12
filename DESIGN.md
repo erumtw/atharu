@@ -396,6 +396,50 @@ the log scrolls under it.
   `--muted-tint` 5.92 · hint and links `--accent-2` 4.63 · `.due.late` `--err-tint` 4.92 · tile text 9.85 · white on `--accent` 5.57 ·
   rings: tile 4.44, check 5.92, focus 4.44 (≥ 3) · dark callout as the banner (white 14.91, muted 9.28, End 4.94, rec dot 4.90).
 
+### Line notes (canvas row "Line notes · the note is the detail page", T84; D49)
+
+A line (any kind) can have one note; many lines can share it. There is no line or to-do detail page: the note page is it,
+and it lists its lines at the top.
+
+- **Icon**: `ui.svg` gains `note` (a page with a folded corner and two text lines). One glyph, two states: its paths read
+  `--note-fill` / `--note-line` (custom properties inherit into the `<use>` tree), so a row sets them and nothing is duplicated:
+  `<symbol id="note" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" style="fill:var(--note-fill,none)"/><path d="M15 3v4h4M9 12h6M9 16h4" style="stroke:var(--note-line,currentColor)"/></symbol>`
+- **Row button `.ib.note`** on every list of lines: Today (log rows and to-dos), To-dos, tag hub (also inside `.hi`), epic
+  timeline, quick popover to-dos (a click opens the main window on the note). 28 px like `.x`, so rows stay 32. It is the
+  **first item of the row's right cluster** (plan_row's `span.row`; entry_row gets the same wrapper, `.end`), before the due
+  field, Pin/Drop, ⋯ and ×, so filled icons line up in one column.
+  - **Has a note**: `<a class="ib note has" href="/notes/12" aria-label="Open note: <title>" title="Open note">`, always shown
+    (it tells you the line has more): `--accent` fill with white lines (a link, so the one blue); hover `--accent-2` + the `.ib` tint.
+  - **No note**: `<form method="post" action="/entries/<id>/note"><button class="ib note" aria-label="Add a note to this line"
+    title="Add a note">`: `--muted` outline, hidden like × until the row is hovered or holds focus (Tab still reaches it; touch
+    without hover shows it always). One POST creates the note (title = the line text without prefix and key, author me),
+    links it and 303s to `/notes/<id>`. Plain form, no JS needed.
+  - **Phone (< 640)**: the add button leaves the row; the ⋯ sheet gets **Add a note** (or **Open note**) above Edit line. A
+    line that has a note keeps its filled button in the row at 44.
+- **Note header `.lnh`** on `/notes/<id>`, between the title and the props: a white card with a `--line` hairline, 12 radius,
+  label "Line" / "Lines · 3" (12/600 `--muted`, an `h2`). Content, so no glass; rows are the normal 32 `.blk` with no hover tint
+  (only their controls react). A `--fill` panel was tried and failed AA: `--muted` 4.27 under the `.hi` row hover, the check
+  ring `--ctl-edge` 2.99 on `--fill`.
+  - Each line: kind square `.k` (a to-do takes the round `.check` instead of `>`, posting like its row) · text with tag chips ·
+    epic `.chip.key` · a to-do's due `.fld.s` date field (in `form.due-f`, which the layout rules key on) (opens the shared date popover) or "done Thu 12 Nov" (`.when`) · last,
+    **"logged Thu 12 Nov"** (`.day`, 12 px `--muted`, links to that day; "today" when it is), so the day links line up.
+  - Ticked to-do: struck + `--muted`; untick reopens. Text is not an edit link here: lines are edited on their day.
+  - **Line deleted**: while its Undo lives, a dashed empty `.k.gone`, "Line deleted · “old text”" in `--muted` and Undo
+    (`.linkbtn`); Undo restores the line and its link. After that the link is gone (`ON DELETE SET NULL`); a note with no lines
+    left loses the card and is an ordinary note.
+  - More than 5 lines: the newest 5, the rest in a `details` ("3 more lines").
+  - Phone: rows wrap; the day link drops under the text (indented 32).
+- **Notes list**: a linked note shows the kind square of its first line before the title (`title="Linked to a to-do line"`)
+  and "3 lines" (`.small.muted`) when there are more. Filter row gets the chip **Linked to lines** (`?linked=1`, a link with
+  `aria-pressed`): off = plain `.chip`, on = the tag filter's `.fl` chip without the `#` (rename `.chip.tag.fl` → `.chip.fl`)
+  with × to clear. The sidebar note list stays as it is.
+- **RT / IC**: nothing of its own under Reduce Transparency (all content). Increase Contrast: card edge `--ink`; the add
+  button, label, day link and deleted text in `--muted-hc`.
+- **AA** (t84/aa84.py, sheet `#fff`, worst of plain / look / Tinted `--muted` and `--accent`): add button outline 4.66 on the
+  `--fill` row hover (4.27 on the `.hi` hover, non-text floor 3) · filled button `--accent` 5.11, its white lines 5.57 · header
+  label, day link, done and deleted text `--muted` 5.07 · Undo `--accent` 5.57 · check ring `--ctl-edge` 3.26 on the card ·
+  list "3 lines" 4.66 on hover · filter chip text 9.88 off, 11.07 on.
+
 ## 7. UX patterns (from Notion)
 
 1. **Sidebar** = page list, each row icon + label (icon `--muted`, `--ink` on the selected `.on` row; 16 px desktop, 20 px rail/drawer) grouped by the user's loops (D18): an unlabelled daily block Today · To-dos · Calendar · Meetings, then **Track** Epics · Report, then **Grow** Learn · Notes, then the active epics, and Settings pinned to the bottom (spacer). Same order in the phone drawer; the rail draws the section labels as thin dividers. Breadcrumbs on top.

@@ -12,7 +12,7 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 
 | table | what | key columns |
 |---|---|---|
-| `entries` | one logged line | `id`, `day` (YYYY-MM-DD), `epic_key`, `meeting_id`, `kind` (done · decision · blocker · impact · learn · plan), `topic` (learn only), `text`, `plan_state` (open · done · dropped, plans only), `closed_day`, `pinned`, `due`, `link`, `author` |
+| `entries` | one logged line | `id`, `day` (YYYY-MM-DD), `epic_key`, `meeting_id`, `kind` (done · decision · blocker · impact · learn · plan), `topic` (learn only), `text`, `plan_state` (open · done · dropped, plans only), `closed_day`, `pinned`, `due`, `link`, `note_id` (the line's note, many lines → one note; NULL = none), `author` |
 | `epics` | a Jira key the owner tracks | `key` (FK-123), `title`, `role` (owner · contributor), `okr`, `status` (active · done · dropped), `start`, `target`, `done_on`, `metric`, `before`, `after`, `tags` (`a,b`), `author` |
 | `evidence` | links proving an epic's impact | `epic_key`, `url`, `note`, `author` |
 | `meetings` | meeting mode; `name` is a series slug (oms-sync) | `id`, `day`, `name`, `notes`, `ended_at` (NULL = running) |
@@ -69,7 +69,7 @@ Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No serv
 `data/atharu.db` (`--db PATH` before the command, or `ATHARU_DB`, picks another file).
 
 ```sh
-atharu log "<line>" [--day YYYY-MM-DD] --as claude        # one line, same grammar as above
+atharu log "<line>" [--day YYYY-MM-DD] [--note N] --as claude  # one line, same grammar as above
 atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as claude  # upsert; key from …/browse/ABC-123
 atharu note "<title>" [--file PATH] [--links a,b] [--id N] --as claude  # agent note; body from stdin without --file
 atharu evidence <KEY|jira-url> <url> [--label …] --as claude  # impact link on an existing epic, http(s) only
@@ -85,10 +85,12 @@ atharu help                                                 # this table (also -
 - Every write needs `--as <agent>` or `ATHARU_AGENT=<agent>`: a lowercase slug (`claude`, `codex`). `me` is refused.
 - `epic` never overwrites a field the owner set: it only fills an empty title / OKR / tags.
 - `log` / `note` tag from their text (`#tag`); the JSON echoes `tags`. A line also counts under its epic's tags.
+- `log --note N` links the line to existing note N (its detail page; refused with exit 1 if there is no such note).
 - `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`.
   `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
 - `evidence` needs the epic to exist (file it with `epic` first) and an `http://` / `https://` link.
-- Output: one JSON document on stdout (camelCase keys; a referenced epic is nested as `epic{key, …}`).
+- Output: one JSON document on stdout (camelCase keys; a referenced epic is nested as `epic{key, …}`, a line's
+  note as `note{id, title}` or `null`).
 - Exit codes: `0` saved/printed · `1` rejected, with the app's own message on stderr (e.g.
   `Nothing after “+”. Type what happened.`, `Can't read date ‘someday’`) · `2` usage, incl. a missing `--as`
   (`Say who is writing: --as claude`).
