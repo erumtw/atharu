@@ -22,6 +22,7 @@ async fn main() -> anyhow::Result<()> {
         let code = cli::update::run(
             args,
             repo.as_ref(),
+            cli::update::installed(),
             &mut std::io::stdout(),
             &mut std::io::stderr(),
         );

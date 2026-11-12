@@ -1,4 +1,4 @@
-//! Bakes the git sha and build date into the binary for `atharu version`.
+//! Bakes the git sha, release tag and build date into the binary for `atharu version` / `update`.
 //! Not a git checkout (the Docker build copies no .git) → the vars stay unset and read "unknown".
 use std::process::Command;
 
@@ -12,6 +12,13 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     if let Some(sha) = cmd("git", &["rev-parse", "--short", "HEAD"]) {
         println!("cargo:rustc-env=ATHARU_GIT_SHA={sha}");
+        // Unset on a commit that isn't a release tag: `update` reads that as a dev build (D40).
+        if let Some(tag) = cmd(
+            "git",
+            &["describe", "--tags", "--exact-match", "--match", "v[0-9]*"],
+        ) {
+            println!("cargo:rustc-env=ATHARU_GIT_TAG={tag}");
+        }
         // --git-path, not ".git/HEAD": also right in a worktree, where .git is a file.
         let head = cmd("git", &["symbolic-ref", "-q", "HEAD"]);
         for r in ["HEAD"].into_iter().chain(head.as_deref()) {

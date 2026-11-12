@@ -1,23 +1,36 @@
 #!/usr/bin/env bash
-# Installs or updates atharu from this checkout's last commit (D28), never the working tree: agents
-# edit it mid-task, and a half-done edit must neither break the build nor ship. Safe to re-run.
-#   scripts/install.sh            CLI + server binary → ~/.cargo/bin/atharu
-#   scripts/install.sh --app      also the Mac app → /Applications/Atharu.app (its data dir is untouched)
-#   scripts/install.sh --docker   also rebuilds and restarts the compose service
+# Installs or updates atharu from a release tag (D40), built from source in a temp worktree: never
+# the working tree, which agents edit mid-task. Safe to re-run.
+#   scripts/install.sh                   newest release tag vX.Y.Z → ~/.cargo/bin/atharu
+#   scripts/install.sh --version vX.Y.Z  that tag instead (pre-releases only this way)
+#   scripts/install.sh --dev             the last commit instead (uncommitted edits are left out)
+#   --app also replaces /Applications/Atharu.app (its data dir is untouched), --docker rebuilds the container
 # Never edits shell rc files: it prints the lines to add instead.
 set -euo pipefail
 # All output is for humans; stdout stays free for `atharu update`'s JSON.
 exec 1>&2
 
-app=0 docker=0
-for a in "$@"; do
-  case $a in
+usage="usage: scripts/install.sh [--version vX.Y.Z | --dev] [--app] [--docker]"
+app=0 docker=0 dev=0 want=
+while [ $# -gt 0 ]; do
+  case $1 in
     --app) app=1 ;;
     --docker) docker=1 ;;
-    -h | --help) sed -n '2,6p' "$0"; exit 0 ;;
-    *) echo "unknown option $a (use --app, --docker)"; exit 2 ;;
+    --dev) dev=1 ;;
+    --version)
+      [ $# -ge 2 ] || { echo "$usage"; exit 2; }
+      want=v${2#v}
+      shift
+      ;;
+    -h | --help) sed -n '2,8p' "$0"; exit 0 ;;
+    *) echo "unknown option $1"; echo "$usage"; exit 2 ;;
   esac
+  shift
 done
+if [ "$dev" = 1 ] && [ -n "$want" ]; then
+  echo "--dev and --version don't mix"; echo "$usage"
+  exit 2
+fi
 
 repo=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo"
@@ -32,15 +45,36 @@ if ! command -v cargo >/dev/null; then
   fi
 fi
 
-sha=$(git rev-parse --short HEAD)
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
-  echo "note: building $sha; uncommitted changes are not included"
+if [ "$dev" = 1 ]; then
+  ref=HEAD
+  label="dev build of $(git rev-parse --short HEAD)"
+  if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    echo "note: uncommitted changes are not included"
+  fi
+else
+  git fetch --tags --quiet 2>/dev/null || echo "warning: can't fetch tags (offline?); using local tags"
+  if [ -n "$want" ]; then
+    if ! git rev-parse -q --verify "refs/tags/$want^{commit}" >/dev/null; then
+      echo "no tag $want in $repo (git tag --list 'v*' lists the releases)"
+      exit 1
+    fi
+    ref=$want
+  else
+    # Pre-releases (vX.Y.Z-rc1) are opt-in: only --version installs one.
+    ref=$(git tag --list 'v[0-9]*' --sort=-v:refname | grep -v -- - | head -n 1 || true)
+    if [ -z "$ref" ]; then
+      echo "no release tags in $repo yet: scripts/release.sh X.Y.Z cuts one; --dev builds the last commit"
+      exit 1
+    fi
+  fi
+  label=$ref
 fi
-# A detached worktree, not `git archive`: build.rs reads the sha from git.
+
+# A detached worktree, not `git archive`: build.rs reads the sha and tag from git.
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/atharu-install.XXXXXX")
 src=$tmp/src
 trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; rm -rf "$tmp"; git -C "$repo" worktree prune' EXIT
-git worktree add --quiet --detach "$src" HEAD
+git worktree add --quiet --detach "$src" "$ref"
 # The repo's own target/ keeps the build incremental across temp worktrees.
 export CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$repo/target}
 # Baked in for `atharu update`: the temp worktree is gone by the time it runs.
@@ -49,7 +83,7 @@ export ATHARU_REPO=$repo
 bin=${CARGO_INSTALL_ROOT:-${CARGO_HOME:-$HOME/.cargo}}/bin
 # A binary from before `version` existed exits non-zero: that reads as "none".
 old=$("$bin/atharu" version 2>/dev/null || echo none)
-echo "building atharu $sha from $repo …"
+echo "building atharu $label from $repo …"
 cargo install --path "$src" --locked --quiet
 new=$("$bin/atharu" version)
 echo "atharu: $old → $new"
@@ -78,9 +112,10 @@ if [ "$app" = 1 ]; then
 fi
 
 if [ "$docker" = 1 ]; then
-  # ponytail: the working tree, not $sha: compose binds ./data next to the compose file, so running it
-  # from the temp worktree would start on an empty DB. Build from the commit if docker use grows.
-  docker compose up -d --build
+  # Build context = the worktree; ./data bind and project name stay the repo's: running compose from
+  # the worktree would start on an empty ./data.
+  printf 'services:\n  atharu:\n    build:\n      context: %s\n' "$src" >"$tmp/build.yaml"
+  docker compose --project-directory "$repo" -f "$repo/compose.yaml" -f "$tmp/build.yaml" up -d --build
 fi
 
 case ":$PATH:" in

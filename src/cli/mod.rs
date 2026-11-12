@@ -41,7 +41,8 @@ pub const HELP: &str = "usage: atharu [--db PATH] [command]
   atharu show <KEY|jira-url>
   atharu tags
   atharu dump                              write dump.sql next to the DB
-  atharu version · atharu update [--app] [--docker]
+  atharu version                           {version, tag, sha, built}
+  atharu update [--app] [--docker]         install the newest release tag if newer (scripts/install.sh)
   atharu help                              this table (also -h, --help)
 --as can come from ATHARU_AGENT instead; --db from ATHARU_DB.";
 
