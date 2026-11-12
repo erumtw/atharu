@@ -20,7 +20,7 @@
 </head>
 <body>
 <div class="menu quick" role="dialog" aria-label="Atharu quick capture">
-<header class="qh"><svg class="mark" viewBox="0 0 18 18" aria-hidden="true"><use href="/static/icon/ui.svg#mark"/></svg><b>Atharu</b><span class="small muted">{{ date }}</span><a class="ib" href="/" aria-label="Open Atharu" title="Open Atharu"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#open"/></svg></a></header>
+<header class="qh">{#- Inline, not ui.svg#mark: an external <use> drew nothing in the app's WKWebView popover (owner screenshot). Same path as ui.svg#mark. #}<svg class="mark" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><path d="M8.27 2.04 L9.25 1.87 L10.26 1.83 L11.29 1.95 L12.31 2.21 L13.30 2.62 L14.22 3.20 L14.98 3.99 L15.61 4.87 L16.13 5.83 L16.50 6.85 L16.72 7.91 L16.80 9.00 L16.72 10.09 L16.50 11.15 L16.13 12.17 L15.61 13.13 L14.98 14.01 L14.22 14.80 L13.36 15.47 L12.42 16.01 L11.41 16.42 L10.35 16.68 L9.27 16.80 L8.18 16.76 L7.11 16.57 L6.08 16.22 L5.14 15.69 L4.28 15.04 L3.53 14.28 L2.90 13.43 L2.39 12.51 L2.02 11.54 L1.80 10.53 L1.72 9.51 L1.78 8.49 L1.98 7.51 L2.31 6.56 L2.77 5.69 L3.34 4.89 L4.01 4.18 L4.76 3.58 L5.36 4.34 L4.79 4.93 L4.31 5.59 L3.93 6.31 L3.66 7.06 L3.50 7.83 L3.46 8.61 L3.52 9.38 L3.68 10.13 L3.95 10.84 L4.31 11.50 L4.75 12.09 L5.26 12.61 L5.84 13.05 L6.46 13.40 L7.12 13.65 L7.79 13.85 L8.48 13.97 L9.17 14.00 L9.87 13.92 L10.55 13.76 L11.19 13.49 L11.80 13.15 L12.35 12.72 L12.83 12.21 L13.24 11.65 L13.57 11.03 L13.81 10.38 L13.95 9.70 L14.00 9.00 L13.95 8.30 L13.81 7.62 L13.57 6.97 L13.24 6.35 L12.83 5.79 L12.35 5.28 L11.85 4.77 L11.30 4.29 L10.66 3.88 L9.96 3.56 L9.20 3.34 L8.39 3.23Z"/><circle cx="10.4" cy="7.8" r="1.6"/></svg><b>Atharu</b><span class="small muted">{{ date }}</span><a class="ib" href="/" aria-label="Open Atharu" title="Open Atharu"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#open"/></svg></a></header>
 
 {#- Saving answers with a 303 back here (back=/quick); htmx follows it and takes only the hint and the to-dos, so the
     form, its focus and capture.js stay. A rejected line answers 422 into #hint (the form keeps its text).
@@ -60,7 +60,11 @@
 <section class="qsec qmeet" id="qmeet" aria-labelledby="qm">
 {%- if let Some(m) = running %}
 <h2 class="qlbl vh" id="qm">Meeting</h2>
-<div class="callout dark qrun"><span class="dot" aria-hidden="true"></span><span class="t"><a href="/meetings/{{ m.id }}"><b>{{ m.name }}</b></a>{% if !m.since.is_empty() %}<span class="small muted">{{ m.since }}</span>{% endif %}</span><form class="inline" method="post" action="/meetings/{{ m.id }}/end"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit">End meeting</button></form></div>
+<div class="callout dark qrun"><span class="dot{% if m.rec.live.is_some() %} rec{% endif %}" aria-hidden="true"></span><span class="t"><a href="/meetings/{{ m.id }}"><b>{{ m.name }}</b></a>{% if let Some(l) = m.rec.live %}<span class="small muted">Recording · {{ l.elapsed }}</span>{% else if !m.since.is_empty() %}<span class="small muted">{{ m.since }}</span>{% endif %}</span>{#- Same rules as the banner: Record only in the app with the model ready; while live, Stop keeps the meeting running. #}
+{%- if let Some(l) = m.rec.live %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record/stop"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit" title="Recording {{ l.elapsed }}">Stop</button></form>
+{%- else if m.rec.finishing %}<span class="small muted">Transcribing…</span>
+{%- else if m.rec.mac && m.rec.model_ready %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit" title="Tell people you're recording before you start.">Record</button></form>
+{%- endif %}<form class="inline" method="post" action="/meetings/{{ m.id }}/end"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit">End meeting</button></form></div>
 {%- else %}
 <h2 class="qlbl" id="qm">Start a meeting</h2>
 {%- if !series.is_empty() %}

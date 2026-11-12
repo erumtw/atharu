@@ -22,6 +22,8 @@ pub struct Running {
     pub name: String,
     /// `since 09:17 · 24 min`; empty when the start time is unknown.
     pub since: String,
+    /// Recording state for the card's Record audio / Stop (Mac app only; the browser shows neither).
+    pub rec: crate::recording::Rec,
 }
 
 pub struct Todo {

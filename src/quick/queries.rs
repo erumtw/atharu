@@ -23,6 +23,16 @@ pub fn running(conn: &Connection) -> rusqlite::Result<Option<Running>> {
     .optional()
 }
 
+/// The running meeting's audio is being captured or transcribed (the tray icon turns red).
+pub fn recording(conn: &Connection, meeting: i64) -> rusqlite::Result<bool> {
+    conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM meeting_transcripts
+           WHERE meeting_id = ?1 AND status IN ('live', 'finishing'))",
+        [meeting],
+        |r| r.get(0),
+    )
+}
+
 /// Series names, most recently started first (ids only grow, so the newest meeting of a series ranks it).
 pub fn recent_series(conn: &Connection, n: usize) -> rusqlite::Result<Vec<String>> {
     let mut stmt =

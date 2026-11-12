@@ -48,6 +48,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         None => None,
     };
     let now = chrono::Local::now().naive_local();
+    let rec = crate::recording::Rec::load(&conn, st.mac.as_deref())?;
     let running = queries::running(&conn)?.map(|r| view::Running {
         since: r
             .started_at
@@ -55,6 +56,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
             .map_or_else(String::new, |s| since(s, now)),
         id: r.id,
         name: r.name,
+        rec,
     });
     let all = queries::due_plans(&conn, &dates::iso(today))?;
     let overdue = all.iter().filter(|p| p.due < dates::iso(today)).count();
