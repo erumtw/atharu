@@ -18,7 +18,8 @@
 </form>
 {#- htmx saves on change / preset click (204); glass.js previews while dragging; without JS the Save button posts it all.
     .gform is display:contents, so these rows sit in the same group as the look row. #}
-<form id="glass" class="gform" method="post" action="/settings/glass" hx-post="/settings/glass" hx-trigger="change, submit" hx-swap="none">
+{#- `input delay` too: glass.js resets the slider to the AA floor mid-drag, and WebKit (the Mac app) then sends no `change` on release, so a drag to the far left was never saved. #}
+<form id="glass" class="gform" method="post" action="/settings/glass" hx-post="/settings/glass" hx-trigger="change, submit, input delay:400ms" hx-swap="none">
 <label class="gi"><span class="t"><b>Glass everywhere</b><span>The page and its cards turn to glass too. Off keeps content on a solid page, easier to read.</span></span><input class="sw" type="checkbox" role="switch" name="glass_all" value="1"{% if layout.glass_all %} checked{% endif %}></label>
 <label class="gi"><span class="t"><b>Blur text boxes</b><span>Text boxes blur what is behind them, like the sidebar. Off keeps them a plain tint.</span></span><input class="sw" type="checkbox" role="switch" name="text_blur" value="1"{% if layout.text_blur %} checked{% endif %}></label>
 <div class="gi"><div class="t"><b>Glass</b><span>Clear is more transparent. Tinted adds the look's colour and contrast.</span></div>
