@@ -409,9 +409,9 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* Inherited from the epic / series, not in the text: white + dashed --ctl-edge ring (3.3:1, non-text floor). */
 .chip.tag.inh{background:#fff;border:1px dashed var(--ctl-edge);padding:0 7px}
 /* Active filter: --accent-wash = "selected" (as in menus); text 11.07, # 4.88; × is a plain GET link. */
-.chip.tag.fl{background:var(--accent-wash);padding:1px 4px 1px 8px;gap:2px}
-.chip.tag.fl .rm{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9999px;color:var(--ink-2);text-decoration:none}
-.chip.tag.fl .rm:hover{background:rgba(0,0,0,.06)}
+.chip.fl{background:var(--accent-wash);padding:1px 4px 1px 8px;gap:2px}
+.chip.fl .rm{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9999px;color:var(--ink-2);text-decoration:none}
+.chip.fl .rm:hover{background:rgba(0,0,0,.06)}
 /* Line text with tags: plain runs are the edit link, each tag its own link to the hub (no link inside a link). */
 .ltext{min-width:0}
 .ltext .edit-line{display:inline}
@@ -494,3 +494,37 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .cmd{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 3px 0 12px;border:1px solid var(--line);border-radius:9999px;background:#fff;flex:none}
 .cmd code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px}
 .cmd .btn{height:26px;padding:0 10px}
+
+/* Line notes (D49, DESIGN.md §6 "Line notes"). Note button on every list of lines: 28 like .x so rows stay 32.
+   No note = --muted outline (4.66 on the --fill row hover), hidden like × until the row is hovered or holds focus.
+   Has a note = always shown, --accent fill with white lines (a link, the one blue: 5.11, lines 5.57). The `note`
+   symbol's paths read --note-fill / --note-line: custom properties inherit into the <use> tree. */
+.ib.note{width:28px;height:28px;color:var(--muted);opacity:0}
+.ib.note .ic{width:18px;height:18px}
+.ib.note:hover{color:var(--ink)}
+:is(.blk,.qt):is(:hover,:focus-within) .ib.note,.ib.note:focus-visible{opacity:1}
+.ib.note.has{opacity:1;color:var(--accent);--note-fill:currentColor;--note-line:#fff}
+.ib.note.has:hover{color:var(--accent-2)}
+/* A log row's right cluster (plan rows have their span.row): ⋯ keeps the right edge on phone when the add button hides. */
+.blk>.end{margin-left:auto;display:inline-flex;align-items:center;gap:6px}
+@media (hover:none){.ib.note{opacity:1}}
+
+/* Header on /notes/<id>: the lines this note belongs to. Content, so no glass: a white card (a --fill panel failed AA:
+   --muted 4.27 under the .hi hover, the check ring --ctl-edge 2.99 on --fill). Rows take no hover tint. */
+.lnh{background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 14px 6px;display:flex;flex-direction:column}
+.lnh>h2{margin:0;padding:6px 0 2px;font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted)}
+.lnh .blk:hover{background:none}
+.lnh .day{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap;text-decoration:none;border-radius:4px}
+.lnh .day:hover{color:var(--ink);text-decoration:underline}
+.lnh .day:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lnh label.row{flex-wrap:nowrap}
+/* "logged …" is always last so the day links line up; a to-do's due field (or "done …") sits just before it. */
+.lnh .blk>:is(.due-f,.when){margin-left:auto;flex:none}
+.lnh :is(.due-f,.when)+.day{margin-left:0}
+.lnh .when{font-size:12px;color:var(--muted);white-space:nowrap}
+/* A line deleted in its Undo window: dashed empty kind square, old text --muted (5.07), Undo --accent (5.57). */
+.k.gone{background:none;border:1px dashed var(--ctl-edge);box-sizing:border-box}
+.lnh .gone-text{color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Notes list: the first linked line's kind square before the title. */
+.blk.ink>.k{margin-right:-2px}
+@media (prefers-contrast: more){.lnh{border-color:var(--ink)}.ib.note:not(.has),.lnh :is(.day,.gone-text,h2){color:var(--muted-hc)}}

@@ -1,6 +1,9 @@
 //! Reads over `taggings` + the `entry_tags` view (migration 006). Inheritance (epic / series → line)
 //! is the view's job, so every count here already includes inherited lines.
-use crate::domain::{entry::Kind, tags};
+use crate::domain::{
+    entry::{Kind, NoteRef},
+    tags,
+};
 use rusqlite::{Connection, OptionalExtension, params};
 
 /// One row of the Tags list (and `atharu tags`).
@@ -82,14 +85,17 @@ pub struct HubLine {
     pub author: String,
     /// On a merged hub, why an untagged line is here: `topic line` / `in cms-profile`.
     pub note: Option<String>,
+    /// The line's own note (D49), for its note button.
+    pub note_ref: Option<NoteRef>,
 }
 
 /// Every line carrying `tag`, newest first. A tag both typed and inherited counts as typed.
 pub fn lines(conn: &Connection, tag: &str) -> rusqlite::Result<Vec<HubLine>> {
     let mut stmt = conn.prepare(
         "SELECT e.id, e.day, e.kind, e.topic, e.text, e.plan_state, e.due,
-                CASE WHEN MIN(et.via IS NOT NULL) = 1 THEN MAX(et.via) END, e.epic_key, e.author
-           FROM entry_tags et JOIN entries e ON e.id = et.entry_id
+                CASE WHEN MIN(et.via IS NOT NULL) = 1 THEN MAX(et.via) END, e.epic_key, e.author,
+                n.id, n.title
+           FROM entry_tags et JOIN entries e ON e.id = et.entry_id LEFT JOIN notes n ON n.id = e.note_id
           WHERE et.tag = ?1
           GROUP BY e.id
           ORDER BY e.day DESC, e.id DESC",
@@ -110,6 +116,7 @@ pub fn lines(conn: &Connection, tag: &str) -> rusqlite::Result<Vec<HubLine>> {
             via,
             author: r.get(9)?,
             note: None,
+            note_ref: NoteRef::from_cols(r.get(10)?, r.get(11)?),
         })
     })?
     .collect()
@@ -236,8 +243,8 @@ pub fn merged_lines(conn: &Connection, name: &str) -> rusqlite::Result<Vec<HubLi
     let mut stmt = conn.prepare(
         "SELECT e.id, e.day, e.kind, e.topic, e.text, e.plan_state, e.due,
                 CASE WHEN e.kind = 'learn' AND e.topic = ?1 THEN 'topic line' ELSE 'in ' || m.name END,
-                e.author
-           FROM entries e LEFT JOIN meetings m ON m.id = e.meeting_id
+                e.author, n.id, n.title
+           FROM entries e LEFT JOIN meetings m ON m.id = e.meeting_id LEFT JOIN notes n ON n.id = e.note_id
           WHERE (e.kind = 'learn' AND e.topic = ?1) OR m.name = ?1",
     )?;
     stmt.query_map([name], |r| {
@@ -254,6 +261,7 @@ pub fn merged_lines(conn: &Connection, name: &str) -> rusqlite::Result<Vec<HubLi
             via_epic: false,
             author: r.get(8)?,
             note: r.get(7)?,
+            note_ref: NoteRef::from_cols(r.get(9)?, r.get(10)?),
         })
     })?
     .collect()

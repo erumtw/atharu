@@ -5,7 +5,7 @@
 use crate::{
     domain::{
         dates,
-        entry::{is_epic_key, is_slug},
+        entry::{NoteRef, is_epic_key, is_slug},
         links,
         parse::{ParseError, parse},
         tags::{parse_list, tags as tags_in},
@@ -33,7 +33,7 @@ pub const COMMANDS: [&str; 9] = [
 /// The command table for `atharu help` and every usage error (CLI and `config`), so they can't drift.
 pub const HELP: &str = "usage: atharu [--db PATH] [command]
   atharu                                   serve http://127.0.0.1:7070 (ATHARU_HOST / ATHARU_PORT)
-  atharu log \"<line>\" [--day YYYY-MM-DD] --as <agent>
+  atharu log \"<line>\" [--day YYYY-MM-DD] [--note N] --as <agent>
   atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as <agent>
   atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
   atharu evidence <KEY|jira-url> <url> [--label …] --as <agent>
@@ -68,7 +68,7 @@ pub fn run(
         let (cmd, rest) = args.split_first().ok_or_else(|| usage("no command"))?;
         let (pos, flags) = split_args(rest)?;
         let allowed: &[&str] = match cmd.as_str() {
-            "log" => &["as", "day"],
+            "log" => &["as", "day", "note"],
             "epic" => &["as", "title", "okr", "tags"],
             "note" => &["as", "file", "links", "id"],
             "evidence" => &["as", "label"],
@@ -86,6 +86,7 @@ pub fn run(
                 today,
                 &pos,
                 flag("day"),
+                flag("note"),
                 agent(flag("as"), env_agent)?,
             ),
             "epic" => epic(
@@ -202,13 +203,33 @@ fn log(
     today_: NaiveDate,
     pos: &[String],
     day: Option<&str>,
+    note: Option<&str>,
     author: &str,
 ) -> Result<Value, Fail> {
     // Unquoted words are one line, like typing them into the capture bar.
     let line = pos.join(" ");
     let day = dates::iso(pick_day(day, today_)?);
     let e = parse(&line, today_).map_err(|e| Fail(1, e.to_string()))?;
+    // Checked before the insert, so a bad --note files nothing.
+    let note = match note {
+        None => None,
+        Some(n) => {
+            let id = n
+                .parse::<i64>()
+                .map_err(|_| usage(format!("--note takes a note number, got ‘{n}’")))?;
+            let row = notes::note(conn, id).map_err(db)?.ok_or_else(|| {
+                Fail(
+                    1,
+                    format!("No note {id}. Link an existing note (see /notes)."),
+                )
+            })?;
+            Some(json!({"id": id, "title": row.title}))
+        }
+    };
     let (id, new_epic) = today::insert_entry(conn, &day, &e, author).map_err(db)?;
+    if let Some(n) = &note {
+        today::set_note(conn, id, n["id"].as_i64()).map_err(db)?;
+    }
     Ok(json!({
         "id": id,
         "day": day,
@@ -219,6 +240,7 @@ fn log(
         "link": e.link,
         "tags": tags_in(&e.text),
         "epic": e.epic_key.map(|k| json!({"key": k, "isNew": new_epic})),
+        "note": note,
         "author": author,
     }))
 }
@@ -373,6 +395,7 @@ fn day(
                 "epic": r.epic_key.map(|k| json!({"key": k, "title": r.epic_title})),
                 "meeting": r.meeting,
                 "tags": r.tags.iter().map(|(t, _)| t).collect::<Vec<_>>(),
+                "note": note_json(r.note),
                 "author": r.author,
             })
         })
@@ -390,6 +413,7 @@ fn day(
                 "link": p.link,
                 "pinned": p.pinned,
                 "epic": p.epic_key.map(|k| json!({"key": k})),
+                "note": note_json(p.note),
             })
         })
         .collect();
@@ -414,6 +438,7 @@ fn show(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
                 "kind": t.kind.as_str(),
                 "topic": t.topic,
                 "text": t.text,
+                "note": note_json(t.note),
                 "author": t.author,
             })
         })
@@ -432,6 +457,11 @@ fn tag_list(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
         .map(|r| json!({"tag": r.tag, "count": r.lines + r.notes, "lastUsed": r.last_used}))
         .collect();
     Ok(json!({ "tags": rows }))
+}
+
+/// A line's note as `note{id, title}` (null when it has none).
+fn note_json(n: Option<NoteRef>) -> Value {
+    n.map_or(Value::Null, |n| json!({"id": n.id, "title": n.title}))
 }
 
 fn db(e: rusqlite::Error) -> Fail {

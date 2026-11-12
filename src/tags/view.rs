@@ -1,5 +1,8 @@
 use super::queries::{HubEpic, HubTopic, TagRow};
-use crate::{domain::entry::Kind, layout::Layout};
+use crate::{
+    domain::entry::{Kind, NoteRef},
+    layout::Layout,
+};
 use askama::Template;
 
 #[derive(Template)]
@@ -32,6 +35,8 @@ impl List {
 
 pub struct Line {
     pub id: i64,
+    /// `YYYY-MM-DD` it was logged: a to-do's no-JS edit link opens that day.
+    pub day: String,
     pub kind: Kind,
     pub topic: Option<String>,
     pub text: String,
@@ -43,6 +48,7 @@ pub struct Line {
     /// To-dos: `Fri 13 Nov`, and whether that is past.
     pub due: Option<String>,
     pub late: bool,
+    pub note: Option<NoteRef>,
 }
 
 #[derive(Template)]

@@ -68,7 +68,7 @@ fn migration_006_backfills_existing_text() {
         .pragma_query_value(None, "user_version", |r| r.get(0))
         .unwrap();
     // Latest migration: bump with each new one.
-    assert_eq!(v, 7);
+    assert_eq!(v, 8);
     // No meeting_series table under D36 option A: series tags live in taggings only.
     let series: i64 = conn
         .query_row(
@@ -258,7 +258,9 @@ async fn filter_and_group_by_tag() {
 
     let today = get(&st, "/?tag=hiring").await.body;
     assert!(today.contains("reviewed"));
-    assert!(!today.contains("book dentist</a>"));
+    // The log is filtered; the open plans above it are not (their text is an edit link too, D51).
+    let log = &today[today.find("id=\"log\"").unwrap()..];
+    assert!(!log.contains("book dentist</a>"));
     // Grouped: a line with two tags shows under both; untagged lines under "No tag".
     let g = get(&st, "/?group=tag").await.body;
     assert_eq!(g.matches("reviewed ").count(), 2, "{g}");

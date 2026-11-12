@@ -45,6 +45,8 @@ pub struct LineForm {
     /// Set by a capture box on another page (/quick): saving answers with a 303 there, htmx or not, so that page
     /// re-renders itself instead of receiving Today's log partial.
     back: Option<String>,
+    /// `1` = edited from a to-do row (D51): the row's list re-fetches itself (`plans-changed`), not Today's log.
+    plan: Option<String>,
 }
 
 /// How the log is shown: grouping + tag filter.
@@ -91,6 +93,7 @@ fn groups(conn: &Connection, day: NaiveDate, o: &Opts) -> rusqlite::Result<Vec<v
             author: r.author,
             via: None,
             epic: None,
+            note: r.note,
         };
         // Rows arrive sorted by group, so a new key always means a new group.
         match out.last_mut() {
@@ -130,6 +133,7 @@ fn by_tag(rows: Vec<queries::LoggedRow>) -> Vec<view::Group> {
                 // The epic chip already says where an epic-inherited tag comes from.
                 epic: r.epic_key.clone().filter(|k| via.as_ref() != Some(k)),
                 via,
+                note: r.note.clone(),
             };
             match out.iter_mut().find(|g| g.tag == tag) {
                 Some(g) => g.rows.push(row),
@@ -265,7 +269,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<DayQuery>) -> AppR
     let o = Opts::new(q.group.as_deref(), q.tag.as_deref(), q.add.as_deref());
     let mut page = render_page(&st, day, o, String::new(), None)?;
     if let Some(id) = q.edit {
-        page.edit = edit_box(&st.conn(), id, None, None)?;
+        page.edit = edit_box(&st.conn(), id, None, None, false)?;
     }
     web::html(&page)
 }
@@ -276,6 +280,7 @@ fn edit_box(
     id: i64,
     kept: Option<String>,
     error: Option<String>,
+    plan: bool,
 ) -> AppResult<Option<view::Edit>> {
     Ok(
         queries::entry_line(conn, id)?.map(|(day, line)| view::Edit {
@@ -283,14 +288,30 @@ fn edit_box(
             day,
             line: kept.unwrap_or(line),
             error,
+            plan,
         }),
     )
 }
 
-/// `GET /entries/{id}/edit`: htmx swaps the row for its edit box.
-pub async fn edit_form(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
-    let e = edit_box(&st.conn(), id, None, None)?.ok_or(AppError::NotFound)?;
+#[derive(Deserialize)]
+pub struct EditQuery {
+    plan: Option<String>,
+}
+
+/// `GET /entries/{id}/edit`: htmx swaps the row (a log line, or a to-do row with `?plan=1`) for its edit box.
+pub async fn edit_form(
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+    Query(q): Query<EditQuery>,
+) -> AppResult<Response> {
+    let plan = q.plan.as_deref() == Some("1");
+    let e = edit_box(&st.conn(), id, None, None, plan)?.ok_or(AppError::NotFound)?;
     web::html(&e)
+}
+
+/// After a to-do row's edit or Undo (D51): no swap of its own; every to-do list on the page re-fetches.
+fn plans_changed() -> Response {
+    ([("hx-trigger", "plans-changed")], StatusCode::OK).into_response()
 }
 
 /// Save an inline edit: same parser and error copy as the capture bar.
@@ -301,13 +322,15 @@ pub async fn edit(
     Form(f): Form<LineForm>,
 ) -> AppResult<Response> {
     let today = st.today();
+    let plan_row = f.plan.as_deref() == Some("1");
     let entry = match parse(&f.line, today) {
         Ok(e) => e,
         Err(err) => {
             let msg = Some(err.to_string());
             if web::is_htmx(&headers) {
-                let e = edit_box(&st.conn(), id, Some(f.line), msg)?.ok_or(AppError::NotFound)?;
-                let target = format!("#entry-{id}");
+                let e = edit_box(&st.conn(), id, Some(f.line), msg, plan_row)?
+                    .ok_or(AppError::NotFound)?;
+                let target = format!("#{}-{id}", if plan_row { "plan" } else { "entry" });
                 let retarget = [("hx-retarget", target.as_str()), ("hx-reswap", "outerHTML")];
                 return Ok((
                     retarget,
@@ -315,7 +338,8 @@ pub async fn edit(
                 )
                     .into_response());
             }
-            let e = edit_box(&st.conn(), id, Some(f.line), msg)?.ok_or(AppError::NotFound)?;
+            let e =
+                edit_box(&st.conn(), id, Some(f.line), msg, false)?.ok_or(AppError::NotFound)?;
             let day = pick_day(Some(&e.day), today);
             let mut page = render_page(&st, day, Opts::new(None, None, None), String::new(), None)?;
             page.edit = Some(e);
@@ -326,6 +350,9 @@ pub async fn edit(
     let day = queries::update_entry(&mut st.conn(), id, &entry)?.ok_or(AppError::NotFound)?;
     if !web::is_htmx(&headers) {
         return Ok(web::back(&format!("/?day={day}")));
+    }
+    if plan_row {
+        return Ok(plans_changed());
     }
     let d = pick_day(Some(&day), today);
     let conn = st.conn();
@@ -429,7 +456,16 @@ pub async fn delete(
     Query(q): Query<BackQuery>,
 ) -> AppResult<Response> {
     let (day, snap) = queries::delete_entry(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    st.line_gone(&snap);
     // In the query, not the body: htmx sends DELETE without one. Same rule as `back` on create.
+    if web::is_htmx(&headers) && q.plan.as_deref() == Some("1") {
+        // No plans-changed here: a list re-fetch would wipe the Undo before it can be clicked.
+        let text = serde_json::from_str::<serde_json::Value>(&snap)
+            .ok()
+            .and_then(|v| v["text"].as_str().map(String::from))
+            .unwrap_or_default();
+        return web::html(&view::Gone { id, text, snap });
+    }
     if let Some(b) = q.back.as_deref() {
         return Ok(web::back(web::safe_back(Some(b), "/")));
     }
@@ -442,11 +478,17 @@ pub async fn delete(
 #[derive(Deserialize)]
 pub struct BackQuery {
     back: Option<String>,
+    /// `1` = deleted from a to-do row (D51): the row becomes its own Undo, see `view::Gone`.
+    plan: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct SnapForm {
     snap: String,
+    /// A note header's Undo (D49) comes back to the note, not to the line's day.
+    back: Option<String>,
+    /// `1` = the Undo a deleted to-do row left in its place (D51).
+    plan: Option<String>,
 }
 
 /// Undo of a delete: the row comes back exactly as it was (see `queries::restore_entry`).
@@ -456,6 +498,13 @@ pub async fn restore(
     Form(f): Form<SnapForm>,
 ) -> AppResult<Response> {
     let day = queries::restore_entry(&mut st.conn(), &f.snap)?;
+    st.line_back(&f.snap);
+    if let Some(b) = f.back.as_deref() {
+        return Ok(web::back(web::safe_back(Some(b), "/")));
+    }
+    if f.plan.as_deref() == Some("1") && web::is_htmx(&headers) {
+        return Ok(plans_changed());
+    }
     if !web::is_htmx(&headers) {
         return Ok(web::back(&format!("/?day={day}")));
     }

@@ -14,6 +14,9 @@
 {%- if plans.is_empty() && groups.is_empty() %}
 <p class="small muted" style="margin: 0">Nothing logged in this meeting.</p>
 {%- endif %}
+{#- A to-do row's edit / Undo (D51) answers `plans-changed`: re-fetch this list, as Today and To-dos do theirs. #}
+<div hidden hx-get="/meetings/{{ id }}" hx-trigger="plans-changed from:body" hx-target="#mplans" hx-select="#mplans" hx-swap="outerHTML"></div>
+<div id="mplans">
 {%- if !plans.is_empty() %}
 <h3 style="margin-top: 0">Action items <span class="small muted normal">· plans you logged in this meeting</span></h3>
 <div class="blocks">
@@ -22,6 +25,7 @@
 {%- endfor %}
 </div>
 {%- endif %}
+</div>
 {%- for g in groups %}
 <h3>{{ g.title }}</h3>
 <div class="blocks">

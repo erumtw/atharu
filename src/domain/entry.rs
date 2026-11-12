@@ -120,6 +120,32 @@ pub fn slugify(s: &str) -> String {
     out.trim_end_matches('-').to_string()
 }
 
+/// The note a line links to (D49, `entries.note_id`): every list of lines draws its note button from it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NoteRef {
+    pub id: i64,
+    /// As stored; `""` until the note is named.
+    pub title: String,
+}
+
+impl NoteRef {
+    /// From a `LEFT JOIN notes`: no id = no note.
+    pub fn from_cols(id: Option<i64>, title: Option<String>) -> Option<NoteRef> {
+        id.map(|id| NoteRef {
+            id,
+            title: title.unwrap_or_default(),
+        })
+    }
+
+    pub fn label(&self) -> &str {
+        if self.title.trim().is_empty() {
+            "Untitled"
+        } else {
+            &self.title
+        }
+    }
+}
+
 impl Entry {
     /// Back to line grammar, so "Undo" after a delete can re-log the same line: `parse(e.to_line()) == e`.
     pub fn to_line(&self) -> String {

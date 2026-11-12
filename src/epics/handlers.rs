@@ -204,6 +204,8 @@ fn render_page(
         if let Some(g) = timeline.last_mut() {
             let own = tags::tags(&r.text);
             g.rows.push(view::TimelineRow {
+                id: r.id,
+                day: r.day.clone(),
                 kind: r.kind,
                 topic: r.topic,
                 inh: epic_tags
@@ -213,6 +215,7 @@ fn render_page(
                     .collect(),
                 text: r.text,
                 author: r.author,
+                note: r.note,
             });
         }
     }

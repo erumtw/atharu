@@ -35,21 +35,19 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         name: r.name,
     });
     let all = queries::due_plans(&conn, &dates::iso(today))?;
-    let overdue = all
-        .iter()
-        .filter(|(_, _, d)| *d < dates::iso(today))
-        .count();
+    let overdue = all.iter().filter(|p| p.due < dates::iso(today)).count();
     let layout = Layout::load(&conn, "quick", "Quick", vec![])?;
     let todos: Vec<view::Todo> = all
         .iter()
         .take(TODOS)
-        .map(|(id, text, due)| {
-            let d = NaiveDate::parse_from_str(due, "%Y-%m-%d").unwrap_or(today);
+        .map(|p| {
+            let d = NaiveDate::parse_from_str(&p.due, "%Y-%m-%d").unwrap_or(today);
             view::Todo {
-                id: *id,
-                text: text.clone(),
+                id: p.id,
+                text: p.text.clone(),
                 due: due_label(d, today),
                 late: d < today,
+                note: p.note.clone(),
             }
         })
         .collect();

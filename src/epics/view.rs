@@ -1,4 +1,7 @@
-use crate::{domain::entry::Kind, layout::Layout};
+use crate::{
+    domain::entry::{Kind, NoteRef},
+    layout::Layout,
+};
 use askama::Template;
 use chrono::NaiveDate;
 
@@ -99,12 +102,15 @@ pub struct Live {
 }
 
 pub struct TimelineRow {
+    pub id: i64,
+    pub day: String,
     pub kind: Kind,
     pub topic: Option<String>,
     pub text: String,
     pub author: String,
     /// The epic's tags this line doesn't type itself: drawn as inherited chips.
     pub inh: Vec<String>,
+    pub note: Option<NoteRef>,
 }
 
 pub struct DayGroup {

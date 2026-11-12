@@ -60,7 +60,7 @@ pub struct Deleted {
     pub error: Option<String>,
 }
 
-/// After an undo: htmx follows `HX-Redirect`, a plain form follows the 303.
+/// After an undo (or anything that lands on another page): htmx follows `HX-Redirect`, a plain form follows the 303.
 pub fn restored(headers: &HeaderMap, to: &str) -> Response {
     if is_htmx(headers) {
         ([("hx-redirect", to.to_string())], StatusCode::OK).into_response()

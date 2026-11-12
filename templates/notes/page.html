@@ -7,8 +7,12 @@
 <main class="doc">
 <form class="fld m" role="search" method="get" action="/notes"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#search"/></svg><input name="q" placeholder="Search notes" aria-label="Search notes"></form>
 {#- editor.js mounts Tiptap on #editor and keeps the textarea's markdown in sync; without JS the textarea is the editor. #}
-<form id="note" method="post" action="/notes/{{ id }}" hx-post="/notes/{{ id }}" hx-trigger="input delay:1s, change, submit" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
-<h1 class="ptitle" style="margin-top: 0"><input class="pin" name="title" value="{{ title }}" placeholder="Untitled" aria-label="Title"></h1>
+{#- The title sits outside #note (form="note") so the line header between them can hold its own forms: forms don't nest.
+    Its events don't bubble into #note, hence the `from:#note-title` triggers. #}
+<div style="display: flex; flex-direction: column; gap: 12px">
+<h1 class="ptitle" style="margin-top: 0"><input class="pin" id="note-title" form="note" name="title" value="{{ title }}" placeholder="Untitled" aria-label="Title"></h1>
+{{ head|safe }}
+<form id="note" method="post" action="/notes/{{ id }}" hx-post="/notes/{{ id }}" hx-trigger="input delay:1s, change, submit, input delay:1s from:#note-title, change from:#note-title" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
 <dl class="props">
 <dt>Written by</dt><dd><span class="chip{% if agent.is_some() %} llm{% endif %}">{% if let Some(a) = agent %}{{ a }}{% else %}you{% endif %}</span></dd>
 {%- if !links.is_empty() %}
@@ -20,6 +24,7 @@
 <textarea id="note-md" name="body" class="note-md" rows="14" aria-label="Note (markdown)">{{ body }}</textarea>
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
+</div>
 <form method="post" action="/notes/{{ id }}/delete" hx-post="/notes/{{ id }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit">Delete note</button></form>
 <div class="callout small"><span><span class="chip llm">LLM</span> Notes under “Written by LLM” come from Claude Code (summaries of links you gave it, and lint reports). They never change your topics or depth ratings.</span></div>
 </main>

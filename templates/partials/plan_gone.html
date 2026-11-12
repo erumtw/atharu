@@ -1,0 +1,2 @@
+{#- A deleted to-do row (D51) in its own place: Undo posts the row back, then every to-do list re-fetches. -#}
+<div class="blk" id="plan-{{ id }}"><span class="k gone" aria-hidden="true"></span><span class="gone-text">Line deleted · “{{ text }}”</span><form class="inline" method="post" action="/entries/restore" hx-post="/entries/restore" hx-swap="none" style="margin-left: auto"><input type="hidden" name="snap" value="{{ snap }}"><input type="hidden" name="plan" value="1"><button class="linkbtn small" type="submit">Undo</button></form></div>

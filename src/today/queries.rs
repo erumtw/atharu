@@ -1,5 +1,5 @@
 use crate::domain::{
-    entry::{Entry, Kind},
+    entry::{Entry, Kind, NoteRef},
     plan::Plan,
     tags,
 };
@@ -20,6 +20,7 @@ pub struct LoggedRow {
     pub author: String,
     /// Its tags by name: `None` = typed in the text, `Some(source)` = inherited from that epic / series.
     pub tags: Vec<(String, Option<String>)>,
+    pub note: Option<NoteRef>,
 }
 
 /// Epic groups in order of their first line that day, unfiled last; newest line first inside a group.
@@ -33,9 +34,10 @@ pub fn day_entries(
         "SELECT e.id, e.epic_key, COALESCE(ep.title, ''), e.kind, e.topic, e.text, m.name, e.author,
                 (SELECT json_group_object(tag, via) FROM
                    (SELECT tag, CASE WHEN MIN(via IS NOT NULL) = 1 THEN MAX(via) END AS via
-                      FROM entry_tags WHERE entry_id = e.id GROUP BY tag))
+                      FROM entry_tags WHERE entry_id = e.id GROUP BY tag)),
+                n.id, n.title
          FROM entries e LEFT JOIN epics ep ON ep.key = e.epic_key
-         LEFT JOIN meetings m ON m.id = e.meeting_id
+         LEFT JOIN meetings m ON m.id = e.meeting_id LEFT JOIN notes n ON n.id = e.note_id
          WHERE e.day = ?1
            AND (json_array_length(?2) = 0 OR EXISTS (SELECT 1 FROM entry_tags et
                  WHERE et.entry_id = e.id AND et.tag IN (SELECT value FROM json_each(?2))))
@@ -62,6 +64,7 @@ pub fn day_entries(
                 .into_iter()
                 .map(|(t, v)| (t, v.as_str().map(String::from)))
                 .collect(),
+            note: NoteRef::from_cols(r.get(9)?, r.get(10)?),
         })
     })?
     .collect()
@@ -143,7 +146,7 @@ pub fn delete_entry(conn: &Connection, id: i64) -> rusqlite::Result<Option<(Stri
            json_object('id', id, 'day', day, 'epic_key', epic_key, 'meeting_id', meeting_id,
              'kind', kind, 'topic', topic, 'text', text, 'plan_state', plan_state,
              'closed_day', closed_day, 'pinned', pinned, 'due', due, 'link', link,
-             'created_at', created_at, 'author', author)",
+             'created_at', created_at, 'author', author, 'note_id', note_id)",
         [id],
         |r| Ok((r.get(0)?, r.get(1)?)),
     )
@@ -152,7 +155,7 @@ pub fn delete_entry(conn: &Connection, id: i64) -> rusqlite::Result<Option<(Stri
 
 /// Undo: re-inserts the snapshot as it was (author, plan state, pin, meeting), under its old id
 /// unless that id was reused. Whatever it pointed at may be gone since: the epic comes back as a
-/// stub, a deleted meeting becomes no meeting. Returns the day.
+/// stub, a deleted meeting becomes no meeting, a deleted note no link. Returns the day.
 pub fn restore_entry(conn: &mut Connection, snap: &str) -> rusqlite::Result<String> {
     let tx = conn.transaction()?;
     tx.execute(
@@ -161,18 +164,20 @@ pub fn restore_entry(conn: &mut Connection, snap: &str) -> rusqlite::Result<Stri
     )?;
     let (day, id, text): (String, i64, String) = tx.query_row(
         "INSERT INTO entries(id, day, epic_key, meeting_id, kind, topic, text, plan_state,
-                             closed_day, pinned, due, link, created_at, author)
+                             closed_day, pinned, due, link, created_at, author, note_id)
          SELECT CASE WHEN EXISTS (SELECT 1 FROM entries WHERE id = j.id) THEN NULL ELSE j.id END,
                 j.day, j.epic_key,
                 CASE WHEN EXISTS (SELECT 1 FROM meetings WHERE id = j.meeting_id) THEN j.meeting_id END,
                 j.kind, j.topic, j.text, j.plan_state, j.closed_day, j.pinned, j.due, j.link,
-                j.created_at, j.author
+                j.created_at, j.author,
+                CASE WHEN EXISTS (SELECT 1 FROM notes WHERE id = j.note_id) THEN j.note_id END
          FROM (SELECT ?1 ->> 'id' AS id, ?1 ->> 'day' AS day, ?1 ->> 'epic_key' AS epic_key,
                       ?1 ->> 'meeting_id' AS meeting_id, ?1 ->> 'kind' AS kind,
                       ?1 ->> 'topic' AS topic, ?1 ->> 'text' AS text,
                       ?1 ->> 'plan_state' AS plan_state, ?1 ->> 'closed_day' AS closed_day,
                       ?1 ->> 'pinned' AS pinned, ?1 ->> 'due' AS due, ?1 ->> 'link' AS link,
-                      ?1 ->> 'created_at' AS created_at, ?1 ->> 'author' AS author) j
+                      ?1 ->> 'created_at' AS created_at, ?1 ->> 'author' AS author,
+                      ?1 ->> 'note_id' AS note_id) j
          RETURNING day, id, text",
         [snap],
         |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
@@ -180,6 +185,15 @@ pub fn restore_entry(conn: &mut Connection, snap: &str) -> rusqlite::Result<Stri
     crate::db::retag(&tx, "entry", &id.to_string(), &tags::tags(&text))?;
     tx.commit()?;
     Ok(day)
+}
+
+/// Links a line to an existing note (the CLI's `log --note N`; the web links through the notes slice).
+pub fn set_note(conn: &Connection, id: i64, note: Option<i64>) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE entries SET note_id = ?1 WHERE id = ?2",
+        params![note, id],
+    )?;
+    Ok(())
 }
 
 /// The line as grammar text, for the inline edit box: (day, line).
@@ -249,12 +263,13 @@ fn date(s: Option<String>) -> Option<NaiveDate> {
 /// Pinned first, then oldest.
 pub fn plans(conn: &Connection, week_start: &str) -> rusqlite::Result<Vec<Plan>> {
     let mut stmt = conn.prepare(
-        "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
+        "SELECT e.id, e.day, e.epic_key, e.text, e.link, e.due, e.pinned, e.plan_state, e.closed_day,
          (SELECT j.key || ' · ' || j.summary FROM jira_issues j
-           WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1)
-         FROM entries
-         WHERE plan_state = 'open' OR (pinned = 1 AND plan_state = 'done' AND closed_day >= ?1)
-         ORDER BY pinned DESC, day, id",
+           WHERE (e.link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1),
+         n.id, n.title
+         FROM entries e LEFT JOIN notes n ON n.id = e.note_id
+         WHERE e.plan_state = 'open' OR (e.pinned = 1 AND e.plan_state = 'done' AND e.closed_day >= ?1)
+         ORDER BY e.pinned DESC, e.day, e.id",
     )?;
     stmt.query_map([week_start], |r| {
         Ok(Plan {
@@ -269,6 +284,7 @@ pub fn plans(conn: &Connection, week_start: &str) -> rusqlite::Result<Vec<Plan>>
             closed_day: date(r.get(8)?),
             jira: r.get(9)?,
             via: None,
+            note: NoteRef::from_cols(r.get(10)?, r.get(11)?),
         })
     })?
     .collect()

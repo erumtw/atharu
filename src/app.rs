@@ -13,7 +13,7 @@ use rust_embed::RustEmbed;
 use std::{
     future::Future,
     sync::{Arc, Mutex, MutexGuard},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 #[derive(Clone)]
@@ -26,7 +26,24 @@ pub struct AppState {
     pub settings: Arc<FileConfig>,
     /// `ATHARU_HOST`: a Host header naming it passes the guard as well as the loopback names.
     pub bind_host: String,
+    /// Lines deleted while they had a note: the note's header offers their Undo for a while (D49).
+    /// In memory, like the Undo toast itself: a restart ends the window.
+    gone: Arc<Mutex<Vec<GoneLine>>>,
 }
+
+/// A deleted line as its note's header shows it: the text, and the snapshot Undo posts back.
+#[derive(Clone)]
+pub struct GoneLine {
+    pub note: i64,
+    pub line: i64,
+    pub text: String,
+    pub snap: String,
+    at: Instant,
+}
+
+// ponytail: a fixed window stands in for "while the toast's Undo is live" (toasts don't report closing);
+// the snapshot still restores after it, only the header stops offering it.
+const GONE_FOR: Duration = Duration::from_secs(10 * 60);
 
 impl AppState {
     pub fn new(conn: Connection) -> Self {
@@ -35,7 +52,43 @@ impl AppState {
             fixed_today: None,
             settings: Arc::default(),
             bind_host: "127.0.0.1".into(),
+            gone: Arc::default(),
         }
+    }
+
+    fn gone(&self) -> MutexGuard<'_, Vec<GoneLine>> {
+        let mut g = self.gone.lock().unwrap_or_else(|e| e.into_inner());
+        g.retain(|x| x.at.elapsed() < GONE_FOR);
+        g
+    }
+
+    /// After a line delete: remember it if the snapshot (today::queries::delete_entry) had a note.
+    pub fn line_gone(&self, snap: &str) {
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(snap) else {
+            return;
+        };
+        if let (Some(note), Some(line)) = (v["note_id"].as_i64(), v["id"].as_i64()) {
+            self.gone().push(GoneLine {
+                note,
+                line,
+                text: v["text"].as_str().unwrap_or_default().to_string(),
+                snap: snap.to_string(),
+                at: Instant::now(),
+            });
+        }
+    }
+
+    /// After its Undo: the line is back, so the header lists it as a line again.
+    pub fn line_back(&self, snap: &str) {
+        self.gone().retain(|x| x.snap != snap);
+    }
+
+    pub fn gone_lines(&self, note: i64) -> Vec<GoneLine> {
+        self.gone()
+            .iter()
+            .filter(|x| x.note == note)
+            .cloned()
+            .collect()
     }
 
     pub fn conn(&self) -> MutexGuard<'_, Connection> {

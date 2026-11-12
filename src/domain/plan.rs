@@ -1,6 +1,6 @@
 //! To-dos (`>` lines): due buckets, link chip labels, and the row every page renders the same way.
 use super::dates;
-use super::entry::{Entry, Kind, is_epic_key};
+use super::entry::{Entry, Kind, NoteRef, is_epic_key};
 use super::parse::{ParseError, parse};
 use chrono::{Days, NaiveDate};
 
@@ -25,6 +25,7 @@ pub struct Plan {
     pub jira: Option<String>,
     /// Under a tag filter: the epic / series the matching tag comes from, when the text lacks it.
     pub via: Option<String>,
+    pub note: Option<NoteRef>,
 }
 
 impl Plan {

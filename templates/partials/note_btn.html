@@ -1,0 +1,7 @@
+{#- A line's note button (D49), first in the row's right cluster. Needs `line_id` and `note_ref`
+    (Option<&domain::entry::NoteRef>). Has a note = a link, always shown; none = one plain POST that makes it. -#}
+{%- if let Some(n) = note_ref -%}
+<a class="ib note has" href="/notes/{{ n.id }}" aria-label="Open note: {{ n.label() }}" title="Open note"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#note"/></svg></a>
+{%- else -%}
+<form class="inline" method="post" action="/entries/{{ line_id }}/note"><button class="ib note" type="submit" aria-label="Add a note to this line" title="Add a note"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#note"/></svg></button></form>
+{%- endif -%}

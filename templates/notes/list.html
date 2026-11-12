@@ -10,9 +10,9 @@
 {%- else %}
 {%- let found = mine.len() + agents.len() %}
 <form role="search" class="fld m" method="get" action="/notes"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#search"/></svg><input name="q" value="{{ q }}" placeholder="Search notes" aria-label="Search notes">{% if !q.is_empty() %}<span class="small muted">{{ found }} result{% if found != 1 %}s{% endif %}</span>{% endif %}</form>
-<div class="row" style="gap: 8px; flex-wrap: wrap" role="group" aria-label="Filter">{% include "partials/tag_filter.html" %}</div>
+<div class="row" style="gap: 8px; flex-wrap: wrap" role="group" aria-label="Filter">{% if linked %}<span class="chip fl">Linked to lines<a class="rm" href="{{ linked_off }}" aria-label="Show all notes">×</a></span>{% else %}<a href="{{ linked_on }}" aria-pressed="false"><span class="chip">Linked to lines</span></a>{% endif %}{% if filter.tags.is_empty() %}<span class="small muted" style="margin-left: 6px">Tag</span>{% endif %}{% include "partials/tag_filter.html" %}</div>
 {%- if found == 0 %}
-<p class="small muted">{% if q.is_empty() %}No notes tagged {% for t in filter.tags %}<span class="chip tag">{{ t }}</span> {% endfor %}yet.{% else %}No notes match ‘{{ q }}’.{% endif %}</p>
+<p class="small muted">{% if linked && q.is_empty() && filter.tags.is_empty() %}No note is linked to a line yet. Add one with the note button on any line.{% else if q.is_empty() %}No notes tagged {% for t in filter.tags %}<span class="chip tag">{{ t }}</span> {% endfor %}yet.{% else %}No notes match ‘{{ q }}’.{% endif %}</p>
 {%- endif %}
 {%- if !mine.is_empty() %}
 

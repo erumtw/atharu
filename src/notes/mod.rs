@@ -15,6 +15,8 @@ pub fn routes() -> Router<AppState> {
         .route("/notes", get(handlers::list).post(handlers::create))
         .route("/notes/{id}", get(handlers::page).post(handlers::update))
         .route("/notes/{id}/delete", post(handlers::delete))
+        .route("/notes/{id}/lines", get(handlers::lines))
+        .route("/entries/{id}/note", post(handlers::for_line))
         .route("/notes/restore", post(handlers::restore))
         .route("/api/pages", get(handlers::pages))
 }
