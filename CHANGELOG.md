@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.5 — 2026-11-12
+
+### Fixes
+
+- line note button draws in the Mac app and is findable
+
+### Other
+
+- Merge pull request #6 from erumtw/feat/worklog
+
 ## v0.1.4 — 2026-11-12
 
 ### Features
