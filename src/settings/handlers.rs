@@ -55,6 +55,7 @@ fn transcription(st: &AppState, conn: &rusqlite::Connection) -> AppResult<view::
             let p = m.perms.lock().unwrap_or_else(|e| e.into_inner());
             p.0 && p.1
         }),
+        people: queries::get(conn, "people")?.unwrap_or_default(),
     })
 }
 
@@ -97,6 +98,27 @@ pub async fn model(
         }
     }
     tr_answer(&st, &headers)
+}
+
+#[derive(Deserialize)]
+pub struct PeopleForm {
+    people: String,
+}
+
+/// Names list autosave (no Save button): htmx gets 204, a plain post goes back.
+pub async fn people(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<PeopleForm>,
+) -> AppResult<Response> {
+    // 40 people at ~100 chars each; more would only be cut from the prompt anyway.
+    let text: String = f.people.chars().take(4000).collect();
+    queries::set(&st.conn(), "people", &text)?;
+    Ok(if web::is_htmx(&headers) {
+        StatusCode::NO_CONTENT.into_response()
+    } else {
+        web::back("/settings#transcription")
+    })
 }
 
 #[derive(Deserialize)]

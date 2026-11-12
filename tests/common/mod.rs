@@ -61,7 +61,8 @@ pub async fn send(app: Router, req: Request<Body>) -> Resp {
     Resp {
         status,
         headers,
-        body: String::from_utf8(bytes.to_vec()).unwrap(),
+        // Lossy: an image response (meeting screenshots) is not UTF-8.
+        body: String::from_utf8_lossy(&bytes).into_owned(),
     }
 }
 

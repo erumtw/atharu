@@ -113,8 +113,68 @@ pub fn meetings(conn: &Connection, name: Option<&str>) -> rusqlite::Result<Vec<M
 pub struct Meeting {
     pub day: String,
     pub name: String,
+    /// The pre-010 text field; kept only for rollback (the note below replaced it, D58).
     pub notes: String,
     pub ended_at: Option<String>,
+    /// Its note (T90): (id, title, markdown body).
+    pub note: Option<(i64, String, String)>,
+}
+
+/// Renames series `old` to `new` everywhere it is written: every meeting in it and its series tags, one
+/// transaction. False = `new` is already another series (merging two is a separate, explicit choice).
+pub fn rename_series(conn: &mut Connection, old: &str, new: &str) -> rusqlite::Result<bool> {
+    if old == new {
+        return Ok(true);
+    }
+    let tx = conn.transaction()?;
+    let taken: bool = tx.query_row(
+        "SELECT EXISTS (SELECT 1 FROM meetings WHERE name = ?1)",
+        [new],
+        |r| r.get(0),
+    )?;
+    if taken {
+        return Ok(false);
+    }
+    tx.execute(
+        "UPDATE meetings SET name = ?2 WHERE name = ?1",
+        params![old, new],
+    )?;
+    tx.execute(
+        "UPDATE taggings SET item_id = ?2 WHERE item_type = 'series' AND item_id = ?1",
+        params![old, new],
+    )?;
+    tx.commit()?;
+    Ok(true)
+}
+
+/// "Start notes" on a meeting without a note (T90): an owner note "<series> · <day>" ending in `[[series]]` so it
+/// links back, attached to the meeting. Returns the existing one if a double click got here first.
+pub fn create_note(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<i64>> {
+    let tx = conn.transaction()?;
+    let row: Option<(String, String, Option<i64>)> = tx
+        .query_row(
+            "SELECT day, name, note_id FROM meetings WHERE id = ?1",
+            [id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .optional()?;
+    let Some((day, name, existing)) = row else {
+        return Ok(None);
+    };
+    if existing.is_some() {
+        return Ok(existing);
+    }
+    tx.execute(
+        "INSERT INTO notes(title, body, author) VALUES (?1, ?2, 'me')",
+        params![format!("{name} · {day}"), format!("\n\n[[{name}]]")],
+    )?;
+    let note = tx.last_insert_rowid();
+    tx.execute(
+        "UPDATE meetings SET note_id = ?1 WHERE id = ?2",
+        params![note, id],
+    )?;
+    tx.commit()?;
+    Ok(Some(note))
 }
 
 /// Newest meeting (CLI `meeting latest`).
@@ -124,14 +184,20 @@ pub fn latest(conn: &Connection) -> rusqlite::Result<Option<i64>> {
 
 pub fn meeting(conn: &Connection, id: i64) -> rusqlite::Result<Option<Meeting>> {
     conn.query_row(
-        "SELECT day, name, notes, ended_at FROM meetings WHERE id = ?1",
+        "SELECT m.day, m.name, m.notes, m.ended_at, n.id, n.title, n.body
+         FROM meetings m LEFT JOIN notes n ON n.id = m.note_id WHERE m.id = ?1",
         [id],
         |r| {
+            let note: Option<i64> = r.get(4)?;
             Ok(Meeting {
                 day: r.get(0)?,
                 name: r.get(1)?,
                 notes: r.get(2)?,
                 ended_at: r.get(3)?,
+                note: match note {
+                    Some(n) => Some((n, r.get(5)?, r.get(6)?)),
+                    None => None,
+                },
             })
         },
     )
@@ -222,7 +288,7 @@ pub fn delete(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<(String
     let snap = tx
         .query_row(
             "SELECT name, json_object('id', id, 'day', day, 'name', name, 'notes', notes,
-               'ended_at', ended_at,
+               'ended_at', ended_at, 'note_id', note_id,
                'entries', json((SELECT json_group_array(e.id) FROM entries e WHERE e.meeting_id = m.id)),
                'transcripts', json((SELECT json_group_array(json_object('started_at', t.started_at,
                    'ended_at', t.ended_at, 'status', t.status, 'model', t.model, 'lang', t.lang,
@@ -247,11 +313,13 @@ pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<i64
         return Ok(Err(name));
     }
     tx.execute(
-        "INSERT INTO meetings(id, day, name, notes, ended_at)
+        "INSERT INTO meetings(id, day, name, notes, ended_at, note_id)
          SELECT CASE WHEN EXISTS (SELECT 1 FROM meetings WHERE id = j.id) THEN NULL ELSE j.id END,
-                j.day, j.name, j.notes, j.ended_at
+                j.day, j.name, j.notes, j.ended_at,
+                (SELECT id FROM notes WHERE id = j.note_id)
          FROM (SELECT ?1 ->> 'id' AS id, ?1 ->> 'day' AS day, ?1 ->> 'name' AS name,
-                      ?1 ->> 'notes' AS notes, ?1 ->> 'ended_at' AS ended_at) j",
+                      ?1 ->> 'notes' AS notes, ?1 ->> 'ended_at' AS ended_at,
+                      ?1 ->> 'note_id' AS note_id) j",
         [snap],
     )?;
     let id = tx.last_insert_rowid();
@@ -331,12 +399,14 @@ pub enum Append {
 }
 
 /// The app's segments, one recording. A (speaker, t) already there is skipped, so a retried post
-/// (or an overlap window repeating a line) never doubles it. `done` closes the recording; one that
+/// (or an overlap window repeating a line) never doubles it. `split` (the speaker split, T56) replaces
+/// every line that isn't "me". `done` closes the recording; one that
 /// ends with no lines at all is dropped, there is nothing to show.
 pub fn append_segments(
     conn: &Connection,
     tid: i64,
     segs: &[(f64, String, String)],
+    split: Option<&[(f64, String, String)]>,
     done: bool,
     at: &str,
 ) -> rusqlite::Result<Append> {
@@ -363,6 +433,17 @@ pub fn append_segments(
     for (t, speaker, text) in segs {
         add.execute(params![tid, t, speaker, text])?;
     }
+    if let Some(split) = split {
+        tx.execute(
+            "UPDATE meeting_transcripts SET segments = (SELECT json_group_array(json(value))
+               FROM json_each(segments) WHERE value ->> 'speaker' = 'me')
+             WHERE id = ?1",
+            [tid],
+        )?;
+        for (t, speaker, text) in split {
+            add.execute(params![tid, t, speaker, text])?;
+        }
+    }
     drop(add);
     if done {
         tx.execute(
@@ -379,6 +460,25 @@ pub fn append_segments(
     Ok(Append::Saved)
 }
 
+/// Names a split speaker on one finished recording: every line of `from` becomes `to` (T56). The name lives
+/// in each line's `speaker`, so renaming two speakers to one name merges a voice the split cut in two.
+pub fn rename_speaker(
+    conn: &Connection,
+    meeting: i64,
+    tid: i64,
+    from: &str,
+    to: &str,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE meeting_transcripts SET segments = (SELECT json_group_array(
+             CASE WHEN value ->> 'speaker' = ?3 THEN json_set(value, '$.speaker', ?4) ELSE json(value) END)
+           FROM json_each(segments))
+         WHERE id = ?1 AND meeting_id = ?2 AND status IN ('done', 'interrupted')",
+        params![tid, meeting, from, to],
+    )?;
+    Ok(())
+}
+
 pub struct Transcript {
     pub id: i64,
     pub started_at: String,
@@ -388,6 +488,19 @@ pub struct Transcript {
     pub lang: String,
     /// (t, speaker, text), in time order.
     pub segments: Vec<(f64, String, String)>,
+}
+
+impl Transcript {
+    /// The split voices (T56; not Me, not the unsplit Others), in order of first line.
+    pub fn speakers(&self) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        for (_, sp, _) in &self.segments {
+            if sp != "me" && sp != "others" && !out.contains(sp) {
+                out.push(sp.clone());
+            }
+        }
+        out
+    }
 }
 
 /// A meeting's recordings, oldest first, each with its segments sorted by time, mic echo of the call hidden.

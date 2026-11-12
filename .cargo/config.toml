@@ -1,0 +1,4 @@
+# sherpa-onnx's build.rs downloads its static lib unchecked unless this is set (D37). Missing dir = run
+# scripts/sherpa-onnx.sh once (fetches the pinned archive, checks its SHA-256).
+[env]
+SHERPA_ONNX_LIB_DIR = { value = "target/sherpa-onnx/sherpa-onnx-v2.0.1-osx-arm64-static-lib/lib", relative = true }

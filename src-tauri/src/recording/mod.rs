@@ -1,10 +1,12 @@
 //! Meeting recording in Atharu.app (T53, D26/D27): ScreenCaptureKit system audio ("Others") + mic ("Me")
 //! as two streams → whisper on a worker thread → segments POSTed to the app's own server as each 30 s
-//! window finishes. Audio lives only in memory; no file is ever written.
+//! window finishes. Mic audio lives only in memory; Others audio also goes to a temp file for the speaker
+//! split after Stop (T56), deleted when that pass ends.
 //!
 //! The pages never talk to this directly: they flip the recording's row (Record / Stop / End), and the
 //! app's middleware calls `sync` after every meeting POST, which starts or stops capture to match.
 pub mod pipeline;
+pub mod speakers;
 
 use atharu::{app::AppState, recording::Mac};
 use pipeline::{Pipeline, Seg};
@@ -12,6 +14,7 @@ use screencapturekit::prelude::*;
 use std::{
     io::{Read, Write},
     net::{SocketAddr, TcpStream},
+    path::Path,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -39,6 +42,8 @@ struct Running {
 
 impl Recorder {
     pub fn new(server: SocketAddr, mac: Arc<Mac>) -> Self {
+        // Built once per launch: Others audio a crash left behind goes now (D34).
+        speakers::sweep();
         Recorder {
             server,
             mac,
@@ -75,7 +80,7 @@ impl Recorder {
             // before the orphan sweep): close it so the page stops waiting.
             (None, Some(w)) => {
                 let server = self.server;
-                std::thread::spawn(move || post(server, w.tid, &[], true));
+                std::thread::spawn(move || post(server, w.tid, &[], true, None));
             }
             _ => {}
         }
@@ -105,6 +110,10 @@ impl Recorder {
         let stop = Arc::new(AtomicBool::new(false));
         let (model, lang, prompt) = (self.mac.model_path(), w.lang.clone(), w.prompt.clone());
         let (server, tid, flag) = (self.server, w.tid, stop.clone());
+        let (tap, models) = (speakers::Tap::new(tid), self.mac.dir.clone());
+        // On demand, like the speech model but small (30 MB): fetched while the meeting runs, ready by Stop.
+        let dir = speakers::dir(&models);
+        std::thread::spawn(move || speakers::fetch(&dir));
         let worker = std::thread::Builder::new()
             .name("transcribe".into())
             .spawn(move || {
@@ -112,14 +121,12 @@ impl Recorder {
                     Ok(p) => p,
                     Err(e) => {
                         eprintln!("recording: model: {e}");
-                        post(server, tid, &[], true);
+                        post(server, tid, &[], true, None);
                         return;
                     }
                 };
-                run(&mut p, &rx, &flag, |segs, done| {
-                    post(server, tid, segs, done);
-                });
-                // `p` drops here: the model leaves memory as soon as the tail is done.
+                run(&mut p, &rx, &flag, server, tid, tap, &models);
+                // `p` drops here: the model leaves memory as soon as the tail and the speaker split are done.
             })
             .map_err(|e| e.to_string())?;
         Ok(Running {
@@ -131,47 +138,72 @@ impl Recorder {
     }
 }
 
-/// The worker loop, shared with the WAV test: feed windows as audio arrives; after `stop`, drain and
-/// transcribe the tail, then report `done`.
+/// The worker loop, shared with the WAV test: post each window's lines as audio arrives; after `stop`, drain
+/// and transcribe the tail, then split Others into speakers (T56), then report `done`. Live lines stay
+/// "Others" until the split replaces them in one post.
 pub fn run(
     p: &mut Pipeline,
     rx: &mpsc::Receiver<(usize, Vec<f32>)>,
     stop: &AtomicBool,
-    mut send: impl FnMut(&[Seg], bool),
+    server: SocketAddr,
+    tid: i64,
+    mut tap: Option<speakers::Tap>,
+    models: &Path,
 ) {
+    let mut others: Vec<Seg> = Vec::new();
+    let send = |segs: Vec<Seg>, others: &mut Vec<Seg>| {
+        if !segs.is_empty() {
+            post(server, tid, &segs, false, None);
+            others.extend(segs.into_iter().filter(|s| s.speaker == "others"));
+        }
+    };
+    let mut feed = |p: &mut Pipeline, who: usize, x: &[f32], others: &mut Vec<Seg>| {
+        if who == 1
+            && let Some(t) = tap.as_mut()
+        {
+            t.write(x);
+        }
+        send(p.push(who, x), others);
+    };
     loop {
         match rx.recv_timeout(Duration::from_millis(200)) {
-            Ok((who, x)) => {
-                let segs = p.push(who, &x);
-                if !segs.is_empty() {
-                    send(&segs, false);
-                }
-            }
+            Ok((who, x)) => feed(p, who, &x, &mut others),
             Err(mpsc::RecvTimeoutError::Timeout) if !stop.load(Ordering::SeqCst) => {}
             Err(_) => break,
         }
         if stop.load(Ordering::SeqCst) {
             while let Ok((who, x)) = rx.try_recv() {
-                let segs = p.push(who, &x);
-                if !segs.is_empty() {
-                    send(&segs, false);
-                }
+                feed(p, who, &x, &mut others);
             }
             break;
         }
     }
     let tail = p.finish();
-    send(&tail, true);
+    send(tail, &mut others);
+    let split = tap.and_then(|t| speakers::split(t, models, p, &others));
+    post(server, tid, &[], true, split.as_deref());
 }
 
-/// POST one batch to `/meetings/transcripts/{tid}/segments`. Plain HTTP/1.1 over loopback: one request
-/// shape, so no client crate. A refused post (row deleted with its meeting) is dropped, like the audio.
-pub fn post(server: SocketAddr, tid: i64, segs: &[Seg], done: bool) -> Option<u16> {
-    let body = serde_json::json!({
-        "segments": segs.iter().map(|s| serde_json::json!({"t": s.t, "speaker": s.speaker, "text": s.text})).collect::<Vec<_>>(),
-        "done": done,
-    })
-    .to_string();
+/// POST one batch to `/meetings/transcripts/{tid}/segments`; `split` = the Others lines with speakers,
+/// replacing every line that isn't the owner's. Plain HTTP/1.1 over loopback: one request shape, so no
+/// client crate. A refused post (row deleted with its meeting) is dropped, like the audio.
+pub fn post(
+    server: SocketAddr,
+    tid: i64,
+    segs: &[Seg],
+    done: bool,
+    split: Option<&[Seg]>,
+) -> Option<u16> {
+    let json = |segs: &[Seg]| {
+        segs.iter()
+            .map(|s| serde_json::json!({"t": s.t, "speaker": s.speaker, "text": s.text}))
+            .collect::<Vec<_>>()
+    };
+    let mut body = serde_json::json!({ "segments": json(segs), "done": done });
+    if let Some(split) = split {
+        body["split"] = json(split).into();
+    }
+    let body = body.to_string();
     let send = || -> std::io::Result<u16> {
         let mut c = TcpStream::connect_timeout(&server, Duration::from_secs(5))?;
         c.set_read_timeout(Some(Duration::from_secs(30)))?;

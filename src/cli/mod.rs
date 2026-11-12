@@ -27,14 +27,16 @@ use std::{
 pub mod update;
 
 /// `version` and `update` need no DB: main hands them to `update::run` before opening one.
-pub const COMMANDS: [&str; 10] = [
-    "log", "epic", "note", "evidence", "today", "show", "meeting", "tags", "version", "update",
+pub const COMMANDS: [&str; 11] = [
+    "log", "edit", "epic", "note", "evidence", "today", "show", "meeting", "tags", "version",
+    "update",
 ];
 
 /// The command table for `atharu help` and every usage error (CLI and `config`), so they can't drift.
 pub const HELP: &str = "usage: atharu [--db PATH] [command]
   atharu                                   serve http://127.0.0.1:7070 (ATHARU_HOST / ATHARU_PORT)
   atharu log \"<line>\" [--day YYYY-MM-DD] [--note N] [--meeting N] --as <agent>
+  atharu edit <id> \"<line>\" --as <agent>   rewrite a line you wrote (same grammar; the owner's stay web-only)
   atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as <agent>
   atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
   atharu evidence <KEY|jira-url> <url> [--label …] --as <agent>
@@ -71,6 +73,7 @@ pub fn run(
         let (pos, flags) = split_args(rest)?;
         let allowed: &[&str] = match cmd.as_str() {
             "log" => &["as", "day", "note", "meeting"],
+            "edit" => &["as"],
             "epic" => &["as", "title", "okr", "tags"],
             "note" => &["as", "file", "links", "id"],
             "evidence" => &["as", "label"],
@@ -92,6 +95,7 @@ pub fn run(
                 flag("meeting"),
                 agent(flag("as"), env_agent)?,
             ),
+            "edit" => edit(conn, today, &pos, agent(flag("as"), env_agent)?),
             "epic" => epic(
                 conn,
                 &pos,
@@ -258,6 +262,54 @@ fn log(
     }))
 }
 
+/// Rewrites line `id` from a grammar line, keeping its day, meeting, note and author. Only the agent that wrote it
+/// may: an agent fixing its own mistake (a misheard owner in /meeting) is fine, the owner's lines are not its to edit.
+fn edit(
+    conn: &mut Connection,
+    today_: NaiveDate,
+    pos: &[String],
+    author: &str,
+) -> Result<Value, Fail> {
+    let (id, words) = pos
+        .split_first()
+        .ok_or_else(|| usage("edit takes a line number and the new line"))?;
+    let id: i64 = id
+        .parse()
+        .map_err(|_| usage(format!("edit takes a line number first, got ‘{id}’")))?;
+    let line = words.join(" ");
+    if line.trim().is_empty() {
+        return Err(usage("edit takes the new line after the number"));
+    }
+    match today::entry_author(conn, id).map_err(db)? {
+        None => return Err(Fail(1, format!("No line {id}."))),
+        Some(a) if a != author => {
+            return Err(Fail(
+                1,
+                format!(
+                    "Line {id} was written by {a}; only its author can edit it (the owner edits on the web)."
+                ),
+            ));
+        }
+        Some(_) => {}
+    }
+    let e = parse(&line, today_).map_err(|e| Fail(1, e.to_string()))?;
+    let day = today::update_entry(conn, id, &e)
+        .map_err(db)?
+        .ok_or_else(|| Fail(1, format!("No line {id}.")))?;
+    Ok(json!({
+        "id": id,
+        "day": day,
+        "kind": e.kind.as_str(),
+        "text": e.text,
+        "topic": e.topic,
+        "due": e.due.map(dates::iso),
+        "link": e.link,
+        "tags": tags_in(&e.text),
+        "epic": e.epic_key.map(|k| json!({"key": k})),
+        "author": author,
+    }))
+}
+
 /// `N` or `latest` → an existing meeting's id (checked before anything is written).
 fn meeting_id(conn: &Connection, arg: &str) -> Result<i64, Fail> {
     let id = if arg == "latest" {
@@ -300,6 +352,9 @@ fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
                 "status": t.status,
                 "model": t.model,
                 "lang": t.lang,
+                // Voices the split told apart (`Speaker 2` until the owner names it); a segment's speaker is one of
+                // these, "me" or "others".
+                "speakers": t.speakers(),
                 "segments": t.segments.into_iter().map(|(t, speaker, text)| json!({"t": t, "speaker": speaker, "text": text})).collect::<Vec<_>>(),
             })
         })
@@ -308,11 +363,27 @@ fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
         "id": id,
         "day": m.day,
         "name": m.name,
-        "notes": m.notes,
+        // The meeting's own note (T90) is where its notes live now; the old text field only for pre-010 rows.
+        "notes": m.note.as_ref().map_or(m.notes.clone(), |n| n.2.clone()),
+        "note": m.note.as_ref().map(|n| json!({"id": n.0, "title": n.1})),
         "endedAt": m.ended_at,
         "lines": lines,
         "plans": plans,
         "transcripts": transcripts,
+        // Settings › Transcription › Names: how names are said → who (owners, misheard names).
+        "people": crate::domain::people::parse(&crate::settings::queries::get(conn, "people").map_err(db)?.unwrap_or_default())
+            .into_iter()
+            .map(|p| json!({"said": p.said, "who": p.who}))
+            .collect::<Vec<_>>(),
+        // Absolute paths, so an agent can open the images (T89).
+        "shots": crate::meetings::shots::root(conn)
+            .map(|r| {
+                crate::meetings::shots::list(&r, id)
+                    .into_iter()
+                    .map(|f| json!({"time": crate::meetings::shots::label(&f), "path": r.join(id.to_string()).join(f)}))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default(),
     }))
 }
 

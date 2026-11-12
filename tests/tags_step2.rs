@@ -132,7 +132,7 @@ async fn series_topic_and_event_tags() {
     );
     assert!(hub.contains("approve claims over 5k by hand"));
     assert!(hub.contains(
-        r#"<a href="/meetings?name=expense-sync"><span class="chip">expense-sync</span></a>"#
+        r#"<a href="/meetings?name=expense-sync" title="expense-sync"><span class="chip">expense-sync</span></a>"#
     ));
     assert!(
         hub.contains("series · tags it · 1 meeting, last Wed 11 Nov"),

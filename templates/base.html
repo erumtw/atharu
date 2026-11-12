@@ -54,7 +54,7 @@
 <div class="pg">
 <div class="crumb" data-tauri-drag-region="deep">
 <button class="ib m-only" type="button" popovertarget="side" aria-label="Open pages"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#menu"/></svg></button>
-{%- for c in layout.crumbs %}<a class="trail" href="{{ c.href }}">{{ c.label }}</a><span class="trail">/</span>{% endfor %}<b>{{ layout.title }}</b>
+{%- for c in layout.crumbs %}<a class="trail" href="{{ c.href }}" title="{{ c.label }}">{{ c.label }}</a><span class="trail">/</span>{% endfor %}<b title="{{ layout.title }}">{{ layout.title }}</b>
 {%- block crumb_extra %}{% endblock %}
 </div>
 {% block content %}{% endblock %}

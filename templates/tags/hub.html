@@ -33,7 +33,7 @@
 <dt>Series</dt><dd class="small"><span>{{ s }}</span><a href="/meetings?name={{ tag }}">All {{ tag }} meetings →</a></dd>
 {%- endif %}
 {%- if !tagged_by.is_empty() %}
-<dt>Tagged by</dt><dd class="small">{% for (ty, id) in tagged_by %}{% if ty == "epic" %}<a href="/epics/{{ id }}"><span class="chip key">{{ id }}</span></a>{% else if ty == "series" %}<a href="/meetings?name={{ id }}"><span class="chip">{{ id }}</span></a>{% else %}<a class="mono" href="/learn/{{ id }}">{{ id }}</a>{% endif %}{% endfor %}<span class="muted">· their lines count here</span></dd>
+<dt>Tagged by</dt><dd class="small">{% for (ty, id) in tagged_by %}{% if ty == "epic" %}<a href="/epics/{{ id }}"><span class="chip key">{{ id }}</span></a>{% else if ty == "series" %}<a href="/meetings?name={{ id }}" title="{{ id }}"><span class="chip">{{ id }}</span></a>{% else %}<a class="mono" href="/learn/{{ id }}">{{ id }}</a>{% endif %}{% endfor %}<span class="muted">· their lines count here</span></dd>
 {%- endif %}
 </dl>
 {%- endif %}
@@ -95,7 +95,7 @@
 <div class="cols">
 <section class="hsec"><h3>Meetings <span class="small muted normal">· {{ meetings.len() }}</span></h3><div class="blocks small">
 {%- for m in meetings %}
-<a class="blk ink" href="/meetings?name={{ m.name }}"><span class="chip">{{ m.name }}</span><span>{{ m.text }}</span></a>
+<a class="blk ink" href="/meetings?name={{ m.name }}" title="{{ m.name }}"><span class="chip">{{ m.name }}</span><span>{{ m.text }}</span></a>
 {%- endfor %}
 </div></section>
 <section class="hsec"><h3>Topics <span class="small muted normal">· {{ topics.len() }}</span></h3><div class="blocks small">
