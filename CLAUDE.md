@@ -98,6 +98,15 @@ atharu help                                                 # this table (also -
 
 Prompts for the common jobs: `.claude/commands/{log,query,lint,ingest}.md`.
 
+## UI work: always DESIGN.md
+
+`DESIGN.md` is the design system (Apple look · Liquid Glass on floating chrome · Notion UX). Read it before any change
+to `templates/`, `static/css/` or `editor/`, and follow it: tokens from `tokens.css` only, glass only where §4 lists it,
+never glass on glass, Reduce Transparency / Increase Contrast fallbacks, AA measured and noted in a CSS comment, no
+Save buttons (autosave), and the self-explanatory goal (empty states name the next action). A change that adds or
+alters a token, component, glass surface or pattern updates `DESIGN.md` in the same commit; when the CSS and
+`DESIGN.md` disagree, fix whichever is wrong and say so.
+
 ## Working on the code
 
 - `export PATH=/opt/homebrew/opt/rustup/bin:$PATH` (rustup is keg-only here).
