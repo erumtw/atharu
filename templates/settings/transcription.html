@@ -19,8 +19,11 @@
 {%- endmatch %}
 <form class="gi" method="post" action="/settings/transcription/lang" hx-post="/settings/transcription/lang" hx-target="#transcription" hx-swap="outerHTML"><div class="t"><b>Language</b><span>Thai keeps English terms in English. Auto guesses per 30 s and can turn Thai into an English translation.</span></div>
 <div class="seg mac" role="group" aria-label="Transcript language">{% for (v, l) in langs %}<button type="submit" name="lang" value="{{ v }}" aria-pressed="{% if lang == **v %}true{% else %}false{% endif %}">{{ l }}</button>{% endfor %}</div></form>
-<div class="gi"><div class="t"><b>Vocabulary</b><span>The meeting name and your active epics{% if !hint.is_empty() %} ({{ hint }}, …){% endif %} are passed as hints, so keys and terms come out spelled right.</span></div><span class="pill">Automatic</span></div>
+<div class="gi"><div class="t"><b>Vocabulary</b><span>Names below, the meeting name and your active epics{% if !hint.is_empty() %} ({{ hint }}, …){% endif %} are passed as hints, so keys and terms come out spelled right.</span></div><span class="pill">Automatic</span></div>
 <div class="gi"><div class="t"><b>Permissions</b><span>Microphone for you, Screen &amp; System Audio Recording for the other side.</span></div>{% if perms %}<span class="pill ok">On</span>{% else %}<span class="pill">Asked on the first recording</span>{% endif %}</div>
 <div class="gi"><div class="t"><b>Audio</b><span>Deleted as soon as it’s text. Only the transcript is kept.</span></div></div>
 {%- endif %}
+{#- Both views: /meeting reads the list too (atharu meeting → people[]), wherever it was recorded. Autosaves. -#}
+<form class="gi col" method="post" action="/settings/transcription/people" hx-post="/settings/transcription/people" hx-trigger="input changed delay:800ms, change" hx-swap="none"><div class="t"><label for="people"><b>Names</b></label><span>One person per line, the name as people say it, then who it is: names come out spelled right, and /meeting uses them for owners.</span></div>
+<textarea id="people" name="people" class="ta" rows="4" placeholder="แฟรง = Frank, VP Strategy&#10;ออฟ = Off, PM&#10;อัมรี = me">{{ people }}</textarea></form>
 </div>

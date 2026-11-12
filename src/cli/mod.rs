@@ -365,6 +365,11 @@ fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
         "lines": lines,
         "plans": plans,
         "transcripts": transcripts,
+        // Settings › Transcription › Names: how names are said → who (owners, misheard names).
+        "people": crate::domain::people::parse(&crate::settings::queries::get(conn, "people").map_err(db)?.unwrap_or_default())
+            .into_iter()
+            .map(|p| json!({"said": p.said, "who": p.who}))
+            .collect::<Vec<_>>(),
         // Absolute paths, so an agent can open the images (T89).
         "shots": crate::meetings::shots::root(conn)
             .map(|r| {

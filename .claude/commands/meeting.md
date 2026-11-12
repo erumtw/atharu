@@ -7,7 +7,8 @@ Write up meeting $ARGUMENTS (a meeting number, or `latest` when empty) in atharu
    `atharu meeting …`). You get the meeting (`name` is its series), what I already logged in it (`lines`,
    `plans`), my own `notes`, and `shots[]` (screenshots taken during the meeting: open each `path` image, they often hold the slide or ticket being discussed), and `transcripts[].segments` in time order: `speaker` is `me` (my mic) or `others`
    (the call), `t` seconds from the recording's start. Speech-to-text is imperfect, Thai and English are mixed,
-   and names / epic keys may be misheard: prefer what I logged and the active epics (`cargo run -q -- show <KEY>`)
+   and names / epic keys may be misheard: `people[]` (`said` → `who`, from Settings › Names) is the truth for names
+   and owners; a name not in it, write as heard with `(?)`. Otherwise prefer what I logged and the active epics (`cargo run -q -- show <KEY>`)
    when they disagree. No transcript → work from `lines` + `notes` only and say so.
 2. Summary note → `cargo run -q -- note "<series> · <day> notes" --file <tmp.md> --links <series> --as claude`.
    Body, in the language the meeting was mostly in (keep English tech terms as said):

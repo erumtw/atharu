@@ -235,7 +235,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 - **Settings › Transcription** (between Connections and Accessibility): Speech model (Download 574 MB = primary · downloading:
   `progress.prog` + "212 of 574 MB · about 1 min left" + Cancel · "Checking the file…" · Ready `.pill.ok` + Delete `.dng` · checksum
   failed `.err` + Try again) · Language `.seg.mac` Auto | Thai | English (Thai default; help says Auto can translate) · Vocabulary
-  `.pill` Automatic (meeting name + active epics as hints) · Permissions `.pill.ok` On · Audio "Deleted as soon as it's text".
+  `.pill` Automatic (names + meeting name + active epics as hints) · **Names** `.ta` (both views, autosaves): one person per line `แฟรง = Frank, VP Strategy`, fed to the speech model and to /meeting · Permissions `.pill.ok` On · Audio "Deleted as soon as it's text".
 - RT / IC: the banner is already opaque `--dark`; `.tx` is content; glass bits (search field, Copy pill, crumb) follow the usual rules.
 
 ### Tag chip (canvas row "Tags · one grouping layer", T70; D29)

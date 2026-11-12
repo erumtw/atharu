@@ -484,3 +484,30 @@ async fn edit_rewrites_only_the_agents_own_lines() {
         1
     );
 }
+
+#[tokio::test]
+async fn names_list_saves_and_reaches_atharu_meeting() {
+    let st = state();
+    let r = post(
+        &st,
+        "/settings/transcription/people",
+        &form(&[("people", "แฟรง = Frank, VP Strategy\nออฟ = Off, PM")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 204);
+    assert!(
+        get(&st, "/settings")
+            .await
+            .body
+            .contains("แฟรง = Frank, VP Strategy")
+    );
+    exec(
+        &st,
+        "INSERT INTO meetings(id, day, name) VALUES (1, '2026-11-11', 'oms-sync')",
+    );
+    let (_, out, _) = cli(&st, &["meeting", "1"], None);
+    let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(v["people"][0]["said"], "แฟรง");
+    assert_eq!(v["people"][1]["who"], "Off, PM");
+}
