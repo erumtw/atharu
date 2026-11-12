@@ -6,7 +6,13 @@
 <div class="mono small muted" style="line-height: 1.7">OPS-101 shipped index migration<br>OPS-101 ! keep sync path, no queue<br>&gt; write retention runbook<br>? vector-search: HNSW trades recall for speed</div>
 {%- endif %}
 {%- for g in groups %}
-{%- if let Some(key) = g.key %}
+{%- if g.by_tag %}
+{%- if let Some(t) = g.tag %}
+<h4><a class="chip tag" href="/tags/{{ t }}">{{ t }}</a> <span class="small muted normal">· {{ g.rows.len() }}</span></h4>
+{%- else %}
+<h4 class="muted">No tag <span class="small normal">· {{ g.rows.len() }}</span></h4>
+{%- endif %}
+{%- else if let Some(key) = g.key %}
 <h4><a href="/epics/{{ key }}"><span class="chip key">{{ key }}</span></a> {% if g.title.is_empty() %}<span class="muted normal">no title yet ·</span> <a class="small normal" href="/epics">name it</a>{% else %}{{ g.title }}{% endif %}</h4>
 {%- else %}
 <h4 class="muted">Not filed under an epic</h4>

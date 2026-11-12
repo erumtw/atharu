@@ -28,6 +28,17 @@ pub fn safe_back<'a>(back: Option<&'a str>, fallback: &'a str) -> &'a str {
     }
 }
 
+/// A query param of the page an htmx request came from (`HX-Current-URL`), so a swap keeps that
+/// page's filter / grouping. Values here are tag lists and modes: only `%2C` (comma) needs decoding.
+pub fn page_param(headers: &HeaderMap, key: &str) -> Option<String> {
+    let url = headers.get("hx-current-url")?.to_str().ok()?;
+    let query = url.split_once('?')?.1;
+    query
+        .split('&')
+        .find_map(|kv| kv.strip_prefix(key)?.strip_prefix('='))
+        .map(|v| v.replace("%2C", ",").replace("%2c", ","))
+}
+
 /// 303 so the browser follows with GET (no "resubmit form?" on refresh).
 pub fn back(to: &str) -> Response {
     Redirect::to(to).into_response()

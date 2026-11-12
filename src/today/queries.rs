@@ -1,6 +1,7 @@
 use crate::domain::{
     entry::{Entry, Kind},
     plan::Plan,
+    tags,
 };
 use chrono::NaiveDate;
 use rusqlite::{Connection, OptionalExtension, params};
@@ -17,21 +18,35 @@ pub struct LoggedRow {
     pub meeting: Option<String>,
     /// `me`, or the agent that filed it via the CLI.
     pub author: String,
+    /// Its tags by name: `None` = typed in the text, `Some(source)` = inherited from that epic / series.
+    pub tags: Vec<(String, Option<String>)>,
 }
 
 /// Epic groups in order of their first line that day, unfiled last; newest line first inside a group.
-pub fn day_entries(conn: &Connection, day: &str) -> rusqlite::Result<Vec<LoggedRow>> {
+/// `filter` = only lines carrying any of these tags (typed or inherited); empty = all.
+pub fn day_entries(
+    conn: &Connection,
+    day: &str,
+    filter: &[String],
+) -> rusqlite::Result<Vec<LoggedRow>> {
     let mut stmt = conn.prepare(
-        "SELECT e.id, e.epic_key, COALESCE(ep.title, ''), e.kind, e.topic, e.text, m.name, e.author
+        "SELECT e.id, e.epic_key, COALESCE(ep.title, ''), e.kind, e.topic, e.text, m.name, e.author,
+                (SELECT json_group_object(tag, via) FROM
+                   (SELECT tag, CASE WHEN MIN(via IS NOT NULL) = 1 THEN MAX(via) END AS via
+                      FROM entry_tags WHERE entry_id = e.id GROUP BY tag))
          FROM entries e LEFT JOIN epics ep ON ep.key = e.epic_key
          LEFT JOIN meetings m ON m.id = e.meeting_id
          WHERE e.day = ?1
+           AND (json_array_length(?2) = 0 OR EXISTS (SELECT 1 FROM entry_tags et
+                 WHERE et.entry_id = e.id AND et.tag IN (SELECT value FROM json_each(?2))))
          ORDER BY e.epic_key IS NULL,
                   (SELECT MIN(x.id) FROM entries x WHERE x.day = ?1 AND x.epic_key IS e.epic_key),
                   e.id DESC",
     )?;
-    stmt.query_map([day], |r| {
+    let filter = serde_json::to_string(filter).unwrap_or_else(|_| "[]".into());
+    stmt.query_map(params![day, filter], |r| {
         let kind: String = r.get(3)?;
+        let tags: String = r.get(8)?;
         Ok(LoggedRow {
             id: r.get(0)?,
             epic_key: r.get(1)?,
@@ -42,9 +57,23 @@ pub fn day_entries(conn: &Connection, day: &str) -> rusqlite::Result<Vec<LoggedR
             text: r.get(5)?,
             meeting: r.get(6)?,
             author: r.get(7)?,
+            tags: serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&tags)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(t, v)| (t, v.as_str().map(String::from)))
+                .collect(),
         })
     })?
     .collect()
+}
+
+/// Tags in use with how many lines type them, most used first: the capture bar's `#` menu.
+pub fn known_tags(conn: &Connection) -> rusqlite::Result<Vec<(String, i64)>> {
+    let mut stmt = conn.prepare(
+        "SELECT tag, SUM(item_type = 'entry') AS n FROM taggings GROUP BY tag ORDER BY n DESC, tag",
+    )?;
+    stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+        .collect()
 }
 
 /// The running meeting, if any: (id, name).
@@ -102,6 +131,7 @@ pub fn insert_entry(
         ],
     )?;
     let id = tx.last_insert_rowid();
+    crate::db::retag(&tx, "entry", &id.to_string(), &tags::tags(&e.text))?;
     tx.commit()?;
     Ok((id, new_epic))
 }
@@ -129,7 +159,7 @@ pub fn restore_entry(conn: &mut Connection, snap: &str) -> rusqlite::Result<Stri
         "INSERT OR IGNORE INTO epics(key) SELECT ?1 ->> 'epic_key' WHERE (?1 ->> 'epic_key') IS NOT NULL",
         [snap],
     )?;
-    let day = tx.query_row(
+    let (day, id, text): (String, i64, String) = tx.query_row(
         "INSERT INTO entries(id, day, epic_key, meeting_id, kind, topic, text, plan_state,
                              closed_day, pinned, due, link, created_at, author)
          SELECT CASE WHEN EXISTS (SELECT 1 FROM entries WHERE id = j.id) THEN NULL ELSE j.id END,
@@ -143,10 +173,11 @@ pub fn restore_entry(conn: &mut Connection, snap: &str) -> rusqlite::Result<Stri
                       ?1 ->> 'plan_state' AS plan_state, ?1 ->> 'closed_day' AS closed_day,
                       ?1 ->> 'pinned' AS pinned, ?1 ->> 'due' AS due, ?1 ->> 'link' AS link,
                       ?1 ->> 'created_at' AS created_at, ?1 ->> 'author' AS author) j
-         RETURNING day",
+         RETURNING day, id, text",
         [snap],
-        |r| r.get(0),
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
     )?;
+    crate::db::retag(&tx, "entry", &id.to_string(), &tags::tags(&text))?;
     tx.commit()?;
     Ok(day)
 }
@@ -204,6 +235,7 @@ pub fn update_entry(conn: &mut Connection, id: i64, e: &Entry) -> rusqlite::Resu
         .optional()?;
     // No such line: drop the tx (rollback) so a 404 edit leaves no stub epic behind.
     if day.is_some() {
+        crate::db::retag(&tx, "entry", &id.to_string(), &tags::tags(&e.text))?;
         tx.commit()?;
     }
     Ok(day)
@@ -236,6 +268,7 @@ pub fn plans(conn: &Connection, week_start: &str) -> rusqlite::Result<Vec<Plan>>
             state: r.get(7)?,
             closed_day: date(r.get(8)?),
             jira: r.get(9)?,
+            via: None,
         })
     })?
     .collect()

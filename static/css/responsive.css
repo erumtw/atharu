@@ -78,6 +78,9 @@ pre{max-width:100%;overflow-x:auto}
   .blk label.row{flex-wrap:nowrap;align-items:flex-start}
   .blk label.row>span{min-width:0;overflow-wrap:anywhere}
   .blk>.edit-line,.blk>form:first-child,.blk>span:not([class]){flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+  .blk>.ltext{flex:1 1 0;min-width:0;overflow-wrap:anywhere}
+  .cols{grid-template-columns:1fr}
+  .menu.up{left:12px;right:12px;width:auto;bottom:66px}.menu.up [role=option]{min-height:44px}
 
   /* Capture bar: pinned to the bottom, clear of the home indicator; the grammar legend opens from ?. */
   .doc:has(>.capture){padding-bottom:180px}

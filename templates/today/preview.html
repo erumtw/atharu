@@ -1,0 +1,10 @@
+{%- include "partials/parse_hint.html" -%}
+{#- The `#` menu, out of band: empty when the last word isn't a `#…` being typed. #}
+<div id="tagsug" hx-swap-oob="innerHTML">
+{%- if let Some(s) = sug -%}
+<div class="menu up" role="listbox" aria-label="Tags"><div class="mh" role="presentation">Tags · most used first</div>
+{%- for (t, n) in s.opts %}<div role="option" id="sug-{{ loop.index0 }}" aria-selected="{{ loop.first }}" data-tag="{{ t }}"><span class="chip tag">{{ t }}</span><span class="n">{{ n }} line{% if *n != 1 %}s{% endif %}</span></div>{% endfor %}
+{%- if let Some(n) = s.new %}<div role="option" id="sug-new" aria-selected="{{ s.opts.is_empty() }}" data-tag="{{ n }}"><span class="small">New tag <b>#{{ n }}</b></span></div>{% endif %}
+<div class="mf m-hide" role="presentation">↑↓ pick · Tab or ↵ insert · Esc close</div></div>
+{%- endif -%}
+</div>

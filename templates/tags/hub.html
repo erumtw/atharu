@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="doc">
+<h1 class="ptitle" style="margin-top: 0"><span class="hash">#</span>{{ tag }}</h1>
+{%- if used.is_empty() %}
+<p class="small muted">Nothing is tagged <span class="mono">#{{ tag }}</span> yet. Type <span class="mono">#{{ tag }}</span> in a line or a note, or add it to an epic’s Tags.</p>
+{%- else %}
+<dl class="props"><dt>Used</dt><dd class="small">{{ used }}</dd>
+{%- if !tagged_by.is_empty() %}
+<dt>Tagged by</dt><dd class="small">{% for k in tagged_by %}<a href="/epics/{{ k }}"><span class="chip key">{{ k }}</span></a>{% endfor %}<span class="muted">· their lines count here</span></dd>
+{%- endif %}
+</dl>
+{%- endif %}
+{%- if !todos.is_empty() %}
+<section class="hsec"><h3>Open to-dos <span class="small muted normal">· {{ todos.len() }}</span></h3><div class="blocks">
+{%- for l in todos %}
+<div class="blk"><form class="inline" method="post" action="/plans/{{ l.id }}"><input type="hidden" name="back" value="{{ back() }}"><input type="hidden" name="state" value="done"><label class="row" style="gap: 10px"><input class="check" type="checkbox" aria-label="Mark done" onchange="this.form.requestSubmit()"><span class="ltext">{% let text = l.text.as_str() %}{% include "partials/tag_text.html" %}</span></label><noscript><button class="btn ghost s" type="submit">Done</button></noscript></form>
+{%- if let Some(v) = l.via %}<span class="via">via {% if l.via_epic %}<a href="/epics/{{ v }}"><span class="chip key">{{ v }}</span></a>{% else %}<span class="chip">{{ v }}</span>{% endif %}</span>{% endif %}
+{%- if let Some(d) = l.due %}<span class="row" style="margin-left: auto; gap: 6px"><span class="due{% if l.late %} late{% endif %}">due {{ d }}</span></span>{% endif %}</div>
+{%- endfor %}
+</div></section>
+{%- endif %}
+{%- if !hi.is_empty() %}
+<section class="hsec"><h3>Decisions, blockers, impact <span class="small muted normal">· {{ hi.len() }}</span></h3><div class="hi blocks">
+{%- for l in hi %}
+{% include "tags/line.html" %}
+{%- endfor %}
+</div></section>
+{%- endif %}
+{%- if !recent.is_empty() %}
+<section class="hsec"><h3>Recent lines <span class="small muted normal">· {{ recent.len() + older.len() }}</span></h3><div class="blocks">
+{%- for l in recent %}
+{% include "tags/line.html" %}
+{%- endfor %}
+</div>
+{%- if let Some(last) = older.last() %}
+<details><summary class="small muted mid">{{ older.len() }} older line{% if older.len() != 1 %}s{% endif %} <span class="normal">· back to {{ last.when }}</span></summary><div class="blocks">
+{%- for l in older %}
+{% include "tags/line.html" %}
+{%- endfor %}
+</div></details>
+{%- endif %}
+</section>
+{%- endif %}
+{%- if !epics.is_empty() || !notes.is_empty() %}
+<div class="cols">
+<section class="hsec"><h3>Epics <span class="small muted normal">· {{ epics.len() }}</span></h3><div class="blocks">
+{%- for e in epics %}
+<a class="blk ink" href="/epics/{{ e.key }}"><span class="chip key">{{ e.key }}</span><span>{{ e.title }}</span><span class="small muted">{% if e.status == "done" %}done{% if let Some(d) = e.done_on %} {{ d }}{% endif %}{% else %}{{ e.status }}{% endif %} · {% if e.tags_it %}tags it{% if e.lines > 0 %}, {{ e.lines }} line{% if e.lines != 1 %}s{% endif %} pass down{% endif %}{% else %}{{ e.lines }} line{% if e.lines != 1 %}s{% endif %} tagged{% endif %}</span></a>
+{%- endfor %}
+</div></section>
+<section class="hsec"><h3>Notes <span class="small muted normal">· {{ notes.len() }}</span></h3><div class="blocks small">
+{%- for (id, title, author, day) in notes %}
+<a class="blk ink" href="/notes/{{ id }}"><span>{{ title }}</span>{% if author != "me" %}<span class="chip llm" title="Written by {{ author }}">{{ author }}</span>{% endif %}<span class="small muted">edited {{ day }}</span></a>
+{%- endfor %}
+</div></section>
+</div>
+{%- endif %}
+{%- if !meetings.is_empty() %}
+<section class="hsec"><h3>Meetings <span class="small muted normal">· {{ meetings.len() }}</span></h3><div class="blocks small">
+{%- for (name, day, n) in meetings %}
+<a class="blk ink" href="/meetings?name={{ name }}"><span class="chip">{{ name }}</span><span>{{ day }} · {{ n }} line{% if *n != 1 %}s{% endif %} tagged in the notes</span></a>
+{%- endfor %}
+</div></section>
+{%- endif %}
+</main>
+{% endblock %}

@@ -1,6 +1,6 @@
 use crate::{
     domain::{dates, entry::Kind, plan::Plan},
-    layout::Layout,
+    layout::{Layout, TagFilter},
 };
 use askama::Template;
 use chrono::NaiveDate;
@@ -12,12 +12,19 @@ pub struct Row {
     pub text: String,
     pub meeting: Option<String>,
     pub author: String,
+    /// Grouped by tag: where this group's tag comes from when the text doesn't have it.
+    pub via: Option<String>,
+    /// Grouped by tag: the line's epic, shown on the row since no epic header says it.
+    pub epic: Option<String>,
 }
 
 pub struct Group {
     pub key: Option<String>,
     pub title: String,
     pub rows: Vec<Row>,
+    /// Group by tag (D29): `tag` heads the group, `None` = "No tag".
+    pub by_tag: bool,
+    pub tag: Option<String>,
 }
 
 /// The page's day plus its neighbours, all pre-formatted for the day nav.
@@ -52,6 +59,8 @@ pub struct Saved {
     pub kind: &'static str,
     pub key: Option<String>,
     pub new_epic: bool,
+    /// Tags typed in the line, named in the toast.
+    pub tags: Vec<String>,
 }
 
 pub struct Deleted {
@@ -64,6 +73,18 @@ pub struct Preview {
     pub key: Option<String>,
     pub text: String,
     pub due: Option<String>,
+}
+
+/// "Tag as #x?": the word as typed and the known tag it names.
+pub struct Ask {
+    pub word: String,
+    pub tag: String,
+}
+
+/// The `#` menu under the capture bar: (tag, lines) most used first, plus "New tag #x" when `new` is set.
+pub struct Sug {
+    pub opts: Vec<(String, i64)>,
+    pub new: Option<String>,
 }
 
 /// "This week" (pinned) and "Other open plans"; always about the real today, not the backfill day.
@@ -116,6 +137,10 @@ pub struct Page {
     pub deleted: Option<Deleted>,
     /// The log line open in its edit box (`/?edit=ID` without JS).
     pub edit: Option<Edit>,
+    pub ask: Option<Ask>,
+    /// `epic` or `tag`.
+    pub group: &'static str,
+    pub filter: TagFilter,
 }
 
 /// Inline edit box of one log line.
@@ -147,4 +172,15 @@ pub struct Swap {
 pub struct Hint {
     pub error: Option<String>,
     pub preview: Option<Preview>,
+    pub ask: Option<Ask>,
+}
+
+/// Live preview: the hint, plus the `#` menu swapped out-of-band.
+#[derive(Template)]
+#[template(path = "today/preview.html")]
+pub struct PreviewSwap {
+    pub error: Option<String>,
+    pub preview: Option<Preview>,
+    pub ask: Option<Ask>,
+    pub sug: Option<Sug>,
 }

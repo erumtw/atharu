@@ -25,16 +25,28 @@ fn plan(r: &Row) -> rusqlite::Result<Plan> {
         state: r.get(7)?,
         closed_day: date(r.get(8)?),
         jira: r.get(9)?,
+        // Only the filtered list selects it (11th column).
+        via: r.get(10).unwrap_or(None),
     })
 }
 
 /// Every open plan from any day (carry-over is free): pinned first, then by due, then oldest.
-pub fn open_plans(conn: &Connection) -> rusqlite::Result<Vec<Plan>> {
+/// `filter` = only plans carrying any of these tags, typed or inherited (D29); empty = all.
+pub fn open_plans(conn: &Connection, filter: &[String]) -> rusqlite::Result<Vec<Plan>> {
+    let select = SELECT_PLAN.replace(
+        "\n         FROM entries",
+        ",\n         (SELECT CASE WHEN MIN(via IS NOT NULL) = 1 THEN MAX(via) END FROM entry_tags
+            WHERE entry_id = entries.id AND tag IN (SELECT value FROM json_each(?1)))
+         FROM entries",
+    );
     let mut stmt = conn.prepare(&format!(
-        "{SELECT_PLAN} WHERE plan_state = 'open'
+        "{select} WHERE plan_state = 'open'
+           AND (json_array_length(?1) = 0 OR EXISTS (SELECT 1 FROM entry_tags et
+                 WHERE et.entry_id = entries.id AND et.tag IN (SELECT value FROM json_each(?1))))
          ORDER BY pinned DESC, due IS NULL, due, day, id"
     ))?;
-    stmt.query_map([], plan)?.collect()
+    let filter = serde_json::to_string(filter).unwrap_or_else(|_| "[]".into());
+    stmt.query_map([filter], plan)?.collect()
 }
 
 pub fn done_between(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<Plan>> {
@@ -52,6 +64,13 @@ pub fn plan_by_id(conn: &Connection, id: i64) -> rusqlite::Result<Option<Plan>> 
         plan,
     )
     .optional()
+}
+
+/// Tags in use, most used first: the filter box's suggestions.
+pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
 }
 
 pub fn epic_keys(conn: &Connection) -> rusqlite::Result<Vec<String>> {
@@ -77,6 +96,8 @@ pub fn insert_plan(conn: &mut Connection, day: &str, e: &Entry) -> rusqlite::Res
             e.link,
         ],
     )?;
+    let id = tx.last_insert_rowid().to_string();
+    crate::db::retag(&tx, "entry", &id, &crate::domain::tags::tags(&e.text))?;
     tx.commit()
 }
 

@@ -22,6 +22,8 @@ pub struct Plan {
     pub closed_day: Option<NaiveDate>,
     /// `OPS-101 · summary` from the Jira cache when `link` is a Jira issue we've fetched.
     pub jira: Option<String>,
+    /// Under a tag filter: the epic / series the matching tag comes from, when the text lacks it.
+    pub via: Option<String>,
 }
 
 impl Plan {

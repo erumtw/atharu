@@ -1,0 +1,2 @@
+{#- A line's text with each #tag as a chip linking its hub (D29); needs `text`. -#}
+{%- for s in crate::domain::tags::segments(text) -%}{%- if let Some(t) = s.tag -%}<a class="chip tag" href="/tags/{{ t }}">{{ t }}</a>{%- else -%}{{ s.text }}{%- endif -%}{%- endfor -%}

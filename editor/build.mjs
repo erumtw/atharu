@@ -12,6 +12,7 @@ const entries = {
   editor: '/* atharu notes editor, built by editor/build.mjs. Bundles Tiptap, ProseMirror, marked, Floating UI (all MIT). */',
   copy: '/* atharu copy buttons, built by editor/build.mjs from editor/src/copy.ts. */',
   glass: '/* atharu glass preview on /settings, built by editor/build.mjs from editor/src/glass.ts. */',
+  capture: '/* atharu capture-bar tag suggestions, built by editor/build.mjs from editor/src/capture.ts. */',
 }
 
 // One build per entry: esbuild's banner is per build, and each file names what it bundles.

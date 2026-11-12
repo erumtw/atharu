@@ -4,7 +4,7 @@
 {%- if s.new_epic -%}
 <span>Saved on new epic {% if let Some(k) = s.key %}<span class="chip key">{{ k }}</span>{% endif %} ·</span><form class="inline" method="post" action="/entries/{{ s.id }}/delete" hx-delete="/entries/{{ s.id }}" hx-target="#log" hx-swap="outerHTML"><button class="linkbtn" type="submit">Undo</button></form><span>·</span><a href="/epics">name it</a>
 {%- else -%}
-<span>Saved as <b>{{ s.kind }}</b>{% if let Some(k) = s.key %} on <span class="chip key">{{ k }}</span>{% endif %}</span><form class="inline" method="post" action="/entries/{{ s.id }}/delete" hx-delete="/entries/{{ s.id }}" hx-target="#log" hx-swap="outerHTML"><button class="linkbtn" type="submit">Undo</button></form>
+<span>Saved as <b>{{ s.kind }}</b>{% if let Some(k) = s.key %} on <span class="chip key">{{ k }}</span>{% endif %}{% if !s.tags.is_empty() %} · tagged{% for t in s.tags %} <span class="chip tag">{{ t }}</span>{% endfor %}{% endif %}</span><form class="inline" method="post" action="/entries/{{ s.id }}/delete" hx-delete="/entries/{{ s.id }}" hx-target="#log" hx-swap="outerHTML"><button class="linkbtn" type="submit">Undo</button></form>
 {%- endif -%}
 {%- endif -%}
 {%- if let Some(d) = deleted -%}

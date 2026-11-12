@@ -1,4 +1,7 @@
-use crate::{domain::plan::Plan, layout::Layout};
+use crate::{
+    domain::plan::Plan,
+    layout::{Layout, TagFilter},
+};
 use askama::Template;
 use chrono::NaiveDate;
 
@@ -31,6 +34,10 @@ pub struct Page {
     pub error: Option<String>,
     /// A plan action that failed without JS (pin cap), shown above the lists.
     pub notice: Option<String>,
+    pub filter: TagFilter,
+    /// Open to-dos in all / shown under the filter ("3 of 11 open to-dos").
+    pub open_total: usize,
+    pub shown: usize,
 }
 
 /// htmx answer to "Add": the lists, so the new row lands in its due group.

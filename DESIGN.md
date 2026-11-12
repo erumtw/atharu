@@ -272,6 +272,8 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   `## #tag` headings).
 - Epics, meeting series and topics have a **Tags** prop: chips + an inline `.pin` with a datalist; comma / Enter adds, Backspace on
   empty removes; autosaves.
+  Step 1 (T72) ships the epic prop as one plain comma `.pin` (`expense, hiring`, folded on save, autosaves, no JS); the chip
+  editor comes with the series / topic fields (T73).
 
 ## 7. UX patterns (from Notion)
 

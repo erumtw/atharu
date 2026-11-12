@@ -13,20 +13,22 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 | table | what | key columns |
 |---|---|---|
 | `entries` | one logged line | `id`, `day` (YYYY-MM-DD), `epic_key`, `meeting_id`, `kind` (done · decision · blocker · impact · learn · plan), `topic` (learn only), `text`, `plan_state` (open · done · dropped, plans only), `closed_day`, `pinned`, `due`, `link`, `author` |
-| `epics` | a Jira key the owner tracks | `key` (FK-123), `title`, `role` (owner · contributor), `okr`, `status` (active · done · dropped), `start`, `target`, `done_on`, `metric`, `before`, `after`, `author` |
+| `epics` | a Jira key the owner tracks | `key` (FK-123), `title`, `role` (owner · contributor), `okr`, `status` (active · done · dropped), `start`, `target`, `done_on`, `metric`, `before`, `after`, `tags` (`a,b`), `author` |
 | `evidence` | links proving an epic's impact | `epic_key`, `url`, `note`, `author` |
 | `meetings` | meeting mode; `name` is a series slug (oms-sync) | `id`, `day`, `name`, `notes`, `ended_at` (NULL = running) |
 | `topics` | learn pages, **the owner's own understanding** | `slug`, `summary`, `own_words`, `resources` |
 | `depth_ratings` | append-only self-rating 1 heard of · 2 can explain · 3 can build w/o AI · 4 can teach | `topic`, `day`, `depth` |
 | `notes` | markdown notes; `[[X]]` links a page | `id`, `title`, `body`, `author`, `updated_at` |
 | `events` | calendar events | `source` (own · google), `title`, `starts_at`, `ends_at` |
+| `taggings` | lookup of `#tags`, rebuilt from the text / tags field on every save (never write it) | `tag`, `item_type` (entry · note · epic · …), `item_id` |
+| `entry_tags` (view) | a line's tags incl. inherited from its epic / meeting series | `entry_id`, `tag`, `via` (NULL = in the text) |
 
 `[[X]]` in a note resolves in this order: epic key (`OPS-101`) → `/epics/X`, existing topic slug → `/learn/X`,
 existing meeting name → `/meetings?name=X`, else nothing (a dead link).
 
 ## Line grammar (what `atharu log` and the capture bar accept)
 
-`[EPIC-KEY] [prefix] text [link] [by <when>]`
+`[EPIC-KEY] [prefix] text [#tag …] [link] [by <when>]`
 
 | prefix | kind | example |
 |---|---|---|
@@ -36,11 +38,14 @@ existing meeting name → `/meetings?name=X`, else nothing (a dead link).
 | `+` | impact | `OPS-101 + p95 1.8s → 0.6s` |
 | `?` | learn | `? vector-search: HNSW trades recall for speed` (`slug:` sets the topic) |
 | `>` | plan / to-do | `> reply to vendor https://… by fri` |
+| `#tag` anywhere | tags it (any kind) | `OPS-140 booked e2e review #expense` |
 
 - The key is optional and must be the first token (`^[A-Z][A-Z0-9]*-\d+$`); an unknown key creates a stub epic.
 - The first `http(s)://` token is saved as `link` (and stays in the text).
 - `by <when>` only on `>` lines: `today`, `tomorrow`, a weekday (`fri`, today counts), `20 Nov`, `2026-11-20`.
 - `xml parser fixed` is a done line: `x` is a prefix only when followed by a space.
+- `#tag` anywhere in the text (`#[a-z0-9][a-z0-9-]*`, case folded) tags the line or note: `booked e2e review #expense`.
+  Not a tag: `#` alone, `#123`, a `#` mid-word or in a URL, inside `code`, a markdown heading `# x`.
 
 ## Write rules
 
@@ -63,17 +68,19 @@ Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No serv
 
 ```sh
 atharu log "<line>" [--day YYYY-MM-DD] --as claude        # one line, same grammar as above
-atharu epic <KEY|jira-url> [--title …] [--okr …] --as claude  # upsert; key from …/browse/ABC-123
+atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as claude  # upsert; key from …/browse/ABC-123
 atharu note "<title>" [--file PATH] [--links a,b] [--id N] --as claude  # agent note; body from stdin without --file
 atharu evidence <KEY|jira-url> <url> [--label …] --as claude  # impact link on an existing epic, http(s) only
 atharu today [--day YYYY-MM-DD]                             # that day's lines + open plans
 atharu show <KEY|jira-url>                                  # epic + evidence + timeline
+atharu tags                                                 # {tags: [{tag, count, lastUsed}]}, most used first
 atharu version                                              # {version, sha, built}; no DB
 atharu update [--app] [--docker]                            # owner's tool: git pull --ff-only + scripts/install.sh
 ```
 
 - Every write needs `--as <agent>` or `ATHARU_AGENT=<agent>`: a lowercase slug (`claude`, `codex`). `me` is refused.
-- `epic` never overwrites a field the owner set: it only fills an empty title / OKR.
+- `epic` never overwrites a field the owner set: it only fills an empty title / OKR / tags.
+- `log` / `note` tag from their text (`#tag`); the JSON echoes `tags`. A line also counts under its epic's tags.
 - `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`.
   `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
 - `evidence` needs the epic to exist (file it with `epic` first) and an `http://` / `https://` link.

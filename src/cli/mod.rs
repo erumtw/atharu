@@ -1,4 +1,4 @@
-//! Agent CLI (spec "Agent access", D8): `atharu log | epic | note | evidence | today | show`,
+//! Agent CLI (spec "Agent access", D8): `atharu log | epic | note | evidence | today | show | tags`,
 //! JSON on stdout. No delete or edit commands (D14): those stay with the user, on the web.
 //! An entry point like app.rs: it calls the slices' own queries and `domain::parse`, so a line
 //! filed by an agent goes through exactly the validation the capture bar uses.
@@ -8,9 +8,11 @@ use crate::{
         entry::{is_epic_key, is_slug},
         links,
         parse::{ParseError, parse},
+        tags::{parse_list, tags as tags_in},
     },
     epics::queries as epics,
     notes::queries as notes,
+    tags::queries as tags,
     today::queries as today,
 };
 use chrono::NaiveDate;
@@ -24,17 +26,18 @@ use std::{
 pub mod update;
 
 /// `version` and `update` need no DB: main hands them to `update::run` before opening one.
-pub const COMMANDS: [&str; 8] = [
-    "log", "epic", "note", "evidence", "today", "show", "version", "update",
+pub const COMMANDS: [&str; 9] = [
+    "log", "epic", "note", "evidence", "today", "show", "tags", "version", "update",
 ];
 
 const USAGE: &str = "usage:
   atharu log \"<line>\" [--day YYYY-MM-DD] --as <agent>
-  atharu epic <KEY|jira-url> [--title …] [--okr …] --as <agent>
+  atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as <agent>
   atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
   atharu evidence <KEY|jira-url> <url> [--label …] --as <agent>
   atharu today [--day YYYY-MM-DD]
   atharu show <KEY|jira-url>
+  atharu tags
   atharu version · atharu update [--app] [--docker]
 --as can come from ATHARU_AGENT instead.";
 
@@ -61,11 +64,11 @@ pub fn run(
         let (pos, flags) = split_args(rest)?;
         let allowed: &[&str] = match cmd.as_str() {
             "log" => &["as", "day"],
-            "epic" => &["as", "title", "okr"],
+            "epic" => &["as", "title", "okr", "tags"],
             "note" => &["as", "file", "links", "id"],
             "evidence" => &["as", "label"],
             "today" => &["day"],
-            "show" => &[],
+            "show" | "tags" => &[],
             other => return Err(usage(format!("unknown command {other:?}"))),
         };
         if let Some(f) = flags.keys().find(|f| !allowed.contains(&f.as_str())) {
@@ -85,6 +88,7 @@ pub fn run(
                 &pos,
                 flag("title").unwrap_or(""),
                 flag("okr").unwrap_or(""),
+                flag("tags").unwrap_or(""),
                 agent(flag("as"), env_agent)?,
             ),
             "note" => note(
@@ -103,6 +107,7 @@ pub fn run(
                 agent(flag("as"), env_agent)?,
             ),
             "today" => day(conn, today, &pos, flag("day")),
+            "tags" => tag_list(conn, &pos),
             _ => show(conn, &pos),
         }
     })();
@@ -207,6 +212,7 @@ fn log(
         "topic": e.topic,
         "due": e.due.map(dates::iso),
         "link": e.link,
+        "tags": tags_in(&e.text),
         "epic": e.epic_key.map(|k| json!({"key": k, "isNew": new_epic})),
         "author": author,
     }))
@@ -228,6 +234,7 @@ fn epic_json(e: &epics::EpicRow) -> Value {
         "lastLog": e.last_log,
         "openPlans": e.open_plans,
         "author": e.author,
+        "tags": parse_list(&e.tags),
     })
 }
 
@@ -245,10 +252,14 @@ fn epic(
     pos: &[String],
     title: &str,
     okr: &str,
+    tag_list: &str,
     author: &str,
 ) -> Result<Value, Fail> {
     let key = epic_key(&one(pos, "epic key or Jira link")?)?;
-    let created = epics::agent_upsert(conn, &key, title.trim(), okr.trim(), author).map_err(db)?;
+    // Same folding as the web field; like title/OKR it only fills an empty field (never overwrites mine).
+    let tag_list = parse_list(tag_list).join(",");
+    let created =
+        epics::agent_upsert(conn, &key, title.trim(), okr.trim(), &tag_list, author).map_err(db)?;
     let mut v = epic_json(&load(conn, &key)?);
     v["created"] = created.into();
     Ok(v)
@@ -318,7 +329,7 @@ fn note(
         }
     };
     Ok(
-        json!({"id": id, "title": title, "author": author, "updated": updated, "path": format!("/notes/{id}")}),
+        json!({"id": id, "title": title, "author": author, "updated": updated, "tags": tags_in(&body), "path": format!("/notes/{id}")}),
     )
 }
 
@@ -345,7 +356,7 @@ fn day(
         return Err(usage("today takes no words; use --day YYYY-MM-DD"));
     }
     let d = pick_day(day, today_)?;
-    let entries: Vec<Value> = today::day_entries(conn, &dates::iso(d))
+    let entries: Vec<Value> = today::day_entries(conn, &dates::iso(d), &[])
         .map_err(db)?
         .into_iter()
         .map(|r| {
@@ -356,6 +367,7 @@ fn day(
                 "text": r.text,
                 "epic": r.epic_key.map(|k| json!({"key": k, "title": r.epic_title})),
                 "meeting": r.meeting,
+                "tags": r.tags.iter().map(|(t, _)| t).collect::<Vec<_>>(),
                 "author": r.author,
             })
         })
@@ -402,6 +414,19 @@ fn show(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
         })
         .collect();
     Ok(v)
+}
+
+/// Every tag in use, most used first: `{tags: [{tag, count, lastUsed}]}`; count includes inherited lines.
+fn tag_list(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
+    if !pos.is_empty() {
+        return Err(usage("tags takes no words"));
+    }
+    let rows: Vec<Value> = tags::all(conn)
+        .map_err(db)?
+        .into_iter()
+        .map(|r| json!({"tag": r.tag, "count": r.lines + r.notes, "lastUsed": r.last_used}))
+        .collect();
+    Ok(json!({ "tags": rows }))
 }
 
 fn db(e: rusqlite::Error) -> Fail {
