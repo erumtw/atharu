@@ -30,7 +30,9 @@ pub const COMMANDS: [&str; 9] = [
     "log", "epic", "note", "evidence", "today", "show", "tags", "version", "update",
 ];
 
-const USAGE: &str = "usage:
+/// The command table for `atharu help` and every usage error (CLI and `config`), so they can't drift.
+pub const HELP: &str = "usage: atharu [--db PATH] [command]
+  atharu                                   serve http://127.0.0.1:7070 (ATHARU_HOST / ATHARU_PORT)
   atharu log \"<line>\" [--day YYYY-MM-DD] --as <agent>
   atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as <agent>
   atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
@@ -38,14 +40,16 @@ const USAGE: &str = "usage:
   atharu today [--day YYYY-MM-DD]
   atharu show <KEY|jira-url>
   atharu tags
+  atharu dump                              write dump.sql next to the DB
   atharu version · atharu update [--app] [--docker]
---as can come from ATHARU_AGENT instead.";
+  atharu help                              this table (also -h, --help)
+--as can come from ATHARU_AGENT instead; --db from ATHARU_DB.";
 
 /// Exit code + message for stderr. 1 = input rejected (same copy as the web), 2 = usage.
 struct Fail(i32, String);
 
 fn usage(msg: impl Into<String>) -> Fail {
-    Fail(2, format!("{}\n{USAGE}", msg.into()))
+    Fail(2, format!("{}\n{HELP}", msg.into()))
 }
 
 /// Runs one command. Exit code 0 prints one JSON document on `out`; anything else prints to `err`.

@@ -5,8 +5,9 @@ Personal work log on localhost: one line per thing, epics, report. Spec: `docs/s
 ## Install / update
 
 `scripts/install.sh` once (`--app` also replaces /Applications/Atharu.app, `--docker` rebuilds the container) → `atharu` in `~/.cargo/bin`.
+It builds the last commit (from a temp worktree), never uncommitted edits: it says so when the tree is dirty and carries on. `--docker` still builds the working tree.
 `atharu update [--app] [--docker]` later: fast-forwards this checkout (refuses a dirty tree or diverged branch) and re-runs the script.
-`atharu version` prints version + git sha + build date; the script prints the PATH / ATHARU_DB lines to add, it never edits ~/.zshrc.
+`atharu version` prints version + git sha + build date, `atharu help` the command table; the script prints the PATH / ATHARU_DB lines to add, it never edits ~/.zshrc.
 
 ## Run
 

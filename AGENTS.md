@@ -76,6 +76,8 @@ atharu show <KEY|jira-url>                                  # epic + evidence + 
 atharu tags                                                 # {tags: [{tag, count, lastUsed}]}, most used first
 atharu version                                              # {version, sha, built}; no DB
 atharu update [--app] [--docker]                            # owner's tool: git pull --ff-only + scripts/install.sh
+atharu dump                                                 # data/dump.sql next to the DB (plain SQL backup)
+atharu help                                                 # this table (also -h / --help); bare `atharu` serves :7070
 ```
 
 - Every write needs `--as <agent>` or `ATHARU_AGENT=<agent>`: a lowercase slug (`claude`, `codex`). `me` is refused.
