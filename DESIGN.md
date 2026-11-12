@@ -119,7 +119,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 - **One height per context**: 32 in chrome (`.crumb`), 36 in the page, 44 on phone (< 640). An action inside a field is one step smaller than the field: an action inside a 36 field is 28 (a 44 field holds 36). Labels are centred with flex + `line-height:1`, never padding guesswork.
 - **One blue primary** per view (`.btn`): Log ↵, Add ↵, Copy as markdown. Everything else is a **glass pill** (`.btn.ghost`); `.s` = the 32 size for row actions (Pin, Drop, Save, Delete).
 - **Single-line fields are glass pills with their action inside** on the right (`.fld`): meeting start, search, add evidence; the capture bar `.newline` is the 52 px version holding the primary. Inputs that stand alone (dates, event form) take `.fld` on the input itself.
-- **Day nav** = one glass capsule `.dnav`: Today | ‹ | date ▾ | ›. The date is a native `<input type=date>` laid over its label, so a click opens the OS picker (no JS picker). Today shows only when not on today. Calendar uses the same capsule with the range as its label.
+- **Day nav** = one glass capsule `.dnav`: Today | ‹ | date ▾ | ›. The date is a native `<input type=date>` laid over its label; a click opens the Atharu date popover (`.dp`, below), never the browser's picker; without JS the native picker still works. Today shows only when not on today. Calendar uses the same capsule with the range as its label.
 - **States**, every control: default · `:hover` · `:focus-visible` (2px accent ring) · `:active` (pressed: primary darker + `scale(.96)`, glass pill swells `scale(1.04)` + glow) · selected (`.on` / `aria-pressed` / `:checked`) · `:disabled` (opacity .45, `not-allowed`) · error (`.bad` = red ring, input kept, message under it) · loading (`.htmx-request` on the form: its submit dims and shows a spinner; a to-do label dims) · empty (placeholder in `--muted-tint`).
 - Datalist inputs hide Chrome's ▼ (`input[list]`); suggestions still open as you type. Legend chips sit on one baseline and wrap as whole items.
 - Reduce Transparency: same shapes, solid white, no rim. Increase Contrast: ink borders, no rim, `--muted-hc`.
@@ -167,6 +167,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Sidebar count / label | `.cnt`, `.side .lbl` | muted count, not a badge / 12/600 section label (a hairline in the rail) |
 | Calendar | `.cal`, `.dh`, `.dc`, `.ev`, `.logdot`, `.evadd` | meetings = blue left rule on `--accent-wash`; `.ev.todo` outline (`.late` red text), `.ev.tgt` grey, `.ev.own` dashed; `.logdot` = lines logged; `.evadd` = "+ Event" popover form |
 | Menus | `.menu [role=option]` | glass +25%, 32 px options, selected `--accent-wash`; `/` block menu and `[[` picker |
+| Date picker | `.menu.dp` | shared date popover on every `input[type=date]`; glass = `.menu` with an 85% floor; Monday first; phone = bottom sheet. See "Date picker" below |
 | Notes body | `.note-body` | Tiptap content as the board draws it (code on `--fill`, task lists, toggles, `.page` links) |
 | Drawing | `.drawing`, `.drawing.empty`, `.drawsheet` + `.drawbar` | see "Drawing block" below |
 | Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw` |
@@ -279,6 +280,37 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   step on the hub itself (`?act=rename|merge|delete`, a `.callout` form), so it works as plain GET + POST. Done = the `<main>` becomes
   the toast "Renamed #a to #b · N places rewritten · Undo · Open #b" (one transaction, one Undo, like a deleted page).
 - Report: Group by `.seg` Epic | Tag sits at the right of the filter row (the range row already holds the from/to dates).
+
+### Date picker (canvas row "Date picker · one shared popover", T75; D38, D4)
+
+- **One popover for every date field**: day nav, to-do due (`.fld.s`), report from/to, event date, epic start/target/done on. It replaces
+  only the browser's picker UI: the `input[type=date]` stays in the form as the value carrier and the no-JS fallback, so forms post
+  unchanged. Opens on click, Enter, Space or Alt+↓; typing a date into a visible field still works.
+- **Panel** = `<div class="menu dp" popover role="dialog" aria-labelledby>`: the `.menu` glass recipe whole (rim, light, shadow, lens,
+  `--muted-tint`, RT/IC), 18 radius, 10 padding, but `--lg-min: 85%` instead of 60%: a month is 42 small numbers plus an accent ring,
+  and at 60% `--accent` measured 3.18. Anchored 6 px under the field (end edge to the day nav; start edge to a field, end edge when the
+  start would leave the sheet); flips above when there is no room.
+- **Header**: month + year 15/600 (`aria-live=polite`) left, ‹ › `.ib` right (flat inside the glass, no glass on glass).
+  **Weekday row** Mo…Su, **Monday first** (D4), 11/600 `--muted`. **Grid** `table role=grid`, 7 × 6 always (the panel never changes
+  height), 36 px round cells, 14 px tabular numbers in `--ink`.
+- **Day states**: today = 1.5 px inset `--accent` ring + accent 600 number (`aria-current=date`) · value = `--accent` fill, white 600
+  (`aria-selected`; wins over today) · hover = `rgba(0,0,0,.05)` (a white lift is invisible at 85%; today's number steps to
+  `--accent-2` while hovered) · keyboard focus = 2px `--accent` outline, offset 1 (shows around the fill too) · out of month = `--muted`,
+  clickable (picks the day, flips the month); never `--faint` (1.74) · disabled (`aria-disabled`, e.g. an epic target before its start)
+  = opacity .45, `not-allowed`.
+- **Footer**: hairline, then **Clear** (only on a field that is not `required`: due, epic dates; not day nav, report range or event date) left and **Today** right,
+  both `.linkbtn` 13 px.
+- **Keyboard**: ←→ day · ↑↓ week · PgUp/PgDn month · Shift+PgUp/PgDn year · Home/End week start/end · Enter/Space picks (writes the
+  input, fires `change`, closes, focus back on the field) · Esc closes, nothing changes · Tab cycles ‹ › → grid → footer. Roving
+  tabindex: the focused day has `tabindex=0`; it starts on the value, else today. Month switch slides the new grid 8 px in (160 ms), none
+  under `prefers-reduced-motion`.
+- **Phone (< 640)**: a bottom sheet like the ⋯ sheet: 8 px inset, 22 radius, grabber, 17 px month, 44 px day cells across the width,
+  `::backdrop` dim; a tap selects, **Done** (the sheet's one blue) commits; backdrop tap / Esc / swipe down close without change.
+- **RT / IC**: nothing of its own under Reduce Transparency (`.menu` goes solid white + `--line` hairline, no lens). Increase Contrast:
+  ink edge (from `.menu`), weekday and out-of-month `--muted-hc` (9.67), today ring 2 px.
+- **AA** (T75, each look at its glass floor, Clear + Tinted, over a half-covered ink pixel / the darkest veiled wallpaper, desktop and
+  phone sheet): ink 13.58 · `--muted-tint` 7.34 · `--accent` text 4.57 · white on `--accent` 5.57 (7.12 tinted) · hover ink 12.18,
+  out-of-month 6.58, today `--accent-2` 5.15 · today and focus rings 4.57 (≥ 3).
 
 ## 7. UX patterns (from Notion)
 
