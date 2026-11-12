@@ -6,7 +6,12 @@
 {%- if let Some(banner) = banner %}
 <section id="meeting">{% include "partials/meeting_banner.html" %}</section>
 {%- endif %}
-<h1 class="ptitle">{{ name }}</h1>
+{#- The title is the series name, editable in place (T92): Enter / leaving the field saves, Esc puts it back. Renames
+    every meeting in the series; a refusal (taken / empty) shows under it. -#}
+<form class="ttl" method="post" action="/meetings/{{ id }}/rename" hx-post="/meetings/{{ id }}/rename" hx-trigger="change" hx-target="#ttl-err" hx-swap="innerHTML">
+<h1 class="ptitle"><textarea name="name" rows="1" aria-label="Meeting name (renames the series)" title="Click to rename" spellcheck="false" onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); } else if (event.key === 'Escape') { this.value = this.defaultValue; this.blur(); }" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'">{{ name }}</textarea></h1>
+<p id="ttl-err" class="err small" role="alert" style="margin: 0"></p><noscript><button class="btn ghost s" type="submit">Rename</button></noscript>
+</form>
 <dl class="props">
 <dt>Day</dt><dd>{{ day }}</dd>
 <dt>State</dt><dd>{% if let Some(t) = ended %}<span class="chip">ended {{ t }}</span>{% else %}<span class="chip">running</span><form class="inline" method="post" action="/meetings/{{ id }}/end"><input type="hidden" name="back" value="{{ back }}"><button class="btn ghost s" type="submit">End meeting</button></form>{% endif %}</dd>

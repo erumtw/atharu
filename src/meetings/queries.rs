@@ -117,6 +117,33 @@ pub struct Meeting {
     pub ended_at: Option<String>,
 }
 
+/// Renames series `old` to `new` everywhere it is written: every meeting in it and its series tags, one
+/// transaction. False = `new` is already another series (merging two is a separate, explicit choice).
+pub fn rename_series(conn: &mut Connection, old: &str, new: &str) -> rusqlite::Result<bool> {
+    if old == new {
+        return Ok(true);
+    }
+    let tx = conn.transaction()?;
+    let taken: bool = tx.query_row(
+        "SELECT EXISTS (SELECT 1 FROM meetings WHERE name = ?1)",
+        [new],
+        |r| r.get(0),
+    )?;
+    if taken {
+        return Ok(false);
+    }
+    tx.execute(
+        "UPDATE meetings SET name = ?2 WHERE name = ?1",
+        params![old, new],
+    )?;
+    tx.execute(
+        "UPDATE taggings SET item_id = ?2 WHERE item_type = 'series' AND item_id = ?1",
+        params![old, new],
+    )?;
+    tx.commit()?;
+    Ok(true)
+}
+
 /// Newest meeting (CLI `meeting latest`).
 pub fn latest(conn: &Connection) -> rusqlite::Result<Option<i64>> {
     conn.query_row("SELECT max(id) FROM meetings", [], |r| r.get(0))

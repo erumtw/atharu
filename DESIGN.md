@@ -173,6 +173,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw` |
 | Recording banner | `.callout.dark.recb` > `.dot.rec` + `.rect` + `.lvl` ×2 | meeting banner while recording: pulsing dot, elapsed, one level meter per stream, Stop recording + End meeting |
 | Transcript | `.tx` > `.txhead` (+ `.txspk`) + `.txbody` > `.txrow` | white 12-radius box (content, no glass); search `.fld.s` + Copy in the head; `.txspk` names split voices |
+| Meeting title | `.ttl` > `h1.ptitle` > `textarea` | the series name, editable in place: looks like the h1, `--fill-2` on hover/focus + accent ring; Enter or leaving saves (renames every meeting in the series + its tags), Esc restores; refusal in `#ttl-err` (T92) |
 | Screenshots | `#shots` > `.shots` > `a` > `img` + caption | meeting page under Notes: 160×100 cover thumbnails (8 radius, `--line` border), `HH:MM` caption, click = full PNG; **Take screenshot** ghost pill (app, meeting running); the camera `.btn.ghost` on the banner and the popover card runs macOS's picker (T89) |
 | Progress | `progress.prog` | native `<progress>`, 6 px, `--accent` on `--sep` (4.6:1) |
 | Command chip | `.cmd` | a copyable CLI / slash command in a white pill with a Copy button inside |
