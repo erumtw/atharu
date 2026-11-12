@@ -1,12 +1,12 @@
-{#- Toast body only (the #toast wrapper must stay :empty when there is nothing to say). Undo = delete / re-log. -#}
+{#- Toast body only (the #toast wrapper must stay :empty when there is nothing to say). Undo = delete / restore the row. -#}
 {%- if let Some(s) = saved -%}
-<span style="color: #0066cc">✓</span>
+<span class="tick">✓</span>
 {%- if s.new_epic -%}
-<span>Saved on new epic {% if let Some(k) = s.key %}<span class="chip key">{{ k }}</span>{% endif %} ·</span><a href="/epics">name it</a>
+<span>Saved on new epic {% if let Some(k) = s.key %}<span class="chip key">{{ k }}</span>{% endif %} ·</span><form class="inline" method="post" action="/entries/{{ s.id }}/delete" hx-delete="/entries/{{ s.id }}" hx-target="#log" hx-swap="outerHTML"><button class="linkbtn" type="submit">Undo</button></form><span>·</span><a href="/epics">name it</a>
 {%- else -%}
 <span>Saved as <b>{{ s.kind }}</b>{% if let Some(k) = s.key %} on <span class="chip key">{{ k }}</span>{% endif %}</span><form class="inline" method="post" action="/entries/{{ s.id }}/delete" hx-delete="/entries/{{ s.id }}" hx-target="#log" hx-swap="outerHTML"><button class="linkbtn" type="submit">Undo</button></form>
 {%- endif -%}
 {%- endif -%}
 {%- if let Some(d) = deleted -%}
-<span>Line deleted ·</span><form class="inline" method="post" action="/entries" hx-post="/entries" hx-target="#log" hx-swap="outerHTML"><input type="hidden" name="line" value="{{ d.line }}"><input type="hidden" name="day" value="{{ d.day }}"><button class="linkbtn" type="submit">Undo</button></form>
+<span>Line deleted ·</span><form class="inline" method="post" action="/entries/restore" hx-post="/entries/restore" hx-target="#log" hx-swap="outerHTML"><input type="hidden" name="snap" value="{{ d.snap }}"><button class="linkbtn" type="submit">Undo</button></form>
 {%- endif -%}

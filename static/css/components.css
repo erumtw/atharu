@@ -5,101 +5,212 @@
 .props dd:hover{background:var(--fill)}
 .pin{font:inherit;border:0;background:transparent;padding:2px 0;color:var(--ink);min-width:0;flex:1}
 .pin:focus{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+select.pin{cursor:pointer}
+/* Inline edit (a log line, an untitled epic): the dashed rule says "type here"; it hides behind the focus ring. */
+/* A title edited in place looks like the heading it sits in. */
+.ptitle .pin{letter-spacing:inherit;width:100%}
+.pin.dash{border-bottom:1px dashed var(--faint)}
+.pin.dash:focus{border-bottom-color:transparent}
+.pin.bad{outline:2px solid var(--err);outline-offset:2px;border-radius:4px}
 .hr{border:0;border-top:1px solid var(--line);margin:6px 0;width:100%}
 .blocks{display:flex;flex-direction:column}
 .blk{display:flex;gap:10px;align-items:center;padding:3px 6px;margin:0 -6px;border-radius:6px;min-height:32px}
 .blk:hover{background:var(--fill)}
-.x{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex:none;opacity:0}
+.x{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex:none;opacity:0;padding:0}
+.x:hover{color:var(--ink);background:rgba(0,0,0,.05)}
 .blk:hover .x,.x:focus{opacity:1}
-.k{font-family:ui-monospace,'SF Mono',Menlo,monospace;display:inline-flex;justify-content:center;align-items:center;width:22px;height:22px;border-radius:6px;background:var(--fill-2);color:var(--ink);font-size:12px;font-weight:600;flex:none;letter-spacing:0}
+.k{font-family:ui-monospace,'SF Mono',Menlo,monospace;display:inline-flex;justify-content:center;align-items:center;width:22px;height:22px;border-radius:6px;background:var(--fill-2);color:var(--ink);font-size:12px;font-weight:600;line-height:1;flex:none;letter-spacing:0}
 .k.imp{background:var(--accent);color:#fff}
 .k.bl{background:var(--ink);color:#fff}
 .chip{display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--ink-2);background:var(--fill-2);white-space:nowrap;letter-spacing:0}
 .chip.key{font-family:ui-monospace,'SF Mono',Menlo,monospace}
+.chip.llm{background:#fff;color:var(--ink);border:1px solid var(--ink)}
+.lchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:12px;color:var(--accent);background:#fff;white-space:nowrap;letter-spacing:0}
+.lchip:hover{border-color:var(--accent);text-decoration:none}
 .flag{display:inline-flex;font-size:12px;border-radius:9999px;padding:1px 10px;font-weight:500;white-space:nowrap;letter-spacing:0}
 .flag.stale{background:var(--fill-2);color:var(--ink-2)}
 .flag.risk{background:#fff;color:var(--ink);border:1px solid var(--ink)}
 .flag.over{background:var(--ink);color:#fff}
-.tag{font-size:11px;color:var(--muted);border:1px dashed #b0b0b5;border-radius:9999px;padding:0 8px;letter-spacing:0;white-space:nowrap;font-weight:400}
 .callout{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;border-radius:12px;background:var(--fill)}
-.callout.dark{background:#272729;color:#fff}
-.callout.dark .muted{color:#cccccc}
-.callout.dark a{color:#2997ff}
-.btn{font:inherit;font-size:14px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:9999px;padding:7px 18px;min-height:36px;cursor:pointer;white-space:nowrap}
-.btn:active{transform:scale(.95)}
-.btn.ghost{background:transparent;color:var(--accent)}
-.util{font:inherit;font-size:13px;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:3px 10px;min-height:28px;cursor:pointer;white-space:nowrap}
-.newline{display:flex;gap:10px;align-items:center;padding:4px 6px;margin:0 -6px;border-radius:8px;border:1px solid var(--line)}
-.newline input{font:inherit;font-size:16px;border:0;outline:0;flex:1;min-width:0;padding:6px 0;background:transparent;color:var(--ink)}
-.newline:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,102,204,.15)}
-.check{width:18px;height:18px;accent-color:var(--accent);margin:0;flex:none}
+.callout.dark{background:var(--dark);color:#fff}
+.callout.dark .muted{color:var(--on-dark-muted)}
+.callout.dark a{color:var(--accent-on-dark)}
+.dot{width:8px;height:8px;border-radius:9999px;background:var(--accent-on-dark);flex:none}
+/* Impact line figures: before → after, the after in the on-dark blue. */
+.num{font-size:34px;font-weight:600;letter-spacing:-.374px}
+.callout.dark .num.up{color:var(--accent-on-dark)}
+.card{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.err{color:var(--err);font-size:13px}
+.tick{color:var(--accent)}
+.ink{color:var(--ink)}
+.saved{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.check{width:18px;height:18px;accent-color:var(--accent);margin:0;flex:none;cursor:pointer;border-radius:4px}
+.check:hover{box-shadow:0 0 0 4px rgba(0,0,0,.05)}
+.check:disabled{cursor:not-allowed}
 .done-text{text-decoration:line-through;color:var(--muted)}
-.views{display:flex;gap:18px;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
-.views a{color:var(--muted);padding:8px 0;border-bottom:2px solid transparent;margin-bottom:-1px;text-decoration:none}
-.views a.on{color:var(--ink);border-color:var(--ink);font-weight:500}
+.due{font-size:12px;color:var(--muted);white-space:nowrap}.due.late{color:var(--err);font-weight:600}
 .meter{display:inline-flex;gap:3px}
 .meter i{width:14px;height:6px;border-radius:3px;background:var(--line);display:block}
 .meter i.on{background:var(--accent)}
 .bars{display:flex;gap:6px;align-items:flex-end;height:56px}
-.bars span{flex:1;background:#4d8fd1;border-radius:4px 4px 0 0}
+.bars span{flex:1;background:var(--accent-soft);border-radius:4px 4px 0 0}
+/* Report charts: OKR status bar (status by weight, not hue: active blue, done lighter, the rest grey) + depth heat. */
+.obar{display:flex;height:8px;border-radius:4px;overflow:hidden}
+.obar .active{background:var(--accent)}.obar .done{background:var(--accent-soft)}.obar .other{background:var(--faint)}
+.heat1{background:var(--heat-1)}.heat2{background:var(--heat-2)}.heat3{background:var(--accent);color:#fff}.heat4{background:var(--heat-4);color:#fff}
 .stat{flex:1 1 120px;padding:12px 16px;border-radius:12px;background:var(--fill)}
 .stat b{display:block;font-size:28px;font-weight:600;letter-spacing:-.28px;line-height:1.15}
-.seg{display:inline-flex;gap:2px;background:#e8e8ed;border-radius:9999px;padding:3px}
-.seg button{font:inherit;font-size:13px;border:0;background:none;border-radius:9999px;padding:4px 12px;min-height:28px;cursor:pointer;color:var(--ink-2)}
-.seg .on{background:#fff;color:var(--ink);font-weight:600}
-.seg{background:rgba(120,120,128,.12);box-shadow:inset 0 1px 1px rgba(0,0,0,.04)}
-.seg .on{box-shadow:inset 0 1px 0 #fff,0 2px 8px rgba(0,0,0,.08)}
-.btn{background:var(--accent);box-shadow:none}
-.btn.ghost{background:rgba(255,255,255,.55);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
-.callout.dark .btn.ghost{background:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
-.newline{position:sticky;bottom:16px;z-index:2;border-radius:9999px;padding:6px 8px 6px 14px;border:1px solid rgba(255,255,255,.8);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:inset 0 1px 0 #fff,0 10px 30px rgba(0,0,0,.10)}
-.newline .util{border-radius:9999px}
-.card{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff;display:flex;flex-direction:column;gap:10px;min-width:0}
-.sgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.err{color:var(--err);font-size:13px}
-.chip.llm{background:#fff;color:var(--ink);border:1px solid var(--ink)}
-.saved{font-size:12px;color:var(--muted)}
-.btn.ghost{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
-.lchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:12px;color:var(--accent);background:#fff;white-space:nowrap;letter-spacing:0}
-.due{font-size:12px;color:var(--muted);white-space:nowrap}.due.late{color:var(--err);font-weight:600}
-.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.cal .dh{font-size:12px;font-weight:600;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);background:#fafafc}
-.cal .dh.now{color:var(--accent)}
-.cal .dc{min-height:300px;padding:8px;border-right:1px solid var(--fill-2);display:flex;flex-direction:column;gap:6px}
-.cal .dc.now{background:#f5f9fe}
-.ev{font-size:12px;border-radius:6px;padding:4px 6px;line-height:1.3;display:block;color:var(--ink)}
-.ev.meet{background:#e8f1fb;border-left:3px solid var(--accent)}
-.ev.todo{background:#fff;border:1px solid var(--line)}
-.ev.tgt{background:var(--fill-2)}
-.ev.own{background:#fff;border:1px dashed #b0b0b5}
-.logdot{font-size:11px;color:var(--muted)}
-/* Toast, parse hint and htmx-only bits not on the canvas. */
-.toast{align-self:flex-start;background:rgba(250,250,252,.9);border-radius:9999px;padding:4px 12px;border:1px solid var(--line)}
-.toast:empty{display:none}
-.hint{padding:0 14px;color:var(--accent);min-height:1.2em}
-.hint .err{color:var(--err)}
-.newline.bad{border-color:var(--err)}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* Controls (canvas "Components · controls"): one height per context, 32 chrome / 36 page / 44 phone, label centred
+   with flex + line-height 1 (never padding guesswork). One blue primary; everything else is a glass pill whose
+   background comes from the shared glass rule in looks.css (--s = its step over --glass-a). */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;box-sizing:border-box;padding:0 16px;border-radius:9999px;border:1px solid transparent;
+  font:inherit;font-size:14px;line-height:1;letter-spacing:-.1px;white-space:nowrap;cursor:pointer;text-decoration:none;
+  color:#fff;background:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.btn:hover{background:var(--accent-2);text-decoration:none}
+.btn:active{background:var(--accent-2);transform:scale(.96)}
+.btn.ghost{--s:10%;color:var(--ink);border-color:var(--glass-edge);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06);
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+.btn.ghost:hover{--s:25%}
+/* Liquid Glass press: the slab swells and glows (the blue primary still sinks to .96). */
+.btn.ghost:active{--s:35%;transform:scale(1.04);box-shadow:inset 0 0 12px rgba(255,255,255,.7),0 4px 12px rgba(0,0,0,.1)}
+.btn.dng{color:var(--err)}
+.btn.s,.crumb .btn{height:32px;padding:0 12px;font-size:13px}
+.callout.dark .btn.ghost{color:var(--accent-on-dark);border-color:var(--accent-on-dark);background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.callout.dark .btn.ghost:hover{background:rgba(255,255,255,.08)}
+.linkbtn{font:inherit;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;border-radius:4px}
+.linkbtn:hover{text-decoration:underline}
+.linkbtn:active{opacity:.6}
+:is(.btn,.linkbtn,.ib,.x,.check,.sw,.dnav>*):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:is(.btn,.linkbtn,.ib):disabled{opacity:.45;cursor:not-allowed;transform:none}
+/* Loading: htmx puts .htmx-request on the requesting form (or element); its submit shows a spinner. */
+.htmx-request :is(.btn,.linkbtn)[type=submit],.htmx-request:is(.btn,.linkbtn){cursor:progress;opacity:.75}
+.htmx-request .btn[type=submit]::before,.btn.htmx-request::before{content:"";width:12px;height:12px;box-sizing:border-box;border-radius:9999px;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+.htmx-request>label:has(.check){opacity:.6;cursor:progress}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.htmx-request .btn[type=submit]::before,.btn.htmx-request::before{animation:none;opacity:.5}}
+
+/* Glass field: a pill with its action inside on the right; focus = blue ring, 422 = red ring with the input kept.
+   On an input itself (date, title) it is the same pill without the inner layout. */
+.fld{--s:12%;display:flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 4px 0 18px;border-radius:9999px;border:1px solid var(--glass-edge);color:var(--ink);
+  box-shadow:inset 0 1px 0 #fff,0 6px 20px rgba(0,0,0,.06);backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+.fld:hover{--s:25%}
+.fld input{flex:1;min-width:0;height:100%;border:0;outline:0;padding:0;margin:0;background:transparent;font:inherit;font-size:16px;color:inherit}
+.fld .btn{height:36px}
+.fld .ic{width:16px;height:16px;color:var(--muted)}
+input.fld{font:inherit;font-size:14px;padding:0 14px;outline:0}
+.fld.m{height:36px;padding:0 14px}.fld.m input{font-size:14px}
+.fld.m:has(.btn){padding-right:3px}.fld.m .btn{height:28px}
+.fld.s{height:32px;padding:0 12px;gap:6px;font-size:13px}.fld.s input{font-size:13px}
+.fld:has(:disabled),input.fld:disabled{opacity:.5}
+/* --muted-tint, not --muted: Clear glass blurs 4px, and --muted-look over half-sharp text behind is 4.40:1. */
+:is(.fld,input.fld,.newline,.ta,.note-md)::placeholder,.fld input::placeholder,.newline input::placeholder{color:var(--muted-tint)}
+:is(.fld,.newline,.ta,.note-md):focus-within{border-color:var(--accent);box-shadow:inset 0 1px 0 #fff,0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
+:is(.fld,.newline,.ta,.note-md).bad{border-color:var(--err);box-shadow:inset 0 1px 0 #fff,0 0 0 4px color-mix(in srgb,var(--err) 14%,transparent)}
+/* A datalist's ▼ (Chrome) is noise: the suggestions still open as you type. */
+input[list]::-webkit-calendar-picker-indicator{display:none !important}
+/* Capture bar: the 52 px glass pill that holds the one primary. */
+.newline{--s:10%;display:flex;gap:8px;align-items:center;height:52px;box-sizing:border-box;padding:0 4px 0 20px;border-radius:9999px;border:1px solid var(--glass-edge);
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter)}
+.newline:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent),var(--lg-light),var(--lg-shadow)}
+.newline input{font:inherit;font-size:16px;border:0;outline:0;flex:1;min-width:0;height:100%;padding:0;background:transparent;color:var(--ink)}
+.newline .btn{height:44px}
 .capture{position:sticky;bottom:16px;z-index:2;display:flex;flex-direction:column;gap:8px}
+.hint{padding:0 20px;color:var(--accent);min-height:18px;line-height:1.4}
+.hint .err{color:var(--err)}
+/* Legend: every chip centred on one baseline; wraps as whole items. */
+.legend{gap:8px 16px;padding:0 20px}
+.legend>span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+/* Multi-line field: a glass box, 12 radius; autosaves, so no Save button unless JS is off. */
+.ta,.note-md{--s:12%;display:block;width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--glass-edge);padding:10px 14px;font:inherit;font-size:15px;line-height:1.5;
+  color:var(--ink);resize:vertical;outline:0;box-shadow:inset 0 1px 0 #fff,0 6px 20px rgba(0,0,0,.06)}
+/* "Own words" is long-form writing: a size up from the form fields. */
+.ta.prose{font-size:16px;line-height:1.6}
+.note-md{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px}
+/* Day nav: one glass capsule, Today | ‹ | date ▾ | ›, hairlines between. The date is a native date input laid over
+   its label, so a click opens the OS picker and the keyboard still types a date. */
+.dnav{--s:10%;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;border-radius:9999px;border:1px solid var(--glass-edge);overflow:hidden;font-size:13px;flex:none;
+  backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06)}
+.dnav>*{display:inline-flex;align-items:center;gap:6px;height:100%;padding:0 12px;margin:0;line-height:1;text-decoration:none;position:relative;box-sizing:border-box}
+.crumb .dnav>*{color:var(--ink)}
+.dnav>*+*{border-left:1px solid rgba(0,0,0,.08)}
+.dnav>:hover{background:rgba(255,255,255,.6);text-decoration:none}
+.dnav>:active{background:rgba(0,0,0,.06)}
+.dnav>:has(:focus-visible){outline:2px solid var(--accent);outline-offset:-3px;border-radius:9999px}
+.dnav .i{padding:0 10px}
+.dnav .ic{width:14px;height:14px}
+.dnav .ic.dn{width:12px;height:12px;color:var(--muted)}
+.dnav input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;cursor:pointer;font:inherit}
+.dnav input[type=date]::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:auto;height:auto;cursor:pointer}
+/* Icon button: 32 in chrome, 44 on phone (responsive.css). Always has an aria-label. */
+.ib{width:32px;height:32px;border:0;background:transparent;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;flex:none;padding:0}
+.ib:hover{background:rgba(0,0,0,.05)}
+.ib:active,.ib:popover-open{background:rgba(0,0,0,.1)}
+
+/* Segmented: iOS pill track, 36 tall with 30 segments (32/26 in chrome); .mac = 8-radius macOS control for settings. */
+.seg{display:inline-flex;gap:2px;align-items:center;height:36px;box-sizing:border-box;background:rgba(120,120,128,.12);box-shadow:inset 0 1px 1px rgba(0,0,0,.04);border-radius:9999px;padding:3px}
+.seg button{font:inherit;font-size:13px;line-height:1;border:0;background:none;border-radius:9999px;padding:0 12px;height:30px;display:inline-flex;align-items:center;cursor:pointer;color:var(--ink-2);white-space:nowrap}
+.seg button:hover{background:rgba(255,255,255,.5)}
+.seg button:active{background:rgba(255,255,255,.75)}
+.seg :is(.on,[aria-pressed=true]){background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 1px 0 #fff,0 2px 8px rgba(0,0,0,.08)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+.crumb .seg{height:32px}.crumb .seg button{height:26px}
+
+.menu{position:absolute;width:260px;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px;z-index:3}
+.menu [role=option]{padding:0 10px;min-height:32px;display:flex;align-items:center;gap:10px;border-radius:8px;cursor:pointer}
+.menu [role=option]:hover{background:rgba(0,0,0,.04)}
+.menu [aria-selected=true]{background:var(--accent-wash)}
+
+/* Toast, parse hint and htmx-only bits not on the canvas. */
+.toast{align-self:flex-start;background:color-mix(in srgb,var(--fill-3) 90%,transparent);border-radius:9999px;padding:4px 12px;border:1px solid var(--line)}
+.toast:empty{display:none}
 form.inline{display:inline}
 /* Swap targets wrap board markup; contents keeps the .doc gap the board was drawn with. */
 .doc > section{display:contents}
-.pin.bad{outline:2px solid var(--err);border-radius:4px}
-/* HIG: no Liquid Glass in the content layer → content buttons stay plain */
-.btn.ghost{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 /* HIG: respect Reduce Transparency / Increase Contrast */
-@media (prefers-reduced-transparency: reduce){.side,.crumb,.newline,.menu{backdrop-filter:none;-webkit-backdrop-filter:none}}
-@media (prefers-contrast: more){.side,.crumb,.newline,.card,.pg{border-color:var(--ink)}.muted{color:#3a3a3c}}
-/* Undo / delete are POST forms (work without JS) but read as links, like the board's <a>. */
-.linkbtn{font:inherit;background:none;border:0;padding:0;color:var(--accent);cursor:pointer}
-.linkbtn:hover{text-decoration:underline}
+@media (prefers-reduced-transparency: reduce){:is(.side,.crumb,.newline,.menu,.btn.ghost,.fld,.dnav,.ta,.note-md){backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media (prefers-contrast: more){:is(.side,.crumb,.newline,.card,.pg,.btn.ghost,.fld,.dnav,.ta,.note-md){border-color:var(--ink)}.muted{color:var(--muted-hc)}}
+
+/* Calendar. */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal .dh{font-size:12px;font-weight:600;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);background:var(--fill-3)}
+.cal .dh.now{color:var(--accent)}
+.cal .dc{min-height:300px;padding:8px;border-right:1px solid var(--fill-2);display:flex;flex-direction:column;gap:6px}
+.cal .dc.now{background:var(--now)}
+.ev{font-size:12px;border-radius:6px;padding:4px 6px;line-height:1.3;display:block;color:var(--ink)}
+.ev.meet{background:var(--accent-wash);border-left:3px solid var(--accent)}
+.ev.todo{background:#fff;border:1px solid var(--line)}
+.ev.tgt{background:var(--fill-2)}
+.ev.own{background:#fff;border:1px dashed var(--faint)}
+.ev.late{color:var(--err)}
+.logdot{font-size:11px;color:var(--muted)}
+/* Calendar extras not on the board: month grid, linked headers, events as start-meeting buttons, "+ Event" popover. */
+.cal .dh a,.cal .dn{color:inherit}
+.cal .dn{font-size:12px;font-weight:600;color:var(--muted)}
+.cal .dn.now{color:var(--accent)}
+.cal.month .dc{min-height:110px}
+.cal .dc.out{background:var(--fill-3)}
+.evrow{display:flex;align-items:flex-start;gap:4px}
+.evrow form:first-child{flex:1;min-width:0}
+.evbtn{font:inherit;border:0;background:none;padding:0;text-align:left;cursor:pointer;color:inherit;width:100%}
+.evrow .x{width:18px;height:18px}
+.evrow:hover .x{opacity:1}
+.evadd{position:relative}
+.evadd>summary{list-style:none}
+.evadd>summary::-webkit-details-marker{display:none}
+.evadd>form{position:absolute;right:0;top:calc(100% + 6px);z-index:5;width:260px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.edit-line{color:inherit;text-decoration:none;cursor:text}.edit-line:hover{text-decoration:underline dotted var(--faint)}
 
 /* Notes editor (P4): the body as the board draws it, plus the `/` and `[[` menus. */
 .note-body{display:flex;flex-direction:column;gap:10px;font-size:16px;line-height:1.6;min-height:240px}
 .note-body .ProseMirror{display:flex;flex-direction:column;gap:10px;outline:0;min-height:240px}
 .note-body h1,.note-body h2,.note-body h3{margin:4px 0 0}
 .note-body p,.note-body ul,.note-body ol,.note-body blockquote,.note-body pre{margin:0}
-.note-body code{font-family:ui-monospace,'SF Mono',Menlo,monospace;background:#f5f5f7;padding:1px 5px;border-radius:4px}
-.note-body pre{background:#f5f5f7;padding:10px 14px;border-radius:8px;overflow-x:auto}
+.note-body code{font-family:ui-monospace,'SF Mono',Menlo,monospace;background:var(--fill);padding:1px 5px;border-radius:4px}
+.note-body pre{background:var(--fill);padding:10px 14px;border-radius:8px;overflow-x:auto}
 .note-body pre code{padding:0;background:none}
 .note-body blockquote{border-left:3px solid var(--line);padding-left:14px;color:var(--ink-2)}
 .note-body .callout{padding:10px 14px;flex-direction:column;gap:6px}
@@ -115,23 +226,76 @@ form.inline{display:inline}
 .note-body [data-type=details]>button::before{content:'▸'}
 .note-body [data-type=details].is-open>button::before{content:'▾'}
 .note-body .page{color:var(--accent)}
-.note-md{font:inherit;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;resize:vertical}
-.menu{position:absolute;width:260px;backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(0,0,0,.08);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.12);padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px;z-index:3}
-.menu [role=option]{padding:6px 10px;border-radius:8px;cursor:pointer}
-.menu [aria-selected=true]{background:#e8f1fb}
-/* Calendar extras not on the board: month grid, linked headers, events as start-meeting buttons, "+ Event" popover. */
-.cal .dh a,.cal .dn{color:inherit}
-.cal .dn{font-size:12px;font-weight:600;color:var(--muted)}
-.cal .dn.now{color:var(--accent)}
-.cal.month .dc{min-height:110px}
-.cal .dc.out{background:#fafafc}
-.evrow{display:flex;align-items:flex-start;gap:4px}
-.evrow form:first-child{flex:1;min-width:0}
-.evbtn{font:inherit;border:0;background:none;padding:0;text-align:left;cursor:pointer;color:inherit;width:100%}
-.evrow .x{width:18px;height:18px}
-.evrow:hover .x{opacity:1}
-.evadd{position:relative}
-.evadd>summary{list-style:none;padding:7px 18px}
-.evadd>summary::-webkit-details-marker{display:none}
-.evadd>form{position:absolute;right:0;top:calc(100% + 6px);z-index:5;width:260px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
-.edit-line{color:inherit;text-decoration:none;cursor:text}.edit-line:hover{text-decoration:underline dotted #b0b0b5}
+
+/* Settings (canvas "Settings · appearance", D18): Apple grouped inset list, Notion label + help left, one control right.
+   Help text = --muted on --fill: 4.66 (plain), 5.92 (look), 8.35 (tinted). */
+.doc.set{max-width:712px}
+.sec{font-size:13px;font-weight:600;color:var(--muted);margin:18px 4px -6px;letter-spacing:0}
+.grp{background:var(--fill);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.gform{display:contents}
+.gi{display:flex;gap:16px;align-items:center;padding:12px 16px;min-height:52px;box-sizing:border-box;position:relative;margin:0}
+/* Hairline inset from the left between rows; the forms are display:contents, so "not the group's first row" it is. */
+.gi::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:1px solid var(--sep)}
+.grp>.gi:first-child::before{content:none}
+.gi .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.gi .t b{font-weight:500}
+.gi .t>span,.gi .help{font-size:13px;color:var(--muted);line-height:1.35}
+.gi .t.between{flex-direction:row;align-items:center}
+.gi.col{flex-direction:column;align-items:stretch;gap:12px}
+/* Look: app-icon tiles, the picked one ringed in accent like macOS Appearance. The radio stays a real form field. */
+.looks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.lk{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;cursor:pointer;position:relative;text-align:center}
+.lk input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.lk img{width:64px;height:64px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,.12);outline:3px solid transparent;outline-offset:3px}
+.lk:hover img{box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.lk:has(:checked){font-weight:600}
+.lk:has(:checked) img{outline-color:var(--accent)}
+.lk:has(:focus-visible) img{outline-color:var(--accent);outline-style:dashed}
+.lk small{font-size:11px;color:var(--muted);font-weight:400}
+/* macOS switch: a native checkbox (role=switch), so it still posts without JS. 38x22 desktop, 51x31 phone.
+   Pressed stretches the knob toward the side it is leaving, like macOS. */
+.sw{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:9999px;background:var(--off);position:relative;cursor:pointer;flex:none;margin:0;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:9999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s,width .2s}
+.sw:hover{background:var(--hatch-a)}
+.sw:checked{background:var(--accent)}.sw:checked:hover{background:var(--accent-2)}.sw:checked::after{transform:translateX(16px)}
+.sw:active::after{width:22px}.sw:checked:active::after{transform:translateX(12px)}
+.sw:disabled{opacity:.45;cursor:not-allowed}
+/* .seg.mac: macOS segmented control (8 radius, 30 tall), for settings; the pill .seg stays for page views. */
+.seg.mac{border-radius:8px;padding:2px;height:30px;flex:none;box-shadow:none}
+.seg.mac button{border-radius:6px;padding:0 14px;height:26px;color:var(--ink);font-weight:400}
+.seg.mac [aria-pressed=true]{font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+/* Opacity slider: native range on the true 0–100 scale. Stops follow the thumb centre (th/2 … 100% − th/2), so
+   the hatch (below the floor --f) and the accent fill end exactly under it. */
+.sl{display:flex;align-items:center;gap:12px;color:var(--muted)}
+.sl svg{flex:none}
+.rng{--th:22px;--px:calc(var(--th) / 2 + (100% - var(--th)) * var(--v) / 100);--pf:calc(var(--th) / 2 + (100% - var(--th)) * var(--f) / 100);
+  appearance:none;-webkit-appearance:none;flex:1;min-width:0;height:var(--th);margin:0;background:transparent;cursor:pointer}
+.rng::-webkit-slider-runnable-track{height:4px;border-radius:9999px;
+  background:repeating-linear-gradient(135deg,var(--hatch-a) 0 3px,var(--hatch-b) 3px 6px) 0 0/var(--pf) 100% no-repeat,
+    linear-gradient(90deg,transparent var(--pf),var(--accent) var(--pf) var(--px),var(--off) var(--px))}
+.rng::-moz-range-track{height:4px;border-radius:9999px;
+  background:repeating-linear-gradient(135deg,var(--hatch-a) 0 3px,var(--hatch-b) 3px 6px) 0 0/var(--pf) 100% no-repeat,
+    linear-gradient(90deg,transparent var(--pf),var(--accent) var(--pf) var(--px),var(--off) var(--px))}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:var(--th);height:var(--th);margin-top:calc(2px - var(--th) / 2);border-radius:9999px;background:#fff;border:0;box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.06);transition:transform .1s}
+.rng::-moz-range-thumb{width:var(--th);height:var(--th);border-radius:9999px;background:#fff;border:0;box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.06)}
+.rng:active::-webkit-slider-thumb{transform:scale(1.15)}
+.rng:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:9999px}
+.rng:disabled{opacity:.45;cursor:not-allowed}
+.val{font-variant-numeric:tabular-nums;font-size:13px;color:var(--ink);min-width:38px;text-align:right}
+/* Preview tile: the look's wallpaper behind a mini sidebar (same alpha step as .side) and sheet. */
+.prev{border-radius:12px;height:110px;position:relative;overflow:hidden;background:var(--wall,var(--fill-2))}
+.prev .pane,.prev .sheet{position:absolute;top:14px;bottom:14px;border-radius:14px;padding:10px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.prev .pane{left:14px;width:150px;border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+  background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + 5%),transparent);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)}
+.prev .sheet{left:178px;right:14px;background:#fff;border:1px solid rgba(0,0,0,.05)}
+html[data-glass=all] .prev .sheet{background:color-mix(in srgb,var(--glass-c) max(0%,var(--glass-a) - 5%),transparent);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%)}
+.prev i{display:block;height:8px;border-radius:4px;background:rgba(29,29,31,.55)}
+.prev .sheet i{background:rgba(29,29,31,.4)}
+.prev i:nth-of-type(1){width:70%}.prev i:nth-of-type(2){width:55%}.prev i:nth-of-type(3){width:62%}
+.prev .sheet i:nth-of-type(1){width:40%}.prev .sheet i:nth-of-type(2){width:85%}
+.chev{color:var(--muted);font-size:13px;flex:none}
+.rt-on{display:none}
+@media (prefers-reduced-transparency: reduce){.rt-on{display:inline}.rt-off{display:none}.prev .pane,.prev .sheet{backdrop-filter:none;-webkit-backdrop-filter:none}}
+/* Status, not colour: On = solid ink, Not set up = grey (DESIGN §1). */
+.pill{font-size:12px;border-radius:9999px;padding:1px 10px;background:var(--sep);color:var(--ink);white-space:nowrap;flex:none}
+.pill.ok{background:var(--ink);color:#fff}

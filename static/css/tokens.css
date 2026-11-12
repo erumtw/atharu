@@ -8,4 +8,29 @@
   --fill: #f5f5f7;
   --fill-2: #f0f0f0;
   --err: #b3261e;
+  /* Grouped list + controls (canvas "Settings · appearance", Apple System Settings greys). Text never sits on
+     --off / --hatch-*; ink on --sep is 13.2:1. */
+  --sep: #e3e3e8;
+  --off: #d1d1d6;
+  --hatch-a: #c7c7cc;
+  --hatch-b: #e5e5ea;
+  /* Blue family: still the one accent, in steps (T28 folded these in from the components, canvas note s9). */
+  --accent-2: #0055b3;       /* hover / pressed primary, tinted accent: white on it 7.1:1 */
+  --accent-wash: #e8f1fb;    /* meeting events, selected menu option: ink on it 14.8:1 */
+  --accent-soft: #4d8fd1;    /* bars and the "done" OKR segment, never under text */
+  --accent-on-dark: #2997ff; /* link + dot on --dark: 4.9:1, so --dark stays opaque even with Glass everywhere */
+  --now: #f5f9fe;            /* today's calendar column */
+  --heat-1: #e3effc;         /* depth steps; 3 is --accent, white on 4 is 10.8:1 */
+  --heat-2: #bcd6f2;
+  --heat-4: #003d7a;
+  /* Neutrals. */
+  --dark: #272729;           /* meeting banner + impact callout: white on it 14.9:1 */
+  --on-dark-muted: #cccccc;  /* muted text on --dark: 9.3:1 */
+  --fill-3: #fafafc;         /* table row hover, calendar heads, toast */
+  --faint: #b0b0b5;          /* dashed rules and out-of-month day numbers, never body text */
+  --chrome-bg: #eef0f5;      /* behind the sheet when no look is set */
+  --muted-look: #5e5e63;     /* --muted on a look's wallpaper */
+  --muted-tint: #48484d;     /* --muted with Tinted glass */
+  --muted-hc: #3a3a3c;       /* --muted under Increase Contrast */
+  --err-tint: #a32019;       /* --err with Tinted glass: #b3261e drops to 4.48:1 on the Glass look's tinted glass sheet, this is 5.18 */
 }

@@ -6,7 +6,7 @@
 <form class="seg" role="group" aria-label="Range" method="get" action="/report">
 {%- for (p, l) in [("week", "This week"), ("month", "This month"), ("quarter", "This quarter")] %}<button{% if preset == *p %} class="on"{% endif %} type="submit" name="preset" value="{{ p }}">{{ l }}</button>{% endfor -%}
 </form>
-<form class="row small muted" style="gap: 6px" method="get" action="/report"><input class="util" type="date" name="from" value="{{ from }}" aria-label="From" onchange="this.form.requestSubmit()">→<input class="util" type="date" name="to" value="{{ to }}" aria-label="To" onchange="this.form.requestSubmit()"><noscript><button class="util" type="submit">Show</button></noscript></form>
+<form class="row small muted" style="gap: 6px" method="get" action="/report"><input class="fld s" type="date" name="from" value="{{ from }}" aria-label="From" onchange="this.form.requestSubmit()">→<input class="fld s" type="date" name="to" value="{{ to }}" aria-label="To" onchange="this.form.requestSubmit()"><noscript><button class="btn ghost s" type="submit">Show</button></noscript></form>
 </div>
 
 <div class="row" style="gap: 10px; align-items: stretch" aria-label="Numbers for this range, not copied">
@@ -19,7 +19,7 @@
 <p class="small muted" style="margin: 0">Numbers and charts are for you. Copy takes only the note below.</p>
 
 <hr class="hr">
-<h1 class="ptitle" style="font-size: 32px; margin-top: 0">{{ note.title }}</h1>
+<h1 class="ptitle t32" style="margin-top: 0">{{ note.title }}</h1>
 {%- if is_empty() %}
 <div class="row"><span class="small muted">Nothing logged in this range.{% if wider.is_some() %} Try{% endif %}</span>{% if let Some((p, l)) = wider %}<a class="small" href="/report?preset={{ p }}">{{ l }}</a>{% endif %}</div>
 {%- endif %}
@@ -43,19 +43,19 @@
 <hr class="hr">
 
 <details open>
-<summary>Charts <span class="muted" style="font-weight: 400">· not copied</span></summary>
+<summary>Charts <span class="muted normal">· not copied</span></summary>
 <div class="row" style="align-items: flex-start; gap: 28px; margin-top: 8px">
 <div style="flex: 1 1 220px"><div class="small muted">Epics by OKR</div>
 {%- if okrs.is_empty() %}<div class="small muted" style="margin-top: 6px">No epics yet.</div>{% endif %}
 {%- for b in okrs %}
-<div class="small" style="margin-top: 6px">{{ b.okr }}: {{ b.summary }}</div><div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden">{% for s in b.segs %}<span style="flex: {{ s.flex }}; background: {{ s.color }}"></span>{% endfor %}</div>
+<div class="small" style="margin-top: 6px">{{ b.okr }}: {{ b.summary }}</div><div class="obar">{% for s in b.segs %}<span class="{{ s.class }}" style="flex: {{ s.flex }}"></span>{% endfor %}</div>
 {%- endfor %}</div>
 <div style="flex: 1 1 200px"><div class="small muted">Impact lines per week</div><div class="bars" aria-hidden="true">{% for p in weeks.pct %}<span style="height: {{ p }}%"></span>{% endfor %}</div><div class="row between small muted"><span>{{ weeks.first }}</span>{% if weeks.pct.len() > 1 %}<span>{{ weeks.last }}</span>{% endif %}</div></div>
 <div style="flex: 1 1 220px"><div class="small muted">Depth by month</div><div class="small muted">1 heard of it · 2 can explain · 3 can build without AI · 4 can teach</div>
 {%- if heat.is_empty() %}<div class="small muted" style="margin-top: 6px">No topics rated yet.</div>{% else %}
 <table class="small" style="margin-top: 4px"><tr><th>Topic</th>{% for m in heat_months %}<th>{{ m }}</th>{% endfor %}</tr>
 {%- for h in heat %}
-<tr><td class="mono">{{ h.topic }}</td>{% for c in h.cells %}{% if *c == 0 %}<td class="muted">–</td>{% else %}<td style="{{ crate::report::view::heat_style(c) }}">{{ c }}</td>{% endif %}{% endfor %}</tr>
+<tr><td class="mono">{{ h.topic }}</td>{% for c in h.cells %}{% if *c == 0 %}<td class="muted">–</td>{% else %}<td class="{{ crate::report::view::heat_class(c) }}">{{ c }}</td>{% endif %}{% endfor %}</tr>
 {%- endfor %}</table>{% endif %}</div>
 </div>
 </details>

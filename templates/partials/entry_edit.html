@@ -1,7 +1,7 @@
 {#- One log line in its edit box: Enter saves through the capture grammar, Esc (or Cancel) puts the row back. -#}
 <form class="blk" id="entry-{{ id }}" method="post" action="/entries/{{ id }}" hx-post="/entries/{{ id }}" hx-target="#log" hx-swap="outerHTML" style="flex-wrap: wrap">
 <input type="hidden" name="day" value="{{ day }}">
-<input class="pin" name="line" value="{{ line }}" aria-label="Edit line" autofocus style="flex: 1; border-bottom: 1px dashed #b0b0b5" hx-on:keydown="if (event.key === 'Escape') { event.preventDefault(); htmx.ajax('GET', '/?day={{ day }}', {target: '#log', select: '#log', swap: 'outerHTML'}) }">
-<button class="util" type="submit">Save</button><a class="small" href="/?day={{ day }}">Cancel</a>
+<input class="pin dash{% if error.is_some() %} bad{% endif %}" name="line" value="{{ line }}" aria-label="Edit line" autofocus style="flex: 1" hx-on:keydown="if (event.key === 'Escape') { event.preventDefault(); htmx.ajax('GET', '/?day={{ day }}', {target: '#log', select: '#log', swap: 'outerHTML'}) }">
+<button class="btn ghost s" type="submit">Save</button><a class="small" href="/?day={{ day }}">Cancel</a>
 {%- if let Some(e) = error %}<span class="err" style="flex-basis: 100%">{{ e }}</span>{% endif %}
 </form>

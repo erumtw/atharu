@@ -106,28 +106,49 @@ pub fn insert_entry(
     Ok((id, new_epic))
 }
 
-/// Deletes and hands back the line, so the toast can offer to re-log it.
-pub fn delete_entry(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String, Entry)>> {
+/// Deletes and hands back (day, JSON snapshot of the whole row) for the Undo toast.
+pub fn delete_entry(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String, String)>> {
     conn.query_row(
-        "DELETE FROM entries WHERE id = ?1 RETURNING day, epic_key, kind, topic, text, due, link",
+        "DELETE FROM entries WHERE id = ?1 RETURNING day,
+           json_object('id', id, 'day', day, 'epic_key', epic_key, 'meeting_id', meeting_id,
+             'kind', kind, 'topic', topic, 'text', text, 'plan_state', plan_state,
+             'closed_day', closed_day, 'pinned', pinned, 'due', due, 'link', link,
+             'created_at', created_at, 'author', author)",
         [id],
-        |r| {
-            let kind: String = r.get(2)?;
-            let due: Option<String> = r.get(5)?;
-            Ok((
-                r.get(0)?,
-                Entry {
-                    epic_key: r.get(1)?,
-                    kind: Kind::parse(&kind).unwrap_or(Kind::Done),
-                    topic: r.get(3)?,
-                    text: r.get(4)?,
-                    due: due.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
-                    link: r.get(6)?,
-                },
-            ))
-        },
+        |r| Ok((r.get(0)?, r.get(1)?)),
     )
     .optional()
+}
+
+/// Undo: re-inserts the snapshot as it was (author, plan state, pin, meeting), under its old id
+/// unless that id was reused. Whatever it pointed at may be gone since: the epic comes back as a
+/// stub, a deleted meeting becomes no meeting. Returns the day.
+pub fn restore_entry(conn: &mut Connection, snap: &str) -> rusqlite::Result<String> {
+    let tx = conn.transaction()?;
+    tx.execute(
+        "INSERT OR IGNORE INTO epics(key) SELECT ?1 ->> 'epic_key' WHERE (?1 ->> 'epic_key') IS NOT NULL",
+        [snap],
+    )?;
+    let day = tx.query_row(
+        "INSERT INTO entries(id, day, epic_key, meeting_id, kind, topic, text, plan_state,
+                             closed_day, pinned, due, link, created_at, author)
+         SELECT CASE WHEN EXISTS (SELECT 1 FROM entries WHERE id = j.id) THEN NULL ELSE j.id END,
+                j.day, j.epic_key,
+                CASE WHEN EXISTS (SELECT 1 FROM meetings WHERE id = j.meeting_id) THEN j.meeting_id END,
+                j.kind, j.topic, j.text, j.plan_state, j.closed_day, j.pinned, j.due, j.link,
+                j.created_at, j.author
+         FROM (SELECT ?1 ->> 'id' AS id, ?1 ->> 'day' AS day, ?1 ->> 'epic_key' AS epic_key,
+                      ?1 ->> 'meeting_id' AS meeting_id, ?1 ->> 'kind' AS kind,
+                      ?1 ->> 'topic' AS topic, ?1 ->> 'text' AS text,
+                      ?1 ->> 'plan_state' AS plan_state, ?1 ->> 'closed_day' AS closed_day,
+                      ?1 ->> 'pinned' AS pinned, ?1 ->> 'due' AS due, ?1 ->> 'link' AS link,
+                      ?1 ->> 'created_at' AS created_at, ?1 ->> 'author' AS author) j
+         RETURNING day",
+        [snap],
+        |r| r.get(0),
+    )?;
+    tx.commit()?;
+    Ok(day)
 }
 
 /// The line as grammar text, for the inline edit box: (day, line).
@@ -181,7 +202,10 @@ pub fn update_entry(conn: &mut Connection, id: i64, e: &Entry) -> rusqlite::Resu
             |r| r.get(0),
         )
         .optional()?;
-    tx.commit()?;
+    // No such line: drop the tx (rollback) so a 404 edit leaves no stub epic behind.
+    if day.is_some() {
+        tx.commit()?;
+    }
     Ok(day)
 }
 

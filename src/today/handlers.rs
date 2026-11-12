@@ -285,11 +285,33 @@ pub async fn delete(
     headers: HeaderMap,
     Path(id): Path<i64>,
 ) -> AppResult<Response> {
-    let (day, entry) = queries::delete_entry(&st.conn(), id)?.ok_or(AppError::NotFound)?;
+    let (day, snap) = queries::delete_entry(&st.conn(), id)?.ok_or(AppError::NotFound)?;
     if !web::is_htmx(&headers) {
         return Ok(web::back(&format!("/?day={day}")));
     }
-    let d = pick_day(Some(&day), st.today());
+    log_swap(&st, &day, Some(view::Deleted { snap }))
+}
+
+#[derive(Deserialize)]
+pub struct SnapForm {
+    snap: String,
+}
+
+/// Undo of a delete: the row comes back exactly as it was (see `queries::restore_entry`).
+pub async fn restore(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<SnapForm>,
+) -> AppResult<Response> {
+    let day = queries::restore_entry(&mut st.conn(), &f.snap)?;
+    if !web::is_htmx(&headers) {
+        return Ok(web::back(&format!("/?day={day}")));
+    }
+    log_swap(&st, &day, None)
+}
+
+fn log_swap(st: &AppState, day: &str, deleted: Option<view::Deleted>) -> AppResult<Response> {
+    let d = pick_day(Some(day), st.today());
     let conn = st.conn();
     let swap = view::Swap {
         today: st.today(),
@@ -297,10 +319,7 @@ pub async fn delete(
         day: view::Day::new(d, st.today()),
         groups: groups(&conn, d)?,
         saved: None,
-        deleted: Some(view::Deleted {
-            line: entry.to_line(),
-            day,
-        }),
+        deleted,
         edit: None,
     };
     web::html(&swap)

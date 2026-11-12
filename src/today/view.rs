@@ -55,8 +55,8 @@ pub struct Saved {
 }
 
 pub struct Deleted {
-    pub line: String,
-    pub day: String,
+    /// The whole row as JSON, posted back by Undo.
+    pub snap: String,
 }
 
 pub struct Preview {

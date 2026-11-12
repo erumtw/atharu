@@ -17,9 +17,11 @@ pub async fn page(State(st): State<AppState>) -> AppResult<Response> {
     let conn = st.conn();
     let layout = Layout::load(&conn, "settings", "Settings", vec![])?;
     web::html(&view::Page {
-        glass_floor: look::pick(Some(layout.look)).glass_floor,
+        cur: look::pick(Some(layout.look)),
         layout,
         looks: &LOOKS,
+        google: st.settings.ical_url.is_some(),
+        jira: st.settings.jira().is_some(),
     })
 }
 

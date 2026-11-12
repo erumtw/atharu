@@ -2,8 +2,10 @@
 FROM rust:1.99-slim-bookworm AS build
 WORKDIR /src
 # Deps first with stub sources: this layer is reused until Cargo.toml/Cargo.lock change.
+# src-tauri (the Mac app) is a workspace member: cargo needs its manifest, never builds it here.
 COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo 'fn main() {}' > src/main.rs && touch src/lib.rs \
+COPY src-tauri/Cargo.toml src-tauri/
+RUN mkdir -p src src-tauri/src && echo 'fn main() {}' > src/main.rs && touch src/lib.rs src-tauri/src/lib.rs \
  && cargo build --release && rm -rf src
 COPY migrations migrations
 COPY templates templates

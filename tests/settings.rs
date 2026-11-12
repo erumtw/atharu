@@ -78,7 +78,10 @@ async fn glass_settings_persist_and_render_on_html() {
     }
     let s = get(&st, "/settings").await.body;
     assert!(s.contains("name=\"glass_all\" value=\"1\" checked"));
-    assert!(s.contains("min=\"18\" max=\"100\" value=\"40\""));
+    // True 0–100 scale; the floor rides along for the hatch + clamp, not as `min`.
+    assert!(
+        s.contains("min=\"0\" max=\"100\" value=\"40\" data-floor=\"18\" style=\"--v:40;--f:18\"")
+    );
 
     // htmx save: 204, unchecked box = off. The Glass look's floor (83) lifts the stored 40 on read.
     post(&st, "/settings", &form(&[("look", "glass")]), false).await;
@@ -127,4 +130,70 @@ async fn glass_settings_persist_and_render_on_html() {
             .status,
         422
     );
+}
+
+#[tokio::test]
+async fn slider_sits_on_the_true_scale() {
+    let st = state();
+    let s = get(&st, "/settings").await.body;
+    // Default 60 on Sumi: thumb at 60% of a 0–100 track (the T24 slider put it near the left, min = floor).
+    assert!(s.contains(
+        "type=\"range\" name=\"glass_opacity\" min=\"0\" max=\"100\" value=\"60\" data-floor=\"18\" style=\"--v:60;--f:18\""
+    ));
+    assert!(s.contains("The slider stops at 18%."));
+    assert!(
+        s.contains("role=\"switch\" name=\"glass_all\" value=\"1\">"),
+        "switch off, still a form field"
+    );
+    assert!(s.contains("value=\"sumi\" checked"));
+    assert!(s.contains("name=\"preset\" value=\"clear\" aria-pressed=\"true\""));
+}
+
+#[tokio::test]
+async fn connections_show_status_from_config_never_secrets() {
+    let dir = std::env::temp_dir().join(format!("atharu-settings-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("config.toml");
+
+    let mut st = state();
+    let off = get(&st, "/settings").await.body;
+    assert_eq!(
+        off.matches("<span class=\"pill\">Not set up</span>")
+            .count(),
+        2
+    );
+
+    // Jira half-filled = off; iCal set = on.
+    std::fs::write(
+        &path,
+        "ical_url = \"https://cal.example/secret-ical\"\njira_base_url = \"https://acme.atlassian.net\"\njira_email = \"me@example.com\"\n",
+    )
+    .unwrap();
+    st.settings = std::sync::Arc::new(atharu::config::FileConfig::load(&path));
+    let half = get(&st, "/settings").await.body;
+    assert!(half.contains("Google Calendar</b>"));
+    assert_eq!(half.matches("<span class=\"pill ok\">On</span>").count(), 1);
+    assert_eq!(
+        half.matches("<span class=\"pill\">Not set up</span>")
+            .count(),
+        1
+    );
+
+    std::fs::write(
+        &path,
+        "ical_url = \"https://cal.example/secret-ical\"\njira_base_url = \"https://acme.atlassian.net\"\njira_email = \"me@example.com\"\njira_token = \"tok-SECRET\"\n",
+    )
+    .unwrap();
+    st.settings = std::sync::Arc::new(atharu::config::FileConfig::load(&path));
+    let on = get(&st, "/settings").await.body;
+    assert_eq!(on.matches("<span class=\"pill ok\">On</span>").count(), 2);
+    for secret in [
+        "secret-ical",
+        "acme.atlassian",
+        "me@example.com",
+        "tok-SECRET",
+    ] {
+        assert!(!on.contains(secret), "{secret} leaked");
+    }
+    std::fs::remove_dir_all(&dir).unwrap();
 }

@@ -30,7 +30,7 @@ async fn week_assembles_what_we_have() {
         b.contains("<div class=\"dh now\"><a href=\"/?day=2026-11-11\">Wed 11 · today</a></div>")
     );
     // Overdue to-do in red; done and out-of-range ones absent.
-    assert!(b.contains("style=\"color: #b3261e\">send retention runbook</a>"));
+    assert!(b.contains("<a class=\"ev todo late\" href=\"/todos\">send retention runbook</a>"));
     assert!(b.contains(">ship checkout index</a>"));
     assert!(!b.contains("already done") && !b.contains("next week thing"));
     assert!(b.contains("href=\"/epics/OPS-101\">target · OPS-101</a>"));
@@ -50,7 +50,7 @@ async fn week_assembles_what_we_have() {
 
     let b = get(&st, "/calendar?week=2026-11-18").await.body;
     assert!(b.contains("16 – 22 Nov") && b.contains("next week thing"));
-    assert!(b.contains("href=\"/calendar?week=2026-11-11\">← Prev"));
+    assert!(b.contains("href=\"/calendar?week=2026-11-11\" aria-label=\"Previous week\""));
 
     let b = get(&st, "/calendar?week=2026-11-30&view=month").await.body;
     assert!(b.contains("<h1 class=\"ptitle\">November 2026</h1>"));
@@ -60,7 +60,9 @@ async fn week_assembles_what_we_have() {
             && b.contains("href=\"/?day=2026-12-06\">6</a>")
     );
     assert!(b.contains(">far</button>") && b.contains("dc out"));
-    assert!(b.contains("href=\"/calendar?week=2026-12-01&#38;view=month\">Next →"));
+    assert!(
+        b.contains("href=\"/calendar?week=2026-12-01&#38;view=month\" aria-label=\"Next month\"")
+    );
 }
 
 #[tokio::test]

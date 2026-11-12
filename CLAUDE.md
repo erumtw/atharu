@@ -90,7 +90,8 @@ Prompts for the common jobs: `.claude/commands/{log,query,lint,ingest}.md`.
 - Layout: vertical slices (`src/<feature>/{mod,handlers,queries,view}.rs`) + pure `src/domain/`. `domain/` imports
   no feature; features never import each other; SQL only in a slice's `queries.rs`; HTML only in `templates/`;
   every htmx action returns one partial and also works as a plain form POST (303 back). `src/cli/` is an entry
-  point like `app.rs` and may call slices' queries.
+  point like `app.rs` and may call slices' queries. `src/layout/` is shared page chrome (sidebar, breadcrumb, look), not a
+  feature: every slice may import it, like `web.rs`.
 - Schema changes: a new `migrations/00N_*.sql` appended in `src/db.rs`; never edit a shipped one.
 - Frontend JS: strict TypeScript in `editor/src/*.ts` (pinned Tiptap, esbuild) builds the committed `static/js/*.js`
   (`htmx.min.js` is vendored): `cd editor && npm ci && npm run check && node build.mjs`.
