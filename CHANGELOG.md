@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.7 — 2026-11-12
+
+### Features
+
+- agents can draw an Excalidraw drawing into their notes
+
 ## v0.1.6 — 2026-11-12
 
 ### Fixes
