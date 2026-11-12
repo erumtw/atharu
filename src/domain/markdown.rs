@@ -1,5 +1,5 @@
 //! Note markdown → HTML for read-only views. Raw HTML is shown as text, never passed through.
-use pulldown_cmark::{CowStr, Event, Options, Parser, Tag, html};
+use pulldown_cmark::{CowStr, Event, Options, Parser, Tag, TagEnd, html};
 
 /// The editor's Pandoc-style blocks (`:::callout` … `:::`) and the tags they become.
 fn fence(line: &str) -> Option<&'static str> {
@@ -98,9 +98,52 @@ pub fn to_html(md: &str) -> String {
     out
 }
 
+/// The words of a note without its markup (list snippets). `[[X]]` stays literal: it is how a note names a page.
+pub fn to_text(md: &str) -> String {
+    let body: String = md
+        .lines()
+        .filter(|l| {
+            let t = l.trim();
+            t != ":::" && t.split_whitespace().next().and_then(fence).is_none()
+        })
+        .flat_map(|l| [l, "\n"])
+        .collect();
+    let mut out = String::new();
+    for e in Parser::new_ext(
+        &body,
+        Options::ENABLE_TASKLISTS | Options::ENABLE_STRIKETHROUGH,
+    ) {
+        match e {
+            Event::Text(t) | Event::Code(t) | Event::Html(t) | Event::InlineHtml(t) => {
+                out.push_str(&t)
+            }
+            // Inline ends glue on (`**p95**s` stays "p95s"); block ends separate words.
+            Event::End(
+                TagEnd::Emphasis
+                | TagEnd::Strong
+                | TagEnd::Strikethrough
+                | TagEnd::Link
+                | TagEnd::Image,
+            ) => {}
+            Event::SoftBreak | Event::HardBreak | Event::End(_) | Event::Rule => out.push(' '),
+            _ => {}
+        }
+    }
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 #[cfg(test)]
 mod tests {
-    use super::to_html;
+    use super::{to_html, to_text};
+
+    #[test]
+    fn text_drops_markup_keeps_page_links() {
+        let md = "## Retro\n\n:::callout\n\n**p9**5 hit `1.8s` on [[OPS-101]], see [doc](https://x.io)\n\n:::\n\n- [x] done\n---\n";
+        assert_eq!(
+            to_text(md),
+            "Retro p95 hit 1.8s on [[OPS-101]], see doc done"
+        );
+    }
 
     #[test]
     fn raw_html_is_text_and_bad_links_are_dead() {

@@ -5,7 +5,10 @@
 .side a{display:flex;gap:8px;align-items:center;padding:6px 10px;border-radius:8px;color:var(--ink-2);min-height:32px;box-sizing:border-box;text-decoration:none}
 .side a:hover{color:var(--ink)}
 .side a.on{color:var(--ink);font-weight:600}
-.side a.sub{padding-left:32px;font-size:13px;color:var(--muted);min-height:28px}
+.side a.sub{padding-block:0;padding-left:32px;font-size:13px;color:var(--muted);min-height:28px;gap:6px}
+.side a.sub .mono{font-size:12px;flex:none}
+/* One line per epic: a long title ellipsizes instead of doubling the row (full title in the tooltip). */
+.side a.sub .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .side .lbl{font-size:12px;font-weight:600;color:var(--muted);padding:16px 10px 4px}
 /* Full height so the spacer can pin Settings to the bottom (.wl pads 12 top + bottom). */
 .side{min-height:calc(100vh - 24px)}

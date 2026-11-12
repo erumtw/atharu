@@ -1,2 +1,2 @@
 {% include "epics/live.html" %}
-<span id="saved" class="saved" style="margin-left: auto" hx-swap-oob="true">{%- include "epics/saved.html" -%}{% if !save_error %} · <span class="tick">✓ saved</span>{% endif %}</span>
+<span id="saved" class="saved" style="margin-left: auto" hx-swap-oob="true">{%- include "epics/saved.html" -%}{% if !save_error %}<span class="m-hide"> · </span><span class="tick">✓ saved</span>{% endif %}</span>

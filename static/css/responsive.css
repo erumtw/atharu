@@ -20,7 +20,7 @@ pre{max-width:100%;overflow-x:auto}
 @media (min-width:640px) and (max-width:1023px){
   .wl{flex-wrap:nowrap}
   .side{flex:none;width:64px;padding:10px 8px;position:sticky;top:12px;align-items:center}
-  .side .ws,.side .lb,.side .lbl,.side a.sub{display:none}
+  .side .ws,.side .lb,.side .lbl,.side a.sub,.side .cnt{display:none}
   .side a{justify-content:center;padding:0;width:44px;min-height:44px;border-radius:12px}
   .side a .ic{display:block}
   /* Section labels become thin dividers; the screen reader still reads the label text. */
@@ -32,11 +32,12 @@ pre{max-width:100%;overflow-x:auto}
 @media (max-width:639px){
   .m-pop:not(:popover-open){display:none}
   /* iOS zooms into inputs under 16 px; max() keeps bigger ones (the title input) as they are. */
-  .wl :is(input,select,textarea){font-size:max(16px,1em)}
+  /* !important: .fld.s / .fld.m / .dnav input set 13–14px at higher specificity; no field may undercut this. */
+  .wl :is(input,select,textarea){font-size:max(16px,1em) !important}
   .wl{display:block;padding:8px 0 0}
   .pg{border-radius:22px 22px 0 0;border-bottom:0;min-height:calc(100vh - 8px)}
   .doc,.doc.wide{padding:16px 16px 48px}
-  .ptitle{font-size:30px}
+  .ptitle,.ptitle.t32,.ptitle.t36{font-size:30px}
 
   /* Top bar: the crumb, minus the trail (the drawer covers navigation). */
   .crumb{padding:8px;gap:4px;min-height:60px}
@@ -52,6 +53,7 @@ pre{max-width:100%;overflow-x:auto}
   .fld.m .btn{height:36px}
   .dnav{height:44px}
   .dnav>*{padding:0 14px}
+  .seg:not(.mac){height:44px}.seg:not(.mac) button{height:38px}
 
   /* Drawer: the sidebar in the top layer. */
   .side:popover-open{position:fixed;inset:8px auto 8px 8px;width:min(300px,calc(100vw - 32px));max-width:none;overflow-y:auto;z-index:5;padding:8px;display:flex;
@@ -89,7 +91,8 @@ pre{max-width:100%;overflow-x:auto}
   .lk img{width:56px;height:56px;border-radius:13px}
   .gi{min-height:56px}
   .sw{width:51px;height:31px}.sw::after{width:27px;height:27px}.sw:checked::after{transform:translateX(20px)}
-  .seg.mac button{min-height:32px;padding:4px 16px}
+  /* auto: the 32 px touch segments would overflow the 30 px desktop track. */
+  .seg.mac{height:auto}.seg.mac button{min-height:32px;padding:4px 16px}
   .rng{--th:28px}
 
   /* Props stack label over value. */

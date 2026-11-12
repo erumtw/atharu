@@ -111,7 +111,7 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
     let all = queries::list(&conn, "")?;
     let (mut mine, mut agents) = (Vec::new(), Vec::new());
     for n in queries::list(&conn, &q)? {
-        let (before, hit, after) = snippet(&n.body, &q);
+        let (before, hit, after) = snippet(&markdown::to_text(&n.body), &q);
         let row = view::ListRow {
             id: n.id,
             title: title_or_untitled(&n.title),

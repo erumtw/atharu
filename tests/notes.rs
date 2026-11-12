@@ -77,7 +77,7 @@ async fn new_note_autosave_and_render() {
         get(&st, "/epics/OPS-101")
             .await
             .body
-            .contains("Mentioned in 1 note</h3>")
+            .contains("Mentioned in 1 note · <a href=\"/notes/1\">")
     );
     assert!(
         get(&st, "/learn/vector-search")
@@ -89,7 +89,7 @@ async fn new_note_autosave_and_render() {
         get(&st, "/meetings/1")
             .await
             .body
-            .contains("Mentioned in 1 note</h3>")
+            .contains("Mentioned in 1 note · <a href=\"/notes/1\">")
     );
 }
 

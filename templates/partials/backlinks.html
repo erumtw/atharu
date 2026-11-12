@@ -1,9 +1,5 @@
 {#- "Mentioned in N notes": notes whose body has [[this page]]; needs `mentions` as (id, title). #}
 {%- if !mentions.is_empty() %}
-<h3>Mentioned in {{ mentions.len() }} note{% if mentions.len() != 1 %}s{% endif %}</h3>
-<div class="blocks small">
-{%- for (id, title) in mentions %}
-<a class="blk" href="/notes/{{ id }}">{{ title }}</a>
-{%- endfor %}
-</div>
+<p class="small" style="margin: 0">↖ Mentioned in {{ mentions.len() }} note{% if mentions.len() != 1 %}s{% endif %}
+{%- for (id, title) in mentions %} · <a href="/notes/{{ id }}">{{ title }}</a>{% endfor %}</p>
 {%- endif %}

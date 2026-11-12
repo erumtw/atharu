@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block crumb_extra %}<span class="row small" style="margin-left: auto; gap: 8px"><div class="dnav" role="group" aria-label="Calendar range"><a href="/calendar{% if cal.month %}?view=month{% endif %}">Today</a><a class="i" href="{{ prev }}" aria-label="Previous {% if cal.month %}month{% else %}week{% endif %}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#prev"/></svg></a><span class="m-hide">{{ title }}</span><a class="i" href="{{ next }}" aria-label="Next {% if cal.month %}month{% else %}week{% endif %}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#next"/></svg></a></div><form class="seg" role="group" aria-label="View" method="get" action="/calendar"><input type="hidden" name="week" value="{{ cal.week }}"><button{% if !cal.month %} class="on"{% endif %} type="submit" name="view" value="week">Week</button><button{% if cal.month %} class="on"{% endif %} type="submit" name="view" value="month">Month</button></form></span>{% endblock %}
+{% block crumb_extra %}<span class="row small" style="margin-left: auto; gap: 8px"><div class="dnav" role="group" aria-label="Calendar range"><a href="/calendar{% if cal.month %}?view=month{% endif %}">Today</a><a class="i" href="{{ prev }}" aria-label="Previous {% if cal.month %}month{% else %}week{% endif %}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#prev"/></svg></a><span class="m-hide">{{ title }}</span><a class="i" href="{{ next }}" aria-label="Next {% if cal.month %}month{% else %}week{% endif %}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#next"/></svg></a></div></span>{% endblock %}
 {% block content %}
 <main class="doc wide">
 <div class="row between" style="align-items: flex-end">
 <h1 class="ptitle">{{ title }}</h1>
 <span class="row" style="gap: 8px">
+<form class="seg" role="group" aria-label="View" method="get" action="/calendar"><input type="hidden" name="week" value="{{ cal.week }}"><button{% if !cal.month %} class="on"{% endif %} type="submit" name="view" value="week">Week</button><button{% if cal.month %} class="on"{% endif %} type="submit" name="view" value="month">Month</button></form>
 {%- if has_ical %}
 <form class="inline" method="post" action="/calendar/refresh" hx-post="/calendar/refresh" hx-target="#cal" hx-swap="outerHTML"><input type="hidden" name="week" value="{{ cal.week }}"><input type="hidden" name="view" value="{{ cal.view() }}"><button class="btn ghost" type="submit">Refresh</button></form>
 {%- endif %}

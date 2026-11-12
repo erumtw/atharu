@@ -52,9 +52,10 @@ html[data-tint=tinted]{--lg-blur:12px;--lg-sat:180%}
 /* Tinted: the look's colour in the glass, stronger edges, full-ink chrome, and muted/links a step darker
    (measured: the tint alone drops the Glass look's links to 3.7:1, #0055b3 brings them back to 4.9). */
 html[data-tint=tinted]{--glass-c:color-mix(in srgb,var(--base) 15%,#fff);--glass-edge:rgba(0,0,0,.14);--muted:var(--muted-tint);--accent:var(--accent-2);--err:var(--err-tint)}
-html[data-tint=tinted] :is(.side,.crumb,.newline,.menu){border-color:var(--glass-edge)}
+/* :not(focus/bad): the focus ring and the 422 red must win in every look. */
+html[data-tint=tinted] :is(.side,.crumb,.newline,.menu):not(:focus-within):not(.bad){border-color:var(--glass-edge)}
 /* On the solid sheet (Glass everywhere off) the white glass edge vanishes, so controls take the line border. */
-html:not([data-glass=all]) .pg :is(.btn.ghost,.fld,.dnav,.newline,.ta,.note-md){border-color:var(--line)}
+html:not([data-glass=all]) .pg :is(.btn.ghost,.fld,.dnav,.newline,.ta,.note-md):not(:focus-within):not(.bad){border-color:var(--line)}
 html[data-tint=tinted] :is(.side a,.side svg,.crumb a){color:var(--ink)}
 /* Glass everywhere: the sheet joins the glass; cards and callouts sit a step more opaque on it, dark callouts stay dark. */
 html[data-glass=all] .pg{--s:-5%;--g:color-mix(in srgb,var(--glass-c) max(0%,var(--glass-a) + var(--s)),transparent);
@@ -63,6 +64,9 @@ html[data-glass=all] .pg{--s:-5%;--g:color-mix(in srgb,var(--glass-c) max(0%,var
 html[data-glass=all] .pg :is(.card,.stat,.callout:not(.dark)){--s:10%;background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + var(--s)),transparent)}
 /* The dark callout stays solid: at the board's 85% its #2997ff link drops to 3.1:1 over a light sheet. */
 html[data-glass=all] .pg .callout.dark{background:var(--dark)}
+/* On glass a grey hover/edge reads as dirt; lift with white like the sidebar rows. */
+html[data-glass=all] .pg :is(.blk,.props dd):hover{background:rgba(255,255,255,.6)}
+html[data-glass=all] .pg .card{border-color:var(--glass-edge)}
 /* Reduce Transparency: every glass surface opaque (beats the inline --glass-a). */
 @media (prefers-reduced-transparency: reduce){
   html{--glass-a:100% !important}

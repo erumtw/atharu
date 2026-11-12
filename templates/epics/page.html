@@ -19,6 +19,7 @@
 </dl>
 <noscript><button class="btn" type="submit">Save</button></noscript>
 </form>
+{% include "partials/backlinks.html" %}
 
 <hr class="hr">
 
@@ -36,7 +37,6 @@
 {%- endfor %}
 </div>
 {%- endfor %}
-{% include "partials/backlinks.html" %}
 <form class="row small" method="post" action="/epics/{{ epic.key }}/delete" hx-post="/epics/{{ epic.key }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Only while nothing is logged on it">Delete epic</button><span id="epic-del" class="err">{% if let Some(e) = delete_error %}{{ e }}{% endif %}</span></form>
 </main>
 {% endblock %}
