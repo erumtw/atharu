@@ -19,7 +19,7 @@ pub struct Item {
 
 pub struct Day {
     pub iso: String,
-    /// `Mon 9` in week view, `9` in month view.
+    /// `Sun 8` in week view, `9` in month view.
     pub head: String,
     pub now: bool,
     /// Month view: leading/trailing days of the neighbouring months.

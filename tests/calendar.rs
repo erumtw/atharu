@@ -25,7 +25,7 @@ async fn week_assembles_what_we_have() {
     let st = state();
     seed(&st);
     let b = get(&st, "/calendar").await.body;
-    assert!(b.contains("<h1 class=\"ptitle\">9 – 15 Nov</h1>"));
+    assert!(b.contains("<h1 class=\"ptitle\">8 – 14 Nov</h1>"));
     assert!(
         b.contains("<div class=\"dh now\"><a href=\"/?day=2026-11-11\">Wed 11 · today</a></div>")
     );
@@ -49,15 +49,18 @@ async fn week_assembles_what_we_have() {
     assert!(!b.contains("/calendar/refresh"));
 
     let b = get(&st, "/calendar?week=2026-11-18").await.body;
-    assert!(b.contains("16 – 22 Nov") && b.contains("next week thing"));
+    assert!(b.contains("15 – 21 Nov") && b.contains("next week thing"));
     assert!(b.contains("href=\"/calendar?week=2026-11-11\" aria-label=\"Previous week\""));
 
     let b = get(&st, "/calendar?week=2026-11-30&view=month").await.body;
     assert!(b.contains("<h1 class=\"ptitle\">November 2026</h1>"));
-    // Whole weeks: Mon 26 Oct .. Sun 6 Dec, so 1 Dec's event is in the trailing week.
+    // Whole weeks, Sunday first: 1 Nov is a Sunday, so Sun 1 Nov .. Sat 5 Dec; 1 Dec's event is in the trailing week.
+    assert!(b.contains("<div class=\"dh\">Sun</div><div class=\"dh\">Mon</div>"));
     assert!(
-        b.contains("href=\"/?day=2026-10-26\">26</a>")
-            && b.contains("href=\"/?day=2026-12-06\">6</a>")
+        b.contains("href=\"/?day=2026-11-01\">1</a>")
+            && b.contains("href=\"/?day=2026-12-05\">5</a>")
+            && !b.contains("2026-10-31")
+            && !b.contains("2026-12-06")
     );
     assert!(b.contains(">far</button>") && b.contains("dc out"));
     assert!(

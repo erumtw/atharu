@@ -4,8 +4,8 @@
 export {}
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-// Monday first (D4).
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+// Sunday first (D48): the picker and the Calendar show Sun → Sat; report weeks stay Monday-based (D4).
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const ICON = (d: string) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`
 
 // Dates as UTC midnights: day arithmetic never meets a DST jump.
@@ -18,7 +18,7 @@ const addMonths = (d: Date, n: number) => {
   const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate()
   return new Date(Date.UTC(y, m, Math.min(d.getUTCDate(), last)))
 }
-const weekday = (d: Date) => (d.getUTCDay() + 6) % 7
+const weekday = (d: Date) => d.getUTCDay()
 const todayIso = () => {
   const n = new Date()
   return iso(new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())))
@@ -48,7 +48,7 @@ const panel = (): HTMLElement => {
     `<button class="ib" type="button" data-m="-1" aria-label="Previous month">${ICON('M15 6l-6 6 6 6')}</button>` +
     `<button class="ib" type="button" data-m="1" aria-label="Next month">${ICON('M9 6l6 6-6 6')}</button></div>` +
     '<table role="grid" aria-labelledby="dp-m"><thead><tr>' +
-    DAYS.map(d => `<th scope="col" abbr="${d}">${d.slice(0, 2)}</th>`).join('') + '</tr></thead><tbody></tbody></table>' +
+    DAYS.map(d => `<th scope="col" abbr="${d}" aria-label="${d}">${d[0]}</th>`).join('') + '</tr></thead><tbody></tbody></table>' +
     '<div class="dpf"><button class="linkbtn clear" type="button">Clear</button><button class="linkbtn today" type="button">Today</button>' +
     '<button class="btn done" type="button">Done</button></div>'
   p.addEventListener('click', onPanelClick)
@@ -74,7 +74,7 @@ const render = (slide = 0) => {
   dp.querySelector('h2')!.textContent = `${MONTHS[m]} ${y}`
   const today = todayIso()
   const focus = iso(focusDay)
-  // Always 6 rows from the Monday on or before the 1st: the panel never changes height.
+  // Always 6 rows from the Sunday on or before the 1st: the panel never changes height.
   let d = addDays(view, -weekday(view))
   let rows = ''
   for (let r = 0; r < 6; r++) {

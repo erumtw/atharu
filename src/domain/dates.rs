@@ -32,6 +32,12 @@ pub fn week_start(d: NaiveDate) -> NaiveDate {
     d - Days::new(d.weekday().num_days_from_monday().into())
 }
 
+/// Sunday on or before `d`: the calendar and date picker show Sun → Sat (D48); report weeks, "this week" and
+/// flags keep `week_start` (Monday, D4).
+pub fn calendar_week_start(d: NaiveDate) -> NaiveDate {
+    d - Days::new(d.weekday().num_days_from_sunday().into())
+}
+
 pub fn month_start(d: NaiveDate) -> NaiveDate {
     d.with_day(1).expect("day 1 exists")
 }
@@ -90,5 +96,13 @@ mod tests {
         assert_eq!(end_of(d("2026-10-01"), 3), d("2026-12-31"));
         assert_eq!(end_of(d("2026-02-01"), 1), d("2026-02-28"));
         assert_eq!(label(d("2026-11-11")), "Wed 11 Nov");
+    }
+
+    #[test]
+    fn calendar_week_starts_sunday() {
+        assert_eq!(calendar_week_start(d("2026-11-08")), d("2026-11-08")); // Sunday itself
+        assert_eq!(calendar_week_start(d("2026-11-14")), d("2026-11-08")); // Saturday
+        assert_eq!(calendar_week_start(d("2026-12-02")), d("2026-11-29")); // month boundary
+        assert_eq!(calendar_week_start(d("2027-01-01")), d("2026-12-27")); // year boundary
     }
 }

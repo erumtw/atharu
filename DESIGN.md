@@ -165,9 +165,9 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Bars | `.bars` | activity / impact bars in `--accent-soft` |
 | OKR bar / heat | `.obar` (`.active/.done/.other`), `.heat1`–`.heat4` | report charts: status by weight; depth steps `--heat-*` (from `report::view::heat_class`) |
 | Sidebar count / label | `.cnt`, `.side .lbl` | muted count, not a badge / 12/600 section label (a hairline in the rail) |
-| Calendar | `.cal`, `.dh`, `.dc`, `.ev`, `.logdot`, `.evadd` | meetings = blue left rule on `--accent-wash`; `.ev.todo` outline (`.late` red text), `.ev.tgt` grey, `.ev.own` dashed; `.logdot` = lines logged; `.evadd` = "+ Event" popover form |
+| Calendar | `.cal`, `.dh`, `.dc`, `.ev`, `.logdot`, `.evadd` | meetings = blue left rule on `--accent-wash`; `.ev.todo` outline (`.late` red text), `.ev.tgt` grey, `.ev.own` dashed; `.logdot` = lines logged; `.evadd` = "+ Event" popover form; weeks Sun → Sat (week range, month grid, phone list; D48) |
 | Menus | `.menu [role=option]` | glass +25%, 32 px options, selected `--accent-wash`; `/` block menu and `[[` picker |
-| Date picker | `.menu.dp` | shared date popover on every `input[type=date]`; glass = `.menu` with an 85% floor; Monday first; phone = bottom sheet. See "Date picker" below |
+| Date picker | `.menu.dp` | shared date popover on every `input[type=date]`; glass = `.menu` with an 85% floor; Sunday first (D48); phone = bottom sheet. See "Date picker" below |
 | Notes body | `.note-body` | Tiptap content as the board draws it (code on `--fill`, task lists, toggles, `.page` links) |
 | Drawing | `.drawing`, `.drawing.empty`, `.drawsheet` + `.drawbar` | see "Drawing block" below |
 | Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw` |
@@ -291,8 +291,9 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   and at 60% `--accent` measured 3.18. Anchored 6 px under the field (end edge to the day nav; start edge to a field, end edge when the
   start would leave the sheet); flips above when there is no room.
 - **Header**: month + year 15/600 (`aria-live=polite`) left, ‹ › `.ib` right (flat inside the glass, no glass on glass).
-  **Weekday row** Mo…Su, **Monday first** (D4), 11/600 `--muted`. **Grid** `table role=grid`, 7 × 6 always (the panel never changes
-  height), 36 px round cells, 14 px tabular numbers in `--ink`.
+  **Weekday row** S M T W T F S (full names in `abbr` / `aria-label`), **Sunday first** (D48; report weeks stay
+  Monday, D4), 11/600 `--muted`. **Grid** `table role=grid`, 7 × 6 always from the Sunday on or before the 1st (the panel never
+  changes height), 36 px round cells, 14 px tabular numbers in `--ink`; Home / End = Sunday / Saturday.
 - **Day states**: today = 1.5 px inset `--accent` ring + accent 600 number (`aria-current=date`) · value = `--accent` fill, white 600
   (`aria-selected`; wins over today) · hover = `rgba(0,0,0,.05)` (a white lift is invisible at 85%; today's number steps to
   `--accent-2` while hovered) · keyboard focus = 2px `--accent` outline, offset 1 (shows around the fill too) · out of month = `--muted`,
