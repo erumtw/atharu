@@ -91,10 +91,17 @@ export ATHARU_REPO=$repo
 bin=${CARGO_INSTALL_ROOT:-${CARGO_HOME:-$HOME/.cargo}}/bin
 # A binary from before `version` existed exits non-zero: that reads as "none".
 old=$("$bin/atharu" version 2>/dev/null || echo none)
+# Build time per step + total on stderr (bash's SECONDS), so a slow run shows where the minutes went.
+t0=$SECONDS t_step=$SECONDS
+mins() { printf '%dm%02ds' $(($1 / 60)) $(($1 % 60)); }
+step() { echo "⏱ $1: $(mins $((SECONDS - t_step)))"; t_step=$SECONDS; }
+# One EXIT trap (a second `trap … EXIT` replaces the first): clean the worktree, then the total.
+trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; git -C "$repo" worktree prune; echo "⏱ total: $(mins $((SECONDS - t0)))"' EXIT
 echo "building atharu $label from $repo …"
 cargo install --path "$src" --locked --quiet
 new=$("$bin/atharu" version)
 echo "atharu: $old → $new"
+step cli
 
 if [ "$app" = 1 ]; then
   if ! cargo tauri --version >/dev/null 2>&1; then
@@ -102,6 +109,7 @@ if [ "$app" = 1 ]; then
     exit 1
   fi
   (cd "$src/src-tauri" && cargo tauri build --bundles app)
+  step "app build"
   built=$CARGO_TARGET_DIR/release/bundle/macos/Atharu.app
   dest=/Applications/Atharu.app
   # "if running" first: a bare `quit app` launches the app just to quit it.
@@ -122,8 +130,9 @@ fi
 if [ "$docker" = 1 ]; then
   # Build context = the worktree; ./data bind and project name stay the repo's: running compose from
   # the worktree would start on an empty ./data.
-  printf 'services:\n  atharu:\n    build:\n      context: %s\n' "$src" >"$tmp/build.yaml"
-  docker compose --project-directory "$repo" -f "$repo/compose.yaml" -f "$tmp/build.yaml" up -d --build
+  printf 'services:\n  atharu:\n    build:\n      context: %s\n' "$src" >"$repo/target/install-build.yaml"
+  docker compose --project-directory "$repo" -f "$repo/compose.yaml" -f "$repo/target/install-build.yaml" up -d --build
+  step docker
 fi
 
 case ":$PATH:" in
