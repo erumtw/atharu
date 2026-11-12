@@ -493,5 +493,7 @@ async fn report_by_tag_filters_and_chip_field() {
         "{t}"
     );
     assert!(t.contains("No tag <span class=\"small muted normal\">· 1</span>"));
-    assert!(t.contains(r#"name="group" value="tag" checked"#));
+    assert!(t.contains(
+        r#"class="on" aria-pressed="true" type="submit" name="group" value="tag">Tag</button>"#
+    ));
 }
