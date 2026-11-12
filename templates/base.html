@@ -21,6 +21,7 @@
 {#- Only pages that exist; each slice adds its link when it lands (spec UX 10 order). #}
 <a href="/"{% if layout.nav == "today" %} class="on"{% endif %}>Today</a>
 <a href="/todos"{% if layout.nav == "todos" %} class="on"{% endif %}>To-dos</a>
+<a href="/calendar"{% if layout.nav == "calendar" %} class="on"{% endif %}>Calendar</a>
 <a href="/epics"{% if layout.nav == "epics" %} class="on"{% endif %}>Epics</a>
 <a href="/report"{% if layout.nav == "report" %} class="on"{% endif %}>Report</a>
 <a href="/meetings"{% if layout.nav == "meetings" %} class="on"{% endif %}>Meetings</a>

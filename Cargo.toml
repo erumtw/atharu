@@ -8,12 +8,15 @@ anyhow = "1.0.104"
 askama = "0.16.1"
 axum = "0.8.9"
 chrono = "0.4.45"
+icalendar = { version = "0.17.17", default-features = false, features = ["parser"] }
 pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls"] }
 rusqlite = { version = "0.42.0", features = ["bundled"] }
 rust-embed = { version = "8.14.0", features = ["mime-guess"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154", default-features = false, features = ["std"] }
 tokio = { version = "1.54.1", features = ["full"] }
+toml = { version = "1.2.1", default-features = false, features = ["std", "serde", "parse"] }
 
 [dev-dependencies]
 http-body-util = "0.1.5"

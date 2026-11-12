@@ -27,7 +27,11 @@ async fn main() -> anyhow::Result<()> {
             println!("wrote {}", out.display());
         }
         config::Command::Serve => {
-            let state = app::AppState::new(conn);
+            let mut state = app::AppState::new(conn);
+            state.settings = std::sync::Arc::new(config::FileConfig::load(
+                &cfg.data_dir().join("config.toml"),
+            ));
+            app::spawn_refreshers(&state);
             let addr = format!("{}:{}", cfg.host, cfg.port);
             let listener = tokio::net::TcpListener::bind(&addr)
                 .await

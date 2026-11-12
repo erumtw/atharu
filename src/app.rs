@@ -1,3 +1,4 @@
+use crate::config::FileConfig;
 use axum::{
     Router,
     extract::Path,
@@ -8,7 +9,11 @@ use axum::{
 use chrono::NaiveDate;
 use rusqlite::Connection;
 use rust_embed::RustEmbed;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::{
+    future::Future,
+    sync::{Arc, Mutex, MutexGuard},
+    time::Duration,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -16,6 +21,8 @@ pub struct AppState {
     db: Arc<Mutex<Connection>>,
     /// Tests pin "today" so date logic (due, flags, presets) is deterministic.
     pub fixed_today: Option<NaiveDate>,
+    /// `data/config.toml`, read once at start (edit + restart to change).
+    pub settings: Arc<FileConfig>,
 }
 
 impl AppState {
@@ -23,6 +30,7 @@ impl AppState {
         AppState {
             db: Arc::new(Mutex::new(conn)),
             fixed_today: None,
+            settings: Arc::default(),
         }
     }
 
@@ -41,6 +49,7 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .merge(crate::today::routes())
         .merge(crate::todos::routes())
+        .merge(crate::calendar::routes())
         .merge(crate::epics::routes())
         .merge(crate::report::routes())
         .merge(crate::meetings::routes())
@@ -48,6 +57,40 @@ pub fn router(state: AppState) -> Router {
         .merge(crate::notes::routes())
         .route("/static/{*path}", get(static_file))
         .with_state(state)
+}
+
+/// Run `job` now and then every `period`, forever. Shared by every read-only integration
+/// (Google iCal now, Jira titles next): each brings its own `refresh`, this owns the timing.
+pub fn every<F, Fut>(period: Duration, mut job: F)
+where
+    F: FnMut() -> Fut + Send + 'static,
+    Fut: Future<Output = ()> + Send,
+{
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(period);
+        // A laptop waking from sleep should fetch once, not replay every missed tick.
+        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        loop {
+            tick.tick().await; // first tick is immediate = "fetch on start"
+            job().await;
+        }
+    });
+}
+
+/// Background refreshers for whatever `data/config.toml` turns on. Needs a tokio runtime.
+pub fn spawn_refreshers(state: &AppState) {
+    const PERIOD: Duration = Duration::from_secs(15 * 60);
+    if state.settings.ical_url.is_some() {
+        let st = state.clone();
+        every(PERIOD, move || {
+            let st = st.clone();
+            async move {
+                if let Err(e) = crate::calendar::refresh(&st).await {
+                    eprintln!("calendar refresh: {e}");
+                }
+            }
+        });
+    }
 }
 
 #[derive(RustEmbed)]
