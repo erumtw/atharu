@@ -15,8 +15,8 @@ select.pin{cursor:pointer}
 .hr{border:0;border-top:1px solid var(--line);margin:6px 0;width:100%}
 .blocks{display:flex;flex-direction:column}
 .blk{display:flex;gap:10px;align-items:center;padding:3px 6px;margin:0 -6px;border-radius:6px;min-height:32px;box-sizing:border-box}
-/* A row of 32 px controls (plan Pin/Drop, due date) is already the row height: no padding on top of it. */
-.blk:has(.btn.s,.fld.s){padding-block:0}
+/* Rows of 32 px controls (plan Pin/Drop, due date): 4 px each side so stacked pills get an 8 px gap instead of touching (owner, 2026-11-12). */
+.blk:has(.btn.s,.fld.s){padding-block:4px}
 .blk:hover{background:var(--fill)}
 .x{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex:none;opacity:0;padding:0}
 .x:hover{color:var(--ink);background:rgba(0,0,0,.05)}
