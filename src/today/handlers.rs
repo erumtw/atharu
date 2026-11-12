@@ -38,6 +38,8 @@ pub struct LineForm {
     day: Option<String>,
     /// Words the capture bar was told are not tags (× on "Tag as"), comma list.
     notag: Option<String>,
+    /// Inline edit via "Make tag": the word that just became a tag.
+    made: Option<String>,
 }
 
 /// How the log is shown: grouping + tag filter.
@@ -237,6 +239,7 @@ fn render_page(
         preview: None,
         saved: None,
         deleted: None,
+        made: None,
         edit: None,
         ask: None,
         group: o.group,
@@ -314,12 +317,28 @@ pub async fn edit(
             return web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &page);
         }
     };
+    let before = queries::entry_line(&st.conn(), id)?;
     let day = queries::update_entry(&mut st.conn(), id, &entry)?.ok_or(AppError::NotFound)?;
     if !web::is_htmx(&headers) {
         return Ok(web::back(&format!("/?day={day}")));
     }
     let d = pick_day(Some(&day), today);
     let conn = st.conn();
+    let typed = tags::tags(&entry.text);
+    let made = match (f.made, before) {
+        (Some(word), Some((_, undo_line))) => match tags::parse_list(&word).pop() {
+            Some(tag) if typed.contains(&tag) => Some(view::Made {
+                id,
+                older: queries::older_mentions(&conn, &tag, id)?,
+                tag,
+                word,
+                undo_line,
+                day: day.clone(),
+            }),
+            _ => None,
+        },
+        _ => None,
+    };
     web::html(&view::Swap {
         today,
         plans: plans(&conn, today)?,
@@ -327,6 +346,7 @@ pub async fn edit(
         groups: groups(&conn, d, &Opts::from_page(&headers))?,
         saved: None,
         deleted: None,
+        made,
         edit: None,
     })
 }
@@ -385,6 +405,7 @@ pub async fn create(
             tags: tags::tags(&entry.text),
         }),
         deleted: None,
+        made: None,
         edit: None,
     };
     web::html(&swap)
@@ -436,6 +457,7 @@ fn log_swap(
         groups: groups(&conn, d, &Opts::from_page(headers))?,
         saved: None,
         deleted,
+        made: None,
         edit: None,
     };
     web::html(&swap)

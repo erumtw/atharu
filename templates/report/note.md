@@ -11,7 +11,7 @@
 
 ## {{ sec.heading }}
 {%- for i in sec.items %}
-- **{{ i.label }}** {{ i.text }}{% if let Some(m) = i.meeting %} ({{ m }}){% endif %}{% if let Some(a) = i.via %} (via {{ a }}){% endif %}
+- **{{ i.label }}** {{ i.text }}{% if let Some(k) = i.epic %} ({{ k }}){% endif %}{% if let Some(m) = i.meeting %} ({{ m }}){% endif %}{% if let Some(a) = i.via %} (via {{ a }}){% endif %}
 {%- endfor %}
 {%- endfor %}
 {%- if !note.learning.is_empty() %}

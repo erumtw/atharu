@@ -181,7 +181,7 @@ pub fn delete(conn: &mut Connection, slug: &str) -> rusqlite::Result<Option<Stri
     let snap = tx
         .query_row(
             "SELECT json_object('slug', slug, 'summary', summary, 'own_words', own_words,
-               'resources', resources,
+               'resources', resources, 'tags', tags,
                'ratings', json((SELECT json_group_array(json_array(d.day, d.depth))
                                 FROM depth_ratings d WHERE d.topic = t.slug)))
              FROM topics t WHERE slug = ?1",
@@ -190,6 +190,8 @@ pub fn delete(conn: &mut Connection, slug: &str) -> rusqlite::Result<Option<Stri
         )
         .optional()?;
     tx.execute("DELETE FROM topics WHERE slug = ?1", [slug])?;
+    // topics has no untag trigger (006 shipped without one): its taggings go in the same tx.
+    crate::db::retag(&tx, "topic", slug, &[])?;
     tx.commit()?;
     Ok(snap)
 }
@@ -202,10 +204,13 @@ pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<Str
         return Ok(Err(slug));
     }
     tx.execute(
-        "INSERT INTO topics(slug, summary, own_words, resources)
-         VALUES (?1 ->> 'slug', ?1 ->> 'summary', ?1 ->> 'own_words', ?1 ->> 'resources')",
+        "INSERT INTO topics(slug, summary, own_words, resources, tags)
+         VALUES (?1 ->> 'slug', ?1 ->> 'summary', ?1 ->> 'own_words', ?1 ->> 'resources',
+                 COALESCE(?1 ->> 'tags', ''))",
         [snap],
     )?;
+    let tags: String = tx.query_row("SELECT COALESCE(?1 ->> 'tags', '')", [snap], |r| r.get(0))?;
+    crate::db::retag(&tx, "topic", &slug, &crate::domain::tags::parse_list(&tags))?;
     tx.execute(
         "INSERT INTO depth_ratings(topic, day, depth)
          SELECT ?1 ->> 'slug', value ->> 0, value ->> 1 FROM json_each(?1, '$.ratings')",
@@ -213,4 +218,34 @@ pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<Str
     )?;
     tx.commit()?;
     Ok(Ok(slug))
+}
+
+/// The topic's Tags prop (stored `a,b`); taggings follows in the same transaction. False = unknown slug.
+pub fn set_tags(conn: &Connection, slug: &str, tags: &[String]) -> rusqlite::Result<bool> {
+    let tx = conn.unchecked_transaction()?;
+    if tx.execute(
+        "UPDATE topics SET tags = ?1 WHERE slug = ?2",
+        params![tags.join(","), slug],
+    )? == 0
+    {
+        return Ok(false);
+    }
+    crate::db::retag(&tx, "topic", slug, tags)?;
+    tx.commit()?;
+    Ok(true)
+}
+
+pub fn tags(conn: &Connection, slug: &str) -> rusqlite::Result<String> {
+    conn.query_row("SELECT tags FROM topics WHERE slug = ?1", [slug], |r| {
+        r.get(0)
+    })
+    .optional()
+    .map(Option::unwrap_or_default)
+}
+
+/// Tags in use, most used first: the Tags prop's suggestions.
+pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
 }

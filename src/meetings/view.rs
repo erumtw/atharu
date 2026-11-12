@@ -94,6 +94,15 @@ pub struct Page {
     pub back: String,
     /// Notes linking here with `[[…]]`: (id, title).
     pub mentions: Vec<(i64, String)>,
+    /// The series' Tags prop.
+    pub field: crate::layout::TagField,
+}
+
+#[derive(Template)]
+#[template(path = "meetings/tags.html")]
+pub struct Tags {
+    pub id: i64,
+    pub field: crate::layout::TagField,
 }
 
 #[derive(Template)]

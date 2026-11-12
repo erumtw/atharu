@@ -138,6 +138,69 @@ pub fn offer<'a>(text: &'a str, known: &[String], skip: &[String]) -> Option<(&'
         })
 }
 
+/// Every `#old` in `text` becomes `#new` (rename / merge), or with `new` = None just the word: the
+/// `#` goes and the word as typed stays (delete). Nothing else in the text moves.
+pub fn rewrite(text: &str, old: &str, new: Option<&str>) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut at = 0;
+    for (r, t) in spans(text) {
+        if t != old {
+            continue;
+        }
+        out.push_str(&text[at..r.start]);
+        match new {
+            Some(n) => {
+                out.push('#');
+                out.push_str(n);
+            }
+            None => out.push_str(&text[r.start + 1..r.end]),
+        }
+        at = r.end;
+    }
+    out.push_str(&text[at..]);
+    out
+}
+
+/// The text without `#tag` (and the space before it): the report lists the line under that heading.
+pub fn strip(text: &str, tag: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut at = 0;
+    for (r, t) in spans(text) {
+        if t == tag {
+            out.push_str(text[at..r.start].trim_end_matches(' '));
+            at = r.end;
+        }
+    }
+    out.push_str(&text[at..]);
+    out.trim().to_string()
+}
+
+/// "Tag them": the first plain word naming `tag` (same rule as the "Tag as" offer) becomes `#tag`
+/// in place. None when the text already has the tag or no word names it.
+pub fn tag_word(text: &str, tag: &str) -> Option<String> {
+    if tags(text).iter().any(|t| t == tag) {
+        return None;
+    }
+    let base = text.as_ptr() as usize;
+    text.split_whitespace()
+        .filter(|w| !w.starts_with('#') && !w.contains("://") && !w.contains('`'))
+        .find_map(|w| {
+            // Leading punctuation would leave `(#tag`, which doesn't parse as a tag: only trailing is trimmed.
+            let core = w.trim_end_matches(|c: char| !c.is_alphanumeric());
+            let start = w.as_ptr() as usize - base;
+            same_word(core, tag)
+                .then(|| format!("{}#{tag}{}", &text[..start], &text[start + core.len()..]))
+        })
+}
+
+/// A tags field after a chip edit: `current` (comma list) + `add` − `drop`, folded, once each.
+pub fn edit_list(current: &str, add: Option<&str>, drop: Option<&str>) -> Vec<String> {
+    let drop = drop.map(parse_list).unwrap_or_default();
+    let mut out = parse_list(&format!("{current},{}", add.unwrap_or("")));
+    out.retain(|t| !drop.contains(t));
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -234,5 +297,51 @@ mod tests {
         assert_eq!(offer("booked #expense review expenses", &known, &[]), None);
         assert_eq!(offer("booked expense", &known, &["expense".into()]), None);
         assert_eq!(offer("see https://x.io/expense", &known, &[]), None);
+    }
+
+    #[test]
+    fn rewrites() {
+        let t = "booked #Expense review, see #expense-sync and `#expense` #expense.";
+        assert_eq!(
+            rewrite(t, "expense", Some("spend")),
+            "booked #spend review, see #expense-sync and `#expense` #spend."
+        );
+        assert_eq!(
+            rewrite(t, "expense", None),
+            "booked Expense review, see #expense-sync and `#expense` expense."
+        );
+        assert_eq!(
+            strip("claim to payout 2 days #expense", "expense"),
+            "claim to payout 2 days"
+        );
+        assert_eq!(strip("#expense first #hiring", "expense"), "first #hiring");
+    }
+
+    #[test]
+    fn tags_a_word() {
+        assert_eq!(
+            tag_word("send Expenses policy, expense too", "expense").as_deref(),
+            Some("send #expense policy, expense too")
+        );
+        assert_eq!(
+            tag_word("paired on the expense.", "expense").as_deref(),
+            Some("paired on the #expense.")
+        );
+        assert_eq!(tag_word("already #expense here expense", "expense"), None);
+        assert_eq!(tag_word("(expense) https://x.io/expense", "expense"), None);
+        assert_eq!(tag_word("expensive stuff", "expense"), None);
+    }
+
+    #[test]
+    fn chip_edits() {
+        assert_eq!(
+            edit_list("expense,hiring", Some("#Oncall"), None),
+            ["expense", "hiring", "oncall"]
+        );
+        assert_eq!(
+            edit_list("expense,hiring", None, Some("expense")),
+            ["hiring"]
+        );
+        assert_eq!(edit_list("", Some("a_b"), None), Vec::<String>::new());
     }
 }

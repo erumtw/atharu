@@ -78,6 +78,7 @@ pub struct Line {
 #[derive(Template)]
 #[template(path = "learn/page.html")]
 pub struct Page {
+    pub field: crate::layout::TagField,
     pub layout: Layout,
     pub side: Vec<String>,
     pub slug: String,
@@ -93,3 +94,11 @@ pub struct Page {
 #[derive(Template)]
 #[template(path = "learn/saved.html")]
 pub struct Saved;
+
+/// The Tags prop, its own form: htmx swaps it after each chip edit.
+#[derive(Template)]
+#[template(path = "learn/tags.html")]
+pub struct Tags {
+    pub slug: String,
+    pub field: crate::layout::TagField,
+}

@@ -63,6 +63,19 @@ pub struct Saved {
     pub tags: Vec<String>,
 }
 
+/// "Make tag" just turned a word in line `id` into `#tag` (D29): the toast offers the other lines.
+pub struct Made {
+    pub id: i64,
+    pub tag: String,
+    /// The word as selected, quoted in "N older lines mention ‘…’".
+    pub word: String,
+    /// Other lines where a plain word names the tag.
+    pub older: usize,
+    /// The line before the edit: Undo saves it back.
+    pub undo_line: String,
+    pub day: String,
+}
+
 pub struct Deleted {
     /// The whole row as JSON, posted back by Undo.
     pub snap: String,
@@ -135,6 +148,7 @@ pub struct Page {
     pub preview: Option<Preview>,
     pub saved: Option<Saved>,
     pub deleted: Option<Deleted>,
+    pub made: Option<Made>,
     /// The log line open in its edit box (`/?edit=ID` without JS).
     pub edit: Option<Edit>,
     pub ask: Option<Ask>,
@@ -164,6 +178,7 @@ pub struct Swap {
     pub groups: Vec<Group>,
     pub saved: Option<Saved>,
     pub deleted: Option<Deleted>,
+    pub made: Option<Made>,
     pub edit: Option<Edit>,
 }
 

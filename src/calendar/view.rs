@@ -33,6 +33,8 @@ pub struct Cal {
     pub month: bool,
     /// Anchor date of the shown range, carried by every form so it answers for the same range.
     pub week: String,
+    /// The tag filter (comma list), carried by every form like `week`.
+    pub tag: String,
     pub days: Vec<Day>,
     pub notice: Option<Notice>,
 }
@@ -57,6 +59,7 @@ pub struct Page {
     pub next: String,
     pub cal: Cal,
     pub has_ical: bool,
+    pub filter: crate::layout::TagFilter,
     /// "+ Event" form, kept after a rejected add (no-JS path).
     pub form: EventForm,
 }

@@ -10,8 +10,9 @@
 {%- else %}
 {%- let found = mine.len() + agents.len() %}
 <form role="search" class="fld m" method="get" action="/notes"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#search"/></svg><input name="q" value="{{ q }}" placeholder="Search notes" aria-label="Search notes">{% if !q.is_empty() %}<span class="small muted">{{ found }} result{% if found != 1 %}s{% endif %}</span>{% endif %}</form>
+<div class="row" style="gap: 8px; flex-wrap: wrap" role="group" aria-label="Filter">{% include "partials/tag_filter.html" %}</div>
 {%- if found == 0 %}
-<p class="small muted">No notes match ‘{{ q }}’.</p>
+<p class="small muted">{% if q.is_empty() %}No notes tagged {% for t in filter.tags %}<span class="chip tag">{{ t }}</span> {% endfor %}yet.{% else %}No notes match ‘{{ q }}’.{% endif %}</p>
 {%- endif %}
 {%- if !mine.is_empty() %}
 

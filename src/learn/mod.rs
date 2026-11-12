@@ -13,6 +13,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/learn", get(handlers::list).post(handlers::make_topic))
         .route("/learn/{slug}", get(handlers::page).post(handlers::update))
+        .route("/learn/{slug}/tags", post(handlers::set_tags))
         .route("/learn/{slug}/rate", post(handlers::rate))
         .route("/learn/{slug}/unrate", post(handlers::unrate))
         .route("/learn/{slug}/delete", post(handlers::delete))

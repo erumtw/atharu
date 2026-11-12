@@ -34,6 +34,7 @@ pub struct List {
     pub layout: Layout,
     pub side: Side,
     pub q: String,
+    pub filter: crate::layout::TagFilter,
     pub mine: Vec<ListRow>,
     pub agents: Vec<ListRow>,
 }

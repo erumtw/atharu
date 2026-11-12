@@ -301,3 +301,16 @@ pub fn active_epic_facts(conn: &Connection) -> rusqlite::Result<Vec<EpicFacts>> 
     })?
     .collect()
 }
+
+/// Lines other than `except` where a plain word names `tag`: "N older lines mention ‘x’".
+// ponytail: scans every line's text in Rust (the plural-tolerant match isn't SQL); fine at one person's scale.
+pub fn older_mentions(conn: &Connection, tag: &str, except: i64) -> rusqlite::Result<usize> {
+    let mut stmt = conn.prepare("SELECT text FROM entries WHERE id <> ?1")?;
+    let mut n = 0;
+    for text in stmt.query_map([except], |r| r.get::<_, String>(0))? {
+        if tags::tag_word(&text?, tag).is_some() {
+            n += 1;
+        }
+    }
+    Ok(n)
+}

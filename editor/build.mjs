@@ -13,6 +13,7 @@ const entries = {
   copy: '/* atharu copy buttons, built by editor/build.mjs from editor/src/copy.ts. */',
   glass: '/* atharu glass preview on /settings, built by editor/build.mjs from editor/src/glass.ts. */',
   capture: '/* atharu capture-bar tag suggestions, built by editor/build.mjs from editor/src/capture.ts. */',
+  tags: '/* atharu Make tag + Tags prop keys, built by editor/build.mjs from editor/src/tags.ts. */',
 }
 
 // One build per entry: esbuild's banner is per build, and each file names what it bundles.

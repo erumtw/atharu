@@ -3,7 +3,7 @@ use crate::{
     app::AppState,
     domain::dates,
     error::{AppError, AppResult},
-    layout::Layout,
+    layout::{Layout, TagFilter},
     web,
 };
 use axum::{
@@ -20,11 +20,15 @@ use serde::Deserialize;
 pub struct RangeQuery {
     week: Option<String>,
     view: Option<String>,
+    /// Tag filter, comma list (any of them); `add` = the filter row's add box.
+    tag: Option<String>,
+    add: Option<String>,
 }
 
 struct Range {
     anchor: NaiveDate,
     month: bool,
+    tags: Vec<String>,
 }
 
 impl Range {
@@ -36,6 +40,7 @@ impl Range {
                 .and_then(|w| w.parse().ok())
                 .unwrap_or(today),
             month: q.view.as_deref() == Some("month"),
+            tags: TagFilter::pick(q.tag.as_deref(), q.add.as_deref()),
         }
     }
 
@@ -65,7 +70,12 @@ impl Range {
 
     fn href(&self, anchor: NaiveDate) -> String {
         let view = if self.month { "&view=month" } else { "" };
-        format!("/calendar?week={}{view}", dates::iso(anchor))
+        let tag = if self.tags.is_empty() {
+            String::new()
+        } else {
+            format!("&tag={}", self.tags.join(","))
+        };
+        format!("/calendar?week={}{view}{tag}", dates::iso(anchor))
     }
 
     /// `9 – 15 Nov`, `30 Nov – 6 Dec`, or `November 2026`.
@@ -116,7 +126,8 @@ fn cal(
             d.items.push(item);
         }
     };
-    for m in queries::meetings(conn, &f, &t)? {
+    let tags = &r.tags;
+    for m in queries::meetings(conn, &f, &t, tags)? {
         put(
             &m.day,
             view::Item {
@@ -135,8 +146,18 @@ fn cal(
         );
     }
     let to_excl = dates::iso(to + Days::new(1));
-    for e in queries::events(conn, &f, &to_excl)? {
+    for e in queries::events(conn, &f, &to_excl, tags)? {
         let own = e.source == "own";
+        // Google events are never tagged (D29): under a filter, a title word naming the tag is enough.
+        let by_word = || {
+            e.title.split_whitespace().any(|w| {
+                let w = w.trim_matches(|c: char| !c.is_alphanumeric());
+                tags.iter().any(|t| crate::domain::tags::same_word(w, t))
+            })
+        };
+        if !tags.is_empty() && !(if own { e.tagged } else { by_word() }) {
+            continue;
+        }
         put(
             &e.starts_at,
             view::Item {
@@ -150,7 +171,7 @@ fn cal(
             },
         );
     }
-    for (due, text) in queries::due_plans(conn, &f, &t)? {
+    for (due, text) in queries::due_plans(conn, &f, &t, tags)? {
         let late = due < dates::iso(today);
         put(
             &due,
@@ -165,7 +186,7 @@ fn cal(
             },
         );
     }
-    for (day, key) in queries::targets(conn, &f, &t)? {
+    for (day, key) in queries::targets(conn, &f, &t, tags)? {
         put(
             &day,
             view::Item {
@@ -179,7 +200,7 @@ fn cal(
             },
         );
     }
-    for (day, n) in queries::logged(conn, &f, &t)? {
+    for (day, n) in queries::logged(conn, &f, &t, tags)? {
         if let Some(d) = ix(from, &day).and_then(|i| days.get_mut(i)) {
             d.logged = n;
         }
@@ -187,6 +208,7 @@ fn cal(
     Ok(view::Cal {
         month: r.month,
         week: dates::iso(r.anchor),
+        tag: r.tags.join(","),
         days,
         notice,
     })
@@ -206,6 +228,19 @@ fn render_page(
         next: r.href(r.step(true)),
         cal: cal(&conn, r, st.today(), notice)?,
         has_ical: st.settings.ical_url.is_some(),
+        filter: TagFilter {
+            tags: r.tags.clone(),
+            path: format!(
+                "/calendar?week={}{}&",
+                dates::iso(r.anchor),
+                if r.month { "&view=month" } else { "" }
+            ),
+            keep: [("week", dates::iso(r.anchor))]
+                .into_iter()
+                .chain(r.month.then(|| ("view", "month".to_string())))
+                .collect(),
+            known: queries::tag_names(&conn)?,
+        },
         form,
     })
 }
@@ -237,6 +272,7 @@ pub struct AddForm {
     time: String,
     week: Option<String>,
     view: Option<String>,
+    tag: Option<String>,
 }
 
 pub async fn add(
@@ -248,6 +284,8 @@ pub async fn add(
         &RangeQuery {
             week: f.week.clone(),
             view: f.view.clone(),
+            tag: f.tag.clone(),
+            add: None,
         },
         st.today(),
     );
@@ -297,6 +335,7 @@ pub async fn add(
 pub struct RangeForm {
     week: Option<String>,
     view: Option<String>,
+    tag: Option<String>,
 }
 
 fn range_of(st: &AppState, f: RangeForm) -> Range {
@@ -304,6 +343,8 @@ fn range_of(st: &AppState, f: RangeForm) -> Range {
         &RangeQuery {
             week: f.week,
             view: f.view,
+            tag: f.tag,
+            add: None,
         },
         st.today(),
     )

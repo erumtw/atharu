@@ -8,6 +8,7 @@ use chrono::{Days, NaiveDate};
 pub const PIN_CAP: i64 = 3;
 
 /// An open, done or dropped plan as the rows show it.
+#[derive(Clone)]
 pub struct Plan {
     pub id: i64,
     /// Day it was logged; its age on Today counts from here.

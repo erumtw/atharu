@@ -6,7 +6,9 @@ use askama::Template;
 use chrono::NaiveDate;
 
 pub struct Group {
-    pub title: &'static str,
+    /// Due bucket (`Overdue`), or `No tag`; empty for a tag group.
+    pub title: String,
+    pub tag: Option<String>,
     pub plans: Vec<Plan>,
 }
 
@@ -35,6 +37,8 @@ pub struct Page {
     /// A plan action that failed without JS (pin cap), shown above the lists.
     pub notice: Option<String>,
     pub filter: TagFilter,
+    /// Group by tag instead of due date.
+    pub by_tag: bool,
     /// Open to-dos in all / shown under the filter ("3 of 11 open to-dos").
     pub open_total: usize,
     pub shown: usize,

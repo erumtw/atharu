@@ -237,10 +237,51 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
         // Stored as local `YYYY-MM-DD HH:MM:SS`; the page only needs the time.
         ended: m.ended_at.map(|t| t.get(11..16).unwrap_or(&t).to_string()),
         mentions: queries::mentions(&conn, &m.name)?,
+        field: tag_field(&conn, &m.name)?,
         name: m.name,
         notes: m.notes,
         today: st.today(),
         back: format!("/meetings/{id}"),
+    })
+}
+
+fn tag_field(conn: &rusqlite::Connection, name: &str) -> rusqlite::Result<crate::layout::TagField> {
+    Ok(crate::layout::TagField {
+        id: "series-tags",
+        tags: queries::series_tags(conn, name)?,
+        known: queries::tag_names(conn)?,
+    })
+}
+
+#[derive(Deserialize)]
+pub struct TagsForm {
+    tags: Option<String>,
+    tags_add: Option<String>,
+    tags_drop: Option<String>,
+}
+
+/// The series' Tags prop, edited from any of its meetings: lines logged in every meeting of the
+/// series inherit these (entry_tags), read time.
+pub async fn set_tags(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Form(f): Form<TagsForm>,
+) -> AppResult<Response> {
+    let conn = st.conn();
+    let m = queries::meeting(&conn, id)?.ok_or(AppError::NotFound)?;
+    let list = crate::domain::tags::edit_list(
+        f.tags.as_deref().unwrap_or(""),
+        f.tags_add.as_deref(),
+        f.tags_drop.as_deref(),
+    );
+    queries::set_series_tags(&conn, &m.name, &list)?;
+    if !web::is_htmx(&headers) {
+        return Ok(web::back(&format!("/meetings/{id}")));
+    }
+    web::html(&view::Tags {
+        id,
+        field: tag_field(&conn, &m.name)?,
     })
 }
 

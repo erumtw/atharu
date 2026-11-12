@@ -239,3 +239,24 @@ pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<i64
     tx.commit()?;
     Ok(Ok(id))
 }
+
+/// A series' Tags prop: it has no row of its own (D36 option A), so its taggings are the field.
+pub fn series_tags(conn: &Connection, name: &str) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "SELECT tag FROM taggings WHERE item_type = 'series' AND item_id = ?1 ORDER BY tag",
+    )?;
+    stmt.query_map([name], |r| r.get(0))?.collect()
+}
+
+pub fn set_series_tags(conn: &Connection, name: &str, tags: &[String]) -> rusqlite::Result<()> {
+    let tx = conn.unchecked_transaction()?;
+    crate::db::retag(&tx, "series", name, tags)?;
+    tx.commit()
+}
+
+/// Tags in use, most used first: the Tags prop's suggestions.
+pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
+}

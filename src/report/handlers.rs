@@ -1,9 +1,9 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, depth, impact::impact_line, plan::hit_rate},
+    domain::{dates, depth, impact::impact_line, plan::hit_rate, tags},
     error::AppResult,
-    layout::Layout,
+    layout::{Layout, TagFilter},
     web,
 };
 use askama::Template;
@@ -19,6 +19,11 @@ pub struct RangeQuery {
     preset: Option<String>,
     from: Option<String>,
     to: Option<String>,
+    /// `tag` = sections by tag (D29); anything else = by epic.
+    group: Option<String>,
+    /// Tag filter, comma list (any of them); `add` = the filter row's add box.
+    tag: Option<String>,
+    add: Option<String>,
 }
 
 fn date(s: Option<&str>) -> Option<NaiveDate> {
@@ -63,6 +68,87 @@ fn label(kind: &str) -> &'static str {
     }
 }
 
+fn item(n: &queries::Notable, text: String, epic: Option<String>) -> view::Item {
+    view::Item {
+        label: label(&n.kind),
+        text,
+        epic,
+        meeting: n.meeting.clone(),
+        via: (n.author != "me").then(|| n.author.clone()),
+    }
+}
+
+/// Rows come sorted by epic, so a new key always means a new section.
+fn epic_sections(notable: Vec<queries::Notable>) -> Vec<view::Section> {
+    let mut out: Vec<(Option<String>, view::Section)> = Vec::new();
+    for n in notable {
+        let it = item(&n, n.text.clone(), None);
+        match out.last_mut() {
+            Some((k, s)) if *k == n.epic_key => s.items.push(it),
+            _ => {
+                let heading = match &n.epic_key {
+                    None => "Not filed under an epic".to_string(),
+                    Some(k) if n.epic_title.is_empty() => k.clone(),
+                    Some(k) => format!("{k} · {}", n.epic_title),
+                };
+                out.push((
+                    n.epic_key,
+                    view::Section {
+                        heading,
+                        items: vec![it],
+                    },
+                ));
+            }
+        }
+    }
+    out.into_iter().map(|(_, s)| s).collect()
+}
+
+/// One `#tag` section per tag, biggest first, "No tag" last; a line with two tags is under both.
+/// The heading says the tag, so it leaves the text; the epic key moves into the brackets.
+fn tag_sections(notable: Vec<queries::Notable>) -> Vec<view::Section> {
+    // (tag or "No tag", items with their kind rank)
+    type Group = (Option<String>, Vec<(u8, view::Item)>);
+    let mut out: Vec<Group> = Vec::new();
+    for n in &notable {
+        let rank = match n.kind.as_str() {
+            "impact" => 0,
+            "decision" => 1,
+            _ => 2,
+        };
+        let names: Vec<Option<&String>> = if n.tags.is_empty() {
+            vec![None]
+        } else {
+            n.tags.iter().map(Some).collect()
+        };
+        for t in names {
+            let text = t.map_or(n.text.clone(), |t| tags::strip(&n.text, t));
+            let it = (rank, item(n, text, n.epic_key.clone()));
+            match out.iter_mut().find(|(k, _)| k.as_ref() == t) {
+                Some((_, items)) => items.push(it),
+                None => out.push((t.cloned(), vec![it])),
+            }
+        }
+    }
+    out.sort_by(|a, b| {
+        (a.0.is_none(), std::cmp::Reverse(a.1.len()), &a.0).cmp(&(
+            b.0.is_none(),
+            std::cmp::Reverse(b.1.len()),
+            &b.0,
+        ))
+    });
+    out.into_iter()
+        .map(|(t, mut items)| {
+            // Stable: inside a kind the lines keep the query's day order.
+            items.sort_by_key(|(r, _)| *r);
+            view::Section {
+                heading: t.map_or("No tag".into(), |t| format!("#{t}")),
+                items: items.into_iter().map(|(_, i)| i).collect(),
+            }
+        })
+        .collect()
+}
+
 pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> AppResult<Response> {
     let (preset, from, to) = range(&q, st.today());
     let (f, t) = (dates::iso(from), dates::iso(to));
@@ -77,7 +163,9 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
         })
         .collect();
 
-    let notable = queries::notable(&conn, &f, &t)?;
+    let by_tag = q.group.as_deref() == Some("tag");
+    let filter = TagFilter::pick(q.tag.as_deref(), q.add.as_deref());
+    let notable = queries::notable(&conn, &f, &t, &filter)?;
     let impact_lines = notable.iter().filter(|n| n.kind == "impact").count();
     let decisions = notable.iter().filter(|n| n.kind == "decision").count();
     let decisions_in_meetings = notable
@@ -86,34 +174,11 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
         .count();
     let (plans_done, plans_open, plans_dropped) = queries::plan_counts(&conn, &f, &t)?;
     let meetings = queries::meetings_count(&conn, &f, &t)?;
-    let mut sections: Vec<(Option<String>, view::Section)> = Vec::new();
-    for n in notable {
-        let item = view::Item {
-            label: label(&n.kind),
-            text: n.text,
-            meeting: n.meeting,
-            via: (n.author != "me").then_some(n.author),
-        };
-        // Rows come sorted by epic, so a new key always means a new section.
-        match sections.last_mut() {
-            Some((k, s)) if *k == n.epic_key => s.items.push(item),
-            _ => {
-                let heading = match &n.epic_key {
-                    None => "Not filed under an epic".to_string(),
-                    Some(k) if n.epic_title.is_empty() => k.clone(),
-                    Some(k) => format!("{k} · {}", n.epic_title),
-                };
-                sections.push((
-                    n.epic_key,
-                    view::Section {
-                        heading,
-                        items: vec![item],
-                    },
-                ));
-            }
-        }
-    }
-
+    let sections = if by_tag {
+        tag_sections(notable)
+    } else {
+        epic_sections(notable)
+    };
     // Depth: heatmap (as of each month end) + changes in range, one pass per topic.
     let months = depth::months(from, to);
     let last_end = months.last().map_or(t.clone(), |m| dates::iso(m.1));
@@ -151,7 +216,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
     let note = view::Note {
         title: title(preset, from, to),
         shipped,
-        sections: sections.into_iter().map(|(_, s)| s).collect(),
+        sections,
         learning,
     };
     let markdown = view::NoteMd { note: &note }.render()?;
@@ -209,8 +274,8 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
     web::html(&view::Page {
         layout: Layout::load(&conn, "report", "Report", vec![])?,
         preset,
-        from: f,
-        to: t,
+        from: f.clone(),
+        to: t.clone(),
         epics_done: note.shipped.len(),
         impact_lines,
         decisions,
@@ -228,6 +293,33 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
             _ => Some(("quarter", "This quarter")),
         },
         okrs,
+        group: if by_tag { "tag" } else { "epic" },
+        filter: TagFilter {
+            path: {
+                let mut p = if preset.is_empty() {
+                    format!("/report?from={f}&to={t}&")
+                } else {
+                    format!("/report?preset={preset}&")
+                };
+                if by_tag {
+                    p.push_str("group=tag&");
+                }
+                p
+            },
+            keep: {
+                let mut k = if preset.is_empty() {
+                    vec![("from", f.clone()), ("to", t.clone())]
+                } else {
+                    vec![("preset", preset.to_string())]
+                };
+                if by_tag {
+                    k.push(("group", "tag".into()));
+                }
+                k
+            },
+            tags: filter,
+            known: queries::tag_names(&conn)?,
+        },
         weeks: week_bars,
         heat_months: months
             .iter()
