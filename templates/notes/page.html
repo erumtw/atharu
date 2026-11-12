@@ -2,7 +2,7 @@
 {#- The only page that loads the editor bundle (spec: other pages ship no editor JS). #}
 {% block head %}<script src="/static/js/editor.js" defer></script>{% endblock %}
 {% block side %}{% include "notes/side.html" %}{% endblock %}
-{% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto">Changes save as you type{% if !ago.is_empty() %} · ✓ saved {{ ago }}{% endif %}</span>{% endblock %}
+{% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto"><span class="m-hide">Changes save as you type{% if !ago.is_empty() %} · {% endif %}</span>{% if !ago.is_empty() %}✓ saved {{ ago }}{% endif %}</span>{% endblock %}
 {% block content %}
 <main class="doc">
 <form class="fld m" role="search" method="get" action="/notes"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#search"/></svg><input name="q" placeholder="Search notes" aria-label="Search notes"></form>

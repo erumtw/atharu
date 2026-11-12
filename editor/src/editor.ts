@@ -62,9 +62,10 @@ const PageLink = Node.create({
 })
 
 // One listbox renderer for both menus; text goes in via textContent, so page names can't inject markup.
-type Item = { title: string, hint?: string }
+// `k` = the block's glyph tile; `group` = the `.mh` header drawn above each run of items.
+type Item = { title: string, hint?: string, k?: string, group: string }
 
-function menu<I extends Item>(label: string): NonNullable<SuggestionOptions<I, I>['render']> {
+function menu<I extends Item>(label: string, empty?: string): NonNullable<SuggestionOptions<I, I>['render']> {
   return () => {
     let el: HTMLDivElement | null = null
     let unmount: (() => void) | undefined
@@ -73,11 +74,26 @@ function menu<I extends Item>(label: string): NonNullable<SuggestionOptions<I, I
     let pick: (it: I) => void = () => {}
     const draw = () => {
       if (!el) return
-      el.replaceChildren(...items.map((it, i) => {
+      const kids: HTMLElement[] = []
+      items.forEach((it, i) => {
+        if (it.group !== items[i - 1]?.group) {
+          const h = document.createElement('div')
+          h.className = 'mh'
+          h.setAttribute('role', 'presentation')
+          h.textContent = it.group
+          kids.push(h)
+        }
         const o = document.createElement('div')
         o.setAttribute('role', 'option')
         o.setAttribute('aria-selected', String(i === sel))
-        o.textContent = it.title
+        if (it.k) {
+          const k = document.createElement('span')
+          k.className = 'k'
+          k.setAttribute('aria-hidden', 'true')
+          k.textContent = it.k
+          o.append(k)
+        }
+        o.append(it.title)
         if (it.hint) {
           const s = document.createElement('span')
           s.className = 'small muted'
@@ -86,9 +102,19 @@ function menu<I extends Item>(label: string): NonNullable<SuggestionOptions<I, I
         }
         // mousedown, not click: click would blur the editor first and close the menu.
         o.addEventListener('mousedown', e => { e.preventDefault(); pick(it) })
-        return o
-      }))
-      el.hidden = items.length === 0
+        kids.push(o)
+      })
+      // Say "no match" rather than vanish, so `/` mid-sentence reads as plain text on purpose.
+      if (!items.length && empty) {
+        const o = document.createElement('div')
+        o.setAttribute('role', 'option')
+        o.setAttribute('aria-disabled', 'true')
+        o.className = 'muted'
+        o.textContent = empty
+        kids.push(o)
+      }
+      el.replaceChildren(...kids)
+      el.hidden = kids.length === 0
     }
     const update = (p: SuggestionProps<I, I>) => { items = p.items; pick = p.command; sel = 0; draw() }
     return {
@@ -100,6 +126,8 @@ function menu<I extends Item>(label: string): NonNullable<SuggestionOptions<I, I
         el = box
         update(p)
         unmount = p.mount(box)
+        // Tiptap's mount sizes the popup to max-content; the menu's width is the CSS's 260.
+        box.style.width = ''
       },
       onUpdate: update,
       onKeyDown: ({ event }: SuggestionKeyDownProps) => {
@@ -122,15 +150,17 @@ type Block = Item & { run: (c: ChainedCommands) => ChainedCommands }
 type Page = Item & { id: string }
 type PagesJson = { data: { pages: { id: string, name?: string | null, type: string }[] } }
 
+const group = 'Insert block'
 const BLOCKS: Block[] = [
-  { title: 'Heading', hint: '#', run: c => c.setNode('heading', { level: 3 }) },
-  { title: 'To-do list', hint: '[]', run: c => c.toggleTaskList() },
-  { title: 'Toggle', run: c => c.setDetails() },
-  { title: 'Callout', run: c => c.setCallout() },
-  { title: 'Code block', hint: '```', run: c => c.setCodeBlock() },
-  { title: 'Divider', hint: '---', run: c => c.setHorizontalRule() },
-  { title: 'Link a page', hint: '[[', run: c => c.insertContent('[[') },
+  { title: 'Heading', k: 'H', group, run: c => c.setNode('heading', { level: 3 }) },
+  { title: 'To-do list', k: '☐', group, run: c => c.toggleTaskList() },
+  { title: 'Toggle', k: '▸', group, run: c => c.setDetails() },
+  { title: 'Callout', k: 'i', group, run: c => c.setCallout() },
+  { title: 'Code block', k: '{}', group, run: c => c.setCodeBlock() },
+  { title: 'Divider', k: '—', group, run: c => c.setHorizontalRule() },
+  { title: 'Link a page', k: '[[', group, run: c => c.insertContent('[[') },
 ]
+const PAGE_GROUP: Record<string, string> = { epic: 'Epics', topic: 'Topics', meeting: 'Meetings' }
 
 const Menus = Extension.create({
   name: 'menus',
@@ -142,7 +172,7 @@ const Menus = Extension.create({
         char: '/',
         items: ({ query }) => BLOCKS.filter(b => b.title.toLowerCase().includes(query.toLowerCase())),
         command: ({ editor, range, props }) => props.run(editor.chain().focus().deleteRange(range)).run(),
-        render: menu<Block>('Insert block'),
+        render: menu<Block>('Insert block', 'No blocks match. Keep typing as text.'),
       }),
       Suggestion<Page, Page>({
         editor: this.editor,
@@ -151,7 +181,8 @@ const Menus = Extension.create({
         items: async ({ query, signal }) => {
           const r = await fetch('/api/pages?q=' + encodeURIComponent(query), { signal })
           const { data } = await r.json() as PagesJson
-          return data.pages.map(p => ({ id: p.id, title: p.name ? `${p.id} · ${p.name}` : p.id, hint: p.type }))
+          // The API returns pages grouped by type, so each kind gets one header.
+          return data.pages.map(p => ({ id: p.id, title: p.name ? `${p.id} · ${p.name}` : p.id, group: PAGE_GROUP[p.type] ?? p.type }))
         },
         command: ({ editor, range, props }) =>
           editor.chain().focus().deleteRange(range)

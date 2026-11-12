@@ -25,6 +25,8 @@ pub struct Layout {
     /// Parent pages; the page's own title is the last, unlinked crumb.
     pub crumbs: Vec<Crumb>,
     pub epics: Vec<SideEpic>,
+    /// Open to-dos, the count beside "To-dos".
+    pub open_plans: i64,
     /// `data-look` + favicon (spec "Looks").
     pub look: &'static str,
     /// `data-glass="all"`: the sheet and its cards are glass too (D17, off by default).
@@ -50,6 +52,7 @@ impl Layout {
             nav,
             crumbs,
             epics: queries::active_epics(conn)?,
+            open_plans: queries::open_plans(conn)?,
             look: look.slug,
             glass_all: get("glass_all") == Some("1"),
             tinted: get("glass_tint") == Some("tinted"),
