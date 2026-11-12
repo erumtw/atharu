@@ -185,3 +185,42 @@ async fn add_box_and_due_picker() {
     let r = post(&st, "/plans/99", &form(&[("state", "done")]), true).await;
     assert_eq!(r.status, 404);
 }
+
+/// A due date or pin change can move a row to another group, so the htmx answer tells the page to re-fetch
+/// its list; a refused pin (cap full) changes nothing and must not.
+#[tokio::test]
+async fn due_or_pin_change_asks_the_page_to_regroup() {
+    let st = state();
+    seed(&st);
+    let r = post(
+        &st,
+        "/plans/2",
+        &form(&[("due", "2026-11-18"), ("back", "/todos")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert_eq!(r.headers["hx-trigger"], "plans-changed");
+    let r = post(
+        &st,
+        "/plans/2",
+        &form(&[("pinned", "1"), ("back", "/")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.headers["hx-trigger"], "plans-changed");
+    for id in [1, 3] {
+        post(
+            &st,
+            &format!("/plans/{id}"),
+            &form(&[("pinned", "1")]),
+            true,
+        )
+        .await;
+    }
+    let r = post(&st, "/plans/4", &form(&[("pinned", "1")]), true).await;
+    assert_eq!(r.status, 422);
+    assert!(r.headers.get("hx-trigger").is_none());
+    let b = get(&st, "/todos").await.body;
+    assert!(b.contains(r#"hx-trigger="plans-changed from:body""#));
+}

@@ -298,10 +298,20 @@ pub async fn update(
         back,
         pin_error: pin_full,
     };
+    let regroup = !pin_full && (due.is_some() || pin.is_some() || state.is_some());
     let status = if pin_full {
         StatusCode::UNPROCESSABLE_ENTITY
     } else {
         StatusCode::OK
     };
-    web::html_status(status, &row)
+    let mut res = web::html_status(status, &row)?;
+    // A new due date or pin can move the row to another group (Today / Later): the row swap alone leaves it
+    // in the old one, so ask the page to re-fetch its list (refreshers in todos/page.html, today/page.html).
+    if regroup {
+        res.headers_mut().insert(
+            "HX-Trigger",
+            axum::http::HeaderValue::from_static("plans-changed"),
+        );
+    }
+    Ok(res)
 }
