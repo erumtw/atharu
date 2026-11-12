@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto">{%- include "epics/saved.html" -%}</span>{% endblock %}
+{% block content %}
+<main class="doc">
+<div class="row"><span class="chip key">{{ epic.key }}</span></div>
+{#- Every change PATCHes the whole form (unchanged fields rewrite their own value); no-JS posts it via Save. #}
+<form method="post" action="/epics/{{ epic.key }}" hx-patch="/epics/{{ epic.key }}" hx-trigger="change, submit" hx-target="#live" hx-swap="outerHTML">
+<h1 class="ptitle" style="margin-top: 0"><input class="pin" name="title" value="{{ epic.title }}" placeholder="Untitled" aria-label="Title" style="font: inherit; letter-spacing: inherit; width: 100%"></h1>
+<dl class="props">
+<dt><label for="role">Role</label></dt><dd><select id="role" name="role" class="pin" style="flex: 0">{% for o in ["owner", "contributor"] %}<option{% if epic.role.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+<dt><label for="status">Status</label></dt><dd><select id="status" name="status" class="pin" style="flex: 0">{% for o in ["active", "done", "dropped"] %}<option{% if epic.status.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+<dt><label for="okr">OKR</label></dt><dd><input id="okr" name="okr" class="pin" value="{{ epic.okr }}" placeholder="e.g. O1 · Faster ordering"></dd>
+<dt>Dates</dt><dd><span class="small muted">start</span><input class="pin" type="date" name="start" value="{{ epic.start }}" style="flex: 0" aria-label="Start"><span class="small muted">target</span><input class="pin" type="date" name="target" value="{{ epic.target }}" style="flex: 0" aria-label="Target"><span class="small muted">done on</span><input class="pin" type="date" name="done_on" value="{{ epic.done_on }}" style="flex: 0" aria-label="Done on"></dd>
+<dt>Metric</dt><dd><input class="pin" name="metric" value="{{ live.metric }}" placeholder="e.g. checkout p95" style="flex: 0 1 140px" aria-label="Metric name"><span class="small muted">before</span><input class="pin" name="before" value="{{ live.before }}" style="flex: 0 0 48px" aria-label="Before"><span class="small muted">after</span><input class="pin" name="after" value="{{ live.after }}" style="flex: 0 0 48px" aria-label="After"></dd>
+</dl>
+<noscript><button class="btn" type="submit">Save</button></noscript>
+</form>
+
+<hr class="hr">
+
+{% include "epics/live.html" %}
+
+<h3>Timeline</h3>
+{%- if timeline.is_empty() %}
+<p class="small muted">Nothing logged on {{ epic.key }} yet. Start a line with {{ epic.key }} on Today.</p>
+{%- endif %}
+{%- for g in timeline %}
+<h4 class="muted small">{{ g.label }}</h4>
+<div class="blocks">
+{%- for r in g.rows %}
+<div class="blk"><span class="{{ r.kind.badge_class() }}" title="{{ r.kind.tooltip() }}">{{ r.kind.mark() }}</span><span>{% if let Some(t) = r.topic %}<span class="mono">{{ t }}</span> {% endif %}{{ r.text }}</span></div>
+{%- endfor %}
+</div>
+{%- endfor %}
+</main>
+{% endblock %}

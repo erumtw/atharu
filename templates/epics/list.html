@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="doc wide">
+<h1 class="ptitle">Epics</h1>
+<p class="lead">Your Jira epics, plus what Jira doesn't hold: OKR, target, metric, impact.</p>
+{%- if !untitled.is_empty() %}
+
+<details open>
+<summary>No title yet <span class="muted" style="font-weight: 400">· {{ untitled.len() }} · keys you logged that need a name</span></summary>
+{%- for key in untitled %}
+<form class="blk" style="gap: 8px" method="post" action="/epics/{{ key }}/title" hx-post="/epics/{{ key }}/title" hx-swap="outerHTML"><span class="chip key">{{ key }}</span><input class="pin" name="title" placeholder="Type a title, press Enter" aria-label="Title for {{ key }}" style="border-bottom: 1px dashed #b0b0b5"></form>
+{%- endfor %}
+</details>
+{%- endif %}
+{%- for g in groups %}
+
+<details open>
+<summary>{{ g.okr }} <span class="muted" style="font-weight: 400">· {{ g.rows.len() }} active</span></summary>
+<div class="tw"><table>
+<tr><th>Name</th><th>Role</th><th>Target</th><th>Last log</th></tr>
+{%- for e in g.rows %}
+<tr><td><a href="/epics/{{ e.key }}" style="color: #1d1d1f"><span class="chip key">{{ e.key }}</span> <b>{{ e.title }}</b></a></td><td class="muted">{{ e.role }}</td><td>{% if e.target.is_empty() %}<span class="muted">—</span>{% else %}{{ e.target }} {% if e.late %}<b>{{ e.target_note }}</b>{% else %}<span class="muted">{{ e.target_note }}</span>{% endif %}{% endif %}</td><td class="muted">{{ e.last_log }}</td></tr>
+{%- endfor %}
+</table></div>
+</details>
+{%- endfor %}
+{%- if !closed.is_empty() %}
+
+<details>
+<summary>Done &amp; dropped <span class="muted" style="font-weight: 400">· {{ closed.len() }}</span></summary>
+<div class="blocks small">
+{%- for c in closed %}<div class="blk"><a href="/epics/{{ c.key }}"><span class="chip key">{{ c.key }}</span></a><span{% if !c.done %} class="muted"{% endif %}>{{ c.title }}</span><span class="chip">{{ c.chip }}</span></div>{% endfor -%}
+</div>
+</details>
+{%- endif %}
+
+<p class="small muted">New epics appear here the first time you log a line starting with their key.</p>
+</main>
+{% endblock %}

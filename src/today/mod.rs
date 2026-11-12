@@ -1,0 +1,19 @@
+//! `/` Today: capture a line, see the day's log grouped by epic, delete/undo, live parse hint.
+mod handlers;
+mod queries;
+mod view;
+
+use crate::app::AppState;
+use axum::{
+    Router,
+    routing::{delete, get, post},
+};
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(handlers::page))
+        .route("/entries", post(handlers::create))
+        .route("/entries/{id}", delete(handlers::delete))
+        .route("/entries/{id}/delete", post(handlers::delete))
+        .route("/parse-preview", post(handlers::preview))
+}

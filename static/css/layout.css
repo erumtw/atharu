@@ -1,0 +1,29 @@
+/* Page chrome: sidebar, sheet, breadcrumb, document column. Glass only on floating chrome. */
+.wl{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:var(--ink);background:#fff;font-size:15px;line-height:1.47;letter-spacing:-.2px;min-height:100vh;display:flex;flex-wrap:wrap}
+.side{flex:1 1 220px;max-width:248px;background:var(--fill);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:1px;font-size:14px;box-sizing:border-box}
+.ws{font-weight:600;font-size:15px;padding:6px 10px 12px;letter-spacing:-.224px}
+.side a{display:flex;gap:8px;align-items:center;padding:6px 10px;border-radius:8px;color:var(--ink-2);min-height:32px;box-sizing:border-box;text-decoration:none}
+.side a:hover{background:#e8e8ed;color:var(--ink)}
+.side a.on{background:#e0e0e5;color:var(--ink);font-weight:600}
+.side a.sub{padding-left:32px;font-size:13px;color:var(--muted);min-height:28px}
+.side .lbl{font-size:12px;font-weight:600;color:var(--muted);padding:16px 10px 4px}
+.side svg{flex:none;color:var(--muted)}
+.cnt{margin-left:auto;font-size:11px;font-weight:600;background:var(--accent);color:#fff;border-radius:9999px;padding:0 6px;min-width:18px;text-align:center;letter-spacing:0}
+.pg{flex:999 1 640px;min-width:0;display:flex;flex-direction:column}
+.crumb{display:flex;gap:8px;align-items:center;padding:10px 24px;font-size:13px;color:var(--muted);min-height:52px;box-sizing:border-box;flex-wrap:wrap}
+.crumb a{color:var(--muted)}.crumb b{color:var(--ink);font-weight:500}
+.doc{max-width:860px;width:100%;margin:0 auto;box-sizing:border-box;padding:24px 48px 72px;display:flex;flex-direction:column;gap:14px}
+.doc.wide{max-width:1080px}
+.ptitle{font-size:40px;font-weight:600;letter-spacing:-.5px;line-height:1.1;margin:8px 0 0}
+.lead{font-size:15px;color:var(--muted);margin:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.tw{overflow-x:auto}
+/* Liquid Glass: only floating chrome is glass; content stays on an opaque sheet for legibility */
+.wl{background:#eef0f5 radial-gradient(60% 50% at 0% 0%,rgba(0,102,204,.16),transparent 70%),radial-gradient(50% 40% at 100% 100%,rgba(0,102,204,.08),transparent 70%);padding:12px;gap:12px;box-sizing:border-box}
+.side{border-radius:22px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.5);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 32px rgba(0,0,0,.06);align-self:flex-start}
+.side a.on{background:rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 1px 4px rgba(0,0,0,.06)}
+.side a:hover{background:rgba(255,255,255,.6)}
+.pg{background:#fff;border-radius:22px;border:1px solid rgba(0,0,0,.06);overflow:clip;position:relative}
+.crumb{position:sticky;top:0;z-index:2;background:rgba(255,255,255,.6);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid rgba(0,0,0,.05)}
+.cnt{background:none;color:var(--muted);font-weight:500;padding:0}

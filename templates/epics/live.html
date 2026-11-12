@@ -1,0 +1,23 @@
+{#- Impact line + evidence; swapped whole by property and evidence actions (the line quotes both). #}
+<div id="live">
+{%- if let Some(line) = live.impact %}
+<div class="callout dark" style="flex-direction: column; gap: 10px">
+<div class="row between" style="width: 100%"><span class="small muted">Impact line</span><button class="btn" type="button" data-copy="#impact-line">Copy</button></div>
+<div class="row" style="gap: 14px; align-items: baseline"><span style="font-size: 34px; font-weight: 600; letter-spacing: -.374px">{{ live.before }}</span><span class="muted" style="font-size: 22px">→</span><span style="font-size: 34px; font-weight: 600; letter-spacing: -.374px; color: #2997ff">{{ live.after }}</span><span class="muted">{{ live.metric }}</span></div>
+<div id="impact-line" class="mono" style="color: #cccccc">{{ line }}</div>
+</div>
+{%- else %}
+<div class="callout" style="flex-direction: column; gap: 6px"><span class="small muted">Impact line</span><span class="small muted">Fill Metric, Before and After on this page to build your impact line.</span></div>
+{%- endif %}
+
+<h3>Evidence</h3>
+<div class="blocks">
+{%- for v in live.evidence %}
+<div class="blk">•<a href="{{ v.url }}" rel="noopener noreferrer" target="_blank">{{ v.url }}</a>{% if !v.note.is_empty() %}<span class="small muted">{{ v.note }}</span>{% endif %}<form class="inline" style="margin-left: auto" method="post" action="/epics/{{ live.key }}/evidence/{{ v.id }}/delete" hx-delete="/epics/{{ live.key }}/evidence/{{ v.id }}" hx-target="#live" hx-swap="outerHTML"><button class="x" type="submit" title="Delete evidence" aria-label="Delete evidence">×</button></form></div>
+{%- endfor %}
+<form class="blk" method="post" action="/epics/{{ live.key }}/evidence" hx-post="/epics/{{ live.key }}/evidence" hx-target="#live" hx-swap="outerHTML"><span class="muted">+</span><input class="pin{% if live.ev_error.is_some() %} bad{% endif %}" name="line" value="{{ live.ev_line }}" placeholder="Add evidence: paste a link, then a note after a space" aria-label="Add evidence link"></form>
+{%- if let Some(e) = live.ev_error %}
+<span class="err">{{ e }}</span>
+{%- endif %}
+</div>
+</div>

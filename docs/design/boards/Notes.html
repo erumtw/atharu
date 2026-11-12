@@ -1,0 +1,31 @@
+Worklog · Notes|Notes|<a href="Notes.dc.html">Notes</a><span>/</span><b>Checkout perf retro</b><span class="saved" style="margin-left: auto">Changes save as you type · ✓ saved 2h ago</span>
+<!--side--><div class="lbl">Mine</div><a class="sub on" href="#">Checkout perf retro</a><a class="sub" href="#">Q4 OKR draft</a><a class="sub" href="#">Search options for catalog</a><div class="lbl">Written by LLM</div><a class="sub" href="#">HNSW explained (ingest)</a><a class="sub" href="#">Lint · 10 Nov</a><!--/side-->
+<main class="doc">
+<form class="row small" style="gap: 8px" role="search"><input class="util" style="flex: 1; min-height: 32px" placeholder="Search notes"></form>
+<h1 class="ptitle">Checkout perf retro</h1>
+<dl class="props">
+<dt>Written by</dt><dd><span class="chip">you</span></dd>
+<dt>Links</dt><dd class="small"><a href="Epic.dc.html">OPS-101</a>·<a href="Topic.dc.html">vector-search</a>·<a href="Meetings.dc.html">oms-sync</a></dd>
+</dl>
+<p class="small muted" style="margin: 0">Type <span class="mono">/</span> for blocks, <span class="mono">[[</span> to link a page. Markdown shortcuts work: <span class="mono">#</span> heading, <span class="mono">-</span> list, <span class="mono">[]</span> to-do.</p>
+<div role="textbox" aria-multiline="true" aria-label="Note" style="display: flex; flex-direction: column; gap: 10px; font-size: 16px; line-height: 1.6; position: relative">
+<h3 style="margin: 4px 0 0">What happened</h3>
+<p style="margin: 0">p95 hit 1.8s on <a href="Epic.dc.html" class="chip key" style="color: #0066cc">OPS-101</a> after the promo. Root cause: seq scan on <code class="mono" style="background: #f5f5f7; padding: 1px 5px; border-radius: 4px">order_lines</code>.</p>
+<div class="callout" style="padding: 10px 14px"><span><b>Decision.</b> Index + keep the sync path, decided in <a href="Meetings.dc.html" class="chip" style="color: #0066cc">oms-sync</a>.</span></div>
+<h3 style="margin: 4px 0 0">Next</h3>
+<label class="row" style="gap: 10px"><input class="check" type="checkbox" checked><span class="done-text">compare p95 after the promo</span></label>
+<label class="row" style="gap: 10px"><input class="check" type="checkbox"><span>look at <a href="Topic.dc.html" class="chip mono" style="color: #0066cc">vector-search</a> for the catalog</span></label>
+<details><summary style="font-weight: 500">Raw numbers</summary><p class="small muted" style="margin: 4px 0 0 18px">before 1.8s · after 0.6s · sample 7 days</p></details>
+<p style="margin: 0; display: flex; align-items: center; gap: 4px"><span>/</span><span aria-hidden="true" style="width: 1px; height: 20px; background: #1d1d1f"></span></p>
+<div role="listbox" aria-label="Insert block" style="position: absolute; left: 0; bottom: -236px; width: 260px; background: rgba(255,255,255,.85); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(0,0,0,.08); border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.12); padding: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; z-index: 3">
+<div role="option" aria-selected="true" style="padding: 6px 10px; border-radius: 8px; background: #e8f1fb"><b>Heading</b> <span class="small muted">#</span></div>
+<div role="option" style="padding: 6px 10px; border-radius: 8px">To-do list <span class="small muted">[]</span></div>
+<div role="option" style="padding: 6px 10px; border-radius: 8px">Toggle</div>
+<div role="option" style="padding: 6px 10px; border-radius: 8px">Callout</div>
+<div role="option" style="padding: 6px 10px; border-radius: 8px">Code block <span class="small muted">```</span></div>
+<div role="option" style="padding: 6px 10px; border-radius: 8px">Link a page <span class="small muted">[[</span></div>
+</div>
+</div>
+<div style="height: 240px" aria-hidden="true"></div>
+<div class="callout small" style="background: #f5f5f7"><span><span class="chip llm">LLM</span> Notes under “Written by LLM” come from Claude Code (summaries of links you gave it, and lint reports). They never change your topics or depth ratings.</span></div>
+</main>
