@@ -261,6 +261,55 @@
       "w": 390,
       "x": 7270,
       "y": 21400
+    },
+    "Meeting.Record.dc.html": {
+      "h": 1250,
+      "title": "Recording · Start option + consent, banner (elapsed, Me / Others levels, Stop)",
+      "w": 1280,
+      "x": 0,
+      "y": 22880
+    },
+    "Meeting.Live.dc.html": {
+      "h": 1150,
+      "title": "Recording · live transcript (~30 s behind), search, copy",
+      "w": 1280,
+      "x": 1360,
+      "y": 22880
+    },
+    "Meeting.Finishing.dc.html": {
+      "h": 1380,
+      "title": "Recording · after Stop: last part transcribing → done + /meeting hint",
+      "w": 1280,
+      "x": 2720,
+      "y": 22880
+    },
+    "Meeting.Permissions.dc.html": {
+      "h": 1320,
+      "title": "Recording · first-run macOS permissions + denied",
+      "w": 1280,
+      "x": 4080,
+      "y": 22880
+    },
+    "Settings.Transcription.dc.html": {
+      "h": 2010,
+      "title": "Settings · transcription (model download, language)",
+      "w": 1280,
+      "x": 5440,
+      "y": 22880
+    },
+    "Mobile.Meeting.dc.html": {
+      "h": 844,
+      "title": "Phone · meeting transcript (view only)",
+      "w": 390,
+      "x": 6800,
+      "y": 22880
+    },
+    "Meeting.RTIC.dc.html": {
+      "h": 1050,
+      "title": "Recording · Reduce Transparency + Increase Contrast, search hits",
+      "w": 1280,
+      "x": 7270,
+      "y": 22880
     }
   },
   "createdOnFiles": {
@@ -293,7 +342,9 @@
     "s9",
     "t10",
     "t11",
-    "s10"
+    "s10",
+    "t12",
+    "s11"
   ],
   "notes": {
     "s0": {
@@ -461,6 +512,21 @@
       "x": 7740,
       "y": 21400,
       "text": "Drawing block (T41, D23/D24)\n· Read: the stored SVG in a white 12-radius figure, no glass (content). Shown as <img>, so no script and no JS needed. Edit drawing = glass pill top-right on hover/focus, always on touch.\n· Insert: / menu → Drawing opens the editor at once. Empty = dashed placeholder + Draw. Selected = 2px blue ring; Backspace deletes like any block.\n· Edit: Excalidraw full-screen on an opaque white sheet; our one glass capsule top-right (Library hidden): status · Cancel (discard since opening) · Done (the one blue). Autosaves into the note 1 s after a change.\n· Excalidraw themed via its CSS vars to the one blue + system font; colours inside a drawing are user content.\n· Lazy: Excalidraw (434 KB gz) loads only on Edit / Draw; a note without a drawing loads none of it."
+    },
+    "t12": {
+      "kind": "title1",
+      "maxW": 9050,
+      "text": "Meeting recording · Mac app, local transcript",
+      "w": 240,
+      "x": 0,
+      "y": 22600
+    },
+    "s11": {
+      "fill": "teal",
+      "w": 420,
+      "x": 8630,
+      "y": 22880,
+      "text": "Meeting recording (T51; D26, D27)\n· Mac app only: browser + phone show transcripts and “Recording on the Mac”, never capture.\n· Start: Record audio switch, off by default every time; on → “Tell people you’re recording” in ink. No model → disabled + link to Settings.\n· Banner: red dot (new token --rec-on-dark #ff5c52, 4.9:1 on --dark; --err is 2.28 there) + “Recording” + elapsed + Me / Others level meters + Stop recording + End meeting.\n· Transcript = content (white box, no glass): timestamp · Me / Others · text; ~30 s behind live; search is a GET filter with <mark>; Copy → toast.\n· After Stop: “Transcribing the last part…” + progress (~4–5 min per hour), then “Ask Claude for notes: run /meeting” with a copy chip. Audio deleted once text.\n· First Record: Microphone → Screen & System Audio Recording → Quit & Reopen; the meeting runs either way.\n· Settings › Transcription: one model (large-v3-turbo q5_0, 574 MB, SHA-256 checked), Thai default (Auto | Thai | English), vocabulary = meeting name + active epics."
     }
   },
   "order": [
@@ -497,7 +563,14 @@
     "Drawing.Empty.dc.html",
     "Drawing.RT.dc.html",
     "Mobile.Drawing.dc.html",
-    "Mobile.DrawingEdit.dc.html"
+    "Mobile.DrawingEdit.dc.html",
+    "Meeting.Record.dc.html",
+    "Meeting.Live.dc.html",
+    "Meeting.Finishing.dc.html",
+    "Meeting.Permissions.dc.html",
+    "Settings.Transcription.dc.html",
+    "Mobile.Meeting.dc.html",
+    "Meeting.RTIC.dc.html"
   ],
   "pages": [],
   "title": "Atharu Design"
