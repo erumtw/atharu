@@ -530,11 +530,15 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
    No note = --muted outline (4.66 on the --fill row hover), hidden like × until the row is hovered or holds focus.
    Has a note = always shown, --accent fill with white lines (a link, the one blue: 5.11, lines 5.57). The `note`
    symbol's paths read --note-fill / --note-line: custom properties inherit into the <use> tree. */
-.ib.note{width:28px;height:28px;color:var(--muted);opacity:0}
+/* Faint until the row is hovered / focused, never invisible: an icon that only exists on hover wasn't found (owner). */
+.ib.note{width:28px;height:28px;color:var(--muted);opacity:.35}
 .ib.note .ic{width:18px;height:18px}
 .ib.note:hover{color:var(--ink)}
 :is(.blk,.qt):is(:hover,:focus-within) .ib.note,.ib.note:focus-visible{opacity:1}
-.ib.note.has{opacity:1;color:var(--accent);--note-fill:currentColor;--note-line:#fff}
+.ib.note.has{opacity:1;color:var(--accent)}
+/* Has a note: the page fills in the accent, its lines turn white (inline paths, see note_btn.html). */
+.ib.note.has .pg{fill:currentColor}
+.ib.note.has .pg~path{stroke:#fff}
 .ib.note.has:hover{color:var(--accent-2)}
 /* A log row's right cluster (plan rows have their span.row): ⋯ keeps the right edge on phone when the add button hides. */
 .blk>.end{margin-left:auto;display:inline-flex;align-items:center;gap:6px}
