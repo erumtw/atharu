@@ -15,4 +15,21 @@ pub struct Page {
     pub version: String,
     pub sha: &'static str,
     pub built: &'static str,
+    pub db: Db,
+}
+
+/// Settings › About › Database file (T85); also the htmx partial `/settings/db` returns.
+#[derive(Template)]
+#[template(path = "settings/db.html")]
+pub struct Db {
+    /// The file this server has open (`In memory` in tests).
+    pub path: String,
+    /// Mac app only: the pointer file it reads at start, so the path can be changed here.
+    pub change: bool,
+    /// The pointer names another file than the open one: the switch waits for a restart.
+    pub pending: bool,
+    /// The one-time "old Mac DB isn't merged" note is still undismissed.
+    pub note: bool,
+    pub input: String,
+    pub error: Option<String>,
 }

@@ -15,3 +15,12 @@ pub fn get(conn: &Connection, key: &str) -> rusqlite::Result<Option<String>> {
     })
     .optional()
 }
+
+/// The open DB's file; empty for an in-memory one.
+pub fn db_file(conn: &Connection) -> rusqlite::Result<String> {
+    conn.query_row(
+        "SELECT file FROM pragma_database_list WHERE name = 'main'",
+        [],
+        |r| r.get(0),
+    )
+}

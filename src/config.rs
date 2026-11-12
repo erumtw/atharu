@@ -112,3 +112,145 @@ impl FileConfig {
         })
     }
 }
+
+/// Env var the Mac app sets to its pointer file's path; Settings › About offers "Change" only when it is set.
+pub const DB_POINTER_ENV: &str = "ATHARU_DB_POINTER";
+/// The pointer's name in the Mac app's data dir: one line, the DB path Settings › About picked.
+pub const DB_POINTER: &str = "db-path";
+
+/// The Mac app's DB (D52): `ATHARU_DB` > the `db-path` pointer Settings writes > the shared
+/// `~/atharu/data/atharu.db` when it exists (the file the browser, CLI and agents use) > the app's own folder
+/// (pre-T85 behaviour, so a fresh Mac without the repo still starts).
+pub fn resolve_db(env: Option<PathBuf>, app_dir: &Path, home: Option<&Path>) -> PathBuf {
+    if let Some(p) = env.filter(|p| !p.as_os_str().is_empty()) {
+        return p;
+    }
+    if let Ok(s) = std::fs::read_to_string(app_dir.join(DB_POINTER))
+        && !s.trim().is_empty()
+    {
+        return s.trim().into();
+    }
+    match home.map(|h| h.join("atharu/data/atharu.db")) {
+        Some(shared) if shared.is_file() => shared,
+        _ => app_dir.join("atharu.db"),
+    }
+}
+
+/// A DB path typed into Settings: absolute (a leading `~` expands), ends in `.db`, and is an existing file or
+/// sits in an existing folder (SQLite creates the file, not its folders). `Err` is the copy the form shows.
+pub fn check_db_path(input: &str, home: Option<&Path>) -> Result<PathBuf, String> {
+    let s = input.trim();
+    let p = match (s.strip_prefix('~'), home) {
+        (Some(rest), Some(h)) if rest.is_empty() || rest.starts_with('/') => {
+            h.join(rest.trim_start_matches('/'))
+        }
+        _ => PathBuf::from(s),
+    };
+    if !p.is_absolute() {
+        return Err("Use a full path, starting with / or ~/.".into());
+    }
+    if p.extension().is_none_or(|e| e != "db") {
+        return Err("Pick a file ending in .db.".into());
+    }
+    if p.exists() {
+        if !p.is_file() {
+            return Err("That's a folder, not a .db file.".into());
+        }
+    } else if let Some(dir) = p.parent().filter(|d| !d.is_dir()) {
+        return Err(format!("No folder {}. Create it first.", dir.display()));
+    }
+    Ok(p)
+}
+
+/// Point the Mac app at `db` from its next start. Temp file + rename: a crash mid-write can't leave a half
+/// path that the next start would open as a new, empty DB.
+pub fn write_db_pointer(pointer: &Path, db: &Path) -> std::io::Result<()> {
+    if let Some(dir) = pointer.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let tmp = pointer.with_extension("tmp");
+    std::fs::write(&tmp, db.as_os_str().as_encoded_bytes())?;
+    std::fs::rename(tmp, pointer)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tmp(name: &str) -> PathBuf {
+        let d = std::env::temp_dir().join(format!("atharu-dbpath-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    #[test]
+    fn db_precedence() {
+        let (app, home) = (tmp("app"), tmp("home"));
+        let own = app.join("atharu.db");
+        assert_eq!(resolve_db(None, &app, Some(&home)), own, "nothing set");
+        assert_eq!(resolve_db(None, &app, None), own, "no HOME");
+
+        let shared = home.join("atharu/data/atharu.db");
+        std::fs::create_dir_all(shared.parent().unwrap()).unwrap();
+        std::fs::write(&shared, "").unwrap();
+        assert_eq!(
+            resolve_db(None, &app, Some(&home)),
+            shared,
+            "shared beats own"
+        );
+
+        let picked = home.join("other.db");
+        write_db_pointer(&app.join("db-path"), &picked).unwrap();
+        assert_eq!(
+            resolve_db(None, &app, Some(&home)),
+            picked,
+            "pointer beats shared"
+        );
+        assert!(!app.join("db-path.tmp").exists());
+
+        let env = PathBuf::from("/env/x.db");
+        assert_eq!(
+            resolve_db(Some(env.clone()), &app, Some(&home)),
+            env,
+            "env wins"
+        );
+        assert_eq!(
+            resolve_db(Some("".into()), &app, Some(&home)),
+            picked,
+            "empty env ignored"
+        );
+    }
+
+    #[test]
+    fn db_path_checks() {
+        let home = tmp("check");
+        std::fs::write(home.join("a.db"), "").unwrap();
+        std::fs::create_dir_all(home.join("dir.db")).unwrap();
+        let ok = |s: &str| check_db_path(s, Some(&home));
+        assert_eq!(
+            ok("~/a.db").unwrap(),
+            home.join("a.db"),
+            "existing, ~ expanded"
+        );
+        assert_eq!(
+            ok(" ~/new.db ").unwrap(),
+            home.join("new.db"),
+            "new file, folder exists"
+        );
+        assert_eq!(
+            ok("rel/a.db").unwrap_err(),
+            "Use a full path, starting with / or ~/."
+        );
+        assert_eq!(
+            ok("~bob/a.db").unwrap_err(),
+            "Use a full path, starting with / or ~/."
+        );
+        assert_eq!(ok("~/a.txt").unwrap_err(), "Pick a file ending in .db.");
+        assert_eq!(
+            ok("~/dir.db").unwrap_err(),
+            "That's a folder, not a .db file."
+        );
+        assert!(ok("~/nope/x.db").unwrap_err().starts_with("No folder "));
+    }
+}
