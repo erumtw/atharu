@@ -6,11 +6,11 @@ use crate::{
         plan::{Bucket, PIN_CAP, link_label, parse_plan},
     },
     error::{AppError, AppResult},
-    layout::Layout,
+    layout::{Layout, TagFilter},
     web,
 };
 use axum::{
-    extract::{Form, Path, State},
+    extract::{Form, Path, Query, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
 };
@@ -20,7 +20,7 @@ use serde::Deserialize;
 
 const PIN_FULL: &str = "Top 3 is full. Unpin one first.";
 
-fn lists(conn: &Connection, today: NaiveDate) -> rusqlite::Result<view::Lists> {
+fn lists(conn: &Connection, today: NaiveDate, tags: &[String]) -> rusqlite::Result<view::Lists> {
     let mut groups: Vec<view::Group> = Bucket::ALL
         .iter()
         .map(|b| view::Group {
@@ -28,7 +28,7 @@ fn lists(conn: &Connection, today: NaiveDate) -> rusqlite::Result<view::Lists> {
             plans: Vec::new(),
         })
         .collect();
-    for p in queries::open_plans(conn)? {
+    for p in queries::open_plans(conn, tags)? {
         let i = Bucket::ALL
             .iter()
             .position(|b| *b == Bucket::of(p.due, today))
@@ -37,22 +37,38 @@ fn lists(conn: &Connection, today: NaiveDate) -> rusqlite::Result<view::Lists> {
     }
     groups.retain(|g| !g.plans.is_empty());
     let week = dates::week_start(today);
-    let done = queries::done_between(conn, &dates::iso(week), &dates::iso(week + Days::new(6)))?;
+    // Filtered: "Done this week" would mix tagged and untagged, so it waits for the full list.
+    let done = if tags.is_empty() {
+        queries::done_between(conn, &dates::iso(week), &dates::iso(week + Days::new(6)))?
+    } else {
+        Vec::new()
+    };
     Ok(view::Lists { groups, done })
 }
 
 fn render_page(
     st: &AppState,
+    tags: Vec<String>,
     line: String,
     error: Option<String>,
     notice: Option<String>,
 ) -> AppResult<view::Page> {
     let today = st.today();
     let conn = st.conn();
+    let lists = lists(&conn, today, &tags)?;
+    let shown: usize = lists.groups.iter().map(|g| g.plans.len()).sum();
     Ok(view::Page {
         layout: Layout::load(&conn, "todos", "To-dos", vec![])?,
         today,
-        lists: lists(&conn, today)?,
+        open_total: queries::open_plans(&conn, &[])?.len(),
+        shown,
+        filter: TagFilter {
+            tags,
+            path: "/todos?".into(),
+            keep: Vec::new(),
+            known: queries::tag_names(&conn)?,
+        },
+        lists,
         keys: queries::epic_keys(&conn)?,
         line,
         error,
@@ -60,8 +76,16 @@ fn render_page(
     })
 }
 
-pub async fn page(State(st): State<AppState>) -> AppResult<Response> {
-    web::html(&render_page(&st, String::new(), None, None)?)
+#[derive(Deserialize)]
+pub struct PageQuery {
+    /// Tag filter, comma list (any of them); `add` = the filter row's add box.
+    tag: Option<String>,
+    add: Option<String>,
+}
+
+pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> AppResult<Response> {
+    let tags = TagFilter::pick(q.tag.as_deref(), q.add.as_deref());
+    web::html(&render_page(&st, tags, String::new(), None, None)?)
 }
 
 #[derive(Deserialize)]
@@ -90,7 +114,7 @@ pub async fn create(
                 .into_response());
         }
         Err(e) => {
-            let page = render_page(&st, f.line, Some(e.to_string()), None)?;
+            let page = render_page(&st, Vec::new(), f.line, Some(e.to_string()), None)?;
             return web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &page);
         }
     };
@@ -99,9 +123,10 @@ pub async fn create(
     if !web::is_htmx(&headers) {
         return Ok(web::back("/todos"));
     }
+    let tags = TagFilter::pick(web::page_param(&headers, "tag").as_deref(), None);
     web::html(&view::ListsSwap {
         today,
-        lists: lists(&st.conn(), today)?,
+        lists: lists(&st.conn(), today, &tags)?,
     })
 }
 
@@ -183,7 +208,7 @@ pub async fn update(
     if !web::is_htmx(&headers) {
         if pin_full {
             drop(conn);
-            let page = render_page(&st, String::new(), None, Some(PIN_FULL.into()))?;
+            let page = render_page(&st, Vec::new(), String::new(), None, Some(PIN_FULL.into()))?;
             return web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &page);
         }
         return Ok(web::back(&back));

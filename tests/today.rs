@@ -138,8 +138,12 @@ async fn preview_returns_kind_and_key() {
         "{}",
         r.body
     );
+    // Blank box: blank hint; the (empty) `#` menu still comes along so a stale one closes.
     let r = post(&st, "/parse-preview", &form(&[("line", "  ")]), true).await;
-    assert_eq!(r.body, "");
+    assert_eq!(
+        r.body.trim(),
+        r#"<div id="tagsug" hx-swap-oob="innerHTML"></div>"#
+    );
 }
 
 /// The Undo form's hidden snapshot, unescaped the way a browser would post it back.

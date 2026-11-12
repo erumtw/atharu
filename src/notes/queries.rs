@@ -59,11 +59,15 @@ pub fn agent_create(
     body: &str,
     author: &str,
 ) -> rusqlite::Result<i64> {
-    conn.execute(
+    let tx = conn.unchecked_transaction()?;
+    tx.execute(
         "INSERT INTO notes(title, body, author) VALUES (?1, ?2, ?3)",
         params![title, body, author],
     )?;
-    Ok(conn.last_insert_rowid())
+    let id = tx.last_insert_rowid();
+    retag(&tx, id, body)?;
+    tx.commit()?;
+    Ok(id)
 }
 
 /// Rewrites a note only if `author` wrote it; false = no such note of theirs (mine stay untouched).
@@ -74,11 +78,17 @@ pub fn agent_update(
     body: &str,
     author: &str,
 ) -> rusqlite::Result<bool> {
-    Ok(conn.execute(
+    let tx = conn.unchecked_transaction()?;
+    let ok = tx.execute(
         "UPDATE notes SET title = ?1, body = ?2, updated_at = datetime('now')
          WHERE id = ?3 AND author = ?4",
         params![title, body, id, author],
-    )? > 0)
+    )? > 0;
+    if ok {
+        retag(&tx, id, body)?;
+    }
+    tx.commit()?;
+    Ok(ok)
 }
 
 /// Columns the editor form may write; anything else in the form is ignored.
@@ -90,13 +100,18 @@ pub fn update_fields(conn: &Connection, id: i64, f: &[(&str, &str)]) -> rusqlite
     if note(conn, id)?.is_none() {
         return Ok(false);
     }
+    let tx = conn.unchecked_transaction()?;
     for (col, v) in f {
         // `col` comes from EDITABLE, never from the request.
-        conn.execute(
+        tx.execute(
             &format!("UPDATE notes SET {col} = ?1, updated_at = datetime('now') WHERE id = ?2"),
             params![v, id],
         )?;
+        if *col == "body" {
+            retag(&tx, id, v)?;
+        }
     }
+    tx.commit()?;
     Ok(true)
 }
 
@@ -168,7 +183,8 @@ pub fn delete(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String, St
 
 /// Undo: re-inserts the snapshot under its old id (a new one if that id was reused meanwhile).
 pub fn restore(conn: &Connection, snap: &str) -> rusqlite::Result<i64> {
-    conn.execute(
+    let tx = conn.unchecked_transaction()?;
+    tx.execute(
         "INSERT INTO notes(id, title, body, author, updated_at)
          SELECT CASE WHEN EXISTS (SELECT 1 FROM notes WHERE id = j.id) THEN NULL ELSE j.id END,
                 j.title, j.body, j.author, j.updated_at
@@ -176,5 +192,19 @@ pub fn restore(conn: &Connection, snap: &str) -> rusqlite::Result<i64> {
                       ?1 ->> 'author' AS author, ?1 ->> 'updated_at' AS updated_at) j",
         [snap],
     )?;
-    Ok(conn.last_insert_rowid())
+    let id = tx.last_insert_rowid();
+    let body: String = tx.query_row("SELECT body FROM notes WHERE id = ?1", [id], |r| r.get(0))?;
+    retag(&tx, id, &body)?;
+    tx.commit()?;
+    Ok(id)
+}
+
+/// A note's `#tags` (headings `# x` are not tags: the parser needs a word right after the `#`).
+fn retag(conn: &Connection, id: i64, body: &str) -> rusqlite::Result<()> {
+    crate::db::retag(
+        conn,
+        "note",
+        &id.to_string(),
+        &crate::domain::tags::tags(body),
+    )
 }

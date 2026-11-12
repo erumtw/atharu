@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, flags, impact::impact_line, links},
+    domain::{dates, flags, impact::impact_line, links, tags},
     error::{AppError, AppResult},
     layout::{Layout, crumb},
     web,
@@ -185,6 +185,7 @@ fn render_page(
     let today = st.today();
     let conn = st.conn();
     let e = load(&conn, key)?;
+    let epic_tags = tags::parse_list(&e.tags);
     let mut timeline: Vec<view::DayGroup> = Vec::new();
     let mut last_day = String::new();
     for r in queries::timeline(&conn, key)? {
@@ -201,9 +202,15 @@ fn render_page(
             last_day = r.day.clone();
         }
         if let Some(g) = timeline.last_mut() {
+            let own = tags::tags(&r.text);
             g.rows.push(view::TimelineRow {
                 kind: r.kind,
                 topic: r.topic,
+                inh: epic_tags
+                    .iter()
+                    .filter(|t| !own.contains(t))
+                    .cloned()
+                    .collect(),
                 text: r.text,
                 author: r.author,
             });
@@ -236,6 +243,7 @@ fn render_page(
             start: e.start.unwrap_or_default(),
             target: e.target.unwrap_or_default(),
             done_on: e.done_on.unwrap_or_default(),
+            tags: epic_tags.join(", "),
         },
         mentions: queries::mentions(&conn, key)?,
         live,
@@ -263,6 +271,8 @@ fn fields(form: &HashMap<String, String>) -> Option<Vec<(&'static str, Option<St
                 NaiveDate::parse_from_str(v, "%Y-%m-%d").ok()?;
                 Some(v.to_string())
             }
+            // Free typing (`#Expense, hiring`) is folded to the stored `expense,hiring`; junk is dropped.
+            "tags" => Some(crate::domain::tags::parse_list(v).join(",")),
             _ => Some(v.to_string()),
         };
         out.push((col, val));

@@ -12,6 +12,7 @@
 <dl class="props">
 <dt><label for="role">Role</label></dt><dd><select id="role" name="role" class="pin" style="flex: none">{% for o in ["owner", "contributor"] %}<option{% if epic.role.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
 <dt><label for="status">Status</label></dt><dd><select id="status" name="status" class="pin" style="flex: none">{% for o in ["active", "done", "dropped"] %}<option{% if epic.status.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+<dt><label for="tags">Tags</label></dt><dd><input id="tags" name="tags" class="pin" value="{{ epic.tags }}" placeholder="add a tag, e.g. expense, hiring" style="flex: 0 1 220px"><span class="small muted">every line on this epic counts under these tags</span></dd>
 <dt><label for="okr">OKR</label></dt><dd><input id="okr" name="okr" class="pin" value="{{ epic.okr }}" placeholder="e.g. O1 · Faster ordering"></dd>
 <dt>Dates</dt><dd><span class="small muted">start</span><input class="pin" type="date" name="start" value="{{ epic.start }}" style="flex: none" aria-label="Start"><span class="small muted">target</span><input class="pin" type="date" name="target" value="{{ epic.target }}" style="flex: none" aria-label="Target"><span class="small muted">done on</span><input class="pin" type="date" name="done_on" value="{{ epic.done_on }}" style="flex: none" aria-label="Done on"></dd>
 <dt>Metric</dt><dd><input class="pin" name="metric" value="{{ live.metric }}" placeholder="e.g. checkout p95" style="flex: 0 1 140px" aria-label="Metric name"><span class="small muted">before</span><input class="pin" name="before" value="{{ live.before }}" style="flex: 0 0 48px" aria-label="Before"><span class="small muted">after</span><input class="pin" name="after" value="{{ live.after }}" style="flex: 0 0 48px" aria-label="After"></dd>
@@ -33,7 +34,7 @@
 <h4 class="muted small">{{ g.label }}</h4>
 <div class="blocks">
 {%- for r in g.rows %}
-<div class="blk"><span class="{{ r.kind.badge_class() }}" title="{{ r.kind.tooltip() }}">{{ r.kind.mark() }}</span><span>{% if let Some(t) = r.topic %}<span class="mono">{{ t }}</span> {% endif %}{{ r.text }}</span>{% let row = r %}{% include "partials/author.html" %}</div>
+<div class="blk"><span class="{{ r.kind.badge_class() }}" title="{{ r.kind.tooltip() }}">{{ r.kind.mark() }}</span><span>{% if let Some(t) = r.topic %}<span class="mono">{{ t }}</span> {% endif %}{% let text = r.text.as_str() %}{% include "partials/tag_text.html" %}</span>{% for t in r.inh %}<a class="chip tag inh" href="/tags/{{ t }}" title="From this epic">{{ t }}</a>{% endfor %}{% let row = r %}{% include "partials/author.html" %}</div>
 {%- endfor %}
 </div>
 {%- endfor %}

@@ -76,6 +76,8 @@ pub struct EpicView {
     pub done_on: String,
     /// Jira `summary · status`, shown while `title` is empty.
     pub jira: Option<String>,
+    /// `expense, hiring`: the Tags field as typed back to the user.
+    pub tags: String,
 }
 
 pub struct Evidence {
@@ -103,6 +105,8 @@ pub struct TimelineRow {
     pub topic: Option<String>,
     pub text: String,
     pub author: String,
+    /// The epic's tags this line doesn't type itself: drawn as inherited chips.
+    pub inh: Vec<String>,
 }
 
 pub struct DayGroup {

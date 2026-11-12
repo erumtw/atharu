@@ -56,6 +56,7 @@ pub fn router(state: AppState) -> Router {
         .merge(crate::calendar::routes())
         .merge(crate::epics::routes())
         .merge(crate::report::routes())
+        .merge(crate::tags::routes())
         .merge(crate::meetings::routes())
         .merge(crate::learn::routes())
         .merge(crate::notes::routes())

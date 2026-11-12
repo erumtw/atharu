@@ -179,6 +179,7 @@ pub fn plans(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Plan>> {
             state: r.get(7)?,
             closed_day: date(r.get(8)?),
             jira: r.get(9)?,
+            via: None,
         })
     })?
     .collect()

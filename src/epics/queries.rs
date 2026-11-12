@@ -21,13 +21,15 @@ pub struct EpicRow {
     pub author: String,
     /// `summary · status` from the Jira cache, shown only while our title is empty.
     pub jira: Option<String>,
+    /// Comma list of tags its lines inherit (D29).
+    pub tags: String,
 }
 
 const SELECT_EPIC: &str =
     "SELECT ep.key, ep.title, ep.role, ep.okr, ep.status, ep.start, ep.target, ep.done_on,
         ep.metric, ep.before, ep.after, (SELECT MAX(e.day) FROM entries e WHERE e.epic_key = ep.key),
         (SELECT COUNT(*) FROM entries e WHERE e.epic_key = ep.key AND e.plan_state = 'open'),
-        ep.author, j.summary || ' · ' || j.status
+        ep.author, j.summary || ' · ' || j.status, ep.tags
  FROM epics ep LEFT JOIN jira_issues j ON j.key = ep.key";
 
 fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
@@ -47,6 +49,7 @@ fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
         open_plans: r.get(12)?,
         author: r.get(13)?,
         jira: r.get(14)?,
+        tags: r.get(15)?,
     })
 }
 
@@ -64,8 +67,9 @@ pub fn epic(conn: &Connection, key: &str) -> rusqlite::Result<Option<EpicRow>> {
 }
 
 /// Columns a property form may write; the handler only passes names from this list.
-pub const EDITABLE: [&str; 10] = [
+pub const EDITABLE: [&str; 11] = [
     "title", "role", "okr", "status", "start", "target", "done_on", "metric", "before", "after",
+    "tags",
 ];
 
 /// Writes only the given columns. `None` value = SQL NULL (cleared date).
@@ -79,14 +83,24 @@ pub fn update_fields(
         .query_row("SELECT 1 FROM epics WHERE key = ?1", [key], |_| Ok(()))
         .optional()?
         .is_some();
+    let tx = conn.unchecked_transaction()?;
     for (col, val) in fields {
         debug_assert!(EDITABLE.contains(col));
-        conn.execute(
+        tx.execute(
             &format!("UPDATE epics SET {col} = ?1 WHERE key = ?2"),
             params![val, key],
         )?;
+        if *col == "tags" && exists {
+            retag(&tx, key, val.as_deref().unwrap_or(""))?;
+        }
     }
+    tx.commit()?;
     Ok(exists)
+}
+
+/// The field is already normalised (`a,b`); taggings follows it in the same transaction.
+fn retag(conn: &Connection, key: &str, tags: &str) -> rusqlite::Result<()> {
+    crate::db::retag(conn, "epic", key, &crate::domain::tags::parse_list(tags))
 }
 
 pub struct EvidenceRow {
@@ -184,20 +198,25 @@ pub fn agent_upsert(
     key: &str,
     title: &str,
     okr: &str,
+    tags: &str,
     author: &str,
 ) -> rusqlite::Result<bool> {
-    let created = conn.execute(
+    let tx = conn.unchecked_transaction()?;
+    let created = tx.execute(
         "INSERT OR IGNORE INTO epics(key, title, okr, author) VALUES (?1, ?2, ?3, ?4)",
         params![key, title, okr, author],
     )? > 0;
-    for (col, v) in [("title", title), ("okr", okr)] {
+    for (col, v) in [("title", title), ("okr", okr), ("tags", tags)] {
         if !v.is_empty() {
-            conn.execute(
+            tx.execute(
                 &format!("UPDATE epics SET {col} = ?1 WHERE key = ?2 AND {col} = ''"),
                 params![v, key],
             )?;
         }
     }
+    let now: String = tx.query_row("SELECT tags FROM epics WHERE key = ?1", [key], |r| r.get(0))?;
+    retag(&tx, key, &now)?;
+    tx.commit()?;
     Ok(created)
 }
 
@@ -215,7 +234,7 @@ pub fn delete(conn: &mut Connection, key: &str) -> rusqlite::Result<Deleted> {
         .query_row(
             "SELECT json_object('key', key, 'title', title, 'role', role, 'okr', okr,
                'status', status, 'start', start, 'target', target, 'done_on', done_on,
-               'metric', metric, 'before', before, 'after', after, 'author', author,
+               'metric', metric, 'before', before, 'after', after, 'author', author, 'tags', tags,
                'evidence', json((SELECT json_group_array(json_array(v.url, v.note, v.author))
                                  FROM evidence v WHERE v.epic_key = ep.key))),
                EXISTS (SELECT 1 FROM entries e WHERE e.epic_key = ep.key)
@@ -244,12 +263,14 @@ pub fn restore(conn: &mut Connection, snap: &str) -> rusqlite::Result<Result<Str
         return Ok(Err(key));
     }
     tx.execute(
-        "INSERT INTO epics(key, title, role, okr, status, start, target, done_on, metric, before, after, author)
+        "INSERT INTO epics(key, title, role, okr, status, start, target, done_on, metric, before, after, author, tags)
          VALUES (?1 ->> 'key', ?1 ->> 'title', ?1 ->> 'role', ?1 ->> 'okr', ?1 ->> 'status',
                  ?1 ->> 'start', ?1 ->> 'target', ?1 ->> 'done_on', ?1 ->> 'metric',
-                 ?1 ->> 'before', ?1 ->> 'after', ?1 ->> 'author')",
+                 ?1 ->> 'before', ?1 ->> 'after', ?1 ->> 'author', COALESCE(?1 ->> 'tags', ''))",
         [snap],
     )?;
+    let tags: String = tx.query_row("SELECT COALESCE(?1 ->> 'tags', '')", [snap], |r| r.get(0))?;
+    retag(&tx, &key, &tags)?;
     tx.execute(
         "INSERT INTO evidence(epic_key, url, note, author)
          SELECT ?1 ->> 'key', value ->> 0, value ->> 1, value ->> 2 FROM json_each(?1, '$.evidence')",

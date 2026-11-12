@@ -15,6 +15,7 @@ pub mod meetings;
 pub mod notes;
 pub mod report;
 pub mod settings;
+pub mod tags;
 pub mod today;
 pub mod todos;
 pub mod web;

@@ -9,3 +9,4 @@ pub mod look;
 pub mod markdown;
 pub mod parse;
 pub mod plan;
+pub mod tags;

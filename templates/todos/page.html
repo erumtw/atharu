@@ -14,6 +14,10 @@
 {%- if let Some(n) = notice %}
 <span class="err">{{ n }}</span>
 {%- endif %}
+<div class="row" style="gap: 8px; flex-wrap: wrap" role="group" aria-label="Filter">{% include "partials/tag_filter.html" %}</div>
+{%- if !filter.tags.is_empty() %}
+<p class="small muted" style="margin: 0">{{ shown }} of {{ open_total }} open to-dos · showing {% for t in filter.tags %}<span class="chip tag">{{ t }}</span> {% endfor %}(in the text, or on its epic)</p>
+{%- endif %}
 {% include "todos/lists.html" %}
 <p class="small muted">Write a due date in the line with <span class="mono">by today</span>, <span class="mono">by fri</span> or <span class="mono">by 20 Nov</span>, or pick one on the row.</p>
 </main>

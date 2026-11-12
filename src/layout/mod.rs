@@ -63,3 +63,42 @@ impl Layout {
         })
     }
 }
+
+/// The "Tag" filter row on a list page (`?tag=a,b`, any of them; D29). `path` is the page with its
+/// other params already in it, so each × link and the add form keep them.
+pub struct TagFilter {
+    pub tags: Vec<String>,
+    /// e.g. `/todos?` or `/?day=2026-11-12&group=tag&`: ready for `tag=…` to be appended.
+    pub path: String,
+    /// Hidden fields the add form carries (the page's other params).
+    pub keep: Vec<(&'static str, String)>,
+    /// Known tags, most used first, for the add box's datalist.
+    pub known: Vec<String>,
+}
+
+impl TagFilter {
+    /// `tag` (comma list) plus `add` (the add box) → the active filter, folded and deduplicated.
+    pub fn pick(tag: Option<&str>, add: Option<&str>) -> Vec<String> {
+        let both = format!("{},{}", tag.unwrap_or(""), add.unwrap_or(""));
+        crate::domain::tags::parse_list(&both)
+    }
+
+    /// The page without tag `t` in the filter.
+    pub fn without(&self, t: &str) -> String {
+        let rest: Vec<&str> = self
+            .tags
+            .iter()
+            .filter(|x| *x != t)
+            .map(String::as_str)
+            .collect();
+        if rest.is_empty() {
+            self.path.trim_end_matches(['?', '&']).to_string()
+        } else {
+            format!("{}tag={}", self.path, rest.join(","))
+        }
+    }
+
+    pub fn joined(&self) -> String {
+        self.tags.join(",")
+    }
+}
