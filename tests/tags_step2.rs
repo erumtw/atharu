@@ -428,7 +428,7 @@ async fn make_tag_then_tag_older_lines() {
         get(&st, "/")
             .await
             .body
-            .contains(r#"hx-trigger="tagged from:body""#)
+            .contains(r#"hx-trigger="tagged from:body, plans-changed from:body""#)
     );
 }
 
