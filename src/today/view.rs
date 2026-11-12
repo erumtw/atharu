@@ -29,6 +29,8 @@ pub struct Group {
     pub rows: Vec<Row>,
     /// Group by tag (D29): `tag` heads the group, `None` = "No tag".
     pub by_tag: bool,
+    /// Group by type: `title` is the kind's plural ("Decisions").
+    pub by_type: bool,
     pub tag: Option<String>,
 }
 

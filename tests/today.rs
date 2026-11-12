@@ -206,3 +206,22 @@ async fn editing_a_missing_line_leaves_no_stub_epic() {
     assert_eq!(r.status, 404);
     assert_eq!(count(&st, "SELECT COUNT(*) FROM epics"), 0);
 }
+
+#[tokio::test]
+async fn group_by_type_puts_decisions_first_and_keeps_the_epic() {
+    let st = state();
+    for line in [
+        "OPS-1 shipped it",
+        "OPS-1 ! keep the queue",
+        "> call vendor",
+        "x waiting on DBA",
+    ] {
+        post(&st, "/entries", &form(&[("line", line)]), false).await;
+    }
+    let b = get(&st, "/?group=type").await.body;
+    let at = |s: &str| b.find(s).unwrap_or_else(|| panic!("missing {s}"));
+    assert!(at("<h4>Decisions <span") < at("<h4>Blockers <span"));
+    assert!(at("<h4>Blockers <span") < at("<h4>To-dos <span"));
+    assert!(at("<h4>To-dos <span") < at("<h4>Done <span"));
+    assert!(b.contains("aria-pressed=\"true\" type=\"submit\" name=\"group\" value=\"type\""));
+}
