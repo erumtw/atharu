@@ -108,6 +108,13 @@ if [ "$app" = 1 ]; then
     echo 'tauri-cli missing: cargo install tauri-cli --version "^2" --locked'
     exit 1
   fi
+  # A stable signature keeps macOS's Microphone / Screen Recording grants across installs (ad-hoc loses
+  # them every build). scripts/dev-cert.sh makes the identity once.
+  if security find-identity -v -p codesigning 2>/dev/null | grep -q '"Atharu Local Signing"'; then
+    export APPLE_SIGNING_IDENTITY="Atharu Local Signing"
+  else
+    echo "note: unsigned build, recording permissions reset on every install: run scripts/dev-cert.sh once"
+  fi
   (cd "$src/src-tauri" && cargo tauri build --bundles app)
   step "app build"
   built=$CARGO_TARGET_DIR/release/bundle/macos/Atharu.app
