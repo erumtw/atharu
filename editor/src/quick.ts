@@ -37,7 +37,9 @@ if (qcap && nt && text && line && tiles) {
         line.value = ''
       }
     }
-    ;(on ? text : line).focus()
+    const box = on ? text : line
+    box.focus()
+    box.setSelectionRange(box.value.length, box.value.length)
   }
   nt.addEventListener('click', ev => {
     ev.preventDefault()
@@ -45,6 +47,21 @@ if (qcap && nt && text && line && tiles) {
   })
   tiles.addEventListener('click', ev => {
     if (qcap.dataset.mode === 'note' && !nt.contains(ev.target as Node)) noteMode(false)
+  })
+  // D55: `n ` at the start of the line = a note, the rest moves over (the server's no-JS path does the same). Stopped
+  // here so htmx's preview doesn't paint a "done" hint over note mode (this listener is added before htmx's).
+  line.addEventListener('input', ev => {
+    const m = /^\s*n (.*)$/s.exec(line.value)
+    if (!m) return
+    ev.stopImmediatePropagation()
+    line.value = m[1] ?? ''
+    noteMode(true)
+  })
+  // ⌘N anywhere in the popover; a second press keeps note mode rather than toggling it off.
+  document.addEventListener('keydown', ev => {
+    if (!ev.metaKey || ev.key.toLowerCase() !== 'n') return
+    ev.preventDefault()
+    noteMode(true)
   })
   // Enter saves, Shift+Enter is a new line (an IME's Enter only commits the word).
   text.addEventListener('keydown', ev => {

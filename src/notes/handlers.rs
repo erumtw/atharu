@@ -215,7 +215,10 @@ pub async fn create(State(st): State<AppState>) -> AppResult<Response> {
 
 #[derive(Deserialize)]
 pub struct TextForm {
+    #[serde(default)]
     text: String,
+    /// The popover's line box forwarded by `POST /entries` (307) when it starts `n ` (D55): the rest is the text.
+    line: Option<String>,
     back: Option<String>,
 }
 
@@ -228,7 +231,12 @@ pub async fn create_text(
 ) -> AppResult<Response> {
     let back = f.back.as_deref().map(|b| web::safe_back(Some(b), "/notes"));
     let sep = |to: &str| if to.contains('?') { '&' } else { '?' };
-    let Some((title, body)) = markdown::split_note(&f.text) else {
+    let text = f
+        .line
+        .as_deref()
+        .and_then(markdown::quick_note)
+        .unwrap_or(&f.text);
+    let Some((title, body)) = markdown::split_note(text) else {
         if web::is_htmx(&headers) {
             // htmx keeps the text (it only resets on 2xx); only the hint changes, as for a rejected line.
             let retarget = [("hx-retarget", "#hint"), ("hx-reswap", "innerHTML")];

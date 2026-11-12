@@ -170,9 +170,23 @@ pub fn split_note(text: &str) -> Option<(&str, &str)> {
     (!title.is_empty()).then(|| (title, body.trim_start_matches(['\r', '\n']).trim_end()))
 }
 
+/// `n …` at the start of the popover's line box is a quick note (D55); the rest is the note's text. Needs the space,
+/// like `x `, so `nginx fixed` stays a line.
+pub fn quick_note(line: &str) -> Option<&str> {
+    line.trim_start().strip_prefix("n ")
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{to_html, to_text};
+    use super::{quick_note, to_html, to_text};
+
+    #[test]
+    fn n_space_starts_a_quick_note() {
+        assert_eq!(quick_note("  n vendor call #ops"), Some("vendor call #ops"));
+        assert_eq!(quick_note("n "), Some(""));
+        assert_eq!(quick_note("nginx fixed"), None);
+        assert_eq!(quick_note("n"), None);
+    }
 
     #[test]
     fn text_drops_markup_keeps_page_links() {

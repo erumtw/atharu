@@ -58,7 +58,6 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 /* Note tile (T86, D53): a 7th tile that turns the box into a note (first line = title, the rest = markdown body). Not a
    line kind: a submit button (GET /quick?mode=note, so it works without JS) that quick.ts toggles in place. */
 .kc.nt{border:0;padding:0;margin:0;font-family:inherit}
-.kc.nt .k .ic{width:14px;height:14px;stroke-width:2}
 .kc[aria-pressed=true]{background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
 .kc.nt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* Note mode: the kind radio keeps its check (the box goes back to that kind after saving) but stops looking picked. */
