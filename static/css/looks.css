@@ -3,7 +3,7 @@
    AA check (evidence T20): sidebar text over the worst wallpaper spot through the glass ≥ 4.6:1, which is why
    the wallpaper has a white veil, the sidebar glass is --glass-a + 5% (see Glass below), --muted is a step darker, and Glass drops the
    icon's deepest blob. */
-html[data-look]{--muted:#5e5e63;--veil:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,.45))}
+html[data-look]{--muted:var(--muted-look);--veil:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,.45))}
 html[data-look] .wl{background:transparent}
 html[data-look] body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--wall)}
 
@@ -28,33 +28,65 @@ html[data-look=glass]{--base:#2466ea;--wall:var(--veil),
    Floors were measured against the weakest surface (the glass sheet, a - 5%), so every other step only adds contrast. */
 :root{--glass-a:60%;--glass-c:#fff;--glass-edge:rgba(255,255,255,.7)}
 .side{--s:5%}.crumb{--s:0%}.newline{--s:10%}.menu,.acts{--s:25%}
-.side,.crumb,.newline,.menu,.acts:popover-open{background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + var(--s)),transparent)}
+/* Controls set their own --s in components.css: glass pills +10% (hover +25%, pressed +35%), fields and text boxes +12%. */
+.side,.crumb,.newline,.menu,.acts:popover-open,.btn.ghost,.fld,.dnav,.ta,.note-md{--g:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + var(--s)),transparent);background:var(--g)}
+
+/* Liquid Glass (T30, D22): Apple's highlight / illumination / shadow layers in plain CSS, so WebKit (Safari and the
+   Mac app) gets the whole look; edge lensing is a Chromium-only extra at the end. Clear (default) blurs 4px so what
+   is behind stays readable; Tinted is Apple's Regular: 12px, saturated. */
+:root{--lg-blur:4px;--lg-sat:140%;--lg-filter:blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.04);
+  --lg-rim:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,.15) 72%,rgba(255,255,255,.6));
+  --lg-light:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),inset 0 -6px 12px -8px rgba(255,255,255,.8);
+  --lg-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.12);
+  /* 4px blur leaves text behind half-sharp, so glass that floats over content never drops below this (AA: worst
+     backdrop = a half-covered ink pixel; err-tint 4.70 on Wakaba Tinted is the lowest pair, evidence T30). */
+  --lg-min:60%}
+html[data-tint=tinted]{--lg-blur:12px;--lg-sat:180%}
+/* Floating layers (never the controls embedded in them: no glass on glass) get the specular rim: a gradient in the
+   transparent border, bright top-left and bottom-right, instead of a flat white line. */
+.side,.newline,.menu,.acts:popover-open{border-color:transparent;background:linear-gradient(var(--g),var(--g)) padding-box,var(--lg-rim) border-box}
+.side,.newline,.menu{box-shadow:var(--lg-light),var(--lg-shadow)}
+/* Over scrolling content: the legibility floor above, and muted/error text a step darker (muted-look would be 4.40). */
+.crumb,.newline,.menu,.acts:popover-open,.side:popover-open{--muted:var(--muted-tint);--err:var(--err-tint);
+  --g:color-mix(in srgb,var(--glass-c) max(var(--lg-min),min(100%,var(--glass-a) + var(--s))),transparent)}
 /* Tinted: the look's colour in the glass, stronger edges, full-ink chrome, and muted/links a step darker
    (measured: the tint alone drops the Glass look's links to 3.7:1, #0055b3 brings them back to 4.9). */
-html[data-tint=tinted]{--glass-c:color-mix(in srgb,var(--base) 15%,#fff);--glass-edge:rgba(0,0,0,.14);--muted:#48484d;--accent:#0055b3}
+html[data-tint=tinted]{--glass-c:color-mix(in srgb,var(--base) 15%,#fff);--glass-edge:rgba(0,0,0,.14);--muted:var(--muted-tint);--accent:var(--accent-2);--err:var(--err-tint)}
 html[data-tint=tinted] :is(.side,.crumb,.newline,.menu){border-color:var(--glass-edge)}
+/* On the solid sheet (Glass everywhere off) the white glass edge vanishes, so controls take the line border. */
+html:not([data-glass=all]) .pg :is(.btn.ghost,.fld,.dnav,.newline,.ta,.note-md){border-color:var(--line)}
 html[data-tint=tinted] :is(.side a,.side svg,.crumb a){color:var(--ink)}
 /* Glass everywhere: the sheet joins the glass; cards and callouts sit a step more opaque on it, dark callouts stay dark. */
-html[data-glass=all] .pg{--s:-5%;background:color-mix(in srgb,var(--glass-c) max(0%,var(--glass-a) + var(--s)),transparent);
-  border-color:var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
-html[data-glass=all] .pg :is(.card,.callout:not(.dark)){--s:10%;background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + var(--s)),transparent)}
-html[data-glass=all] .pg .callout.dark{background:rgba(39,39,41,.85)}
+html[data-glass=all] .pg{--s:-5%;--g:color-mix(in srgb,var(--glass-c) max(0%,var(--glass-a) + var(--s)),transparent);
+  background:linear-gradient(var(--g),var(--g)) padding-box,var(--lg-rim) border-box;border-color:transparent;box-shadow:var(--lg-light);
+  backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
+html[data-glass=all] .pg :is(.card,.stat,.callout:not(.dark)){--s:10%;background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + var(--s)),transparent)}
+/* The dark callout stays solid: at the board's 85% its #2997ff link drops to 3.1:1 over a light sheet. */
+html[data-glass=all] .pg .callout.dark{background:var(--dark)}
 /* Reduce Transparency: every glass surface opaque (beats the inline --glass-a). */
 @media (prefers-reduced-transparency: reduce){
   html{--glass-a:100% !important}
   html[data-glass=all] .pg{--s:0%;backdrop-filter:none;-webkit-backdrop-filter:none}
+  /* Opaque white: the rim would be white on white, so the hairline comes back. */
+  .side,.newline,.menu,.acts:popover-open,html[data-glass=all] .pg{background:var(--g);border-color:var(--line)}
 }
-/* Capture input: no Chrome datalist arrow (the suggestions still open as you type). */
-.newline input::-webkit-calendar-picker-indicator{display:none !important}
+@media (prefers-contrast: more){.side,.newline,.menu,.acts:popover-open,html[data-glass=all] .pg{background:var(--g);border-color:var(--ink)}}
+/* Lensing: SVG #lg-lens (templates/base.html) bends the backdrop at the edges. Chromium only: WebKit accepts url() in
+   backdrop-filter (CSS.supports says true) and then drops the WHOLE filter, blur included (measured in WKWebView,
+   T30), so it must never see it; -webkit-app-region parses only in Chromium. */
+@supports (-webkit-app-region:drag){@media (prefers-reduced-transparency: no-preference){
+  .side,.newline,.menu,.acts:popover-open{backdrop-filter:url(#lg-lens) var(--lg-filter)}
+}}
 
-/* /settings picker */
-.looks{border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.looks legend{font-weight:600;padding:0 0 8px}
-.look-opt{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer}
-.look-opt:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.look-opt input{margin:0}
-.glass-set fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;max-width:460px}
-.glass-set legend{font-weight:600;padding:0 0 8px}
-.glass-set input[type=range]{width:100%;accent-color:var(--accent)}
-.seg-btn{font:inherit;padding:6px 16px;border-radius:9999px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;min-height:36px}
-.seg-btn[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+/* Mac app (T18): the window sits on macOS sidebar vibrancy, so the wallpaper turns partly see-through and the
+   desktop shows through the glass chrome. Kept mostly opaque: the AA numbers above assume this wallpaper. */
+html[data-app=mac] body::before{opacity:.8}
+@media (prefers-reduced-transparency: reduce){html[data-app=mac] body::before{opacity:1}}
+
+/* Mac app chrome (T27): overlay title bar, traffic lights drawn by macOS at lib.rs LIGHTS (x 20–74, centre y 30).
+   Their row tops the sidebar brand row; the rail and the phone crumb make room the same way. The brand row and the
+   crumb are drag regions (data-tauri-drag-region, inert in a browser), so they get the title bar's arrow, not an I-beam. */
+html[data-app=mac] .ws{padding-top:34px}
+html[data-app=mac] [data-tauri-drag-region]{cursor:default;-webkit-user-select:none;user-select:none}
+@media (min-width:640px) and (max-width:1023px){html[data-app=mac] .side{padding-top:40px}}
+@media (max-width:639px){html[data-app=mac] .crumb{padding-left:82px}}

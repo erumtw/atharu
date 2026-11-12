@@ -22,6 +22,23 @@ Approved wireframes: canvas https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ, H
 | `--line` | `#e0e0e0` | borders, table head rule |
 | `--fill` / `--fill-2` | `#f5f5f7` / `#f0f0f0` | sidebar, callouts / chips, key squares |
 | `--err` | `#b3261e` | errors, late due dates only |
+| `--sep` / `--off` | `#e3e3e8` / `#d1d1d6` | grouped-list hairlines + grey pills / switch and slider track off |
+| `--hatch-a` / `--hatch-b` | `#c7c7cc` / `#e5e5ea` | hatched slider range that can't be reached; `--hatch-a` = switch hover |
+| `--accent-2` | `#0055b3` | primary hover/pressed, switch-on hover, the tinted `--accent` (white on it 7.1:1) |
+| `--accent-wash` | `#e8f1fb` | meeting events, selected menu option |
+| `--accent-soft` | `#4d8fd1` | bars, "done" OKR segment (never under text) |
+| `--accent-on-dark` | `#2997ff` | link, dot, End button on `--dark` (4.9:1, so `--dark` stays opaque) |
+| `--heat-1` / `--heat-2` / `--heat-4` | `#e3effc` / `#bcd6f2` / `#003d7a` | depth heat steps 1, 2, 4 (3 = `--accent`) |
+| `--dark` / `--on-dark-muted` | `#272729` / `#cccccc` | meeting banner, impact callout / muted text on it (9.3:1) |
+| `--fill-3` / `--now` | `#fafafc` / `#f5f9fe` | table hover, calendar heads, toast / today's calendar column |
+| `--faint` | `#b0b0b5` | dashed rules (inline edit, own events), the "other" OKR segment; never text |
+| `--chrome-bg` | `#eef0f5` | behind the sheet when no look is set |
+| `--muted-look` / `--muted-tint` / `--muted-hc` | `#5e5e63` / `#48484d` / `#3a3a3c` | `--muted` on a look / with Tinted glass / under Increase Contrast |
+| `--err-tint` | `#a32019` | `--err` with Tinted glass (`#b3261e` falls to 4.48:1 on the Glass look's tinted sheet) |
+
+Colour literals live only in `tokens.css`, with three exemptions: the looks' wallpaper stops in `looks.css` (§5, brand), the SVG icons, and
+material that isn't a palette colour: `#fff` (sheet, knob, text on blue/ink) and `rgba()` black/white for shadows, glass edges and hover tints
+(plus the iOS segmented track `rgba(120,120,128,.12)`).
 
 No second accent. State is shown with ink weight, not colour: stale = grey fill, at risk = ink outline, overdue = solid ink.
 
@@ -47,13 +64,33 @@ No second accent. State is shown with ink weight, not colour: stale = grey fill,
 
 ## 4. Liquid Glass (`looks.css`)
 
-Glass surfaces, and nothing else: **sidebar `.side`, sticky breadcrumb `.crumb`, floating capture bar `.newline`, menus/popovers `.menu` `.acts`**.
+Glass surfaces, and nothing else: **sidebar `.side`, sticky breadcrumb `.crumb`, floating capture bar `.newline`, menus/popovers `.menu` `.acts`**,
+plus the controls that sit on them or float like them (canvas "Controls", T28): glass pills `.btn.ghost`, fields `.fld`, day nav `.dnav`,
+text boxes `.ta`/`.note-md`. On the solid sheet (Glass everywhere off) those controls render white with a `--line` border.
 
-- Recipe: `backdrop-filter: blur(20–24px) saturate(180%)`, white 70% edge, `inset 0 1px 0 #fff` top highlight, soft 8–32px shadow.
-- One alpha drives all of them: `--glass-a` (inline on `<html>`, clamped per look by `domain::look::glass_alpha` to keep AA). Each surface adds a fixed step `--s`: crumb 0, sidebar +5%, capture bar +10%, menus +25%.
+- Recipe (T30, D22; canvas "Liquid Glass"): Apple's three layers, all plain CSS so WebKit gets the whole look. Tokens in `looks.css`:
+  - **Material**: `--lg-filter` = `blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.04)`. **Clear** (default) = 4px / 140%, so what is
+    behind stays readable; **Tinted** (`data-tint=tinted`) = Apple's Regular: 12px / 180%, look-tinted glass, darker text set. The Settings
+    Clear | Tinted switch is the only variant control.
+  - **Highlight**: `--lg-rim`, a gradient in a transparent border (bright top-left and bottom-right), not a flat white line.
+  - **Illumination**: `--lg-light`, inset glow + light lower lip; the selected sidebar row is lit from inside.
+  - **Shadow**: `--lg-shadow`, contact + soft 24px.
+- **Floating layers** get all three: sidebar `.side`, capture bar `.newline`, menus `.menu`, the ⋯ sheet `.acts:popover-open`, and the
+  Glass-everywhere sheet (rim + light, no shadow). The crumb is a bar flush with the sheet: material + lit top edge only.
+- **Never glass on glass**: pills, fields, day nav and text boxes inside any glass layer stay flat glass (no rim, no lens, small shadow).
+- **Over content** (crumb, capture bar, menus, ⋯ sheet, phone drawer): text behind a 4px blur is half-sharp, so these never drop below
+  `--lg-min` (60%) and take `--muted-tint` / `--err-tint`. Placeholders on every glass field are `--muted-tint` (`--muted-look` measures 4.40 there).
+- **Press**: glass pills swell to `scale(1.04)` and glow; the blue primary still sinks to `.96`.
+- **Lensing** (Chromium only): SVG filter `#lg-lens` (defined once in `templates/base.html`) is prepended to the floating layers'
+  `backdrop-filter` under `@supports (-webkit-app-region:drag)`. WebKit (Safari, the Mac app's WKWebView) accepts `url()` in
+  `backdrop-filter` and then drops the **whole** filter, blur included (measured T30), so it must never see it; `-webkit-app-region` parses
+  only in Chromium. Off under Reduce Transparency.
+- AA at each look's floor (T30): worst 4.70 (Wakaba Tinted, error text over content); sidebar labels ≥ 5.61 Clear, ≥ 6.78 Tinted.
+- One alpha drives all of them: `--glass-a` (inline on `<html>`, clamped per look by `domain::look::glass_alpha` to keep AA). Each surface adds a fixed step `--s`: crumb 0, sidebar +5%, capture bar and glass pills +10% (hover +25%, pressed +35%), fields and text boxes +12%, menus +25%.
 - The page sheet `.pg` is opaque white. Opt-in `data-glass=all` makes it glass too (−5%), with cards/callouts +10% on top.
 - `data-tint=tinted`: the look's colour mixed into the glass, darker edges, full-ink chrome text, darker muted/links (measured AA).
-- **Reduced transparency → every glass surface opaque, mesh becomes one flat colour.** Not optional.
+- **Reduced transparency → every glass surface opaque, mesh becomes one flat colour, no rim or lens, hairline border back.** Not optional.
+- Mac app (`<html data-app="mac">`, set by the shell only): no title bar; the traffic lights float over the sidebar's top-left (row above the brand; rail and phone crumb make the same room), and the brand row + `.crumb` are window drag regions. The browser view is unchanged.
 
 ## 5. Looks (wallpaper)
 
@@ -70,27 +107,65 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 
 ## 6. Components (`components.css`)
 
+### Control rules (canvas "Controls" + "Components · every state", T28)
+
+- **One height per context**: 32 in chrome (`.crumb`), 36 in the page, 44 on phone (< 640). An action inside a field is one step smaller than the field. Labels are centred with flex + `line-height:1`, never padding guesswork.
+- **One blue primary** per view (`.btn`): Log ↵, Add ↵, Copy as markdown. Everything else is a **glass pill** (`.btn.ghost`); `.s` = the 32 size for row actions (Pin, Drop, Save, Delete).
+- **Single-line fields are glass pills with their action inside** on the right (`.fld`): meeting start, search, add evidence; the capture bar `.newline` is the 52 px version holding the primary. Inputs that stand alone (dates, event form) take `.fld` on the input itself.
+- **Day nav** = one glass capsule `.dnav`: Today | ‹ | date ▾ | ›. The date is a native `<input type=date>` laid over its label, so a click opens the OS picker (no JS picker). Today shows only when not on today. Calendar uses the same capsule with the range as its label.
+- **States**, every control: default · `:hover` · `:focus-visible` (2px accent ring) · `:active` (pressed: primary darker + `scale(.96)`, glass pill swells `scale(1.04)` + glow) · selected (`.on` / `aria-pressed` / `:checked`) · `:disabled` (opacity .45, `not-allowed`) · error (`.bad` = red ring, input kept, message under it) · loading (`.htmx-request` on the form: its submit dims and shows a spinner; a to-do label dims) · empty (placeholder in `--muted-tint`).
+- Datalist inputs hide Chrome's ▼ (`input[list]`); suggestions still open as you type. Legend chips sit on one baseline and wrap as whole items.
+- Reduce Transparency: same shapes, solid white, no rim. Increase Contrast: ink borders, no rim, `--muted-hc`.
+
+### Catalogue
+
 | Component | Class | Notes |
 |---|---|---|
-| Primary button | `.btn` | blue pill, white text, 36px. One per view. |
-| Ghost button | `.btn.ghost` | transparent, blue text |
-| Utility button / input | `.util` | 28px, 8px radius, line border |
+| Primary button | `.btn` | blue pill, white text, 36 (32 in chrome, 44 phone); hover/pressed `--accent-2`. One per view. |
+| Glass secondary | `.btn.ghost` | glass pill, ink text; `.s` = 32; `.dng` = destructive (err text). On `.callout.dark`: `--accent-on-dark` outline. |
+| Icon button | `.ib` | 32 round (44, 12 radius on phone); always an `aria-label`; `.ib.more` opens a row's `.acts` |
+| Link button | `.linkbtn` | POST form that reads as a link: Undo, re-open; underline on hover |
+| Row actions | `.acts` | the row's buttons inline on desktop; a bottom action sheet (popover) on phone, 48 px rows |
+| Delete × | `.x` | 28, revealed on row hover / focus (always shown on touch) |
+| Field | `.fld`, `.fld.m`, `.fld.s` | glass pill 44 / 36 / 32 with the action inside; `.bad` = 422 |
+| Capture bar | `.capture` > `.newline` + `.hint` + `.legend` | 52 glass pill, primary inside; `.newline.bad` on a parse error; hint = live parse preview in accent |
+| Toast | `.toast` | above the capture bar, `role=status`; `:empty` hides it; `.tick` ✓ in accent |
+| Day nav | `.dnav` (`.i` = icon segment) | see rules |
+| Text box | `.ta`, `.note-md` | multi-line glass box, 12 radius; autosaves (Save only in `<noscript>`) |
+| Inline input | `.pin`, `.pin.dash`, `.pin.bad` | borderless props input/select; `.dash` = dashed "type here" rule (inline edit); `.bad` = red ring |
+| Line edit | `.edit-line` | log text as a link; dotted underline on hover; opens `entry_edit` in place |
+| Save status | `.saved` | 12 px muted in the crumb: "Changes save as you type · ✓ saved"; `.err` on failure |
+| Error | `.err` | 13 px `--err` text under the field it explains |
 | Line kind square | `.k` | 22px mono square: `!` `x` `+` `?` `>`; impact = blue (`.k.imp`), blocker = ink (`.k.bl`) |
 | Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.llm` = ink outline badge for agent-written rows |
-| Link chip | `.lchip` | source link on a line |
+| Link chip | `.lchip` | source link on a line; the only blue chip |
 | Flag | `.flag.stale/.risk/.over` | pill; ink weight, no colour |
-| Callout | `.callout`, `.callout.dark` | grey (info) / near-black (meeting banner) |
-| Card | `.card` | white, line border, 12 radius |
-| Properties | `.props` | Notion inline `dt/dd` grid, hover = editable, autosave on change |
-| Block row | `.blk` | log line; hover reveals delete `.x` (always visible on touch) |
-| Segmented | `.seg` | pill track, `rgba(120,120,128,.12)` (iOS) |
-| Capture bar | `.newline` | sticky bottom pill, glass, `/`-free: types the line grammar |
 | Due | `.due`, `.due.late` | muted / red bold |
-| Calendar | `.cal`, `.ev`, `.ev.meet` | meetings = blue left rule on light-blue fill |
+| Callout | `.callout`, `.callout.dark` | grey (info) / `--dark` (meeting banner with `.dot`, impact line with `.num` / `.num.up`) |
+| Card | `.card` | white, line border, 12 radius |
+| Stat tile | `.stat` | 28/600 number over a muted label; glass +10% with Glass everywhere |
+| Properties | `.props` | Notion inline `dt/dd` grid, hover = editable, autosave on change |
+| Block row | `.blk` | log line, 32 tall; hover reveals delete `.x` |
+| To-do check | `.check` + `.done-text` | native checkbox, accent fill, posts on change; done = struck + muted |
+| Segmented | `.seg`, `.seg.mac` | pill track 36 / 30 segments (32/26 in chrome), `rgba(120,120,128,.12)` (iOS); `.mac` = 8-radius macOS control for settings |
+| Grouped list | `.sec` + `.grp` > `.gi` | Apple System Settings inset group (`--fill`, hairline inset 16px); Notion bold label + one-line help left, one control right; `.gi.col` stacks |
+| Switch | `.sw` | native checkbox `role=switch` (posts without JS), 38×22, 51×31 on phone; pressed stretches the knob |
+| Slider | `.sl` > `.rng` + `.val` | native range on the true 0–100 scale; below `--f` hatched and clamped, `--v` = value |
+| Look tile / status | `.lk`, `.pill`, `.pill.ok` | app-icon tile, accent ring when picked (dashed on focus); status pill grey / solid ink (On) |
+| Preview tile | `.prev` | the look's wallpaper behind a mini glass sidebar + sheet, same alpha math as the real chrome |
+| Disclosure | `.chev`, `details > summary` | settings row value in muted / toggles that fold secondary things (count + hint inline, 400 weight) |
+| Meter | `.meter` | depth 0–4 as five 14×6 pills, on = accent |
+| Bars | `.bars` | activity / impact bars in `--accent-soft` |
+| OKR bar / heat | `.obar` (`.active/.done/.other`), `.heat1`–`.heat4` | report charts: status by weight; depth steps `--heat-*` (from `report::view::heat_class`) |
+| Sidebar count / label | `.cnt`, `.side .lbl` | muted count, not a badge / 12/600 section label (a hairline in the rail) |
+| Calendar | `.cal`, `.dh`, `.dc`, `.ev`, `.logdot`, `.evadd` | meetings = blue left rule on `--accent-wash`; `.ev.todo` outline (`.late` red text), `.ev.tgt` grey, `.ev.own` dashed; `.logdot` = lines logged; `.evadd` = "+ Event" popover form |
+| Menus | `.menu [role=option]` | glass +25%, 32 px options, selected `--accent-wash`; `/` block menu and `[[` picker |
+| Notes body | `.note-body` | Tiptap content as the board draws it (code on `--fill`, task lists, toggles, `.page` links) |
+| Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw` |
 
 ## 7. UX patterns (from Notion)
 
-1. **Sidebar** = page list (Today · To-dos · Calendar · Epics · Report · Meetings · Learn · Notes) + active epics; breadcrumbs on top.
+1. **Sidebar** = page list grouped by the user's loops (D18): an unlabelled daily block Today · To-dos · Calendar · Meetings, then **Track** Epics · Report, then **Grow** Learn · Notes, then the active epics, and Settings pinned to the bottom (spacer). Same order in the phone drawer; the rail draws the section labels as thin dividers. Breadcrumbs on top.
 2. **Every thing is a page**: epic, meeting, topic, note → big title + inline properties, autosaved. No Save buttons anywhere.
 3. **One input**: the floating "Type a line…" bar takes the line grammar; a live hint underneath says what it will save as.
 4. **Feedback**: toast above the bar, "Saved as impact on OPS-101 · Undo", `role=status`.
@@ -103,13 +178,14 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Width | Layout |
 |---|---|
 | ≥ 1024 | sidebar 220–248px + sheet |
-| 640–1023 | 64px icon rail (labels become tooltips) |
+| 640–1023 | 64px icon rail (labels become tooltips, section labels become dividers) |
 | < 640 | sheet full width with top-rounded corners; nav in a popover; inputs ≥ 16px (no iOS zoom) |
 
 ## 9. Rules
 
 - Glass on chrome, never on content (unless the user opts into `data-glass=all`).
 - One blue. A new colour needs a reason written here.
-- Every text/surface pair passes WCAG AA, measured over the worst wallpaper spot; record the number in a CSS comment.
+- Every text/surface pair passes WCAG AA, measured over the worst wallpaper spot (and, for glass over content, a half-covered ink pixel behind); record the number in a CSS comment.
+- No `url()` filter reaches WebKit: anything Chromium-only goes behind `@supports (-webkit-app-region:drag)`.
 - Honour `prefers-reduced-transparency` and `prefers-contrast`.
 - New tokens go in `tokens.css`; components in `components.css`. Inline `style=` in templates only for one-off layout (gap, margin), never colour or type.

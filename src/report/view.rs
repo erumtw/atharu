@@ -33,7 +33,8 @@ pub struct NoteMd<'a> {
 
 pub struct Seg {
     pub flex: i64,
-    pub color: &'static str,
+    /// `.obar` class: active / done / other.
+    pub class: &'static str,
 }
 
 pub struct OkrBar {
@@ -86,13 +87,13 @@ pub struct HeatRow {
     pub cells: Vec<u8>,
 }
 
-/// Cell colours from the canvas (1–3); 4 is one step darker than 3.
-pub fn heat_style(depth: &u8) -> &'static str {
+/// Cell class for a depth (colours live in tokens.css: --heat-1, --heat-2, --accent, --heat-4).
+pub fn heat_class(depth: &u8) -> &'static str {
     match depth {
-        1 => "background: #e3effc",
-        2 => "background: #bcd6f2",
-        3 => "background: #0066cc; color: #fff",
-        _ => "background: #003d7a; color: #fff",
+        1 => "heat1",
+        2 => "heat2",
+        3 => "heat3",
+        _ => "heat4",
     }
 }
 

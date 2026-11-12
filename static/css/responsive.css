@@ -7,9 +7,6 @@
 .acts{display:contents}
 .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .side a .ic{display:none}
-.ib{width:44px;height:44px;border:0;background:transparent;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;flex:none;padding:0}
-.ib:hover{background:rgba(0,0,0,.05)}
-.ib:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tw>.cal{min-width:760px}
 .cal:not(.month) .dc>.dn{display:none}
 pre{max-width:100%;overflow-x:auto}
@@ -26,6 +23,8 @@ pre{max-width:100%;overflow-x:auto}
   .side .ws,.side .lb,.side .lbl,.side a.sub{display:none}
   .side a{justify-content:center;padding:0;width:44px;min-height:44px;border-radius:12px}
   .side a .ic{display:block}
+  /* Section labels become thin dividers; the screen reader still reads the label text. */
+  .side .lbl.nh{display:block;font-size:0;width:32px;height:1px;padding:0;margin:6px 0;background:var(--line)}
   .pg{flex:1 1 0}
   .doc{padding:24px 32px 72px}
 }
@@ -45,11 +44,18 @@ pre{max-width:100%;overflow-x:auto}
   .crumb>b{font-size:17px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .crumb>span,.crumb>form{max-width:100%}
   .crumb .m-hide,.m-hide{display:none}
-  .crumb>span>a{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+
+  /* Controls: the phone context is 44 (touch target); an action inside a field stays a step smaller than the field. */
+  .ib{width:44px;height:44px;border-radius:12px}
+  .btn,.btn.s,.crumb .btn{height:44px;padding:0 18px;font-size:16px}
+  .fld.m,.fld.s{height:44px}
+  .fld.m .btn{height:36px}
+  .dnav{height:44px}
+  .dnav>*{padding:0 14px}
 
   /* Drawer: the sidebar in the top layer. */
   .side:popover-open{position:fixed;inset:8px auto 8px 8px;width:min(300px,calc(100vw - 32px));max-width:none;overflow-y:auto;z-index:5;padding:8px;display:flex;
-    --s:12%;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 20px 50px rgba(0,0,0,.18)}
+    --s:12%;box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
   .side::backdrop{background:rgba(20,20,30,.28)}
   .side .ws{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px 12px;font-size:17px}
   .side a{min-height:48px;padding:0 12px;border-radius:12px;font-size:16px}
@@ -57,28 +63,34 @@ pre{max-width:100%;overflow-x:auto}
 
   /* ⋯ menu: the row's actions as a bottom action sheet. */
   .acts:popover-open{position:fixed;inset:auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;z-index:6;display:flex;flex-direction:column;gap:6px;padding:10px;
-    border-radius:22px;border:1px solid rgba(255,255,255,.8);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:0 20px 50px rgba(0,0,0,.18)}
+    border-radius:22px;border:1px solid transparent;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
   .acts::backdrop{background:rgba(20,20,30,.2)}
   /* !important: the forms carry an inline margin-left:auto for the desktop row. */
   .acts>*{margin:0 !important;display:flex}
   .acts *{box-sizing:border-box}
-  .blk .acts .x,.acts .util,.acts .linkbtn,.acts input{flex:1;min-height:48px;width:100%;justify-content:center;align-items:center;border-radius:14px;opacity:1}
+  .blk .acts .x,.acts .btn,.acts .linkbtn,.acts input{flex:1;min-height:48px;height:auto;width:100%;justify-content:center;align-items:center;border-radius:14px;opacity:1}
   .acts .x{gap:6px;background:#fff;border:1px solid var(--line);color:var(--err);font-size:16px;height:auto}
   .blk{min-height:44px;flex-wrap:wrap}
   .blk .x{opacity:1;width:44px;height:44px}
   .blk label.row{flex-wrap:nowrap;align-items:flex-start}
   .blk label.row>span{min-width:0;overflow-wrap:anywhere}
   .blk>.edit-line,.blk>form:first-child,.blk>span:not([class]){flex:1 1 0;min-width:0;overflow-wrap:anywhere}
-  .util{min-height:36px}
 
   /* Capture bar: pinned to the bottom, clear of the home indicator; the grammar legend opens from ?. */
   .doc:has(>.capture){padding-bottom:180px}
   .capture{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
     background:linear-gradient(to top,rgba(255,255,255,.95) 55%,rgba(255,255,255,0))}
-  .newline{margin:0;padding:4px 4px 4px 6px}
-  .newline .util{min-height:44px;padding:0 14px}
+  .newline{padding:0 4px 0 16px}
   .legend:popover-open{position:fixed;inset:auto 8px calc(120px + env(safe-area-inset-bottom)) 8px;margin:0;padding:14px !important;display:flex;
-    border-radius:18px;background:rgba(250,250,252,.95);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.18);color:var(--ink-2)}
+    border-radius:18px;background:color-mix(in srgb,var(--fill-3) 95%,transparent);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.18);color:var(--ink-2)}
+
+  /* Settings: the phone board's touch sizes (iOS switch 51x31, 28 px thumb). */
+  .looks{gap:8px}
+  .lk img{width:56px;height:56px;border-radius:13px}
+  .gi{min-height:56px}
+  .sw{width:51px;height:31px}.sw::after{width:27px;height:27px}.sw:checked::after{transform:translateX(20px)}
+  .seg.mac button{min-height:32px;padding:4px 16px}
+  .rng{--th:28px}
 
   /* Props stack label over value. */
   .props{grid-template-columns:minmax(0,1fr);gap:2px}
@@ -106,7 +118,7 @@ pre{max-width:100%;overflow-x:auto}
   .cal.month .dc.now{background:var(--accent)}
   .cal.month .dc.now .dn{color:#fff}
   .cal.month .dc.now .dn::after{background:#fff}
-  .cal.month .dc.out .dn{color:#b0b0b5}
+  .cal.month .dc.out .dn{color:var(--muted)}
 }
 
 @media (prefers-reduced-transparency: reduce){.side:popover-open,.acts:popover-open{backdrop-filter:none;-webkit-backdrop-filter:none}}

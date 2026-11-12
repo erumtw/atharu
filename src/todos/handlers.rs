@@ -139,14 +139,6 @@ pub struct PlanForm {
     back: Option<String>,
 }
 
-/// Plain POSTs go back where they came from; only same-site paths, never `//host`.
-fn safe_back(back: Option<&str>) -> &str {
-    match back {
-        Some(b) if b.starts_with('/') && !b.starts_with("//") => b,
-        _ => "/todos",
-    }
-}
-
 pub async fn update(
     State(st): State<AppState>,
     headers: HeaderMap,
@@ -154,7 +146,7 @@ pub async fn update(
     Form(f): Form<PlanForm>,
 ) -> AppResult<Response> {
     let today = st.today();
-    let back = safe_back(f.back.as_deref()).to_string();
+    let back = web::safe_back(f.back.as_deref(), "/todos").to_string();
     let conn = st.conn();
     let p = queries::plan_by_id(&conn, id)?.ok_or(AppError::NotFound)?;
 

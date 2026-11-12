@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atharu · Content, every state</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#0066cc;text-decoration:none}a:hover{text-decoration:underline}
+/* Component sheet over Wakaba with Glass everywhere on (--glass-a 60%, Wakaba floor 57): sheet 55%, cards/callouts 70%,
+   capture bar 70%, chrome 60–65%, menus 85% (DESIGN.md §4). Muted on a look = #5e5e63. Captions are state names. */
+.cs{width:1280px;box-sizing:border-box;padding:40px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:#1d1d1f;font-size:15px;line-height:1.47;letter-spacing:-.2px;display:flex;flex-direction:column;gap:28px;
+  background:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,.45)),radial-gradient(circle 520px at 88% 8%,#2fc49a,transparent),radial-gradient(circle 560px at 8% 22%,#62b6ff,transparent),radial-gradient(circle 520px at 90% 45%,#45d4f0,transparent),radial-gradient(circle 520px at 20% 62%,#a4fcb4,transparent),radial-gradient(circle 560px at 85% 80%,#2fc49a,transparent),radial-gradient(circle 480px at 10% 95%,#62b6ff,transparent),#94f7b6}
+.sheet{border-radius:22px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.55);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);padding:32px 40px 36px;display:flex;flex-direction:column}
+.bt{font-size:40px;font-weight:600;letter-spacing:-.5px;line-height:1.1;margin:0}
+.lead{font-size:15px;color:#5e5e63;margin:8px 0 0;max-width:820px}
+h2{font-size:20px;font-weight:600;letter-spacing:-.2px;margin:30px 0 6px;line-height:1.3}
+.r{display:grid;grid-template-columns:190px minmax(0,1fr);gap:20px;padding:16px 0;border-top:1px solid rgba(29,29,31,.08);align-items:start}
+.nm b{display:block;font-size:14px;font-weight:600;line-height:1.3}
+.nm code{display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#5e5e63;letter-spacing:0;margin-top:2px}
+.nm span{display:block;font-size:12px;color:#5e5e63;margin-top:6px;line-height:1.4}
+.sts{display:flex;flex-wrap:wrap;gap:18px 24px;align-items:flex-start}
+.st{display:flex;flex-direction:column;gap:8px;align-items:flex-start;min-width:0}
+.cap{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;line-height:1;color:#5e5e63;letter-spacing:0}
+.muted{color:#5e5e63}.small{font-size:13px}.mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.err{color:#b3261e;font-size:13px}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic20{width:20px;height:20px}
+/* Forced states for the board (the app uses :hover / :focus-visible / :active / [disabled] / .htmx-request). */
+.f{outline:2px solid #0066cc;outline-offset:2px}
+.dis{opacity:.45;cursor:not-allowed}
+.spin{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+/* Buttons: one height per context, 32 chrome / 36 page / 44 phone; label centred with flex + line-height 1. */
+.ctl{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;box-sizing:border-box;padding:0 16px;border-radius:9999px;font:inherit;font-size:14px;line-height:1;white-space:nowrap;cursor:pointer;text-decoration:none;border:1px solid transparent;letter-spacing:-.1px}
+.ctl.s{height:32px;padding:0 12px;font-size:13px}
+.ctl.ph{height:44px;padding:0 18px;font-size:16px}
+.pri{color:#fff;background:#0066cc;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.pri.h{background:#0055b3}
+.pri.a{background:#0055b3;transform:scale(.96)}
+.gl{color:#1d1d1f;border-color:rgba(255,255,255,.75);background:rgba(255,255,255,.7);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.06)}
+.gl.h{background:rgba(255,255,255,.88)}
+.gl.a{background:rgba(255,255,255,.95);transform:scale(.96);box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
+.gl.dng{color:#b3261e}
+.ib{width:32px;height:32px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;color:#1d1d1f;padding:0;cursor:pointer;flex:none}
+.ib.h{background:rgba(0,0,0,.05)}.ib.a{background:rgba(0,0,0,.1)}
+.ib.ph{width:44px;height:44px;border-radius:12px}
+.lb{font:inherit;font-size:14px;background:none;border:0;padding:0;color:#0066cc;cursor:pointer;line-height:1.3}
+.lb.h{text-decoration:underline}.lb.f{border-radius:4px}
+/* Glass field: single-line inputs are pills with their action inside on the right. */
+.fld{display:flex;align-items:center;gap:8px;height:44px;box-sizing:border-box;padding:0 4px 0 18px;border-radius:9999px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.72);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);box-shadow:inset 0 1px 0 #fff,inset 0 0 0 .5px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.06);width:380px;color:#1d1d1f}
+.fld input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:16px;color:#1d1d1f;height:100%;padding:0}
+.fld input::placeholder{color:#5e5e63}
+.fld.h{background:rgba(255,255,255,.85)}
+.fld.f{outline:0;border-color:#0066cc;box-shadow:inset 0 1px 0 #fff,0 0 0 4px rgba(0,102,204,.18)}
+.fld.e{border-color:#b3261e;box-shadow:inset 0 1px 0 #fff,0 0 0 4px rgba(179,38,30,.14)}
+.fld.dis{opacity:.5}
+.fld .ctl{height:36px}
+.fld.cap{height:52px;width:600px;padding:0 4px 0 20px;background:rgba(255,255,255,.7);box-shadow:inset 0 1px 0 #fff,0 10px 30px rgba(0,0,0,.10)}
+.fld.cap.f{box-shadow:inset 0 1px 0 #fff,0 0 0 4px rgba(0,102,204,.18),0 10px 30px rgba(0,0,0,.10)}
+.fld.cap .ctl{height:44px}
+.fld.p36{height:36px;padding:0 14px;gap:8px;width:280px}
+.fld.p36 input{font-size:14px}
+.fld.p32{height:32px;padding:0 12px;gap:6px;width:auto}
+.fld.p32 input,.fld.p32 span{font-size:13px}
+.hint{font-size:13px;color:#0066cc;padding:0 20px;min-height:18px;line-height:1.4}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:13px;color:#5e5e63;padding:0 20px;max-width:600px}
+.legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.k{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#f0f0f0;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;font-weight:600;line-height:1;color:#1d1d1f;flex:none;letter-spacing:0;font-style:normal}
+.k.imp{background:#0066cc;color:#fff}
+.k.bl{background:#1d1d1f;color:#fff}
+/* Menus / popovers: glass +25% (85%). Selected option = accent at 10%. */
+.menu{width:260px;box-sizing:border-box;background:rgba(255,255,255,.85);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(0,0,0,.08);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.12);padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.op{padding:0 10px;min-height:32px;border-radius:8px;display:flex;gap:10px;align-items:center;color:#1d1d1f}
+.op.sel{background:rgba(0,102,204,.10)}
+.op .k{width:24px;height:24px}
+.mh{font-size:12px;font-weight:600;color:#5e5e63;padding:6px 10px 2px;letter-spacing:0}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:1px 8px;font-size:12px;color:#333;background:#f0f0f0;white-space:nowrap;letter-spacing:0;line-height:1.5}
+.chip.key{font-family:ui-monospace,'SF Mono',Menlo,monospace}
+.chip.llm{background:#fff;color:#1d1d1f;border:1px solid #1d1d1f;padding:0 7px}
+/* Sumi strip: plain look, solid white sheet (Glass everywhere off). */
+.sumi{border-radius:22px;padding:24px;background:radial-gradient(circle 600px at 90% 10%,#ece3cf,transparent),#f6f1e6;display:flex;flex-direction:column;gap:12px}
+.sumi>.sh{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:22px;padding:24px 32px;display:flex;flex-direction:column;gap:14px}
+.sumi .muted,.sumi .cap,.sumi .nm code,.sumi .nm span{color:#5e5e63}
+.lbl2{font-size:13px;font-weight:600;color:#5e5e63;letter-spacing:0}
+/* Accessibility variants: Reduce Transparency = same shapes, solid white, no blur; Increase Contrast = ink edges, muted #3a3a3c. */
+.rt .gl,.rt .fld,.rt .menu,.rt .glassbox{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;border-color:#e0e0e0}
+.ic2 .gl,.ic2 .fld,.ic2 .menu,.ic2 .glassbox{background:#fff;border-color:#1d1d1f;backdrop-filter:none;-webkit-backdrop-filter:none}
+.ic2 .muted,.ic2 .cap,.ic2 input::placeholder{color:#3a3a3c}
+.var{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.var>div{border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.var .rt{background:#c4fad7} /* Wakaba flat: 45% white veil over #94f7b6, what RT shows instead of the mesh */
+.var .ic2{background:#fff;border:1px solid #1d1d1f}
+
+.fl{outline:2px solid #0066cc;outline-offset:2px;border-radius:4px}
+.blk{display:flex;gap:10px;align-items:center;padding:3px 6px;border-radius:6px;min-height:32px;width:640px;box-sizing:border-box}
+.blk.h{background:rgba(255,255,255,.6)}
+.el{color:inherit;text-decoration:none;cursor:text}
+.el.u{text-decoration:underline dotted #b0b0b5}
+.xb{margin-left:auto;border:0;background:none;color:#5e5e63;cursor:pointer;width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;flex:none;padding:0}
+.ed{gap:10px}
+.pin{font:inherit;border:0;background:transparent;padding:2px 0;color:#1d1d1f;min-width:0;flex:1;border-bottom:1px dashed #b0b0b5}
+.pin.f{outline:2px solid #0066cc;outline-offset:2px;border-radius:4px;border-bottom-color:transparent}
+.pin.bad{outline:2px solid #b3261e;outline-offset:2px;border-radius:4px}
+.chip.hv{background:#e3e3e8;text-decoration:none}
+.lchip{display:inline-flex;align-items:center;gap:4px;border:1px solid #e0e0e0;border-radius:6px;padding:0 8px;font-size:12px;color:#0066cc;background:#fff;white-space:nowrap;letter-spacing:0;line-height:1.5}
+.lchip.hv{border-color:#0066cc;text-decoration:none}
+.flag{display:inline-flex;font-size:12px;border-radius:9999px;padding:1px 10px;font-weight:500;white-space:nowrap;letter-spacing:0;line-height:1.5}
+.flag.stale{background:#f0f0f0;color:#333}
+.flag.risk{background:#fff;color:#1d1d1f;border:1px solid #1d1d1f;padding:0 9px}
+.flag.over{background:#1d1d1f;color:#fff}
+.due{font-size:12px;color:#5e5e63;white-space:nowrap}.due.late{color:#b3261e;font-weight:600}
+/* Glass everywhere: callouts and cards +10% (70%); dark callout 85% near-black. */
+.callout{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;border-radius:12px;background:rgba(255,255,255,.7);box-sizing:border-box}
+.callout.dark{background:rgba(39,39,41,.85);color:#fff}
+.callout.dark a{color:#2997ff}
+.dot{width:8px;height:8px;border-radius:9999px;background:#2997ff;flex:none}
+.endm{color:#2997ff;border:1px solid #2997ff;background:transparent}
+.endm.hv{background:rgba(255,255,255,.08)}
+.card{border:1px solid rgba(255,255,255,.75);border-radius:12px;padding:16px;background:rgba(255,255,255,.7);display:flex;flex-direction:column;gap:10px;min-width:0;box-sizing:border-box}
+.card.hv{background:rgba(255,255,255,.85);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.card.fl{border-radius:12px}
+.props{display:grid;grid-template-columns:150px 360px;gap:0 8px;margin:0;font-size:14px}
+.props dt{color:#5e5e63;padding:7px 0}
+.props dd{margin:0;padding:3px 8px;border-radius:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-height:30px;box-sizing:border-box}
+.props dd.h{background:rgba(255,255,255,.6)}
+.saved{font-size:12px;color:#5e5e63;display:inline-flex;align-items:center;gap:6px}
+.saved .spin{width:12px;height:12px}
+.tg summary{font-size:13px;font-weight:500;color:#5e5e63;cursor:pointer;padding:4px 0;border-radius:4px}
+.tg summary span{font-weight:400}
+.tg summary.hv{color:#1d1d1f}
+.tg[open] summary{margin-bottom:6px}
+.toast{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:rgba(250,250,252,.9);border-radius:9999px;padding:4px 12px;border:1px solid #e0e0e0;white-space:nowrap}
+.toast .ok{color:#0066cc}
+.toast.bad{border-color:#b3261e}
+.toast.empty{width:120px;height:26px;background:none;border:1px dashed #b0b0b5;padding:0}
+.tb{border-collapse:collapse;font-size:14px;width:560px}
+.tb th{text-align:left;font-size:12px;font-weight:500;color:#5e5e63;padding:8px 10px;border-bottom:1px solid #e0e0e0;white-space:nowrap}
+.tb td{padding:8px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+.tb tr.h td{background:rgba(255,255,255,.6)}
+.tb.heat{width:340px}
+.tb.heat td:not(:first-child){text-align:center;font-size:12px}
+/* Heat steps (report::view::heat_style): blue ramp, white text from step 3. */
+.h1{background:#e3effc}.h2{background:#bcd6f2}.h3{background:#0066cc;color:#fff}.h4{background:#003d7a;color:#fff}
+.meter{display:inline-flex;gap:3px}
+.meter i{width:14px;height:6px;border-radius:3px;background:#e0e0e0;display:block}
+.meter i.on{background:#0066cc}
+.bars{display:flex;gap:3px;align-items:flex-end;width:120px;height:20px}
+.bars span{flex:1;background:#4d8fd1;border-radius:2px 2px 0 0}
+.bars span.z{height:2px;background:#e0e0e0}
+.ev{font-size:12px;border-radius:6px;padding:4px 6px;line-height:1.3;display:block;color:#1d1d1f;width:140px;box-sizing:border-box}
+.ev.meet{background:#e8f1fb;border-left:3px solid #0066cc}
+.ev.meet.hv{text-decoration:underline}
+.ev.todo{background:#fff;border:1px solid #e0e0e0}
+.ev.todo.late{color:#b3261e}
+.ev.tgt{background:#f0f0f0}
+.ev.own{background:#fff;border:1px dashed #b0b0b5}
+.logdot{font-size:11px;color:#5e5e63}
+.calh{display:flex;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;background:#fff}
+.calh .dh{font-size:12px;font-weight:600;color:#5e5e63;padding:8px 10px;width:90px}
+.calh .dh+.dh{border-left:1px solid #f0f0f0}
+.calh .dh.now{color:#0066cc;background:#f5f9fe}
+.stat{width:180px;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,.7);box-sizing:border-box;display:flex;flex-direction:column}
+.stat b{display:block;font-size:28px;font-weight:600;letter-spacing:-.28px;line-height:1.15}
+.em{margin:0;max-width:700px}
+.rt .callout,.rt .card,.rt .toast{background:#fff;border-color:#e0e0e0}
+.ic2 .callout,.ic2 .card,.ic2 .toast{background:#fff;border-color:#1d1d1f}
+.var .callout,.var .card{flex-direction:column;gap:6px}
+.sumi .callout,.sumi .stat{background:#f5f5f7}
+.sumi .card{background:#fff;border-color:#e0e0e0}
+.sumi .blk.h,.sumi .props dd.h{background:#f5f5f7}
+.sumi .blk{width:auto}
+
+/* T30 Liquid Glass (DESIGN.md §4, D22), drawn in Clear: 4px blur, specular rim + inner light + 2-step shadow on
+   floating layers only (sidebar, menus, capture bar, action sheet, sheet), embedded controls stay flat glass,
+   glass pills swell on press, placeholders --muted-tint. The app CSS is the source; this mirrors it. */
+.gl,.fld,.dnav,.grp,.ctl.glass,.field,.crumb{backdrop-filter:blur(4px) saturate(140%) brightness(1.04);-webkit-backdrop-filter:blur(4px) saturate(140%) brightness(1.04)}
+.side,.menu,.sheetx,.fld.cap,.field.cap,.sheet{--lgr:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,.15) 72%,rgba(255,255,255,.6));
+  border-color:transparent;backdrop-filter:blur(4px) saturate(140%) brightness(1.04);-webkit-backdrop-filter:blur(4px) saturate(140%) brightness(1.04);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),inset 0 -6px 12px -8px rgba(255,255,255,.8),0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.12)}
+.side{background:linear-gradient(rgba(255,255,255,.65),rgba(255,255,255,.65)) padding-box,var(--lgr) border-box}
+.menu,.sheetx{background:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,.85)) padding-box,var(--lgr) border-box}
+.fld.cap,.field.cap{background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,.7)) padding-box,var(--lgr) border-box}
+.sheet{background:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.55)) padding-box,var(--lgr) border-box;backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55)}
+.fld.cap.f,.field.cap:focus-within{border-color:#0066cc;box-shadow:0 0 0 4px rgba(0,102,204,.18),inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),0 8px 24px rgba(0,0,0,.12)}
+.crumb{box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.it.on{box-shadow:inset 0 1px 0 #fff,inset 0 0 8px rgba(255,255,255,.6),0 1px 4px rgba(0,0,0,.06)}
+.gl.a{transform:scale(1.04);box-shadow:inset 0 0 12px rgba(255,255,255,.7),0 4px 12px rgba(0,0,0,.1)}
+.fld input::placeholder,.field input::placeholder{color:#48484d}
+</style>
+</helmet>
+<div class="cs" style="min-height: 5100px">
+<div class="sheet">
+<h1 class="bt">Content · every state</h1>
+<p class="lead">What sits on the sheet: lines, chips, flags, properties, feedback, data. With Glass everywhere on, cards and callouts are glass +10% (70%); chips, keys and flags stay solid so they keep AA. State is ink weight, never a second colour.</p>
+
+<h2>Lines</h2>
+<div class="r"><div class="nm"><b>Block row</b><code>.blk .edit-line .x</code><span>32 tall, 6 radius. Click text to edit in place; Enter saves through the grammar, Esc puts it back.</span></div>
+<div class="sts" style="flex-direction: column; gap: 14px">
+<div class="st"><div class="blk"><span class="k" title="done">·</span><a class="el" href="#">checkout p95 dashboard shipped</a><span class="chip">oms-sync</span></div><span class="cap">default</span></div>
+<div class="st"><div class="blk h"><span class="k imp" title="impact">+</span><a class="el u" href="#"><span class="chip key">OPS-101</span> checkout p95 1.8s → 0.6s</a><button class="xb" type="button" aria-label="Delete line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><span class="cap">hover · × shows, text underlined dotted</span></div>
+<div class="st"><div class="blk"><span class="k bl" title="blocker">x</span><a class="el fl" href="#">waiting on vendor SKU file</a><button class="xb" type="button" aria-label="Delete line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><span class="cap">focus-visible on text</span></div>
+<div class="st"><form class="blk ed"><input class="pin" aria-label="Edit line" value="OPS-101 + checkout p95 1.8s → 0.6s"><button class="ctl gl s" type="button">Save</button><a class="small" href="#">Cancel</a></form><span class="cap">inline edit</span></div>
+<div class="st"><form class="blk ed" style="flex-wrap: wrap"><input class="pin bad" aria-label="Edit line" aria-invalid="true" value="OPS-101"><button class="ctl gl s" type="button">Save</button><a class="small" href="#">Cancel</a><span class="err" style="flex-basis: 100%">Nothing after “OPS-101”. Type what happened.</span></form><span class="cap">inline edit · 422, text kept</span></div>
+<div class="st"><div class="blk" style="opacity: .55" aria-busy="true"><span class="k">!</span><span>use cursor pages for day-wide lists</span><svg class="spin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path></svg></div><span class="cap">loading · deleting</span></div>
+<div class="st"><div class="blk h"><span class="k">?</span><span><span class="mono">vector-search</span> HNSW trades recall for speed</span><span class="chip llm" title="Filed by claude">claude</span><button class="ib a" type="button" aria-label="More actions for this line" style="margin-left: auto"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button></div><span class="cap">⋯ open (touch) · agent row</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Kind keys</b><code>.k .k.imp .k.bl</code><span>22 mono square. Only impact is blue, blocker is ink.</span></div>
+<div class="sts">
+<div class="st"><span class="row" style="gap: 6px"><span class="k">·</span><span class="small">done</span></span><span class="cap">done</span></div>
+<div class="st"><span class="row" style="gap: 6px"><span class="k">!</span><span class="small">decision</span></span><span class="cap">decision</span></div>
+<div class="st"><span class="row" style="gap: 6px"><span class="k bl">x</span><span class="small">blocker</span></span><span class="cap">blocker · ink</span></div>
+<div class="st"><span class="row" style="gap: 6px"><span class="k imp">+</span><span class="small">impact</span></span><span class="cap">impact · blue</span></div>
+<div class="st"><span class="row" style="gap: 6px"><span class="k">?</span><span class="small">learned</span></span><span class="cap">learned</span></div>
+<div class="st"><span class="row" style="gap: 6px"><span class="k">&gt;</span><span class="small">plan</span></span><span class="cap">plan</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Chips</b><code>.chip .chip.key .chip.llm .lchip</code><span>6 radius, 12 px. Key is mono. Agent badge = ink outline. Link chip is the only blue chip.</span></div>
+<div class="sts">
+<div class="st"><span class="chip key">OPS-101</span><span class="cap">key</span></div>
+<div class="st"><a href="#" class="chip key hv">OPS-101</a><span class="cap">key · hover (link)</span></div>
+<div class="st"><a href="#" class="chip key fl">OPS-101</a><span class="cap">key · focus-visible</span></div>
+<div class="st"><span class="chip"><span class="mono" style="font-size: 12px">vector-search</span></span><span class="cap">topic</span></div>
+<div class="st"><span class="chip">oms-sync</span><span class="cap">meeting</span></div>
+<div class="st"><span class="chip">pinned</span><span class="cap">state · pinned</span></div>
+<div class="st"><span class="chip">Logging for Sat 7 Nov</span><span class="cap">context</span></div>
+<div class="st"><span class="chip llm" title="Filed by claude">claude</span><span class="cap">agent badge</span></div>
+<div class="st"><a class="lchip" href="#">slack.com ↗</a><span class="cap">link chip</span></div>
+<div class="st"><a class="lchip hv" href="#">slack.com ↗</a><span class="cap">link · hover</span></div>
+<div class="st"><a class="lchip fl" href="#">slack.com ↗</a><span class="cap">link · focus</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Flags + due</b><code>.flag.stale/.risk/.over .due .due.late</code><span>Pills in ink weight. Reason follows in muted text. Late due is the one red besides errors.</span></div>
+<div class="sts">
+<div class="st"><span class="row" style="gap: 8px"><span class="flag stale">stale</span><span class="small muted">nothing logged for 12 days</span></span><span class="cap">stale · grey fill</span></div>
+<div class="st"><span class="row" style="gap: 8px"><span class="flag risk">at risk</span><span class="small muted">target in 3 days, 2 open plans</span></span><span class="cap">at risk · ink outline</span></div>
+<div class="st"><span class="row" style="gap: 8px"><span class="flag over">overdue</span><span class="small muted">4 days past target</span></span><span class="cap">overdue · solid ink</span></div>
+<div class="st"><span class="due">due Fri 13</span><span class="cap">due</span></div>
+<div class="st"><span class="due late">due Tue 10</span><span class="cap">late · err bold</span></div>
+<div class="st"><span class="small muted">3 days old</span><span class="cap">no due · age</span></div>
+</div></div>
+
+<h2>Surfaces</h2>
+<div class="r"><div class="nm"><b>Callout</b><code>.callout .callout.dark</code><span>Info = glass 70% (#f5f5f7 solid). Meeting banner = near-black, link #2997ff.</span></div>
+<div class="sts" style="flex-direction: column; gap: 14px">
+<div class="st"><div class="callout" style="width: 640px"><div style="display: flex; flex-direction: column; gap: 6px; flex: 1"><div class="row"><b>Needs you</b><span class="small muted">epics that are late, due soon, or gone quiet</span></div><a class="row small" href="#" style="color: #1d1d1f"><span class="flag over">overdue</span><span class="chip key">OPS-114</span><span>Item mapping</span></a><a class="row small" href="#" style="color: #1d1d1f"><span class="flag stale">stale</span><span class="chip key">OPS-120</span><span>Supplier portal</span></a></div></div><span class="cap">info · needs you</span></div>
+<div class="st"><div class="callout dark" style="width: 640px; align-items: center"><span class="dot" aria-hidden="true"></span><span>In <a href="#"><b>oms-sync</b></a> · lines you log now are saved to this meeting</span><button class="ctl s endm" type="button" style="margin-left: auto">End meeting</button></div><span class="cap">dark · meeting banner</span></div>
+<div class="st"><div class="callout dark" style="width: 640px; align-items: center"><span class="dot" aria-hidden="true"></span><span>In <a href="#"><b>oms-sync</b></a> · lines you log now are saved to this meeting</span><button class="ctl s endm hv" type="button" style="margin-left: auto">End meeting</button></div><span class="err">End oms-sync first.</span><span class="cap">dark · button hover · error under</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Card</b><code>.card</code><span>12 radius, line border, 16 padding. Glass 70% when Glass everywhere is on.</span></div>
+<div class="sts">
+<div class="st"><div class="card" style="width: 260px"><div class="row between"><span class="chip key">OPS-101</span><span class="flag risk">at risk</span></div><b>Checkout speed</b><span class="small muted">owner · target Fri 20 Nov</span></div><span class="cap">default</span></div>
+<a class="st" href="#" style="color: inherit; text-decoration: none"><div class="card hv" style="width: 260px"><div class="row between"><span class="chip key">OPS-101</span><span class="flag risk">at risk</span></div><b>Checkout speed</b><span class="small muted">owner · target Fri 20 Nov</span></div><span class="cap">hover (linked card)</span></a>
+<div class="st"><div class="card fl" style="width: 260px"><div class="row between"><span class="chip key">OPS-101</span><span class="flag risk">at risk</span></div><b>Checkout speed</b><span class="small muted">owner · target Fri 20 Nov</span></div><span class="cap">focus-visible</span></div>
+<div class="st"><div class="card" style="width: 260px"><b>This week</b><span class="small muted">Pin an open plan to see it here.</span></div><span class="cap">empty</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Properties</b><code>.props dt/dd .pin</code><span>Notion inline grid. Hover = editable; change autosaves; status in the crumb.</span></div>
+<div class="sts" style="flex-direction: column; gap: 14px">
+<div class="st"><dl class="props"><dt>Role</dt><dd>owner</dd><dt>OKR</dt><dd class="muted">e.g. O1 · Faster ordering</dd><dt>Dates</dt><dd><span class="small muted">start</span>2 Nov<span class="small muted">target</span>20 Nov</dd></dl><span class="cap">default · empty value shows placeholder</span></div>
+<div class="st"><dl class="props"><dt>OKR</dt><dd class="h">O1 · Faster ordering</dd></dl><span class="cap">hover</span></div>
+<div class="st"><dl class="props"><dt>OKR</dt><dd><input class="pin f" aria-label="OKR" value="O1 · Faster ordering"></dd></dl><span class="saved"><svg class="spin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>Saving…</span><span class="cap">editing · saving</span></div>
+<div class="st"><dl class="props"><dt>OKR</dt><dd>O1 · Faster ordering</dd></dl><span class="saved">✓ saved just now</span><span class="cap">saved</span></div>
+<div class="st"><dl class="props"><dt>Title</dt><dd><input class="pin bad" aria-label="Title" aria-invalid="true" value=""></dd></dl><span class="err">Give the note a title.</span><span class="cap">error · 422</span></div>
+<div class="st"><dl class="props"><dt>Jira</dt><dd class="muted" title="From Jira, read-only">Speed up checkout API</dd></dl><span class="cap">read-only · no hover</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Details / toggle</b><code>details > summary</code><span>Folds secondary things. Summary 13 / 500 muted; count + hint inline.</span></div>
+<div class="sts" style="flex-direction: column; gap: 12px">
+<div class="st"><details class="tg"><summary>Other open plans · 4 <span>· Pin one to add it to your top 3</span></summary></details><span class="cap">closed</span></div>
+<div class="st"><details class="tg"><summary class="hv">Other open plans · 4 <span>· Pin one to add it to your top 3</span></summary></details><span class="cap">hover</span></div>
+<div class="st"><details class="tg"><summary class="fl">Other open plans · 4 <span>· Pin one to add it to your top 3</span></summary></details><span class="cap">focus-visible</span></div>
+<div class="st"><details class="tg" open><summary>Other open plans · 4 <span>· Pin one to add it to your top 3</span></summary><div class="blk"><input class="check" type="checkbox" aria-label="Mark done"><span>reply to vendor</span><span class="small muted">3 days old</span></div></details><span class="cap">open</span></div>
+</div></div>
+
+<h2>Feedback</h2>
+<div class="r"><div class="nm"><b>Toast</b><code>#toast.toast role=status</code><span>Above the capture bar. Empty = hidden (:empty).</span></div>
+<div class="sts">
+<div class="st"><div class="toast"><span class="ok">✓</span><span>Saved as <b>impact</b> on <span class="chip key">OPS-101</span></span><button class="lb small" type="button">Undo</button></div><span class="cap">saved + Undo</span></div>
+<div class="st"><div class="toast"><span class="ok">✓</span><span>Saved on new epic <span class="chip key">OPS-120</span> ·</span><a class="small" href="#">name it</a></div><span class="cap">saved · new epic</span></div>
+<div class="st"><div class="toast"><span>Line deleted ·</span><button class="lb small" type="button">Undo</button></div><span class="cap">deleted + Undo</span></div>
+<div class="st"><div class="toast"><span>Note deleted ·</span><button class="lb small" type="button">Undo</button><span>·</span><a class="small" href="#">All notes</a></div><span class="cap">page deleted</span></div>
+<div class="st"><div class="toast"><span class="ok">✓</span><span>Rated 2 today ·</span><button class="lb small" type="button">Undo</button></div><span class="cap">rated</span></div>
+<div class="st"><div class="toast bad"><span class="err">Something broke. Nothing was lost; try again.</span></div><span class="cap">error</span></div>
+<div class="st"><div class="toast"><span>Google Calendar refreshed · 14 events.</span></div><span class="cap">info</span></div>
+<div class="st"><div class="toast empty" aria-hidden="true"></div><span class="cap">empty · not drawn</span></div>
+</div></div>
+
+<h2>Data</h2>
+<div class="r"><div class="nm"><b>Table row</b><code>table th td</code><span>Head 12 / 500 muted on a line rule; rows hairline; hover a step lighter.</span></div>
+<div class="sts">
+<div class="st"><table class="tb"><tr><th>Topic</th><th>Depth</th><th>Last rated</th><th>Learned</th></tr>
+<tr><td class="mono">vector-search</td><td><span class="meter"><i class="on"></i><i class="on"></i><i></i><i></i></span></td><td>Mon 9</td><td>4</td></tr>
+<tr class="h"><td class="mono">rust-async</td><td><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td><td>Wed 11</td><td>7</td></tr>
+<tr><td class="mono">htmx</td><td><span class="meter"><i></i><i></i><i></i><i></i></span></td><td class="muted">not rated yet</td><td>1</td></tr></table><span class="cap">default · hover (row 2) · unrated</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Calendar events</b><code>.ev.meet/.todo/.tgt/.own .logdot</code><span>Type by shape, not hue: meetings blue rule, to-do outline, target grey, own dashed.</span></div>
+<div class="sts">
+<div class="st"><span class="ev meet">10:00 oms-sync</span><span class="cap">meeting</span></div>
+<div class="st"><span class="ev meet hv">10:00 oms-sync</span><span class="cap">meeting · hover (start)</span></div>
+<div class="st"><span class="ev todo">reply to vendor</span><span class="cap">to-do due</span></div>
+<div class="st"><span class="ev todo late">reply to vendor</span><span class="cap">to-do late</span></div>
+<div class="st"><span class="ev tgt"><span class="mono" style="font-size: 12px">OPS-101</span> target</span><span class="cap">epic target</span></div>
+<div class="st"><span class="ev own">16:00 dentist</span><span class="cap">own event</span></div>
+<div class="st"><a class="logdot" href="#">● 5 lines</a><span class="cap">logged day</span></div>
+<div class="st"><div class="calh"><span class="dh">Wed 11</span><span class="dh now">Thu 12</span></div><span class="cap">day head · today</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Stat tile</b><code>.stat</code><span>28 / 600 number over a muted label. Glass 70% here, --fill on solid.</span></div>
+<div class="sts">
+<div class="st"><div class="stat"><span class="small muted">Epics done</span><b>3</b></div><span class="cap">default</span></div>
+<div class="st"><div class="stat"><span class="small muted">Decisions</span><b>12</b><span class="small muted">5 in meetings</span></div><span class="cap">with sub-line</span></div>
+<div class="st"><div class="stat"><span class="small muted">Plans done</span><b>67%</b><span class="small muted">8 of 12 · 3 open · 1 dropped</span></div><span class="cap">rate</span></div>
+<div class="st"><div class="stat"><span class="small muted">Plans done</span><b>—</b><span class="small muted">0 of 0 · 0 open · 0 dropped</span></div><span class="cap">empty</span></div>
+</div></div>
+
+<div class="r"><div class="nm"><b>Meter · heatmap · sparkline</b><code>.meter .bars heat_style()</code><span>Depth 0–4 in blue steps; activity bars logs/week, 8 weeks.</span></div>
+<div class="sts">
+<div class="st"><span class="meter" aria-label="Not rated"><i></i><i></i><i></i><i></i></span><span class="cap">meter · not rated</span></div>
+<div class="st"><span class="meter" aria-label="Depth 1 of 4"><i class="on"></i><i></i><i></i><i></i></span><span class="cap">1 · heard of it</span></div>
+<div class="st"><span class="meter" aria-label="Depth 3 of 4"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="cap">3 · can build without AI</span></div>
+<div class="st"><span class="meter" aria-label="Depth 4 of 4"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="cap">4 · can teach</span></div>
+<div class="st"><table class="tb heat"><tr><th>Topic</th><th>Sep</th><th>Oct</th><th>Nov</th></tr><tr><td class="mono">vector-search</td><td class="muted">–</td><td class="h1">1</td><td class="h2">2</td></tr><tr><td class="mono">rust-async</td><td class="h2">2</td><td class="h3">3</td><td class="h4">4</td></tr></table><span class="cap">heatmap · – 1 2 3 4</span></div>
+<div class="st"><span class="row small muted" style="gap: 8px"><span class="bars" aria-hidden="true"><span style="height: 20%"></span><span style="height: 45%"></span><span style="height: 30%"></span><span style="height: 70%"></span><span style="height: 100%"></span><span style="height: 60%"></span><span style="height: 15%"></span><span style="height: 40%"></span></span>logs/week, 8 wks</span><span class="cap">sparkline bars</span></div>
+<div class="st"><span class="row small muted" style="gap: 8px"><span class="bars" aria-hidden="true"><span class="z"></span><span class="z"></span><span class="z"></span><span class="z"></span><span class="z"></span><span class="z"></span><span class="z"></span><span class="z"></span></span>logs/week, 8 wks</span><span class="cap">sparkline · empty</span></div>
+</div></div>
+
+<h2>Empty states</h2>
+<div class="r"><div class="nm"><b>Empty state</b><code>p.small.muted + next action</code><span>One line, names the next action, links it. No art, no tutorial.</span></div>
+<div class="sts" style="flex-direction: column; gap: 10px">
+<div class="st"><p class="small muted em">No epics yet. Start a line with a key, e.g. <span class="mono">OPS-101</span>, on <a href="#">Today</a>.</p><span class="cap">list empty · names the action</span></div>
+<div class="st"><p class="small muted em">No topics yet. Log a line like <span class="mono">? vector-search: HNSW trades recall for speed</span> on <a href="#">Today</a>, then make it a topic here.</p><span class="cap">list empty · example line</span></div>
+<div class="st"><p class="small muted em">Nothing logged in this range. Try <a href="#">This month</a></p><span class="cap">filter empty · wider range</span></div>
+<div class="st"><p class="small muted em">Nothing logged on OPS-101 yet. Start a line with OPS-101 on Today.</p><span class="cap">section empty</span></div>
+<div class="st"><p class="small muted em">No notes match ‘pricing’.</p><span class="cap">search empty</span></div>
+</div></div>
+</div>
+
+<div class="sheet">
+<h2 style="margin-top: 0">Glass content · accessibility variants</h2>
+<div class="var" style="margin-top: 12px">
+<div class="rt"><span class="lbl2">Reduce Transparency · sheet, cards and callouts solid</span>
+<div class="callout glassbox"><b>Needs you</b><span class="small muted">epics that are late, due soon, or gone quiet</span></div>
+<div class="card glassbox"><span class="chip key">OPS-101</span><b>Checkout speed</b></div>
+<div class="toast glassbox"><span class="ok">✓</span><span>Saved as <b>impact</b> on <span class="chip key">OPS-101</span></span><button class="lb small" type="button">Undo</button></div></div>
+<div class="ic2"><span class="lbl2" style="color: #1d1d1f">Increase Contrast · ink edges</span>
+<div class="callout glassbox" style="border: 1px solid #1d1d1f"><b>Needs you</b><span class="small muted">epics that are late, due soon, or gone quiet</span></div>
+<div class="card glassbox"><span class="chip key">OPS-101</span><b>Checkout speed</b></div>
+<div class="toast glassbox"><span class="ok">✓</span><span>Saved as <b>impact</b> on <span class="chip key">OPS-101</span></span><button class="lb small" type="button">Undo</button></div></div>
+</div>
+</div>
+
+<div class="sumi">
+<span class="lbl2">Plain Sumi · solid sheet (Glass everywhere off)</span>
+<div class="sh">
+<div class="blk h"><span class="k imp">+</span><span><span class="chip key">OPS-101</span> checkout p95 1.8s → 0.6s</span><span class="flag risk">at risk</span><span class="due late">due Tue 10</span><button class="xb" type="button" aria-label="Delete line"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+<div class="row" style="align-items: stretch; gap: 14px"><div class="callout" style="flex: 1"><b>Needs you</b><span class="small muted">epics that are late, due soon, or gone quiet</span></div><div class="stat" style="flex: 0 0 160px"><span class="small muted">Epics done</span><b>3</b></div><div class="card" style="flex: 0 0 220px"><span class="chip key">OPS-101</span><b>Checkout speed</b></div></div>
+<dl class="props"><dt>OKR</dt><dd class="h">O1 · Faster ordering</dd><dt>Role</dt><dd>owner</dd></dl>
+<div class="toast"><span class="ok">✓</span><span>Saved as <b>impact</b> on <span class="chip key">OPS-101</span></span><button class="lb small" type="button">Undo</button></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":5100}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -163,13 +163,13 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
         } else {
             okr
         };
-        let color = match status.as_str() {
-            "active" => "#0066cc",
-            "done" => "#4d8fd1",
-            _ => "#b0b0b5",
+        let class = match status.as_str() {
+            "active" => "active",
+            "done" => "done",
+            _ => "other",
         };
         let part = format!("{n} {status}");
-        let seg = view::Seg { flex: n, color };
+        let seg = view::Seg { flex: n, class };
         match okrs.last_mut() {
             Some(b) if b.okr == okr => {
                 b.summary = format!("{}, {part}", b.summary);

@@ -5,7 +5,7 @@
 <p class="small muted" style="margin: 0">No open plans. Log a line starting with &gt;.</p>
 {%- endif %}
 {%- for g in lists.groups %}
-<h3>{{ g.title }}{% if g.title == "Overdue" %} <span class="small muted" style="font-weight: 400">· {{ g.plans.len() }}</span>{% endif %}</h3>
+<h3>{{ g.title }}{% if g.title == "Overdue" %} <span class="small muted normal">· {{ g.plans.len() }}</span>{% endif %}</h3>
 <div class="blocks">
 {%- for p in g.plans %}
 {% include "partials/plan_row.html" %}
@@ -14,7 +14,7 @@
 {%- endfor %}
 {%- if !lists.done.is_empty() %}
 <details>
-<summary class="small muted" style="font-weight: 500">Done this week · {{ lists.done.len() }}</summary>
+<summary class="small muted mid">Done this week · {{ lists.done.len() }}</summary>
 <div class="blocks small">
 {%- for p in lists.done %}
 {% include "partials/plan_row.html" %}

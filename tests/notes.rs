@@ -109,7 +109,7 @@ async fn search_groups_and_page_picker() {
     assert!(b.contains("2 results"));
     assert!(b.contains("<h3>Mine</h3>") && b.contains("<h3>Written by LLM</h3>"));
     assert!(b.contains("<span class=\"chip llm\">llm</span><b>Lint · 10 Nov</b>"));
-    assert!(b.contains("did you mean <b style=\"color: #1d1d1f\">checkout</b>"));
+    assert!(b.contains("did you mean <b class=\"ink\">checkout</b>"));
     assert!(
         !b.contains("Q4 OKR draft</b>"),
         "non-matching note left out of results"

@@ -15,14 +15,6 @@ use chrono::NaiveDate;
 use rusqlite::Connection;
 use serde::Deserialize;
 
-/// Plain POSTs go back where they came from; only same-site paths, never `//host`.
-fn safe_back(back: Option<&str>) -> String {
-    match back {
-        Some(b) if b.starts_with('/') && !b.starts_with("//") => b.to_string(),
-        _ => "/meetings".into(),
-    }
-}
-
 fn banner(
     conn: &Connection,
     back: String,
@@ -130,7 +122,7 @@ pub async fn start(
     headers: HeaderMap,
     Form(f): Form<StartForm>,
 ) -> AppResult<Response> {
-    let back = safe_back(f.back.as_deref());
+    let back = web::safe_back(f.back.as_deref(), "/meetings").to_string();
     let slug = slugify(&f.name);
     let error = if slug.is_empty() {
         // Not on the States board; same voice as the line box's "Type what you did first."
@@ -172,7 +164,7 @@ pub async fn end(
     Path(id): Path<i64>,
     Form(f): Form<BackForm>,
 ) -> AppResult<Response> {
-    let back = safe_back(f.back.as_deref());
+    let back = web::safe_back(f.back.as_deref(), "/meetings").to_string();
     let at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     // Already ended (double click, stale tab) is fine; only an unknown id is an error.
     if !queries::end(&st.conn(), id, &at)? && queries::meeting(&st.conn(), id)?.is_none() {

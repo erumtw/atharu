@@ -199,7 +199,7 @@ async fn impact_line_text_exact() {
                INSERT INTO evidence(epic_key, url) VALUES ('OPS-101', 'https://gh.io/412'), ('OPS-101', 'https://graf.io/p95');");
     let b = get(&st, "/epics/OPS-101").await.body;
     assert!(
-        b.contains(r#"<div id="impact-line" class="mono" style="color: #cccccc">Did Checkout latency → checkout p95 1.8s→0.6s → https://gh.io/412, https://graf.io/p95</div>"#),
+        b.contains(r#"<div id="impact-line" class="mono muted">Did Checkout latency → checkout p95 1.8s→0.6s → https://gh.io/412, https://graf.io/p95</div>"#),
         "{b}"
     );
     assert_eq!(get(&st, "/epics/NOPE-1").await.status, 404);

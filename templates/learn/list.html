@@ -10,7 +10,7 @@
 <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0">
 <b>New topics from your log · {{ inbox_count() }}</b><span class="small muted">Lines like <span class="mono">? pgvector: …</span> land here. Make a topic to track how well you know it.</span>
 {%- for t in new_topics %}
-<form class="row small" method="post" action="/learn"><span class="chip key">{{ t.slug }}</span><span class="muted">{{ t.lines }} line{% if t.lines != 1 %}s{% endif %}</span><input type="hidden" name="slug" value="{{ t.slug }}"><button class="util" type="submit" style="margin-left: auto">Make topic</button></form>
+<form class="row small" method="post" action="/learn"><span class="chip key">{{ t.slug }}</span><span class="muted">{{ t.lines }} line{% if t.lines != 1 %}s{% endif %}</span><input type="hidden" name="slug" value="{{ t.slug }}"><button class="btn ghost s" type="submit" style="margin-left: auto">Make topic</button></form>
 {%- endfor %}
 {%- if untopic.len() == 1 %}
 <div class="row small"><span class="muted">1 learned line has no topic. To file it, delete it on</span><a href="/?day={{ untopic[0] }}">its day</a><span class="muted">and retype as <span class="mono">? topic: …</span></span></div>
@@ -21,7 +21,7 @@
 </div>
 {%- endif %}
 
-<h3>Your topics <span class="small muted" style="font-weight: 400">· not re-rated in 30 days come first</span></h3>
+<h3>Your topics <span class="small muted normal">· not re-rated in 30 days come first</span></h3>
 {%- if rows.is_empty() %}
 <p class="small muted" style="margin: 0">No topics yet. Log a line like <span class="mono">? vector-search: HNSW trades recall for speed</span> on <a href="/">Today</a>, then make it a topic here.</p>
 {%- else %}

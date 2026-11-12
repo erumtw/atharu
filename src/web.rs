@@ -19,6 +19,15 @@ pub fn is_htmx(headers: &HeaderMap) -> bool {
     headers.contains_key("hx-request")
 }
 
+/// A form's `back` if it is a same-site path, else `fallback`. Browsers read `\` as `/`, so
+/// `/\evil.com` would be `//evil.com` (another host): refuse a backslash anywhere.
+pub fn safe_back<'a>(back: Option<&'a str>, fallback: &'a str) -> &'a str {
+    match back {
+        Some(b) if b.starts_with('/') && !b.starts_with("//") && !b.contains('\\') => b,
+        _ => fallback,
+    }
+}
+
 /// 303 so the browser follows with GET (no "resubmit form?" on refresh).
 pub fn back(to: &str) -> Response {
     Redirect::to(to).into_response()
@@ -46,5 +55,26 @@ pub fn restored(headers: &HeaderMap, to: &str) -> Response {
         ([("hx-redirect", to.to_string())], StatusCode::OK).into_response()
     } else {
         back(to)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::safe_back;
+
+    #[test]
+    fn back_only_follows_same_site_paths() {
+        assert_eq!(safe_back(Some("/todos?x=1"), "/"), "/todos?x=1");
+        for bad in [
+            "//evil.com",
+            "/\\evil.com",
+            "/a\\b",
+            "https://evil.com",
+            "evil",
+            "",
+        ] {
+            assert_eq!(safe_back(Some(bad), "/home"), "/home", "{bad}");
+        }
+        assert_eq!(safe_back(None, "/home"), "/home");
     }
 }

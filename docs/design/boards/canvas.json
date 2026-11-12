@@ -1,0 +1,431 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Calendar.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Calendar · week",
+      "w": 1280,
+      "x": 0,
+      "y": 6259
+    },
+    "Components.Content.dc.html": {
+      "h": 5100,
+      "title": "Components · content, feedback, data",
+      "w": 1280,
+      "x": 2720,
+      "y": 12232
+    },
+    "Components.Controls.dc.html": {
+      "h": 5346,
+      "title": "Components · controls + fields",
+      "w": 1280,
+      "x": 0,
+      "y": 12232
+    },
+    "Components.Navigation.dc.html": {
+      "h": 4897,
+      "title": "Components · navigation + menus",
+      "w": 1280,
+      "x": 1360,
+      "y": 12232
+    },
+    "Controls.dc.html": {
+      "h": 1180,
+      "title": "Controls · glass fields + buttons",
+      "w": 1280,
+      "x": 0,
+      "y": 10652
+    },
+    "Epic.dc.html": {
+      "expand": "fill",
+      "h": 1577,
+      "title": "Epic detail",
+      "w": 1280,
+      "x": 2720,
+      "y": 0
+    },
+    "Epics.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Epics · Jira summary · status",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "Flows.dc.html": {
+      "h": 928,
+      "title": "Flows · loops by rhythm",
+      "w": 1704,
+      "x": 0,
+      "y": -1560
+    },
+    "Learn.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Learn",
+      "w": 1280,
+      "x": 0,
+      "y": 3359
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 1569,
+      "title": "Today · inline edit + Undo toast",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "Meetings.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Meeting page",
+      "w": 1280,
+      "x": 1360,
+      "y": 1977
+    },
+    "MeetingsList.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Meetings list",
+      "w": 1280,
+      "x": 0,
+      "y": 1977
+    },
+    "Mobile.Calendar.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · calendar agenda",
+      "w": 390,
+      "x": 1410,
+      "y": 7884
+    },
+    "Mobile.Epic.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · epic page",
+      "w": 390,
+      "x": 940,
+      "y": 7884
+    },
+    "Mobile.Nav.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · pages drawer",
+      "w": 390,
+      "x": 470,
+      "y": 7884
+    },
+    "Mobile.Settings.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · settings",
+      "w": 390,
+      "x": 1360,
+      "y": 9128
+    },
+    "Mobile.Today.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone · Today + capture",
+      "w": 390,
+      "x": 0,
+      "y": 7884
+    },
+    "Notes.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Note page",
+      "w": 1280,
+      "x": 1360,
+      "y": 4959
+    },
+    "NotesList.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "title": "Notes · Mine / Written by LLM",
+      "w": 1280,
+      "x": 0,
+      "y": 4959
+    },
+    "Report.dc.html": {
+      "expand": "fill",
+      "h": 1365,
+      "title": "Report · paste-ready",
+      "w": 1280,
+      "x": 4080,
+      "y": 0
+    },
+    "Settings.dc.html": {
+      "expand": "fill",
+      "h": 1124,
+      "is_interactive": true,
+      "title": "Settings · appearance + connections",
+      "w": 1280,
+      "x": 0,
+      "y": 9128
+    },
+    "Sitemap.dc.html": {
+      "h": 1104,
+      "title": "Sitemap",
+      "w": 984,
+      "x": 1784,
+      "y": -1560
+    },
+    "States.dc.html": {
+      "expand": "fill",
+      "h": 2264,
+      "title": "States · every message (real responses)",
+      "w": 1280,
+      "x": 5440,
+      "y": 0
+    },
+    "Todos.dc.html": {
+      "expand": "fill",
+      "h": 982,
+      "title": "To-dos",
+      "w": 1280,
+      "x": 2720,
+      "y": 1977
+    },
+    "Topic.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "title": "Topic",
+      "w": 1280,
+      "x": 1360,
+      "y": 3359
+    },
+    "Calendar.Month.dc.html": {
+      "expand": "fill",
+      "w": 1280,
+      "h": 1225,
+      "x": 1360,
+      "y": 6259,
+      "title": "Calendar · month"
+    },
+    "LiquidGlass.dc.html": {
+      "h": 2934,
+      "is_interactive": true,
+      "title": "Liquid Glass · every glass surface, Clear / Tinted, states, RT / IC",
+      "w": 1280,
+      "x": 0,
+      "y": 17978
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-11T15:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "noteOrder": [
+    "t1",
+    "t2",
+    "t3",
+    "t4",
+    "s0",
+    "s1",
+    "s2",
+    "s4",
+    "t0",
+    "t5",
+    "s5",
+    "t6",
+    "s6",
+    "t7",
+    "s7",
+    "t8",
+    "s8",
+    "t9",
+    "s9",
+    "t10"
+  ],
+  "notes": {
+    "s0": {
+      "fill": "orange",
+      "text": "Look and rules: DESIGN.md (repo root) wins over these boards. One Action Blue, glass only on chrome unless Glass everywhere is on, AA measured, tokens in static/css/tokens.css.\n\nPage and phone boards are generated from the app at 4540c51: real templates, static/css verbatim, Wakaba look with glass chrome. Sample data is made up.\n\nUX = Notion patterns: sidebar by journey (daily · Track · Grow, Settings at the bottom), breadcrumbs, every epic / meeting / topic / note is a page, lines behave like blocks (click to edit, × or ⋯ to delete, Undo toast), capture bar floats at the bottom.\nReduce Transparency / Increase Contrast → glass turns opaque.",
+      "w": 400,
+      "x": -480,
+      "y": 0
+    },
+    "s1": {
+      "fill": "blue",
+      "text": "Empty states (each names the next action; exact copy on the States board)\n· Today: “Nothing logged yet.” + example lines\n· Pinned plans: “No plans pinned. Pin an open plan to see it here.”\n· To-dos: “No open plans. Log a line starting with >.”\n· Report: “Nothing logged in this range. Try This month”\n· Meetings: “No meetings yet.”\n· Learn: “No topics yet. Log a line like ? vector-search: …”\n· Notes: “No notes yet.” + New note",
+      "w": 420,
+      "x": 4080,
+      "y": 1977
+    },
+    "s2": {
+      "fill": "green",
+      "text": "UX decisions live in the spec → “UX decisions (2026-11-11)”.\nStack: Rust (axum + askama + rusqlite) · htmx for no-reload actions + field autosave; every action also works as a plain form POST.\nLive hint under the line box: the same parser on keyup → “will save as impact on OPS-101”.",
+      "w": 420,
+      "x": 4580,
+      "y": 1977
+    },
+    "s4": {
+      "fill": "purple",
+      "text": "LLM layer has no screen.\nAgents write through the atharu CLI as themselves (log · epic · note · evidence --as claude); Claude Code’s /log and /ingest (plus /query, /lint) wrap it. In the app: an agent badge on lines it filed, and its notes under “Written by LLM” on Notes.",
+      "w": 420,
+      "x": 2720,
+      "y": 4959
+    },
+    "s5": {
+      "fill": "blue",
+      "text": "Calendar\n· Week: desktop grid, phone agenda. Month: 7 columns, phone = day numbers with a dot.\n· Shows to-do due dates, epic targets, meetings, lines logged per day and your own events.\n· Google read-only through the calendar’s secret iCal address (ical_url in data/config.toml, never in git); a failed refresh says “Couldn’t reach Google Calendar. Showing the last copy.”",
+      "w": 420,
+      "x": 2720,
+      "y": 6259
+    },
+    "s6": {
+      "fill": "teal",
+      "text": "Breakpoints (same templates, CSS only)\n· ≥1024 px: desktop as drawn above.\n· 640–1023 px: sidebar shrinks to a 64 px icon rail (labels as tooltips); content sheet keeps its max-width.\n· <640 px (these boards): glass top bar with ☰ → pages drawer; title + day nav in the bar; capture bar pinned to the bottom (safe-area aware), grammar legend behind the ? button.\n\nTouch rules\n· every target ≥44 px; hover-only controls (× delete, Pin/Drop) become a visible ⋯ menu per line.\n· inputs 16 px so iOS doesn't zoom.\n· props stack label-over-value; tables become stacked rows or scroll in their own box; calendar week → agenda list, month → 7-column dots.\n· Reduce Transparency → glass turns opaque.\n\nThe phone boards are the same generated pages with the <640 rules pinned on.",
+      "w": 420,
+      "x": 1880,
+      "y": 7884
+    },
+    "s7": {
+      "fill": "teal",
+      "text": "Settings pattern\n· Apple System Settings: grouped inset list (rounded group, hairline dividers inset from the left), one control per row on the right: switch for on/off, segmented control for Clear | Tinted, slider with end icons.\n· Notion settings: bold label + one-line help on the left, sections with small grey headers.\n· Look = 4 app-icon tiles, the picked one ringed in accent (like macOS Appearance).\n· Opacity slider shows the real 0–100 scale; the part below the look's readable floor is hatched and unreachable, so 60% sits at 60%.\n· Live preview tile shows sidebar glass (and the page when Glass everywhere is on).\n· Connections are status only (set in data/config.toml).",
+      "w": 420,
+      "x": 1830,
+      "y": 9128
+    },
+    "s8": {
+      "fill": "teal",
+      "text": "Control rules (go into DESIGN.md §6)\n· One height per context: 32 px in chrome (top bar), 36 px in the page, 44 px on phone. Labels centred with flex + line-height 1.\n· Single-line fields are glass pills (44 px; capture bar 52 px) with their action inside on the right, focus = blue ring.\n· Secondary buttons = glass pill (a step more opaque than what they sit on); primary = the one blue pill.\n· Day nav = one glass capsule: Today | ‹ | date ▾ | ›; the date opens the native picker.\n· Legend chips sit on one baseline and wrap as whole items.\n· Reduce Transparency → the same shapes, solid white.",
+      "w": 420,
+      "x": 1360,
+      "y": 10652
+    },
+    "s9": {
+      "fill": "teal",
+      "text": "Component library (for T28)\n· Every control in the app, every state that can happen: default · hover · focus-visible · pressed · selected · disabled · error (422, input kept) · loading (htmx-request) · empty.\n· Drawn over Wakaba with Glass everywhere on; each board ends with a plain Sumi strip (solid sheet) and Reduce Transparency / Increase Contrast variants.\n· Hover/focus/pressed are forced with classes here; in the app they are :hover, :focus-visible, :active, [disabled], .htmx-request.\n· .util (28, square) becomes the 32 glass pill; .btn.ghost becomes the glass secondary.\n· Copy is from the templates; two menu empty lines are marked 'proposed copy'.\n· Colours outside DESIGN.md §1 that the CSS already uses: #e8f1fb, #272729, #2997ff, #4d8fd1, #fafafc, #f5f9fe, #b0b0b5, heat #e3effc/#bcd6f2/#003d7a.",
+      "w": 420,
+      "x": 4080,
+      "y": 12232
+    },
+    "t0": {
+      "kind": "title1",
+      "maxW": 2768,
+      "text": "How you move · flows + sitemap",
+      "w": 240,
+      "x": 0,
+      "y": -1840
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 6720,
+      "text": "Today · epics · report",
+      "w": 240,
+      "x": 0,
+      "y": -280
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 4000,
+      "text": "Meetings · to-dos",
+      "w": 240,
+      "x": 0,
+      "y": 1781
+    },
+    "t3": {
+      "kind": "title1",
+      "maxW": 2640,
+      "text": "Learn · topics + depth",
+      "w": 240,
+      "x": 0,
+      "y": 3079
+    },
+    "t4": {
+      "kind": "title1",
+      "maxW": 2640,
+      "text": "Notes · LLM layer",
+      "w": 240,
+      "x": 0,
+      "y": 4679
+    },
+    "t5": {
+      "kind": "title1",
+      "maxW": 4000,
+      "text": "Calendar · week + month",
+      "w": 240,
+      "x": 0,
+      "y": 5979
+    },
+    "t6": {
+      "kind": "title1",
+      "maxW": 2320,
+      "text": "Responsive · phone",
+      "w": 240,
+      "x": 0,
+      "y": 7624
+    },
+    "t7": {
+      "kind": "title1",
+      "maxW": 2400,
+      "text": "Settings · appearance",
+      "w": 240,
+      "x": 0,
+      "y": 8868
+    },
+    "t8": {
+      "kind": "title1",
+      "maxW": 1880,
+      "text": "Controls · Liquid Glass",
+      "w": 240,
+      "x": 0,
+      "y": 10392
+    },
+    "t9": {
+      "kind": "title1",
+      "maxW": 4000,
+      "text": "Components · every state",
+      "w": 240,
+      "x": 0,
+      "y": 11972
+    },
+    "t10": {
+      "kind": "title1",
+      "maxW": 1280,
+      "text": "Liquid Glass",
+      "w": 240,
+      "x": 0,
+      "y": 17698
+    }
+  },
+  "order": [
+    "Flows.dc.html",
+    "Sitemap.dc.html",
+    "Main.dc.html",
+    "Epics.dc.html",
+    "Epic.dc.html",
+    "Report.dc.html",
+    "States.dc.html",
+    "MeetingsList.dc.html",
+    "Meetings.dc.html",
+    "Learn.dc.html",
+    "Topic.dc.html",
+    "NotesList.dc.html",
+    "Notes.dc.html",
+    "Todos.dc.html",
+    "Calendar.dc.html",
+    "Calendar.Month.dc.html",
+    "Mobile.Today.dc.html",
+    "Mobile.Nav.dc.html",
+    "Mobile.Epic.dc.html",
+    "Mobile.Calendar.dc.html",
+    "Settings.dc.html",
+    "Mobile.Settings.dc.html",
+    "Controls.dc.html",
+    "Components.Controls.dc.html",
+    "Components.Navigation.dc.html",
+    "Components.Content.dc.html",
+    "LiquidGlass.dc.html"
+  ],
+  "pages": [],
+  "title": "Atharu Design"
+}

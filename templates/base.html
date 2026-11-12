@@ -18,21 +18,25 @@
 {%- block head %}{% endblock %}
 </head>
 <body>
+{#- Edge lensing for the glass (looks.css, Chromium only): blurred alpha = a map that is neutral in the middle and
+    pulls at the rim, so the backdrop bends near the edges. Defined once; zero-size and hidden from AT. #}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="lg-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="7" result="a"/><feComponentTransfer in="a" result="m"><feFuncA type="linear" slope="1" intercept="-0.5"/></feComponentTransfer><feDisplacementMap in="SourceGraphic" in2="m" scale="22" xChannelSelector="A" yChannelSelector="A"/></filter></svg>
 <div class="wl">
 {#- One nav for every width: inline sidebar / 64 px rail, and on phones a popover drawer opened by the crumb's menu button
     (native popover = Esc, light dismiss and focus return with no JS). responsive.css undoes the UA popover box. #}
 <nav class="side m-pop" id="side" popover aria-label="Pages">
-<div class="ws"><span>Atharu</span><button class="ib m-only" type="button" popovertarget="side" popovertargetaction="hide" aria-label="Close pages"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#close"/></svg></button></div>
-{#- Only pages that exist; each slice adds its link when it lands (spec UX 10 order). #}
+<div class="ws" data-tauri-drag-region="deep"><span>Atharu</span><button class="ib m-only" type="button" popovertarget="side" popovertargetaction="hide" aria-label="Close pages"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#close"/></svg></button></div>
+{#- Grouped by the Flows loops (D18): the daily block unlabelled, then TRACK and GROW; the rail draws .nh as dividers. #}
 <a href="/" title="Today"{% if layout.nav == "today" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#today"/></svg><span class="lb">Today</span></a>
 <a href="/todos" title="To-dos"{% if layout.nav == "todos" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#todos"/></svg><span class="lb">To-dos</span></a>
 <a href="/calendar" title="Calendar"{% if layout.nav == "calendar" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#calendar"/></svg><span class="lb">Calendar</span></a>
+<a href="/meetings" title="Meetings"{% if layout.nav == "meetings" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#meetings"/></svg><span class="lb">Meetings</span></a>
+<div class="lbl nh">Track</div>
 <a href="/epics" title="Epics"{% if layout.nav == "epics" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#epics"/></svg><span class="lb">Epics</span></a>
 <a href="/report" title="Report"{% if layout.nav == "report" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#report"/></svg><span class="lb">Report</span></a>
-<a href="/meetings" title="Meetings"{% if layout.nav == "meetings" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#meetings"/></svg><span class="lb">Meetings</span></a>
+<div class="lbl nh">Grow</div>
 <a href="/learn" title="Learn"{% if layout.nav == "learn" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#learn"/></svg><span class="lb">Learn</span></a>
 <a href="/notes" title="Notes"{% if layout.nav == "notes" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#notes"/></svg><span class="lb">Notes</span></a>
-<a href="/settings" title="Settings"{% if layout.nav == "settings" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#settings"/></svg><span class="lb">Settings</span></a>
 {%- block side %}{% endblock %}
 {%- if !layout.epics.is_empty() %}
 <div class="lbl">Active epics</div>
@@ -40,9 +44,12 @@
 <a class="sub" href="/epics/{{ e.key }}"><span class="mono">{{ e.key }}</span>{% if !e.title.is_empty() %} {{ e.title }}{% endif %}</a>
 {%- endfor %}
 {%- endif %}
+{#- Spacer: Settings sits at the bottom of the full-height sidebar / rail / drawer. #}
+<span class="gap"></span>
+<a href="/settings" title="Settings"{% if layout.nav == "settings" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#settings"/></svg><span class="lb">Settings</span></a>
 </nav>
 <div class="pg">
-<div class="crumb">
+<div class="crumb" data-tauri-drag-region="deep">
 <button class="ib m-only" type="button" popovertarget="side" aria-label="Open pages"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#menu"/></svg></button>
 {%- for c in layout.crumbs %}<a class="trail" href="{{ c.href }}">{{ c.label }}</a><span class="trail">/</span>{% endfor %}<b>{{ layout.title }}</b>
 {%- block crumb_extra %}{% endblock %}

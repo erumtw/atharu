@@ -3,7 +3,7 @@
 {% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto">Changes save as you type</span>{% endblock %}
 {% block content %}
 <main class="doc">
-<h1 class="ptitle mono" style="font-size: 36px">{{ slug }}</h1>
+<h1 class="ptitle mono t36">{{ slug }}</h1>
 {#- Two autosave forms (the rate buttons sit between them); each posts only its own fields. #}
 <form method="post" action="/learn/{{ slug }}" hx-post="/learn/{{ slug }}" hx-trigger="input changed delay:1s, change, submit" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
 <dl class="props">
@@ -14,7 +14,7 @@
 
 <h3 style="margin-top: 0"><label for="own">In my own words</label></h3>
 <div class="callout small" style="padding: 10px 14px"><span><b>No AI here.</b> Explain it as if to a teammate. If you can't, that's your real depth.</span></div>
-<textarea id="own" name="own_words" class="pin" rows="6" style="font-size: 16px; line-height: 1.6; resize: vertical; border-left: 3px solid #e0e0e0; padding-left: 14px">{{ own_words }}</textarea>
+<textarea id="own" name="own_words" class="ta prose" rows="6">{{ own_words }}</textarea>
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
 
@@ -24,7 +24,7 @@
 
 <form method="post" action="/learn/{{ slug }}" hx-post="/learn/{{ slug }}" hx-trigger="input changed delay:1s, change, submit" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 8px">
 <h3><label for="res">Resources</label></h3>
-<textarea id="res" name="resources" class="pin" rows="2" style="resize: vertical">{{ resources }}</textarea>
+<textarea id="res" name="resources" class="ta" rows="2">{{ resources }}</textarea>
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
 
@@ -39,6 +39,6 @@
 </div>
 {%- endif %}
 {% include "partials/backlinks.html" %}
-<form method="post" action="/learn/{{ slug }}/delete" hx-post="/learn/{{ slug }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="util" type="submit" title="Ratings go with it; its ? lines go back to the inbox">Delete topic</button></form>
+<form method="post" action="/learn/{{ slug }}/delete" hx-post="/learn/{{ slug }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Ratings go with it; its ? lines go back to the inbox">Delete topic</button></form>
 </main>
 {% endblock %}

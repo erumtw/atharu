@@ -61,7 +61,7 @@ async fn parse_error_is_422_and_keeps_input() {
 }
 
 #[tokio::test]
-async fn delete_removes_and_offers_relog() {
+async fn delete_removes_and_offers_undo() {
     let st = state();
     post(
         &st,
@@ -73,7 +73,11 @@ async fn delete_removes_and_offers_relog() {
     let r = request(&st, "DELETE", "/entries/1", "", true).await;
     assert_eq!(r.status, 200);
     assert!(r.body.contains("Line deleted"));
-    assert!(r.body.contains("ship it by 2026-11-13\""), "{}", r.body);
+    assert!(
+        r.body.contains(r#"action="/entries/restore""#),
+        "{}",
+        r.body
+    );
     assert_eq!(count(&st, "SELECT COUNT(*) FROM entries"), 0);
 
     post(&st, "/entries", &form(&[("line", "again")]), false).await;
@@ -136,4 +140,50 @@ async fn preview_returns_kind_and_key() {
     );
     let r = post(&st, "/parse-preview", &form(&[("line", "  ")]), true).await;
     assert_eq!(r.body, "");
+}
+
+/// The Undo form's hidden snapshot, unescaped the way a browser would post it back.
+fn snap(body: &str) -> String {
+    let at = body.find("name=\"snap\" value=\"").expect("undo form") + 19;
+    let raw = &body[at..at + body[at..].find('"').unwrap()];
+    raw.replace("&#34;", "\"")
+        .replace("&#39;", "'")
+        .replace("&#38;", "&")
+}
+
+#[tokio::test]
+async fn undo_restores_the_exact_row() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO epics(key) VALUES ('OPS-7');
+         INSERT INTO meetings(id, day, name, ended_at) VALUES (3, '2026-11-09', 'oms-sync', '2026-11-09 10:00:00');
+         INSERT INTO meetings(id, day, name) VALUES (4, '2026-11-11', 'now-running');
+         INSERT INTO entries(id, day, epic_key, meeting_id, kind, text, plan_state, closed_day, pinned, due, author)
+           VALUES (42, '2026-11-09', 'OPS-7', 3, 'plan', 'ship it', 'done', '2026-11-10', 1, '2026-11-12', 'claude');",
+    );
+    let row = "SELECT json_array(id, day, epic_key, meeting_id, kind, topic, text, plan_state,
+                 closed_day, pinned, due, link, created_at, author) FROM entries";
+    let before: String = st.conn().query_row(row, [], |r| r.get(0)).unwrap();
+
+    let r = request(&st, "DELETE", "/entries/42", "", true).await;
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM entries"), 0);
+    let r = post(
+        &st,
+        "/entries/restore",
+        &form(&[("snap", &snap(&r.body))]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    let after: String = st.conn().query_row(row, [], |r| r.get(0)).unwrap();
+    assert_eq!(after, before);
+}
+
+#[tokio::test]
+async fn editing_a_missing_line_leaves_no_stub_epic() {
+    let st = state();
+    let r = post(&st, "/entries/99", &form(&[("line", "NEW-1 ghost")]), true).await;
+    assert_eq!(r.status, 404);
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM epics"), 0);
 }

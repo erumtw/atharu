@@ -6,6 +6,9 @@ use askama::Template;
 pub struct Page {
     pub layout: Layout,
     pub looks: &'static [Look],
-    /// Slider `min`: the current look's AA floor (%).
-    pub glass_floor: u8,
+    /// The picked look: its AA floor is where the slider stops (and the hatched part ends).
+    pub cur: &'static Look,
+    /// Connections rows: on/off only, from data/config.toml; never the URL or token.
+    pub google: bool,
+    pub jira: bool,
 }

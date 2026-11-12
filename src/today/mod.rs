@@ -18,6 +18,7 @@ pub fn routes() -> Router<AppState> {
             "/entries/{id}",
             delete(handlers::delete).post(handlers::edit),
         )
+        .route("/entries/restore", post(handlers::restore))
         .route("/entries/{id}/edit", get(handlers::edit_form))
         .route("/entries/{id}/delete", post(handlers::delete))
         .route("/parse-preview", post(handlers::preview))

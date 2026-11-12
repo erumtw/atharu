@@ -15,7 +15,7 @@
 {%- if d.logged > 0 %}<a class="logdot" href="/?day={{ d.iso }}">● {{ d.logged }} line{% if d.logged != 1 %}s{% endif %}</a>{% endif %}
 {%- for i in d.items %}
 {%- if let Some(h) = i.href %}
-<a class="ev {{ i.class }}" href="{{ h }}"{% if i.late %} style="color: #b3261e"{% endif %}>{{ i.text }}{% if let Some(s) = i.sub %}<br><span class="muted">{{ s }}</span>{% endif %}</a>
+<a class="ev {{ i.class }}{% if i.late %} late{% endif %}" href="{{ h }}">{{ i.text }}{% if let Some(s) = i.sub %}<br><span class="muted">{{ s }}</span>{% endif %}</a>
 {%- else %}
 <div class="ev {{ i.class }} evrow"><form class="inline" method="post" action="/meetings"><input type="hidden" name="name" value="{{ i.text }}"><input type="hidden" name="back" value="/"><button class="evbtn" type="submit" title="Start meeting mode">{% if let Some(t) = i.time %}{{ t }} {% endif %}{{ i.text }}</button></form>
 {%- if let Some(id) = i.own_id %}<form class="inline" method="post" action="/calendar/events/{{ id }}/delete" hx-post="/calendar/events/{{ id }}/delete" hx-target="#cal" hx-swap="outerHTML"><input type="hidden" name="week" value="{{ cal.week }}"><input type="hidden" name="view" value="{{ cal.view() }}"><button class="x" type="submit" title="Delete event" aria-label="Delete event">×</button></form>{% endif %}</div>

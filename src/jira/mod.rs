@@ -149,11 +149,7 @@ struct Back {
 
 /// "Refresh" on /epics. Plain form, 303 back; a failure says so on the page it returns to.
 async fn refresh_button(State(st): State<AppState>, Form(f): Form<Back>) -> AppResult<Response> {
-    // Only local paths, so the form can't be turned into an open redirect.
-    let back = f
-        .back
-        .filter(|b| b.starts_with('/') && !b.starts_with("//"))
-        .unwrap_or("/epics".into());
+    let back = web::safe_back(f.back.as_deref(), "/epics").to_string();
     Ok(match refresh(&st).await {
         Err(e) => {
             eprintln!("jira refresh: {e}");

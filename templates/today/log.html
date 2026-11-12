@@ -7,7 +7,7 @@
 {%- endif %}
 {%- for g in groups %}
 {%- if let Some(key) = g.key %}
-<h4><a href="/epics/{{ key }}"><span class="chip key">{{ key }}</span></a> {% if g.title.is_empty() %}<span class="muted" style="font-weight: 400">no title yet ·</span> <a class="small" href="/epics" style="font-weight: 400">name it</a>{% else %}{{ g.title }}{% endif %}</h4>
+<h4><a href="/epics/{{ key }}"><span class="chip key">{{ key }}</span></a> {% if g.title.is_empty() %}<span class="muted normal">no title yet ·</span> <a class="small normal" href="/epics">name it</a>{% else %}{{ g.title }}{% endif %}</h4>
 {%- else %}
 <h4 class="muted">Not filed under an epic</h4>
 {%- endif %}
