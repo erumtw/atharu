@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.1.2 — 2026-11-12
+
+### Features
+
+- popover picks a meeting series from a menu, not pills
+- Today groups lines by type too
+
+### Other
+
+- Merge pull request #3 from erumtw/feat/worklog
+- merge: main (v0.1.1 tag) back into feat/worklog
+- wip: T91 UX review on real data: line rows, wrapping titles, sidebar clips
+
 ## v0.1.1 — 2026-11-12
 
 ### Features
