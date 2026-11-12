@@ -27,6 +27,8 @@
   --dark: #272729;           /* meeting banner + impact callout: white on it 14.9:1 */
   --on-dark-muted: #cccccc;  /* muted text on --dark: 9.3:1 */
   --fill-3: #fafafc;         /* table row hover, calendar heads, toast */
+  --ctl-edge: #8e8e93;       /* unchecked control rings: 3.3:1 on white, the 3:1 floor for non-text UI */
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.2 6.4 5 9.1 9.8 3.2' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --faint: #b0b0b5;          /* dashed rules and out-of-month day numbers, never body text */
   --chrome-bg: #eef0f5;      /* behind the sheet when no look is set */
   --muted-look: #5e5e63;     /* --muted on a look's wallpaper */

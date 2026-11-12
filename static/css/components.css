@@ -49,9 +49,18 @@ a:hover>.chip{background:var(--sep)}
 .tick{color:var(--accent)}
 .ink{color:var(--ink)}
 .saved{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
-.check{width:18px;height:18px;accent-color:var(--accent);margin:0;flex:none;cursor:pointer;border-radius:4px}
+/* To-do check = Apple Reminders circle, not the native square (owner, 2026-11-12). Ring is --ctl-edge, not --faint:
+   non-text UI needs 3:1 on white (WCAG 1.4.11), --faint is 2.1. The tick is a mask, so it takes the fill colour. */
+.check{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin:0;flex:none;cursor:pointer;border-radius:50%;
+  border:1.5px solid var(--ctl-edge);background:#fff;display:inline-grid;place-content:center;transition:transform .1s,background-color .15s}
+.check::after{content:"";width:12px;height:12px;background:#fff;transform:scale(0);transition:transform .15s;
+  -webkit-mask:var(--tick) center/contain no-repeat;mask:var(--tick) center/contain no-repeat}
+.check:checked{background:var(--accent);border-color:var(--accent)}
+.check:checked::after{transform:scale(1)}
 .check:hover{box-shadow:0 0 0 4px rgba(0,0,0,.05)}
-.check:disabled{cursor:not-allowed}
+.check:active{transform:scale(.96)}
+.check:disabled{cursor:not-allowed;opacity:.45}
+@media (prefers-contrast:more){.check{border-color:var(--ink)}}
 .done-text{text-decoration:line-through;color:var(--muted)}
 .due{font-size:12px;color:var(--muted);white-space:nowrap}.due.late{color:var(--err);font-weight:600}
 .meter{display:inline-flex;gap:3px}
@@ -167,7 +176,8 @@ input[list]::-webkit-calendar-picker-indicator{display:none !important}
 .seg button:disabled{opacity:.45;cursor:not-allowed}
 .crumb .seg{height:32px}.crumb .seg button{height:26px}
 
-.menu{position:absolute;width:260px;box-sizing:border-box;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px;z-index:3}
+/* Tiptap mounts the menu on <body>, outside .wl, so it restates .wl's type (else Times, black). */
+.menu{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:var(--ink);line-height:1.47;letter-spacing:-.2px;position:absolute;width:260px;box-sizing:border-box;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px;z-index:3}
 .menu [role=option]{padding:0 10px;min-height:32px;display:flex;align-items:center;gap:10px;border-radius:8px;cursor:pointer}
 .menu [role=option]:hover{background:rgba(0,0,0,.04)}
 .menu [aria-selected=true]{background:var(--accent-wash)}
@@ -261,6 +271,7 @@ form.inline{display:inline}
   .drawbar{top:8px;left:8px;right:8px;justify-content:space-between;padding:0 4px}
   .drawbar .btn{height:44px}
   .drawbar .ghost{order:-1}
+  .drawbar .saved .more{display:none}
   /* Excalidraw's top toolbar moves below our full-width bar. */
   .drawsheet .App-top-bar{margin-top:52px}
 }

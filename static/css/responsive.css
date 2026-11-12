@@ -30,6 +30,7 @@ pre{max-width:100%;overflow-x:auto}
 }
 
 @media (max-width:639px){
+  .check{width:24px;height:24px}.check::after{width:14px;height:14px}
   .m-pop:not(:popover-open){display:none}
   /* iOS zooms into inputs under 16 px; max() keeps bigger ones (the title input) as they are. */
   /* !important: .fld.s / .fld.m / .dnav input set 13–14px at higher specificity; no field may undercut this. */
