@@ -1,6 +1,7 @@
 //! `/epics` list grouped by OKR and `/epics/{key}`: properties (autosave), evidence, impact line, timeline.
 mod handlers;
-mod queries;
+// The agent CLI reads and upserts epics through these (one validation path).
+pub(crate) mod queries;
 mod view;
 
 use crate::app::AppState;

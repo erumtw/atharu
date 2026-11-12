@@ -1,13 +1,26 @@
 use anyhow::Context;
-use atharu::{app, config, db, dump};
+use atharu::{app, cli, config, db, dump};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let (cmd, cfg) =
         config::Config::from_env_and_args(std::env::args().skip(1)).map_err(anyhow::Error::msg)?;
-    let conn = db::open(&cfg.db).with_context(|| format!("open {}", cfg.db.display()))?;
+    let mut conn = db::open(&cfg.db).with_context(|| format!("open {}", cfg.db.display()))?;
 
     match cmd {
+        config::Command::Cli(args) => {
+            let agent = std::env::var("ATHARU_AGENT").ok();
+            let today = chrono::Local::now().date_naive();
+            let code = cli::run(
+                &mut conn,
+                today,
+                &args,
+                agent.as_deref(),
+                &mut std::io::stdout(),
+                &mut std::io::stderr(),
+            );
+            std::process::exit(code);
+        }
         config::Command::Dump => {
             let out = cfg.data_dir().join("dump.sql");
             dump::write(&conn, &out).with_context(|| format!("dump to {}", out.display()))?;

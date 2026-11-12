@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block side %}{% include "notes/side.html" %}{% endblock %}
+{% block crumb_extra %}<form class="row" style="margin-left: auto" method="post" action="/notes"><button class="btn" type="submit">New note</button></form>{% endblock %}
+{% block content %}
+<main class="doc">
+<h1 class="ptitle">Notes</h1>
+{%- if side.mine.is_empty() && side.agents.is_empty() %}
+<span class="small muted">No notes yet.</span>
+<form method="post" action="/notes"><button class="btn" type="submit">New note</button></form>
+{%- else %}
+{%- let found = mine.len() + agents.len() %}
+<form role="search" class="newline" style="position: static; box-shadow: none" method="get" action="/notes"><span class="muted" aria-hidden="true">⌕</span><input name="q" value="{{ q }}" placeholder="Search notes" aria-label="Search notes">{% if !q.is_empty() %}<span class="small muted">{{ found }} result{% if found != 1 %}s{% endif %}</span>{% endif %}</form>
+{%- if found == 0 %}
+<p class="small muted">No notes match ‘{{ q }}’.</p>
+{%- endif %}
+{%- if !mine.is_empty() %}
+
+<h3>Mine</h3>
+<div class="blocks">
+{%- for r in mine %}
+{% include "notes/row.html" %}
+{%- endfor %}
+</div>
+{%- endif %}
+{%- if !agents.is_empty() %}
+
+<h3>Written by LLM</h3>
+<div class="blocks">
+{%- for r in agents %}
+{% include "notes/row.html" %}
+{%- endfor %}
+</div>
+{%- endif %}
+{%- endif %}
+</main>
+{% endblock %}

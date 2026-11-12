@@ -12,6 +12,7 @@
 <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":false}]}'>
 <script src="/static/js/htmx.min.js" defer></script>
 <script src="/static/js/copy.js" defer></script>
+{%- block head %}{% endblock %}
 </head>
 <body>
 <div class="wl">
@@ -24,6 +25,7 @@
 <a href="/report"{% if layout.nav == "report" %} class="on"{% endif %}>Report</a>
 <a href="/meetings"{% if layout.nav == "meetings" %} class="on"{% endif %}>Meetings</a>
 <a href="/learn"{% if layout.nav == "learn" %} class="on"{% endif %}>Learn</a>
+<a href="/notes"{% if layout.nav == "notes" %} class="on"{% endif %}>Notes</a>
 {%- block side %}{% endblock %}
 {%- if !layout.epics.is_empty() %}
 <div class="lbl">Active epics</div>

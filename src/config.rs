@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 pub enum Command {
     Serve,
     Dump,
+    /// Agent CLI: the subcommand and everything after it (see `cli`).
+    Cli(Vec<String>),
 }
 
 pub struct Config {
@@ -28,11 +30,16 @@ impl Config {
         let mut args = args;
         while let Some(a) = args.next() {
             match a.as_str() {
+                c if crate::cli::COMMANDS.contains(&c) => {
+                    // The CLI parses its own flags; `--db` must come before the subcommand.
+                    cmd = Command::Cli(std::iter::once(a).chain(args).collect());
+                    break;
+                }
                 "dump" => cmd = Command::Dump,
                 "-db" | "--db" => cfg.db = args.next().ok_or("--db needs a path")?.into(),
                 other => {
                     return Err(format!(
-                        "unknown argument {other:?}; usage: atharu [dump] [--db PATH]"
+                        "unknown argument {other:?}; usage: atharu [--db PATH] [dump | log | epic | today | show]"
                     ));
                 }
             }

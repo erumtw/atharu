@@ -244,6 +244,7 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
         day,
         // Stored as local `YYYY-MM-DD HH:MM:SS`; the page only needs the time.
         ended: m.ended_at.map(|t| t.get(11..16).unwrap_or(&t).to_string()),
+        mentions: queries::mentions(&conn, &m.name)?,
         name: m.name,
         notes: m.notes,
         today: st.today(),

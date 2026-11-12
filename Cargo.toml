@@ -8,9 +8,11 @@ anyhow = "1.0.104"
 askama = "0.16.1"
 axum = "0.8.9"
 chrono = "0.4.45"
+pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
 rusqlite = { version = "0.42.0", features = ["bundled"] }
 rust-embed = { version = "8.14.0", features = ["mime-guess"] }
 serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", default-features = false, features = ["std"] }
 tokio = { version = "1.54.1", features = ["full"] }
 
 [dev-dependencies]

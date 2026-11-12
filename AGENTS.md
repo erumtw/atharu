@@ -1,0 +1,92 @@
+# Atharu: notes for coding agents (Claude Code, Codex, ...)
+
+Atharu is the owner's personal work log: one Rust binary serving http://127.0.0.1:7070, SQLite at
+`data/atharu.db` (gitignored; it holds work data, never commit or paste it elsewhere). Spec:
+`docs/superpowers/specs/2026-09-28-atharu-design.md`. `AGENTS.md` is a copy of this file; keep them identical.
+
+## Reading
+
+Read anything with `sqlite3 data/atharu.db` (e.g. `.tables`, `.schema entries`, `SELECT …`). Reads are always fine.
+
+Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row):
+
+| table | what | key columns |
+|---|---|---|
+| `entries` | one logged line | `id`, `day` (YYYY-MM-DD), `epic_key`, `meeting_id`, `kind` (done · decision · blocker · impact · learn · plan), `topic` (learn only), `text`, `plan_state` (open · done · dropped, plans only), `closed_day`, `pinned`, `due`, `link`, `author` |
+| `epics` | a Jira key the owner tracks | `key` (FK-123), `title`, `role` (owner · contributor), `okr`, `status` (active · done · dropped), `start`, `target`, `done_on`, `metric`, `before`, `after`, `author` |
+| `evidence` | links proving an epic's impact | `epic_key`, `url`, `note`, `author` |
+| `meetings` | meeting mode; `name` is a series slug (oms-sync) | `id`, `day`, `name`, `notes`, `ended_at` (NULL = running) |
+| `topics` | learn pages, **the owner's own understanding** | `slug`, `summary`, `own_words`, `resources` |
+| `depth_ratings` | append-only self-rating 1 heard of · 2 can explain · 3 can build w/o AI · 4 can teach | `topic`, `day`, `depth` |
+| `notes` | markdown notes; `[[X]]` links a page | `id`, `title`, `body`, `author`, `updated_at` |
+| `events` | calendar events | `source` (own · google), `title`, `starts_at`, `ends_at` |
+
+`[[X]]` in a note resolves in this order: epic key (`OPS-101`) → `/epics/X`, existing topic slug → `/learn/X`,
+existing meeting name → `/meetings?name=X`, else nothing (a dead link).
+
+## Line grammar (what `atharu log` and the capture bar accept)
+
+`[EPIC-KEY] [prefix] text [link] [by <when>]`
+
+| prefix | kind | example |
+|---|---|---|
+| none | done | `OPS-101 shipped index migration` |
+| `!` | decision | `OPS-101 ! keep sync path, no queue` |
+| `x ` | blocker | `OPS-101 x waiting on DBA` |
+| `+` | impact | `OPS-101 + p95 1.8s → 0.6s` |
+| `?` | learn | `? vector-search: HNSW trades recall for speed` (`slug:` sets the topic) |
+| `>` | plan / to-do | `> reply to vendor https://… by fri` |
+
+- The key is optional and must be the first token (`^[A-Z][A-Z0-9]*-\d+$`); an unknown key creates a stub epic.
+- The first `http(s)://` token is saved as `link` (and stays in the text).
+- `by <when>` only on `>` lines: `today`, `tomorrow`, a weekday (`fri`, today counts), `20 Nov`, `2026-11-20`.
+- `xml parser fixed` is a done line: `x` is a prefix only when followed by a space.
+
+## Write rules
+
+| You may | You must not |
+|---|---|
+| read everything | write `topics` or `depth_ratings` |
+| write `entries` and `epics` **only through the `atharu` CLI**, as yourself (`--as <your name>`) | write any table with raw SQL |
+| suggest `[[X]]` links in chat for the owner's notes | edit or delete rows with `author = 'me'` |
+| | rate depth or write "own words": depth only means something if it is the owner's |
+
+Asked for something the CLI can't do yet (evidence, to-do done/pin/drop, meetings, topics, notes, events, report):
+say "atharu has no command for that yet", suggest the command (e.g. `atharu evidence OPS-101 <url> --as claude`),
+and stop. Never fall back to SQL writes.
+
+## CLI
+
+Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No server needed; it writes the same
+`data/atharu.db` (`--db PATH` before the command, or `ATHARU_DB`, picks another file).
+
+```sh
+atharu log "<line>" [--day YYYY-MM-DD] --as claude        # one line, same grammar as above
+atharu epic <KEY|jira-url> [--title …] [--okr …] --as claude  # upsert; key from …/browse/ABC-123
+atharu today [--day YYYY-MM-DD]                             # that day's lines + open plans
+atharu show <KEY|jira-url>                                  # epic + evidence + timeline
+```
+
+- Every write needs `--as <agent>` or `ATHARU_AGENT=<agent>`: a lowercase slug (`claude`, `codex`). `me` is refused.
+- `epic` never overwrites a field the owner set: it only fills an empty title / OKR.
+- Output: one JSON document on stdout (camelCase keys; a referenced epic is nested as `epic{key, …}`).
+- Exit codes: `0` saved/printed · `1` rejected, with the app's own message on stderr (e.g.
+  `Nothing after “+”. Type what happened.`, `Can't read date ‘someday’`) · `2` usage, incl. a missing `--as`
+  (`Say who is writing: --as claude`).
+- What you file shows in the app with your name as a badge, and the report marks it `(via claude)`.
+
+Prompts for the common jobs: `.claude/commands/{log,query,lint,ingest}.md`.
+
+## Working on the code
+
+- `export PATH=/opt/homebrew/opt/rustup/bin:$PATH` (rustup is keg-only here).
+- Check before every commit: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`.
+- Layout: vertical slices (`src/<feature>/{mod,handlers,queries,view}.rs`) + pure `src/domain/`. `domain/` imports
+  no feature; features never import each other; SQL only in a slice's `queries.rs`; HTML only in `templates/`;
+  every htmx action returns one partial and also works as a plain form POST (303 back). `src/cli/` is an entry
+  point like `app.rs` and may call slices' queries.
+- Schema changes: a new `migrations/00N_*.sql` appended in `src/db.rs`; never edit a shipped one.
+- Notes editor: `editor/` (pinned Tiptap, esbuild) builds the committed `static/js/editor.js`:
+  `cd editor && npm ci && node build.mjs`.
+- JSON (HTTP and CLI): camelCase keys, references nested (`epic{key, title}`), HTTP collections as
+  `data.<resource>[]`; query params snake_case.

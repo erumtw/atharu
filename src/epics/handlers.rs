@@ -145,6 +145,7 @@ fn live(
             id: r.id,
             url: r.url,
             note: r.note,
+            author: r.author,
         })
         .collect();
     let urls: Vec<String> = evidence.iter().map(|v| v.url.clone()).collect();
@@ -195,6 +196,7 @@ fn render_page(
                 kind: r.kind,
                 topic: r.topic,
                 text: r.text,
+                author: r.author,
             });
         }
     }
@@ -225,6 +227,7 @@ fn render_page(
             target: e.target.unwrap_or_default(),
             done_on: e.done_on.unwrap_or_default(),
         },
+        mentions: queries::mentions(&conn, key)?,
         live,
         timeline,
         save_error,

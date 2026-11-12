@@ -11,6 +11,7 @@ pub struct Row {
     pub topic: Option<String>,
     pub text: String,
     pub meeting: Option<String>,
+    pub author: String,
 }
 
 pub struct Group {

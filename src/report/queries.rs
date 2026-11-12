@@ -43,12 +43,13 @@ pub struct Notable {
     pub text: String,
     /// Meeting it was logged in, shown as `(oms-sync)`.
     pub meeting: Option<String>,
+    pub author: String,
 }
 
 /// Impact, decisions, blockers in range: epics by key then unfiled; inside an epic impact → decision → blocker, oldest first.
 pub fn notable(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<Notable>> {
     let mut stmt = conn.prepare(
-        "SELECT e.epic_key, COALESCE(ep.title, ''), e.kind, e.text, m.name
+        "SELECT e.epic_key, COALESCE(ep.title, ''), e.kind, e.text, m.name, e.author
          FROM entries e LEFT JOIN epics ep ON ep.key = e.epic_key
          LEFT JOIN meetings m ON m.id = e.meeting_id
          WHERE e.day BETWEEN ?1 AND ?2 AND e.kind IN ('impact', 'decision', 'blocker')
@@ -62,6 +63,7 @@ pub fn notable(conn: &Connection, from: &str, to: &str) -> rusqlite::Result<Vec<
             kind: r.get(2)?,
             text: r.get(3)?,
             meeting: r.get(4)?,
+            author: r.get(5)?,
         })
     })?
     .collect()

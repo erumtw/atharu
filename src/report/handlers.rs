@@ -92,6 +92,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
             label: label(&n.kind),
             text: n.text,
             meeting: n.meeting,
+            via: (n.author != "me").then_some(n.author),
         };
         // Rows come sorted by epic, so a new key always means a new section.
         match sections.last_mut() {

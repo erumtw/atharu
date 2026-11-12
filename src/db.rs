@@ -2,7 +2,10 @@ use rusqlite::Connection;
 use std::path::Path;
 
 /// Ordered; index + 1 = the `user_version` after applying it. Append only, never edit a shipped one.
-const MIGRATIONS: &[&str] = &[include_str!("../migrations/001_init.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("../migrations/001_init.sql"),
+    include_str!("../migrations/002_author.sql"),
+];
 
 pub fn open(path: &Path) -> rusqlite::Result<Connection> {
     if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
@@ -19,6 +22,8 @@ pub fn open_in_memory() -> rusqlite::Result<Connection> {
 fn prepare(conn: Connection) -> rusqlite::Result<Connection> {
     // Off by default in SQLite and per connection: without it ON DELETE CASCADE / SET NULL do nothing.
     conn.pragma_update(None, "foreign_keys", "ON")?;
+    // The CLI writes while the server holds its own connection: wait for the lock, don't fail.
+    conn.busy_timeout(std::time::Duration::from_secs(5))?;
     migrate(&conn)?;
     Ok(conn)
 }

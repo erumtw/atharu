@@ -13,7 +13,7 @@
 <h3>Evidence</h3>
 <div class="blocks">
 {%- for v in live.evidence %}
-<div class="blk">•<a href="{{ v.url }}" rel="noopener noreferrer" target="_blank">{{ v.url }}</a>{% if !v.note.is_empty() %}<span class="small muted">{{ v.note }}</span>{% endif %}<form class="inline" style="margin-left: auto" method="post" action="/epics/{{ live.key }}/evidence/{{ v.id }}/delete" hx-delete="/epics/{{ live.key }}/evidence/{{ v.id }}" hx-target="#live" hx-swap="outerHTML"><button class="x" type="submit" title="Delete evidence" aria-label="Delete evidence">×</button></form></div>
+<div class="blk">•<a href="{{ v.url }}" rel="noopener noreferrer" target="_blank">{{ v.url }}</a>{% if !v.note.is_empty() %}<span class="small muted">{{ v.note }}</span>{% endif %}{% let row = v %}{% include "partials/author.html" %}<form class="inline" style="margin-left: auto" method="post" action="/epics/{{ live.key }}/evidence/{{ v.id }}/delete" hx-delete="/epics/{{ live.key }}/evidence/{{ v.id }}" hx-target="#live" hx-swap="outerHTML"><button class="x" type="submit" title="Delete evidence" aria-label="Delete evidence">×</button></form></div>
 {%- endfor %}
 <form class="blk" method="post" action="/epics/{{ live.key }}/evidence" hx-post="/epics/{{ live.key }}/evidence" hx-target="#live" hx-swap="outerHTML"><span class="muted">+</span><input class="pin{% if live.ev_error.is_some() %} bad{% endif %}" name="line" value="{{ live.ev_line }}" placeholder="Add evidence: paste a link, then a note after a space" aria-label="Add evidence link"></form>
 {%- if let Some(e) = live.ev_error %}

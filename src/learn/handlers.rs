@@ -128,6 +128,7 @@ pub async fn page(State(st): State<AppState>, Path(slug): Path<String>) -> AppRe
         summary: t.summary,
         own_words: t.own_words,
         resources: t.resources,
+        mentions: queries::mentions(&conn, &slug)?,
         lines,
         slug,
     })

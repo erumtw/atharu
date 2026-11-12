@@ -1,0 +1,12 @@
+{%- if !side.mine.is_empty() %}
+<div class="lbl">Mine</div>
+{%- for n in side.mine %}
+<a class="sub{% if n.id == side.on %} on{% endif %}" href="/notes/{{ n.id }}">{{ n.title }}</a>
+{%- endfor %}
+{%- endif %}
+{%- if !side.agents.is_empty() %}
+<div class="lbl">Written by LLM</div>
+{%- for n in side.agents %}
+<a class="sub{% if n.id == side.on %} on{% endif %}" href="/notes/{{ n.id }}">{{ n.title }}</a>
+{%- endfor %}
+{%- endif %}
