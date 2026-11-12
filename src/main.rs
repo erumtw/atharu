@@ -5,6 +5,18 @@ use atharu::{app, cli, config, db, dump};
 async fn main() -> anyhow::Result<()> {
     let (cmd, cfg) =
         config::Config::from_env_and_args(std::env::args().skip(1)).map_err(anyhow::Error::msg)?;
+    if let config::Command::Cli(args) = &cmd
+        && matches!(args[0].as_str(), "version" | "update")
+    {
+        let repo = cli::update::repo();
+        let code = cli::update::run(
+            args,
+            repo.as_ref(),
+            &mut std::io::stdout(),
+            &mut std::io::stderr(),
+        );
+        std::process::exit(code);
+    }
     let mut conn = db::open(&cfg.db).with_context(|| format!("open {}", cfg.db.display()))?;
 
     match cmd {
