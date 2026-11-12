@@ -1,7 +1,8 @@
 {#- A line's note button (D49), first in the row's right cluster. Needs `line_id` and `note_ref`
-    (Option<&domain::entry::NoteRef>). Has a note = a link, always shown; none = one plain POST that makes it. -#}
+    (Option<&domain::entry::NoteRef>). Has a note = a link, always shown; none = one plain POST that makes it.
+    The icon is inline: the sprite's version (`<use>` + CSS vars in the symbol) drew nothing in the Mac app's WKWebView. -#}
 {%- if let Some(n) = note_ref -%}
-<a class="ib note has" href="/notes/{{ n.id }}" aria-label="Open note: {{ n.label() }}" title="Open note"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#note"/></svg></a>
+<a class="ib note has" href="/notes/{{ n.id }}" aria-label="Open note: {{ n.label() }}" title="Open note"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="pg" d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h6M9 16h4"/></svg></a>
 {%- else -%}
-<form class="inline" method="post" action="/entries/{{ line_id }}/note"><button class="ib note" type="submit" aria-label="Add a note to this line" title="Add a note"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#note"/></svg></button></form>
+<form class="inline" method="post" action="/entries/{{ line_id }}/note"><button class="ib note" type="submit" aria-label="Add a note to this line" title="Add a note"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="pg" d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h6M9 16h4"/></svg></button></form>
 {%- endif -%}
