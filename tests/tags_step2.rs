@@ -201,8 +201,9 @@ async fn one_name_one_hub_and_links() {
     assert!(b.contains("profile v2 keeps nested supplier"));
     assert!(!b.contains("unrelated line"));
     assert!(b.contains("3 lines · 1 meeting · last used today"), "{b}");
+    assert!(b.contains("in a note lands here."));
 
-    // [[X]] → epic → topic → meeting → tag hub.
+    // [[X]] → epic → tag hub → topic → meeting (D45: a shared name lands on the hub).
     log(&st, "booked #expense review").await;
     post(&st, "/notes", "", false).await;
     post(
@@ -214,7 +215,8 @@ async fn one_name_one_hub_and_links() {
     .await;
     let n = get(&st, "/notes/1").await.body;
     assert!(n.contains(r#"href="/tags/expense""#), "{n}");
-    assert!(n.contains(r#"href="/learn/cms-profile""#));
+    assert!(n.contains(r#"href="/tags/cms-profile""#), "{n}");
+    assert!(!n.contains(r#"href="/learn/cms-profile""#));
     assert!(!n.contains(r#"href="/tags/nothing""#));
     // Notes filter.
     post(&st, "/notes", "", false).await;

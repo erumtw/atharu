@@ -265,8 +265,8 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
   `.cols`, one on phone) · Coming up (own events with the tag; Google events matched by a title word, marked "matched by word" in
   `--muted`, never stored). Inherited lines carry "via `OPS-140`" (`.via`).
 - **One name, one hub**: a tag, topic and meeting series with the same name share the page; a `.callout` says so and the topic
-  (depth meter, own words) and series rows sit in the props. `[[X]]` resolves epic → topic → series → tag (so a shared name lands
-  on the topic first; the hub's callout says where).
+  (depth meter, own words) and series rows sit in the props. `[[X]]` resolves epic → tag → topic → series (D45: a shared name lands
+  on the hub; the callout says so).
 - **Tags list** under Track (sidebar `#` icon after Report): Find field, `.seg` Most used | Recent | A–Z, table Tag · Lines · Open
   to-dos · Last used · Tagged by; counts include inherited lines.
 - **Filter row** (GET `?tag=`, any-of for a comma list) on To-dos, Today, Notes, Calendar, Report: "Tag" label + `.chip.tag.fl` chips +

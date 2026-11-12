@@ -20,7 +20,7 @@
 {%- endif %}
 <h1 class="ptitle" style="margin-top: 0"><span class="hash">#</span>{{ tag }}</h1>
 {%- if merged() %}
-<div class="callout"><div style="display: flex; flex-direction: column; gap: 4px"><b>One name, one page</b><span class="small">The tag <span class="chip tag">{{ tag }}</span>{% if topic.is_some() %}, the topic <span class="mono">{{ tag }}</span>{% endif %}{% if series.is_some() %} and the meeting series <span class="chip">{{ tag }}</span>{% endif %} share this hub. <span class="mono">[[{{ tag }}]]</span> in a note lands {% if topic.is_some() %}on the topic{% else if series.is_some() %}on the series{% else %}here{% endif %}.</span></div></div>
+<div class="callout"><div style="display: flex; flex-direction: column; gap: 4px"><b>One name, one page</b><span class="small">The tag <span class="chip tag">{{ tag }}</span>{% if topic.is_some() %}{% if series.is_some() %},{% else %} and{% endif %} the topic <span class="mono">{{ tag }}</span>{% endif %}{% if series.is_some() %} and the meeting series <span class="chip">{{ tag }}</span>{% endif %} share this hub. <span class="mono">[[{{ tag }}]]</span> in a note lands here.</span></div></div>
 {%- endif %}
 {%- if is_empty() %}
 <p class="small muted">Nothing is tagged <span class="mono">#{{ tag }}</span> yet. Type <span class="mono">#{{ tag }}</span> in a line or a note, or add it to an epic’s Tags.</p>

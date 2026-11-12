@@ -137,6 +137,56 @@ async fn field_patch_persists_only_that_field() {
 }
 
 #[tokio::test]
+async fn target_before_start_is_refused() {
+    let st = state();
+    seed(&st);
+    let msg = "Target can&#39;t be before the start.";
+    // Start alone after the stored target (14 Nov) is backwards too.
+    let r = request(
+        &st,
+        "PATCH",
+        "/epics/OPS-101",
+        &form(&[("start", "2026-11-20")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 422);
+    assert!(r.body.contains(msg), "{}", r.body);
+    let r = post(
+        &st,
+        "/epics/OPS-101",
+        &form(&[("start", "2026-11-01"), ("target", "2026-10-30")]),
+        false,
+    )
+    .await;
+    assert_eq!(r.status, 422);
+    assert!(r.body.contains(msg));
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM epics WHERE key='OPS-101' AND start IS NULL AND target='2026-11-14'"
+        ),
+        1
+    );
+    // Same day is fine; the picker gets the bounds.
+    let r = request(
+        &st,
+        "PATCH",
+        "/epics/OPS-101",
+        &form(&[("start", "2026-11-14"), ("target", "2026-11-14")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    let b = get(&st, "/epics/OPS-101").await.body;
+    assert!(
+        b.contains(r#"name="start" value="2026-11-14" max="2026-11-14""#),
+        "{b}"
+    );
+    assert!(b.contains(r#"name="target" value="2026-11-14" min="2026-11-14""#));
+}
+
+#[tokio::test]
 async fn evidence_add_and_delete() {
     let st = state();
     seed(&st);

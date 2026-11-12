@@ -40,8 +40,9 @@ fn targets(body: &str) -> impl Iterator<Item = (usize, &str, usize)> {
     })
 }
 
-/// Where `[[X]]` points: epic key → epic, else an existing topic, else an existing meeting series,
-/// else a tag in use → its hub (D29). `None` = renders as plain text (a dead link the page can point out).
+/// Where `[[X]]` points: epic key → epic, else a tag in use → its hub (D45: one name, one hub, which also
+/// shows the topic + series of that name), else an existing topic, else an existing meeting series.
+/// `None` = renders as plain text (a dead link the page can point out).
 pub fn href(
     x: &str,
     is_topic: impl Fn(&str) -> bool,
@@ -50,12 +51,12 @@ pub fn href(
 ) -> Option<String> {
     if is_epic_key(x) {
         Some(format!("/epics/{x}"))
+    } else if is_tag(x) {
+        Some(format!("/tags/{x}"))
     } else if is_topic(x) {
         Some(format!("/learn/{x}"))
     } else if is_meeting(x) {
         Some(format!("/meetings?name={x}"))
-    } else if is_tag(x) {
-        Some(format!("/tags/{x}"))
     } else {
         None
     }
@@ -82,12 +83,13 @@ mod tests {
     use super::*;
 
     fn resolve(x: &str) -> Option<String> {
-        // `oms-sync` is both a topic and a meeting: the topic wins; a tag only when nothing else is.
+        // `oms-sync` is a topic and a meeting (topic wins); `infra` is a topic, series and tag (the hub wins);
+        // `OPS-101` is also a tag, but an epic key always wins.
         href(
             x,
-            |s| ["vector-search", "oms-sync"].contains(&s),
-            |s| ["oms-sync", "standup"].contains(&s),
-            |s| ["expense", "standup"].contains(&s),
+            |s| ["vector-search", "oms-sync", "infra"].contains(&s),
+            |s| ["oms-sync", "standup", "infra"].contains(&s),
+            |s| ["expense", "infra", "OPS-101"].contains(&s),
         )
     }
 
@@ -99,6 +101,7 @@ mod tests {
             ("oms-sync", Some("/learn/oms-sync")),
             ("standup", Some("/meetings?name=standup")),
             ("expense", Some("/tags/expense")),
+            ("infra", Some("/tags/infra")),
             ("chekout", None),
             ("ops-101", None),
         ] {

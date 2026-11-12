@@ -167,9 +167,7 @@ input[list]::-webkit-calendar-picker-indicator{display:none !important}
 .capture .above>:empty{display:none}
 html[data-tint=tinted] .capture :is(.toast,.hint){border-color:var(--glass-edge)}
 html:not([data-glass=all]) .pg .capture :is(.toast,.hint){border-color:var(--line)}
-/* Legend (the `?` in the capsule, every width): a .menu panel as wide as the capsule, anchored 8px above it.
-   :not(:popover-open): .menu's display:flex would beat the UA rule that hides a closed popover. */
-.legend:not(:popover-open){display:none}
+/* Legend (the `?` in the capsule, every width): a .menu panel as wide as the capsule, anchored 8px above it. */
 .legend:popover-open{position:fixed;inset:auto;margin:0;position-anchor:--capture;left:anchor(left);right:anchor(right);bottom:calc(anchor(top) + 8px);
   width:auto;flex-direction:row;flex-wrap:wrap;gap:8px 16px;padding:12px 16px;border-radius:18px;color:var(--ink-2)}
 /* The legend takes the pills' slot: no glass on glass while it is open. */
@@ -221,6 +219,8 @@ html:not([data-glass=all]) .pg .capture :is(.toast,.hint){border-color:var(--lin
 
 /* Tiptap mounts the menu on <body>, outside .wl, so it restates .wl's type (else Times, black). */
 .menu{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:var(--ink);line-height:1.47;letter-spacing:-.2px;position:absolute;width:260px;box-sizing:border-box;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:2px;font-size:14px;z-index:3}
+/* display:flex above would beat the UA rule that hides a closed popover (it once left the hub ⋯ menu open on load). */
+.menu[popover]:not(:popover-open){display:none}
 .menu [role=option]{padding:0 10px;min-height:32px;display:flex;align-items:center;gap:10px;border-radius:8px;cursor:pointer}
 .menu [role=option]:hover{background:rgba(0,0,0,.04)}
 .menu [aria-selected=true]{background:var(--accent-wash)}
@@ -451,8 +451,6 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
    value carrier. "menu" brings the whole Liquid Glass recipe (rim, light, shadow, lens, RT/IC, --muted-tint), so looks.css needs no
    edit. A top-layer popover: fixed to the viewport, placed by the script (phone: the sheet below). */
 .dp{position:fixed;inset:auto;margin:0}
-/* .menu sets display:flex, which would beat the UA rule that hides a closed popover. */
-.dp:not(:popover-open){display:none}
 /* Floor 85%, not the menus' 60%: a month is 42 small numbers plus an accent ring and accent links. Measured (T75, half-covered ink
    pixel behind / darkest veiled wallpaper, each look at its glass floor): ink ≥ 13.58, --muted-tint ≥ 7.34, --accent ≥ 4.57 (Sumi,
    phone sheet over the backdrop dim), white on --accent 5.57 (7.12 tinted). At 60% --accent fell to 3.18. */

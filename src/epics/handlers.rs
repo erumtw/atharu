@@ -178,7 +178,7 @@ fn load(conn: &Connection, key: &str) -> AppResult<queries::EpicRow> {
 fn render_page(
     st: &AppState,
     key: &str,
-    save_error: bool,
+    save_error: Option<&'static str>,
     ev_line: String,
     ev_error: Option<String>,
 ) -> AppResult<view::Page> {
@@ -262,7 +262,7 @@ fn tag_field(conn: &Connection, tags: Vec<String>) -> rusqlite::Result<crate::la
 }
 
 pub async fn page(State(st): State<AppState>, Path(key): Path<String>) -> AppResult<Response> {
-    web::html(&render_page(&st, &key, false, String::new(), None)?)
+    web::html(&render_page(&st, &key, None, String::new(), None)?)
 }
 
 /// Turns submitted fields into column writes; `None` = some value is invalid (form can't produce it).
@@ -288,6 +288,21 @@ fn fields(form: &HashMap<String, String>) -> Option<Vec<(&'static str, Option<St
     Some(out)
 }
 
+const SAVE_FAILED: &str = "Couldn't save. Try again.";
+const TARGET_BEFORE_START: &str = "Target can't be before the start.";
+
+/// Target before start after this save (a field not in the form keeps its stored value). The date inputs
+/// carry min/max so the picker greys those days, but a typed or scripted value still lands here.
+fn backwards(e: &queries::EpicRow, f: &[(&'static str, Option<String>)]) -> bool {
+    let pick = |col: &str, stored: &Option<String>| {
+        f.iter()
+            .find(|(c, _)| *c == col)
+            .map_or(stored.clone(), |(_, v)| v.clone())
+    };
+    // ISO dates compare as strings.
+    matches!((pick("start", &e.start), pick("target", &e.target)), (Some(s), Some(t)) if t < s)
+}
+
 /// Autosave: htmx PATCHes the form on every change; without JS the same form POSTs.
 pub async fn update(
     State(st): State<AppState>,
@@ -305,15 +320,20 @@ pub async fn update(
         );
         form.insert("tags".into(), list.join(","));
     }
-    let ok = match fields(&form) {
+    let error = match fields(&form) {
         Some(f) => {
-            if !queries::update_fields(&st.conn(), &key, &f)? {
+            let conn = st.conn();
+            if backwards(&load(&conn, &key)?, &f) {
+                Some(TARGET_BEFORE_START)
+            } else if !queries::update_fields(&conn, &key, &f)? {
                 return Err(AppError::NotFound);
+            } else {
+                None
             }
-            true
         }
-        None => false,
+        None => Some(SAVE_FAILED),
     };
+    let ok = error.is_none();
     let status = if ok {
         StatusCode::OK
     } else {
@@ -323,7 +343,7 @@ pub async fn update(
         if ok {
             return Ok(web::back(&format!("/epics/{key}")));
         }
-        return web::html_status(status, &render_page(&st, &key, true, String::new(), None)?);
+        return web::html_status(status, &render_page(&st, &key, error, String::new(), None)?);
     }
     let conn = st.conn();
     let e = load(&conn, &key)?;
@@ -331,7 +351,7 @@ pub async fn update(
         status,
         &view::Swap {
             live: live(&conn, &e, String::new(), None)?,
-            save_error: !ok,
+            save_error: error,
             field: Some(tag_field(&conn, tags::parse_list(&e.tags))?),
         },
     )
@@ -363,7 +383,7 @@ pub async fn add_evidence(
         if error.is_none() {
             return Ok(web::back(&format!("/epics/{key}")));
         }
-        return web::html_status(status, &render_page(&st, &key, false, kept, error)?);
+        return web::html_status(status, &render_page(&st, &key, None, kept, error)?);
     }
     let conn = st.conn();
     let e = load(&conn, &key)?;
@@ -371,7 +391,7 @@ pub async fn add_evidence(
         status,
         &view::Swap {
             live: live(&conn, &e, kept, error)?,
-            save_error: false,
+            save_error: None,
             field: None,
         },
     )
@@ -392,7 +412,7 @@ pub async fn delete_evidence(
     let e = load(&conn, &key)?;
     web::html(&view::Swap {
         live: live(&conn, &e, String::new(), None)?,
-        save_error: false,
+        save_error: None,
         field: None,
     })
 }
@@ -415,7 +435,7 @@ pub async fn delete(
         )
             .into_response()),
         queries::Deleted::HasLines => {
-            let mut page = render_page(&st, &key, false, String::new(), None)?;
+            let mut page = render_page(&st, &key, None, String::new(), None)?;
             page.delete_error = Some(HAS_LINES);
             web::html_status(StatusCode::UNPROCESSABLE_ENTITY, &page)
         }
