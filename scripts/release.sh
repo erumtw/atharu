@@ -57,18 +57,20 @@ fi
 prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true)
 subjects=$(git log --format=%s ${prev:+"$prev..HEAD"} | grep -v '^chore: release v' || true)
 conv='(\([^)]*\))?!?: '
-group() { # heading, type regex: subjects of that type, prefix dropped
+group() { # heading, type regex: subjects of that type, prefix dropped, first letter capitalised (perl: BSD sed has no \u)
   local items
-  items=$(printf '%s\n' "$subjects" | grep -E "^($2)$conv" | sed -E "s/^[a-z]+$conv/- /" || true)
+  items=$(printf '%s\n' "$subjects" | grep -E "^($2)$conv" | sed -E "s/^[a-z]+$conv/- /" | perl -pe 's/^- (.)/- \u$1/' || true)
   [ -z "$items" ] || printf '\n### %s\n\n%s\n' "$1" "$items"
 }
 notes=$(git rev-parse --absolute-git-dir)/release-notes-$tag.md
+# The draft: CHANGELOG.md keeps it as is; the GitHub release page gets it rewritten with Highlights (CLAUDE.md "Releases").
 {
   printf '## %s — %s\n' "$tag" "$(date +%Y-%m-%d)"
   group Features feat
   group Fixes fix
-  group Docs docs
-  other=$(printf '%s\n' "$subjects" | grep -vE "^(feat|fix|docs)$conv" | grep . | sed 's/^/- /' || true)
+  group Performance perf
+  group 'Under the hood' 'refactor|docs|build|ci|test|style|chore'
+  other=$(printf '%s\n' "$subjects" | grep -vE "^(feat|fix|perf|refactor|docs|build|ci|test|style|chore)$conv" | grep . | sed 's/^/- /' || true)
   [ -z "$other" ] || printf '\n### Other\n\n%s\n' "$other"
   [ -n "$subjects" ] || printf '\n(no changes)\n'
 } >"$notes"

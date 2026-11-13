@@ -131,6 +131,12 @@ alters a token, component, glass surface or pattern updates `DESIGN.md` in the s
 - Releases (D40, D41): `scripts/release.sh X.Y.Z` on main (`--hotfix` on `release/X.Y`) bumps, writes CHANGELOG.md,
   tags `vX.Y.Z`; install/update follow tags. Cutting or pushing a release is the owner's call; an agent asked to run it
   sets `ATHARU_COAUTHOR` and answers N to the push prompt.
+- Release page: release.sh's draft (`.git/release-notes-vX.Y.Z.md`) goes to CHANGELOG.md as is; for the GitHub release, rewrite it
+  as `## Highlights` (one `###` per user-visible change, two plain sentences on what the owner can now do) + Fixes / Performance
+  bullets in plain words + `## Upgrade` (`atharu update --app`; data stays) + `**Full changelog:** vPREV...vX.Y.Z`. A UI change
+  gets a screenshot: from a seeded demo DB only (never `data/atharu.db`: the repo is public), 1280 wide, saved as
+  `docs/releases/vX.Y.Z/<name>.png` and committed before `release.sh`, linked as
+  `https://raw.githubusercontent.com/erumtw/atharu/vX.Y.Z/docs/releases/vX.Y.Z/<name>.png`. Perf / internal changes get none.
 - Schema changes: a new `migrations/00N_*.sql` appended in `src/db.rs`; never edit a shipped one.
 - Frontend JS: strict TypeScript in `editor/src/*.ts` (pinned Tiptap, esbuild) builds the committed `static/js/*.js`
   (`htmx.min.js` is vendored): `cd editor && npm ci && npm run check && node build.mjs`.
