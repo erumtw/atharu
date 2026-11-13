@@ -168,3 +168,19 @@ pre{max-width:100%;overflow-x:auto}
 }
 /* After the phone block, so it beats the bar's keyboard ride. */
 @media (prefers-reduced-motion: reduce){.capture{transition:none}}
+
+/* 0.2.0 phone rules (canvas "Redesign · phone", 2026-11-13). */
+.props>.ex{display:contents}
+.dates .dr{display:inline-flex;gap:6px;align-items:center}
+@media (max-width: 639px){
+  /* Epic: Status + Role, the filled rest behind "n more" (the hidden #pmore checkbox; no JS). */
+  .pmore:not(:checked)~.props>.ex{display:none}
+  .pmore:checked~.props>.pmore-l{display:none}
+  /* Dates: start / target / done on, one row each instead of a three-date strip. */
+  .props dd.dates{flex-direction:column;align-items:flex-start;gap:4px}
+  /* Epics table: Key · Title · Open · Flag; impact and last log live on the epic's page. */
+  .etab{table-layout:auto}
+  .etab col,.etab :is(th,td):nth-child(4),.etab :is(th,td):nth-child(5){display:none}
+  /* Linked references: full-width rows, snippet wraps. */
+  .refs .ref{margin:0}
+}

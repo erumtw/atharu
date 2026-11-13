@@ -134,7 +134,7 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
 | Glass secondary | `.btn.ghost` | glass pill, ink text; `.s` = 32; `.dng` = destructive (err text). On `.callout.dark`: `--accent-on-dark` outline. |
 | Icon button | `.ib` | 32 round (44, 12 radius on phone); always an `aria-label`; `.ib.more` opens a row's `.acts` |
 | Link button | `.linkbtn` | POST form that reads as a link: Undo, re-open; underline on hover |
-| Row actions | `.acts` | the row's buttons inline on desktop; a bottom action sheet (popover) on phone, 48 px rows |
+| Row actions | `.acts` | the row's buttons inline on desktop, shown on row hover / keyboard focus (their room kept, so nothing shifts); a bottom action sheet (popover) on phone, 48 px rows |
 | Delete × | `.x` | 28, revealed on row hover / focus (always shown on touch) |
 | Field | `.fld`, `.fld.m`, `.fld.s` | glass pill 44 / 36 / 32 with the action inside; `.bad` = 422 |
 | Capture bar | `.capture` > `.newline` + `.hint` + `.legend` | 52 glass pill, primary inside; `.newline.bad` on a parse error; hint = live parse preview in accent |
@@ -147,8 +147,8 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
 | Save status | `.saved` | 12 px muted in the crumb: "Changes save as you type · ✓ saved"; `.err` on failure |
 | Error | `.err` | 13 px `--err` text under the field it explains |
 | Line kind square | `.k` | 22px mono square: `!` `x` `+` `?` `>`; impact = blue (`.k.imp`), blocker = ink (`.k.bl`) |
-| Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.llm` = ink outline badge for agent-written rows; `.chip.tag` (`.inh`, `.fl`) = see "Tag chip" below. One line, never wider than its container: a long name ends in "…" with the full name in the link's `title` (also crumbs, sidebar series via `.ell`) |
-| Link chip | `.lchip` | source link on a line; the only blue chip |
+| Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.tag.at` = the agent @mention (below); `.chip.tag` (`.inh`, `.fl`) = see "Tag chip" below. One line, never wider than its container: a long name ends in "…" with the full name in the link's `title` (also crumbs, sidebar series via `.ell`) |
+| Link chip | `.lchip` | a link out with ↗: a line's source link (its URL then leaves the row text, the chip carries it), an epic's Jira status → `{base}/browse/KEY`; the only blue chip |
 | Flag | `.flag.stale/.risk/.over` | pill; ink weight, no colour |
 | Due | `.due`, `.due.late` | muted / red bold |
 | Callout | `.callout`, `.callout.dark` | grey (info) / `--dark` (meeting banner with `.dot`, impact line with `.num` / `.num.up`) |
@@ -184,6 +184,16 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
 | Screenshots | `#shots` > `.shots` > `a` > `img` + caption | meeting page under Notes: 160×100 cover thumbnails (8 radius, `--line` border), `HH:MM` caption, click = full PNG; **Take screenshot** ghost pill (app, meeting running); the camera `.btn.ghost` on the banner and the popover card runs macOS's picker (T89) |
 | Progress | `progress.prog` | native `<progress>`, 6 px, `--accent` on `--sep` (4.6:1) |
 | Command chip | `.cmd` | a copyable CLI / slash command in a white pill with a Copy button inside |
+| Agent @chip | `.chip.tag.at` | who wrote it when it isn't the owner: the `#tag` chip with an `@` (`::before`) instead of the `#` (0.2.0 D1). On lines, to-dos, notes, refs and the note's Written by; replaced the outlined `.chip.llm` badge |
+| Page head | `header.pghead` > `.pgk` + `h1.ptitle` + `p.fact` | the one head of every entity page and list (epic, meeting, series, topic, tag, Today, Epics, Meetings): kind glyph or key chip (+ Jira `.lchip`) in `.pgk`, the 40/600 title, then **one read-only fact line** (`2 meetings · last met today`); editing lives in the props |
+| Page menu | `.menu.pmenu#pmenu` + `partials/pmenu_btn.html` | the ⋯ at the crumb's right end (`.crumb .pend`, after `.saved`): Copy link · page actions (Open in Jira ↗, Archive, Rename…) · **Delete…** in `--err` last, a form button styled as a menu item (plain POST without JS, Undo toast after). Native popover anchored under the ⋯; fixed fallback where anchor positioning is missing. Replaced the hub's `.acts-menu` and every page-bottom Delete button |
+| Add property | `details.addp > summary.addprop` | empty props are hidden (0.2.0 D2); "+ Add property · OKR dates metric" names what's missing and reveals them in place. JS-free: the empty fields stay inside the page's autosave form, so a PATCH still carries them |
+| Toggled section | `details.tg > summary` | a page section at h3 size with its count inline (`Open to-dos · 2`, `Timeline · 6 days`, `Evidence · 1`); open by default, closed when it would only say "none" |
+| Linked references | `section.refs` (`partials/refs.html`) | last on every entity page: notes that point here, grouped by how (`h4` Mentioned in · On its lines · Tagged), one `.ref` row each with the @chip; empty = one line naming how to link (`[[name]]`). A note's own refs are its lines (`#lnh`, the white `.lnh` box inside) |
+| Same name | `partials/same_name.html` | a prop on topic, meeting and series pages linking the tag hub / topic / series of the same name, so "one name, one hub" reads both ways |
+| Start meeting pill | `.btn.ghost.s` + `.menu.startm` | Today's crumb, before the day nav (0.2.0 D5): opens the start field in a popover (`hx-disable`: a plain POST back to the day, where the running banner heads the page). Hidden while a meeting runs and on phones (start from Meetings) |
+| View menu | `.btn.ghost.s` + `.menu.viewm` | beside "Logged today": Group by `.seg` + tag filter in one popover; the button names a non-default view (`View · tag · #expense`) |
+| Epics table | `table.etab` (`epics/row.html`) | fixed layout Key · Title (+ Jira ↗) · Open to-dos · Impact · Last log · Flag, one table per OKR; unnamed stubs last, titled in place; the one `.doc.wide` list besides Calendar |
 
 ### Drawing block (canvas row "Drawings · Excalidraw in notes", T41; D23, D24)
 
@@ -282,10 +292,11 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
 - **`/tags/<tag>`** is a page like any other: crumb Tags / #tag with ⋯ (Rename… · Merge into another tag… · Delete tag… in `--err`;
   rename/merge rewrite the `#word` in the sources, delete keeps the word and drops the `#`). Title `.ptitle` with the `#` in `--accent`
   (`.hash`), props: Used (counts, last used) · Tagged by (epics, series, topics whose tag field holds it).
-- Sections in this order, each `h3` + muted count: Open to-dos · **Decisions, blockers, impact** (the highlighted block: `--fill`
-  12-radius panel, `.hi`) · Recent lines (newest first, `details` for older) · Epics | Notes and Meetings | Topics (two columns
+- Head: `.pghead` (tag glyph, `#tag`, the Used counts as its fact line). Sections in this order, each a `details.tg` + muted count: Open to-dos · **Decisions, blockers, impact** (the highlighted block: `--fill`
+  12-radius panel, `.hi`) · Recent lines (newest first, `details` for older) · Epics · Meetings | Topics (two columns
   `.cols`, one on phone) · Coming up (own events with the tag; Google events matched by a title word, marked "matched by word" in
-  `--muted`, never stored). Inherited lines carry "via `OPS-140`" (`.via`).
+  `--muted`, never stored), then Linked references (the notes with `#tag`, `[[tag]]` or on a tagged line; 0.2.0 dropped the Notes column
+  for it). Inherited lines carry "via `OPS-140`" / "via `series`" (`.via`), each a link to its epic / series page.
 - **One name, one hub**: a tag, topic and meeting series with the same name share the page; a `.callout` says so and the topic
   (depth meter, own words) and series rows sit in the props. `[[X]]` resolves epic → tag → topic → series (D45: a shared name lands
   on the hub; the callout says so).
@@ -298,7 +309,7 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
   datalist; comma / Enter adds, Backspace on empty removes; autosaves. Each chip carries a small × (a submit button, as on the
   `.fl` filter chip) so removing works without JS; an off-screen first submit button keeps Enter from ever hitting a ×.
   Series tags sit on the meeting page ("Series tags", one field for every meeting of the series), topic tags under its title.
-- **Hub ⋯ menu**: a native popover anchored under the crumb's ⋯ (`.acts-menu`, CSS anchor positioning); each item opens its confirm
+- **Hub ⋯ menu**: the page menu (`.pmenu`, see the catalogue) with Copy link first; each item opens its confirm
   step on the hub itself (`?act=rename|merge|delete`, a `.callout` form), so it works as plain GET + POST. Done = the `<main>` becomes
   the toast "Renamed #a to #b · N places rewritten · Undo · Open #b" (one transaction, one Undo, like a deleted page).
 - Report: Group by `.seg` Epic | Tag sits at the right of the filter row (the range row already holds the from/to dates).
@@ -477,8 +488,9 @@ and it lists its lines at the top.
     links it and 303s to `/notes/<id>`. Plain form, no JS needed.
   - **Phone (< 640)**: the add button leaves the row; the ⋯ sheet gets **Add a note** (or **Open note**) above Edit line. A
     line that has a note keeps its filled button in the row at 44.
-- **Note header `.lnh`** on `/notes/<id>`, between the title and the props: a white card with a `--line` hairline, 12 radius,
-  label "Line" / "Lines · 3" (12/600 `--muted`, an `h2`). Content, so no glass; rows are the normal 32 `.blk` with no hover tint
+- **Note lines `.lnh`** on `/notes/<id>`, inside its Linked references at the end of the page (0.2.0; it sat between the title
+  and the props before): a white card with a `--line` hairline, 12 radius, under the group label "Line" / "Lines · 3" (the
+  `.refs h4`). Content, so no glass; rows are the normal 32 `.blk` with no hover tint
   (only their controls react). A `--fill` panel was tried and failed AA: `--muted` 4.27 under the `.hi` row hover, the check
   ring `--ctl-edge` 2.99 on `--fill`.
   - Each line: kind square `.k` (a to-do takes the round `.check` instead of `>`, posting like its row) · text with tag chips ·
@@ -540,13 +552,23 @@ holds every timing; `launch.ts` only prepares the SVG. Setting `launch` = `ink` 
 
 ## 7. UX patterns (from Notion)
 
-1. **Sidebar** = page list, each row icon + label (icon `--muted`, `--ink` on the selected `.on` row; 16 px desktop, 20 px rail/drawer) grouped by the user's loops (D18): an unlabelled daily block Today · To-dos · Calendar · Meetings, then **Track** Epics · Report, then **Grow** Learn · Notes, then the active epics, and Settings pinned to the bottom (spacer). Same order in the phone drawer; the rail draws the section labels as thin dividers. Breadcrumbs on top.
-2. **Every thing is a page**: epic, meeting, topic, note → big title + inline properties, autosaved. No Save buttons anywhere.
+1. **Sidebar** = one fixed page list, the same on every page (0.2.0 D4: no per-page Series / Notes / Topics lists), each row icon + label (icon `--muted`, `--ink` on the selected `.on` row; 16 px desktop, 20 px rail/drawer) grouped by the user's loops (D18): an unlabelled daily block Today · To-dos · Calendar · Meetings, then **Track** Epics · Report, then **Grow** Learn · Notes, then the active epics (title first, key muted on the right; a stub reads *unnamed*), and Settings pinned to the bottom (spacer). Same order in the phone drawer; the rail draws the section labels as thin dividers. Breadcrumbs on top.
+2. **Every thing is a page**, on one template (0.2.0): crumb with save status + ⋯ page menu · `.pghead` (glyph/key, title, one
+   fact line) · filled props only, the empty ones behind "+ Add property" · the page's body · toggled sections · Linked references.
+   Relations read both ways (a line's meeting chip opens that meeting, a note shows the meeting it is the notes of, Same name).
+   `.doc` is 860 everywhere; `.doc.wide` only for the Epics list and Calendar. Autosaved; no Save buttons anywhere.
 3. **One input**: the floating "Type a line…" bar takes the line grammar; a live hint above it says what it will save as.
 4. **Feedback**: toast above the bar, "Saved as impact on OPS-101 · Undo", `role=status`.
 5. **Toggles** fold secondary things (open plans, report charts, raw numbers).
 6. **Notes**: Tiptap; type-to-format markdown shortcuts, `/` block menu (glass popover), `[[` page picker.
 7. **Empty states name the next action** ("No epics. Start a line with a key, e.g. OPS-101."). No tutorials: the UI must explain itself.
+   An empty property is not an empty state to draw: it hides behind "+ Add property", whose label names what is missing (0.2.0 D2);
+   an empty section folds away or is one line naming how to fill it ("No note points here yet. Write `[[OPS-101]]` in a note…").
+8. **Today** (0.2.0 D3): head + fact line (`1 due today · 1 overdue · 6 lines logged · in oms-sync`) · the running meeting's banner ·
+   **Focus** = the pinned top 3 + every overdue to-do, overdue first, each once, then "n more open in To-dos →" · **Needs you** =
+   flagged epics only · Logged today with the View menu · the capture bar.
+9. **Archive** (0.2.0 D4): a meeting series' ⋯ or row Archive hides it from Meetings and the Calendar (folded "Archived · n" under the
+   list); its series and meeting pages stay, a rename carries it.
 
 ## 8. Responsive (`responsive.css`)
 
@@ -555,6 +577,7 @@ holds every timing; `launch.ts` only prepares the SVG. Setting `launch` = `ink` 
 | ≥ 1024 | sidebar 220–248px + sheet |
 | 640–1023 | 64px icon rail (labels become tooltips, section labels become dividers) |
 | < 640 | sheet full width with top-rounded corners; nav in a popover; inputs ≥ 16px (no iOS zoom); the capture bar floats 12px inside the edges above the home indicator and rides the keyboard |
+| < 640, 0.2.0 | the first screen reaches content: an epic shows Status + Role, the filled rest behind "n more" (`.pmore` checkbox, no JS); Dates stack start / target / done on one per row; the Epics table drops Impact and Last log; no Start pill on Today (start from Meetings); to-do actions stay in the ⋯ sheet (on a pointer they show on row hover / focus) |
 
 ## 9. Rules
 

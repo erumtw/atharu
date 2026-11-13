@@ -14,14 +14,20 @@
 </header>
 {#- Filled props show; the empty ones wait behind "+ Add property" (D2). Status and Role always have a value. #}
 {%- let has_dates = !epic.start.is_empty() || !epic.target.is_empty() || !epic.done_on.is_empty() %}
+{%- let extra = (!field.tags.is_empty()) as usize + (!epic.okr.is_empty()) as usize + has_dates as usize + (!live.metric.is_empty()) as usize + 1 %}
+{#- Phone (≤ 2 props): the filled extras fold behind "n more", a label for a hidden checkbox, so it needs no JS. #}
+<input type="checkbox" id="pmore" class="pmore" hidden>
 <dl class="props">
 <dt><label for="status">Status</label></dt><dd><select id="status" name="status" class="pin" style="flex: none">{% for o in ["active", "done", "dropped"] %}<option{% if epic.status.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
 <dt><label for="role">Role</label></dt><dd><select id="role" name="role" class="pin" style="flex: none">{% for o in ["owner", "contributor"] %}<option{% if epic.role.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+<label class="addprop m-only pmore-l" for="pmore">{{ extra }} more</label>
+<div class="ex">
 {%- if !field.tags.is_empty() %}{% include "epics/prop_tags.html" %}{% endif %}
 {%- if !epic.okr.is_empty() %}{% include "epics/prop_okr.html" %}{% endif %}
 {%- if has_dates %}{% include "epics/prop_dates.html" %}{% endif %}
 {%- if !live.metric.is_empty() %}{% include "epics/prop_metric.html" %}{% endif %}
 <dt>Activity</dt><dd><div class="bars" style="width: 120px; height: 20px" aria-hidden="true">{% for p in activity %}<span style="height: {{ p }}%"></span>{% endfor %}</div><span class="small muted">logs/week, 8 wks</span></dd>
+</div>
 </dl>
 {%- if field.tags.is_empty() || epic.okr.is_empty() || !has_dates || live.metric.is_empty() %}
 <details class="addp"><summary class="addprop">+ Add property <span class="small">·{% if field.tags.is_empty() %} tags{% endif %}{% if epic.okr.is_empty() %} OKR{% endif %}{% if !has_dates %} dates{% endif %}{% if live.metric.is_empty() %} metric{% endif %}</span></summary>
