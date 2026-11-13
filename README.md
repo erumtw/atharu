@@ -42,7 +42,7 @@ the week into a report you can paste.
 | **Notes** | A block editor with `[[links]]`, `#tags`, toggles, callouts and hand-drawn Excalidraw diagrams. |
 | **Tags** | `#tag` anywhere. Each tag gets a hub page that gathers lines, to-dos, epics and notes, with tags inherited from an epic or meeting series. |
 | **Meetings** | Start a meeting from Today. Lines logged during it file under it. The Mac app records **on device**: Whisper transcription with a Me / Others split by voice. |
-| **Calendar** | Your own events plus a read-only Google Calendar feed (iCal). |
+| **Calendar** | Day, N days, week and month views of your own events plus read-only Google Calendar (iCal) and, in the Mac app, macOS Calendar. |
 | **Looks** | Four themes (Sumi, Sora, Wakaba, Glass) with Liquid Glass chrome, Reduce Transparency and Increase Contrast fallbacks. |
 
 <table>
@@ -125,6 +125,10 @@ Tauri 2 on the system WebView. It serves the same pages on a free local port and
 Optionally, add `data/config.toml` next to the database with `ical_url = "…"`, Google Calendar's secret iCal address. It's shown read-only on
 `/calendar` and refreshed every 15 minutes. It's a credential, so keep it out of git.
 
+**Mac calendars** (Mac app only): when your Google Workspace blocks the iCal address, add the account in macOS Calendar instead, then
+turn on Settings › Connections › Mac calendars and tick the calendars to show. macOS asks once for Calendar access. The app reads them
+(read-only) into `/calendar` on start, every 15 minutes and whenever Calendar changes; a browser on the same database shows what it synced.
+
 ## For AI agents
 
 Agents write through the CLI, never through SQL, and always under their own name:
@@ -167,4 +171,4 @@ It refuses a dirty tree, a version that isn't higher, or the wrong branch. See [
 ## Privacy
 
 Everything stays on your machine: the server binds to `127.0.0.1`, recordings are transcribed on device, and `data/` is
-gitignored. The only network calls are the ones you configure: Jira titles, a Google Calendar iCal feed, and the one-time model downloads for transcription and the speaker split (Hugging Face).
+gitignored. The only network calls are the ones you configure: Jira titles, a Google Calendar iCal feed (macOS Calendar is read on this Mac), and the one-time model downloads for transcription and the speaker split (Hugging Face).
