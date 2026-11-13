@@ -760,10 +760,11 @@ details.tg>summary .small{font-size:13px}
 .needs h3{margin:10px 0 6px}
 /* To-do rows: actions show on hover / keyboard focus where there is a pointer; phones keep the ⋯ sheet. */
 /* Hidden actions must not keep their width (they squeezed the text to one word per line on real rows, 0.2.0): out of
-   the flow, they float over the row's right end as a small toolbar while the row is hovered or focused. */
+   the flow, they float as a small toolbar just above the row's top-right corner while it is hovered or focused, so they
+   never cover the row's own note button / chips (0.2.1 put them on top of the note button). */
 @media (hover: hover) and (min-width: 640px){
   .blk.ln{position:relative}
-  .blk.ln .acts{position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:2;display:none;gap:6px;align-items:center;
+  .blk.ln .acts{position:absolute;right:6px;bottom:calc(100% - 8px);z-index:3;display:none;gap:6px;align-items:center;
     padding:3px 4px 3px 10px;border-radius:9999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.06)}
   .blk.ln:is(:hover,:focus-within) .acts{display:inline-flex}
 }
