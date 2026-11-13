@@ -474,7 +474,12 @@ fn cal(
         .collect();
     // At most `fit` columns side by side; a busier cluster shows the first ones and folds the rest into "+N" in its
     // last column, which opens the Day view (more room).
-    let fit = (1000 / (days.len() as u32 * MIN_COL_PX)).clamp(2, 6) as usize;
+    // A single day (Day view, phone) never folds: that is where "+N" leads.
+    let fit = if days.len() == 1 {
+        usize::MAX
+    } else {
+        (1000 / (days.len() as u32 * MIN_COL_PX)).clamp(2, 6) as usize
+    };
     for ((day, s, e, item), (col, cols, k)) in timed.into_iter().zip(cols_of) {
         let d = &mut days[day];
         let top = s - h0 * 60;

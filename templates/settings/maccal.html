@@ -17,6 +17,7 @@
 <label class="gi"><span class="t"><b><span class="cdot" style="background: {{ c.color }}" aria-hidden="true"></span>{{ c.title }}</b><span>{{ c.account }}</span></span><input type="checkbox" name="cal" value="{{ c.id }}"{% if *on %} checked{% endif %}></label>
 {%- endfor %}
 {%- endif %}
+{%- if mc.waiting() %}<div hidden hx-get="/settings/maccal" hx-trigger="every 2s" hx-target="#maccal" hx-swap="outerHTML"></div>{% endif %}
 <noscript><div class="gi"><button class="btn" type="submit">Save</button></div></noscript>
 {%- endif %}
 </form>

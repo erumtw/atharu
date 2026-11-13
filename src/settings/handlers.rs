@@ -71,6 +71,12 @@ fn mac_cal(st: &AppState, conn: &rusqlite::Connection) -> AppResult<view::MacCal
     })
 }
 
+/// The row alone: its poll while the app waits for macOS or the first sync.
+pub async fn mac_cal_get(State(st): State<AppState>) -> AppResult<Response> {
+    let mc = mac_cal(&st, &st.conn())?;
+    web::html(&view::MacCalRow { mc })
+}
+
 /// The Mac calendars form autosaves on every change: `on` = the switch, one `cal` per checked calendar.
 /// The app then asks macOS for access if it hasn't, and syncs at once.
 pub async fn save_mac_cal(
@@ -88,9 +94,14 @@ pub async fn save_mac_cal(
     {
         let conn = st.conn();
         queries::set(&conn, "mac_cal", if on { "1" } else { "0" })?;
-        // Only the app knows the calendars: a browser post (no list shown) leaves the choice alone.
-        if st.mac_cals.is_some() {
-            queries::set(&conn, "mac_cals", &cals.join(","))?;
+        if on {
+            // Only the app lists the calendars: a browser post (no boxes shown) leaves the choice alone.
+            if st.mac_cals.is_some() {
+                queries::set(&conn, "mac_cals", &cals.join(","))?;
+            }
+        } else {
+            // Off (D7): the synced events go, the ticked calendars stay for when it's on again.
+            queries::clear_mac_events(&conn)?;
         }
     }
     if let Some(m) = &st.mac_cals {

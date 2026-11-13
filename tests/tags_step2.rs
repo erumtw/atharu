@@ -148,6 +148,7 @@ async fn series_topic_and_event_tags() {
     assert!(hub.contains("your event"));
     assert!(hub.contains("Expenses sync with finance"));
     assert!(hub.contains("matched by word"));
+    assert!(hub.contains("<span class=\"chip\">Google</span>"));
     assert!(!hub.contains("Hiring loop"));
     assert!(!hub.contains("dentist"));
 
@@ -548,5 +549,20 @@ async fn rename_leaves_links_that_still_resolve() {
     assert_eq!(
         count(&st, "SELECT COUNT(*) FROM notes WHERE body = 'see [[tax]]'"),
         1
+    );
+}
+
+#[tokio::test]
+async fn hub_names_mac_calendar_events() {
+    let st = state();
+    log(&st, "booked review #expense").await;
+    exec(
+        &st,
+        "INSERT INTO events(source, ext_id, title, starts_at) VALUES ('mac', 'm@1', 'Expense review', '2026-11-13T10:00')",
+    );
+    let hub = get(&st, "/tags/expense").await.body;
+    assert!(
+        hub.contains("Expense review") && hub.contains("<span class=\"chip\">Calendar</span>"),
+        "{hub}"
     );
 }

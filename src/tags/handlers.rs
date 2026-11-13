@@ -175,13 +175,14 @@ fn render_hub(
     let to = dates::iso(today + chrono::Days::new(AHEAD));
     let coming = queries::upcoming(conn, &tag, &from, &to)?
         .into_iter()
-        // Google events are never tagged: a title word naming the tag is enough to list them.
-        .filter(|(_, title, own)| {
-            *own || title
-                .split_whitespace()
-                .any(|w| tags::same_word(w.trim_matches(|c: char| !c.is_alphanumeric()), &tag))
+        // Google and Mac calendar events are never tagged: a title word naming the tag is enough to list them.
+        .filter(|(_, title, src)| {
+            src == "own"
+                || title
+                    .split_whitespace()
+                    .any(|w| tags::same_word(w.trim_matches(|c: char| !c.is_alphanumeric()), &tag))
         })
-        .map(|(at, title, own)| (event_when(&at), title, own))
+        .map(|(at, title, src)| (event_when(&at), title, src))
         .collect();
     let mut meetings: Vec<view::HubMeeting> = series
         .iter()

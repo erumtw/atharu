@@ -426,4 +426,36 @@ async fn mac_calendars_row() {
     assert!(b.contains(
         "Calendar access is off. Open System Settings › Privacy &amp; Security › Calendars."
     ));
+
+    // Granted but not synced yet: the row polls itself; once synced it stops.
+    mc.set_access(Access::Granted);
+    let b = get(&st, "/settings/maccal").await.body;
+    assert!(
+        b.contains("hx-get=\"/settings/maccal\" hx-trigger=\"every 2s\""),
+        "{b}"
+    );
+    exec(
+        &st,
+        "INSERT INTO settings(key, value) VALUES ('mac_cal_synced', '2026-11-14 09:00:00')",
+    );
+    assert!(!get(&st, "/settings/maccal").await.body.contains("every 2s"));
+
+    // Off (D7): the synced events go, the ticked calendars stay.
+    exec(
+        &st,
+        "INSERT INTO events(source, ext_id, title, starts_at) VALUES ('mac', 'm@1', 'Standup', '2026-11-12T09:30'), ('own', NULL, 'mine', '2026-11-12')",
+    );
+    post(&st, "/settings/maccal", "", true).await;
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM events WHERE source = 'mac'"),
+        0
+    );
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM events"), 1);
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM settings WHERE key = 'mac_cals' AND value = 'W1'"
+        ),
+        1
+    );
 }

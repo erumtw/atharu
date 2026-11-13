@@ -266,16 +266,16 @@ pub fn merged_lines(conn: &Connection, name: &str) -> rusqlite::Result<Vec<HubLi
     .collect()
 }
 
-/// Own events tagged with it and Google events (filtered by word in the handler) from `from` on:
-/// (starts_at, title, own).
+/// Own events tagged with it and Google / Mac calendar events (filtered by word in the handler) from `from` on:
+/// (starts_at, title, source).
 pub fn upcoming(
     conn: &Connection,
     tag: &str,
     from: &str,
     to_excl: &str,
-) -> rusqlite::Result<Vec<(String, String, bool)>> {
+) -> rusqlite::Result<Vec<(String, String, String)>> {
     let mut stmt = conn.prepare(
-        "SELECT ev.starts_at, ev.title, ev.source = 'own' FROM events ev
+        "SELECT ev.starts_at, ev.title, ev.source FROM events ev
           WHERE ev.starts_at >= ?2 AND ev.starts_at < ?3
             AND (ev.source <> 'own' OR EXISTS (SELECT 1 FROM taggings g
                    WHERE g.tag = ?1 AND g.item_type = 'event' AND g.item_id = CAST(ev.id AS TEXT)))

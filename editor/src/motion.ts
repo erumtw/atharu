@@ -83,7 +83,7 @@ const resized = new ResizeObserver(entries => {
 const segs = () => {
   for (const seg of document.querySelectorAll<HTMLElement>('.seg')) {
     if (!seg.querySelector(':scope > .thumb')) {
-      for (const b of seg.querySelectorAll<HTMLElement>(':scope > button')) resized.observe(b)
+      for (const b of seg.querySelectorAll<HTMLElement>(':scope > :is(button,a)')) resized.observe(b)
       const t = document.createElement('span')
       t.className = 'thumb still'
       t.setAttribute('aria-hidden', 'true')
@@ -99,7 +99,7 @@ document.addEventListener('click', ev => {
   if (!b || !seg?.classList.contains('has-thumb')) return
   put(seg, b, !reduce())
 })
-// A switch inside a closed popover (Today's View menu) measures 0 wide at load: place its thumb when the popover opens.
+// A switch inside a closed popover measures 0 wide at load: place its thumb when the popover opens.
 document.addEventListener('toggle', ev => {
   const pop = ev.target as HTMLElement
   if ((ev as ToggleEvent).newState !== 'open') return

@@ -222,6 +222,8 @@ pub struct MacEvent {
 
 /// The Mac app's sync: in one transaction, drop the `mac` events overlapping [from, to] (dates) and insert what
 /// Calendar has there now, so moved, deleted and unchecked-calendar events go; history outside the window stays.
+/// Overlap is strict at `from`: an all-day event ending (exclusively) on `from`, or a timed one ending at its midnight,
+/// lies wholly before the window and is kept (`'2026-10-28' > '2026-10-28T00:00'` is false).
 /// Stamps `mac_cal_synced` (local time) for Settings.
 pub fn replace_mac_events(
     conn: &mut Connection,
@@ -232,7 +234,7 @@ pub fn replace_mac_events(
     let tx = conn.transaction()?;
     tx.execute(
         "DELETE FROM events WHERE source = 'mac'
-           AND starts_at < date(?2, '+1 day') AND COALESCE(ends_at, starts_at) >= ?1",
+           AND starts_at < date(?2, '+1 day') AND COALESCE(ends_at, starts_at) > ?1 || 'T00:00'",
         params![from, to],
     )?;
     {

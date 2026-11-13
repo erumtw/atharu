@@ -22,7 +22,6 @@
 {%- let line_id = p.id %}{% let note_ref = p.note.as_ref() %}{% include "partials/note_btn.html" %}
 {%- if pin_error %}<span class="err">Top 3 is full. Unpin one first.</span>{% endif %}
 {%- if full && p.state == "done" %}<span class="muted">{{ p.closed_label() }}</span>{% endif %}
-
 <button class="ib more m-only" type="button" popovertarget="more-p{{ p.id }}" aria-label="More actions for this plan"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#more"/></svg></button>
 {%- if p.is_open() && p.due.is_some() %}<span class="qdue{% if p.is_late(today) %} late{% else if p.due == Some(*today) %} today{% endif %}" title="Due {{ p.due_label() }}">{{ p.due_quiet(today) }}</span>{% endif %}
 <span class="acts m-pop" id="more-p{{ p.id }}" popover>{% include "partials/note_sheet.html" %}<a class="btn ghost s m-only" href="{{ edit_href }}" hx-get="/entries/{{ p.id }}/edit?plan=1" hx-target="#plan-{{ p.id }}" hx-swap="outerHTML">Edit line</a>

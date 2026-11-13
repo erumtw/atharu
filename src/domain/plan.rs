@@ -218,6 +218,37 @@ mod tests {
     }
 
     #[test]
+    fn due_quiet_reads_the_date_the_way_you_say_it() {
+        let today = d("2026-11-14"); // Saturday
+        let quiet = |due: &str| {
+            Plan {
+                id: 1,
+                day: today,
+                epic_key: None,
+                text: "x".into(),
+                link: None,
+                due: Some(d(due)),
+                pinned: false,
+                state: "open".into(),
+                closed_day: None,
+                jira: None,
+                via: None,
+                note: None,
+                author: "me".into(),
+            }
+            .due_quiet(&today)
+        };
+        assert_eq!(quiet("2026-11-14"), "Today");
+        assert_eq!(quiet("2026-11-15"), "Tomorrow");
+        assert_eq!(quiet("2026-11-20"), "Fri");
+        assert_eq!(quiet("2026-11-21"), "Sat 21 Nov");
+        assert_eq!(quiet("2026-12-31"), "Thu 31 Dec");
+        assert_eq!(quiet("2027-01-05"), "2027-01-05");
+        // Late keeps the day, so you see how late.
+        assert_eq!(quiet("2026-11-09"), "Mon 9 Nov");
+    }
+
+    #[test]
     fn buckets_against_fixed_today() {
         let today = d("2026-11-11"); // Wednesday; week ends Sun 15 Nov
         for (due, want) in [

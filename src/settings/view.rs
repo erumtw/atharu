@@ -85,6 +85,11 @@ impl MacCal {
     pub fn granted(&self) -> bool {
         self.access == crate::recording::Access::Granted
     }
+
+    /// On in the app but not settled yet (macOS hasn't answered, or the first sync hasn't run): the row polls.
+    pub fn waiting(&self) -> bool {
+        self.app && self.on && !self.denied() && (!self.granted() || self.synced.is_none())
+    }
 }
 
 /// htmx answer to the Mac calendars form: the row alone.

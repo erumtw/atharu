@@ -478,6 +478,12 @@ fn replace_mac_events_swaps_the_window_only() {
            ('google', 'g', 'Google stays', '2026-11-12T11:00'),
            ('own', NULL, 'Own stays', '2026-11-12T12:00');",
     );
+    // All-day 26–27 Oct: its (exclusive) end is the window's first day, so it lies wholly before it and stays.
+    exec(
+        &st,
+        "INSERT INTO events(source, ext_id, title, starts_at, ends_at) VALUES
+           ('mac', 'edge@2026-10-26', 'All-day ending on from', '2026-10-26', '2026-10-28')",
+    );
     let ev = |id: &str, t: &str, s: &str, e: Option<&str>| MacEvent {
         ext_id: format!("{id}@{s}"),
         title: t.into(),
@@ -504,6 +510,7 @@ fn replace_mac_events_swaps_the_window_only() {
         rows,
         [
             "mac:Kept history:2026-09-01T10:00",
+            "mac:All-day ending on from:2026-10-26",
             "mac:Standup:2026-11-12T09:30",
             "google:Google stays:2026-11-12T11:00",
             "own:Own stays:2026-11-12T12:00",

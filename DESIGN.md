@@ -148,6 +148,7 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
 | Error | `.err` | 13 px `--err` text under the field it explains |
 | Line kind square | `.k` | 22px mono square: `!` `x` `+` `?` `>`; impact = blue (`.k.imp`), blocker = ink (`.k.bl`) |
 | Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.tag.at` = the agent @mention (below); `.chip.tag` (`.inh`, `.fl`) = see "Tag chip" below. One line, never wider than its container: a long name ends in "…" with the full name in the link's `title` (also crumbs, sidebar series via `.ell`) |
+| Quiet due date | `.qdue` (`partials/plan_row.html`, `Plan::due_quiet`) | every open to-do's last column (owner 2026-11-14): `Today` (`--accent`) · `Tomorrow` · weekday within 6 days · `Wed 18 Nov` this year · ISO beyond; late in `--err` keeping its date; 13px muted, tabular figures, right-aligned |
 | Link chip | `.lchip` | a link out with ↗: a line's source link (its URL then leaves the row text, the chip carries it), an epic's Jira status → `{base}/browse/KEY`. Same grey pill as `#tag` / `@agent` / key chips (`--fill-2`, no border), blue text + ↗ say "opens outside" (owner 2026-11-14: the white outlined box read as a button) |
 | Flag | `.flag.stale/.risk/.over` | pill; ink weight, no colour |
 | Due | `.due`, `.due.late` | muted / red bold |

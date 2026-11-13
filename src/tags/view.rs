@@ -61,8 +61,8 @@ pub struct Hub {
     pub topic: Option<SameTopic>,
     /// The meeting series of the same name: `3 meetings · last Wed 11 Nov`.
     pub series: Option<String>,
-    /// Coming up: (`Fri 13 · 14:00`, title, own event).
-    pub coming: Vec<(String, String, bool)>,
+    /// Coming up: (`Fri 13 · 14:00`, title, `events.source`: own · google · mac).
+    pub coming: Vec<(String, String, String)>,
     /// The ⋯ menu's confirm step: `rename` · `merge` · `delete`.
     pub act: Option<String>,
     pub error: Option<String>,

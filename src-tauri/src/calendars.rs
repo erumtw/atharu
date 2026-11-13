@@ -41,7 +41,8 @@ pub fn start(st: AppState, mc: Arc<MacCalendars>) {
         // The observer lives as long as the app.
         std::mem::forget(token);
         loop {
-            if let Err(e) = sync(&st, &mc, &store) {
+            // Every sync makes autoreleased Foundation objects; a pool per pass frees them (a bare thread has none).
+            if let Err(e) = objc2::rc::autoreleasepool(|_| sync(&st, &mc, &store)) {
                 eprintln!("mac calendars: {e}");
             }
             tauri::async_runtime::block_on(async {
@@ -185,10 +186,13 @@ fn iso(d: NaiveDate) -> String {
 }
 
 fn ns_date(d: NaiveDate) -> Retained<NSDate> {
-    let t = Local
-        .from_local_datetime(&d.and_time(NaiveTime::MIN))
-        .earliest()
-        .map_or(0, |t| t.timestamp());
+    // A DST change at midnight skips 00:00 in some zones: start the day at 01:00 then.
+    let at = |h: u32| {
+        Local
+            .from_local_datetime(&d.and_hms_opt(h, 0, 0)?)
+            .earliest()
+    };
+    let t = at(0).or_else(|| at(1)).map_or(0, |t| t.timestamp());
     NSDate::dateWithTimeIntervalSince1970(t as f64)
 }
 

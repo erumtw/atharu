@@ -20,7 +20,10 @@ pub fn routes() -> Router<AppState> {
         .route("/settings/transcription/model", post(handlers::model))
         .route("/settings/transcription/lang", post(handlers::lang))
         .route("/settings/transcription/people", post(handlers::people))
-        .route("/settings/maccal", post(handlers::save_mac_cal))
+        .route(
+            "/settings/maccal",
+            get(handlers::mac_cal_get).post(handlers::save_mac_cal),
+        )
         .route("/settings/db", post(handlers::save_db))
         .route("/settings/db/note", post(handlers::db_note_seen))
 }

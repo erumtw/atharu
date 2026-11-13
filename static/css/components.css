@@ -307,7 +307,7 @@ form.inline{display:inline}
 .cg .bd .ev .t{display:none}
 .cg .bd .ev b{font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cg .bd .ev small{color:var(--muted)}
-/* Short blocks (< 40 min) hold the title line only; the time would be cut mid-line. */
+/* Short blocks (< 40 min) hold the title line only; the time would be cut mid-line. "+N": --ink-2 on --fill-2 11.09:1. */
 .cg .tev.short>.ev{padding-block:2px}
 .cg .tev.short small{display:none}
 .cg .tmore{display:flex;align-items:center;justify-content:center;height:calc(var(--px) * 26 / 60 - 2px);border-radius:6px;background:var(--fill-2);color:var(--ink-2);font-size:11px;font-weight:600;text-decoration:none}
@@ -767,7 +767,7 @@ details.tg>summary .small{font-size:13px}
 .side a.sub i{color:var(--muted)}
 .etab{table-layout:fixed;width:100%}
 .etab td{overflow:hidden;text-overflow:ellipsis}
-/* Today (0.2.0): Start meeting pill's field and the View menu (positioned with .pmenu above). */
+/* Today (0.2.0): Start meeting pill's field (positioned with .pmenu above). */
 .startm #meeting{display:flex;flex-direction:column;gap:8px}
 .startm #meeting>.small,.startm #meeting>.err{padding:0 !important}
 .needs h3{margin:10px 0 6px}
@@ -793,6 +793,7 @@ table.series td:first-child{overflow-wrap:anywhere}
 
 /* Quiet due date (owner 2026-11-14): always shown as the row's last column, right-aligned so dates line up; muted
    13px, red when late, accent on today. The date picker stays in the hover toolbar. */
+/* A to-do's quiet due date, 13px: --muted on white 5.07:1, late --err 6.54:1, today --accent 5.57:1. */
 .qdue{order:99;min-width:72px;text-align:right;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .qdue.late{color:var(--err)}.qdue.today{color:var(--accent)}
 

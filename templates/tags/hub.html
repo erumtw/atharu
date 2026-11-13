@@ -103,8 +103,8 @@
 {%- endif %}
 {%- if !coming.is_empty() %}
 <details class="tg" open><summary>Coming up <span class="small muted normal">· {{ coming.len() }}</span></summary><div class="blocks small">
-{%- for (at, title, own) in coming %}
-<div class="blk"><span class="due" style="width: 92px">{{ at }}</span>{% if *own %}<span class="ltext">{% let text = title.as_str() %}{% include "partials/tag_text.html" %}</span><span class="small muted">your event</span>{% else %}<span>{{ title }}</span><span class="chip">Google</span><span class="small muted" title="Google events are never tagged; they show here when a word in the title matches">matched by word</span>{% endif %}</div>
+{%- for (at, title, src) in coming %}
+<div class="blk"><span class="due" style="width: 92px">{{ at }}</span>{% if src == "own" %}<span class="ltext">{% let text = title.as_str() %}{% include "partials/tag_text.html" %}</span><span class="small muted">your event</span>{% else %}<span>{{ title }}</span><span class="chip">{% if src == "mac" %}Calendar{% else %}Google{% endif %}</span><span class="small muted" title="Calendar events are never tagged; they show here when a word in the title matches">matched by word</span>{% endif %}</div>
 {%- endfor %}
 </div></details>
 {%- endif %}

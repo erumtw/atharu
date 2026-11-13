@@ -9,6 +9,12 @@ pub fn set(conn: &Connection, key: &str, value: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
+/// Mac calendars turned off (D7): the events the app synced go; they come back on the next sync when it's on again.
+pub fn clear_mac_events(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute("DELETE FROM events WHERE source = 'mac'", [])?;
+    Ok(())
+}
+
 pub fn get(conn: &Connection, key: &str) -> rusqlite::Result<Option<String>> {
     conn.query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| {
         r.get(0)
