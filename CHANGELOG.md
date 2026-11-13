@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.8 — 2026-11-13
+
+### Other
+
+- perf: recording captures 1 screen frame per 10 s, reads Others audio in chunks at Stop
+
 ## v0.1.7 — 2026-11-12
 
 ### Features
