@@ -431,7 +431,7 @@ the log scrolls under it.
   hint at 3.88 there. In the panel, links take `--accent-2` (`--accent` is 4.44
   over black) and the to-do check ring `--muted` (`--ctl-edge` is 2.12 there); fields and pills keep a `--line` edge.
 - **Layout**, 360 × 480, 12 side padding, sections split by hairlines, in this order: **header** (40: dry-brush mark · **Atharu** ·
-  date in `--muted` · "Open Atharu" `.ib`) · **capture** · **meeting** · **to-dos**. Desktop control heights at every width: the page
+  date in `--muted` · **New note** `.ib` (aria-pressed in note mode) · **Open Atharu** `.ib`) · **capture** · **meeting** · **to-dos**. Desktop control heights at every width: the page
   loads tokens/base/components/looks + `quick.css`, never `responsive.css` (360 px must not trip the phone rules); a `(hover:none)`
   rule gives touch its 44.
 - **Capture** (0.2.6, board Redesign.Quick): ONE field, 8 px between it, the legend and the hint (the section's gap). `.q2f` is 40 tall,
@@ -481,33 +481,33 @@ the log scrolls under it.
   `/todos`. Ticking posts at once; the struck row stays until the popover closes (untick = reopen). Empty: "Nothing due. Start a line with
   `>` to add one." + "N open · Open Atharu". Sections are flat: a `--line` hairline between them, 10 padding (the capture sits under the
   header with no rule); Glass everywhere keeps its cards (8/12 padding, 6 apart).
-- **Keyboard**: opens focused in the line. Tab from the line: Log ↵ → series pills → name → Start / End meeting → each check →
-  + N more; Shift+Tab: Note tile → kind tiles (one stop, ←→ picks) → Open Atharu. Enter saves (unless an option was arrowed to). Esc closes an open
-  menu, else hides the popover; blur hides it; Ctrl+Opt+Space toggles it. Any link opens in the main window and hides the popover.
+- **Keyboard** (0.2.6): opens focused in the line. Tab from the line: **Log ↵** → meeting name → mic toggle → **Start** (or, while a meeting
+  runs: 📷 → mic → **End meeting**) → each to-do's check → "+ N more · Open Atharu"; Shift+Tab: the kind button → **New note** → **Open
+  Atharu**. Enter saves (unless an option was arrowed to). Esc closes an open menu (the kind menu, `#`, `by `, series), else hides the
+  popover; blur hides it; Ctrl+Opt+Space toggles it; ⌘N or `n ` = note. Any link opens in the main window and hides the popover.
 - **Menu-bar icon states**: idle = the Dry brush mark (template, macOS tints it) · meeting running = the mark with a solid badge
   dot bottom-right, cut out of the ring (template; also while a recording finishes or is blocked) · capturing = the same in `#ff3b30` (not a template: red has to stay red; reads on
   light and dark bars), with the recording's elapsed time (`04:12`) as the item's title beside it. Tooltip names the state and
   meeting. The app polls every second, so a browser start/end shows too.
-- **Recording in the meeting card** (app only, same rules as the banner): model ready + not recording → **Record** ghost pill
-  before End meeting; live → the card's dot turns `.dot.rec`, the line reads "Recording · 0:42", **Stop** (meeting keeps running);
-  finishing → "Transcribing…". The browser shows none of it.
+- **Recording in the meeting row** (app only, same rules as the banner; see Meeting above): the dark row's mic toggle is the whole
+  control. Model ready + not recording → crossed grey mic (click starts); live → red mic + `.dot.rec` + the elapsed time, click stops
+  (the meeting keeps running); blocked → disabled + "Allow recording"; finishing → "Transcribing…". The browser shows none of it.
 - **Series menu** (T93): the start box opens the capture bar's opaque menu below it on focus, "Recent series" (up to 12),
   filtered as you type; ↑↓ selects (nothing preselected, so ↵ on a typed new name starts that name), ↵ / Tab / click picks
-  and starts at once; names clip with the full one on hover. Replaced the 3 series pills (a long name took a row and pushed
-  the to-dos out of the window). No JS: a `<datalist>`.
-- **Record audio on start** (app only): the shared `.recopt` switch under the Start row, off every time; on → "Tell people
-  you're recording." in ink. One switch serves both the series pills and the name box (pills carry a hidden `record` the switch
-  enables). No model → disabled + "Needs the speech model. Settings".
+  and starts at once (the mic toggle rides along); names clip with the full one on hover. Replaced the 3 series pills (a long name took a row
+  and pushed the to-dos out of the window). No JS: a `<datalist>`.
 - **Right-click menu** (native NSMenu, follows system light/dark): **Open Atharu** · **Start meeting ›** the 3 recent series ·
   while one runs, **End meeting · name** instead · separator · **Quit Atharu ⌘Q**. "Quick capture" goes (left click is it now).
 - **RT / IC**: Reduce Transparency → panel 100% white + `--line` hairline, no blur (the OS drops the material too). Increase Contrast →
-  ink edge (from `.menu`), ink hairlines and tile outlines, `--muted-hc`, ink check ring.
+  ink edge (from `.menu`), ink hairlines, the field and the note box edged in ink, the picked kind row ringed, `--muted-hc`, ink check ring.
 - **AA** (`aa81b.py`, each look at its floor, weakest step −5%, darkest veiled stop, unblurred, Clear + Tinted + IC; app = wallpaper
   .8 over black + the 35% floor): worst text is always the hint/links `--accent-2`: browser Sumi 5.75 · Sora 5.34 · Wakaba 5.63 ·
   Glass 4.88; app Sumi 4.56 · Sora 4.68 · Wakaba 4.66 · Glass 4.57. Rings ≥ 3.59. Opaque pairs unchanged (white on `--accent` 5.57,
-  dark callout as the banner: white 14.91, muted 9.28, End 4.94, rec dot 4.90).
-- **Canvas drift**: the Quick boards still show the T81 white 90% panel with the tiles touching the field; the app (above) is the
-  source of truth until the boards are redrawn. Quick.Note (T86) is drawn from the current `static/css`.
+  dark callout as the banner: white 14.91, muted 9.28, rec dot 4.90). 0.2.6 adds only opaque pairs, measured in `quick.css`: the kind
+  button and its menu (`--accent-2` 6.25 on `--fill-2`, 7.12 on white), the mic (`--muted` 5.07 on white, white on `#ff3b30` 3.55 as a
+  non-text pair), the dark row's mic and 📷 (white on the row's `rgba(255,255,255,.14)` over `--dark`).
+- **Canvas**: the boards "Next · 0.2.6 Menu-bar popover" (`Redesign.Quick`, `Redesign.Quick.States`, final version 64) are what the
+  app draws; where they differ from the text above, the text is what shipped.
 
 ### Line notes (canvas row "Line notes · the note is the detail page", T84; D49)
 

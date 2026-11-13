@@ -104,7 +104,9 @@ docker compose down
 <summary><b>Mac app</b></summary>
 
 Tauri 2 on the system WebView. It serves the same pages on a free local port and lives in the menu bar.
-<kbd>Ctrl</kbd><kbd>Opt</kbd><kbd>Space</kbd> opens the capture bar from anywhere.
+<kbd>Ctrl</kbd><kbd>Opt</kbd><kbd>Space</kbd> opens a compact popover from anywhere: one field to log a line (pick a kind, or type `!` `x` `+` `?` `>`),
+`n ` or <kbd>⌘</kbd><kbd>N</kbd> for a quick note, one row to start a meeting (a mic toggle records it), and today's to-dos. `n ` works in
+Today's capture bar too.
 
 - **Database:** it uses `~/atharu/data/atharu.db` when that file exists, so the browser, CLI, agents and app share one
   log. Otherwise it uses `~/Library/Application Support/dev.atharu.desktop/atharu.db`. Settings › About › Database file
