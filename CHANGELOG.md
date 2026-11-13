@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.1.12 — 2026-11-13
+
+### Features
+
+- Launch animation for the Mac app (Ink · Liquid Glass · Off); marking an epic done stamps its date
+
+### Under the hood
+
+- README rewritten for open source, with screenshots from a demo DB
+- Release pages get Highlights + demo-DB screenshots; release.sh groups Performance / Under the hood
+
 ## v0.1.11 — 2026-11-13
 
 ### Other
