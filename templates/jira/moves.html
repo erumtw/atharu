@@ -1,0 +1,8 @@
+{#- The ▾ menu on a Jira chip (0.2.5 D1, D8): Jira's allowed moves for this issue, read live, + Open in Jira. A pick posts
+    one transition (a plain form; htmx puts the result in the page's #jtoast). -#}
+{%- if dead_token %}<div class="mf err" role="presentation">Token expired or revoked. <a href="{{ token_url }}" target="_blank" rel="noopener noreferrer">Make a new one ↗</a></div>{% endif %}
+{%- if let Some(n) = note %}<div class="mf" role="presentation">{{ n }}</div>{% endif %}
+{%- for m in moves %}
+<form method="post" action="/jira/{{ key }}/move" hx-post="/jira/{{ key }}/move" hx-target="#jtoast" hx-swap="innerHTML" onsubmit="this.closest('[popover]')?.hidePopover()"><input type="hidden" name="to" value="{{ m.id }}"><input type="hidden" name="back" value="{{ back }}"><button role="menuitem" type="submit">{{ m.to }}{% if m.name != m.to %} <span class="small muted">· {{ m.name }}</span>{% endif %}</button></form>
+{%- endfor %}
+{%- if let Some(u) = url %}<a role="menuitem" href="{{ u }}" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a>{% endif %}

@@ -1,0 +1,10 @@
+{#- What a Jira move did (0.2.5 D8): 5 s, with Undo while the move can be reversed. The chips of this key on the page
+    take the new status out-of-band. -#}
+<span class="jtoast-in">
+{%- if dead_token %}<span class="err">Token expired or revoked.</span> <a href="{{ token_url }}" target="_blank" rel="noopener noreferrer">Make a new one ↗</a>
+{%- else %}<span>{{ text }}</span>
+{%- if let Some(from) = undo %} · <form class="inline" method="post" action="/jira/{{ key }}/undo" hx-post="/jira/{{ key }}/undo" hx-target="#jtoast" hx-swap="innerHTML"><input type="hidden" name="to" value="{{ from }}"><input type="hidden" name="back" value="{{ back }}"><button class="linkbtn" type="submit">Undo</button></form>
+{%- else if status.is_none() %}{% if let Some(u) = url %} <a href="{{ u }}" target="_blank" rel="noopener noreferrer">↗</a>{% endif %}
+{%- endif %}
+{%- endif %}</span>
+{%- if let Some(s) = status %}<span hx-swap-oob="innerHTML:.jst-{{ key }}">{{ s }}</span>{% endif %}

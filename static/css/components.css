@@ -61,6 +61,19 @@ select.pin{cursor:pointer}
 /* A chip inside a link (epic key, note row) answers the hover too, not just the underline. */
 a:hover>.chip{background:var(--sep)}
 .lchip{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--accent);background:var(--fill-2);white-space:nowrap;letter-spacing:0}
+/* A Jira chip and its ▾ (0.2.5): the ▾ opens Jira's allowed moves; one pill visually. */
+.jchip{display:inline-flex;align-items:center;gap:0}
+.jchip .lchip{border-top-right-radius:0;border-bottom-right-radius:0}
+.jmv{font:inherit;font-size:11px;line-height:1;height:20px;padding:0 6px;border:0;border-left:1px solid var(--line);border-radius:0 6px 6px 0;background:var(--fill-2);color:var(--accent);cursor:pointer}
+.jmv:hover{background:var(--sep)}
+.jmenu[popover]{position:fixed;inset:auto;margin:0;top:30%;left:50%;transform:translateX(-50%);width:260px}
+@supports (position-anchor:--a){.jmenu[popover]{transform:none;top:calc(anchor(bottom) + 4px);left:anchor(left);position-try-fallbacks:flip-block,flip-inline}}
+/* Move result: fixed under the crumb on every page, fades after 5 s (D8; Undo stays clickable until then). */
+#jtoast{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:30}
+#jtoast:empty{display:none}
+.jtoast-in{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:var(--fill-3);border:1px solid var(--line);border-radius:9999px;padding:6px 14px;box-shadow:0 6px 20px rgba(0,0,0,.12);animation:jt 5s forwards}
+@keyframes jt{0%,90%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion: reduce){.jtoast-in{animation:jt 5s steps(1,end) forwards}}
 .lchip:hover{background:var(--sep);text-decoration:none}
 .flag{display:inline-flex;font-size:12px;border-radius:9999px;padding:1px 10px;font-weight:500;white-space:nowrap;letter-spacing:0}
 .flag.stale{background:var(--fill-2);color:var(--ink-2)}

@@ -13,7 +13,7 @@
 <span class="ltext{% if !p.is_open() %} done-text{% endif %}">{% let shown = p.shown_text() %}{% for s in crate::domain::tags::segments(shown.as_str()) %}{% if let Some(t) = s.tag %}<a class="chip tag" href="/tags/{{ t }}">{{ t }}</a>{% else %}<a class="edit-line" href="{{ edit_href }}" hx-get="/entries/{{ p.id }}/edit?plan=1" hx-target="#plan-{{ p.id }}" hx-swap="outerHTML" title="Click to edit">{{ s.text }}</a>{% endif %}{% endfor %}</span>
 {%- if p.author != "me" %}<span class="chip tag at" title="Filed by {{ p.author }}">{{ p.author }}</span>{% endif %}
 {%- if let Some(v) = p.via %}<span class="via">via {% if crate::domain::entry::is_epic_key(v) %}<a href="/epics/{{ v }}"><span class="chip key">{{ v }}</span></a>{% else %}<a href="/meetings?name={{ v }}" title="{{ v }}: the series"><span class="chip">{{ v }}</span></a>{% endif %}</span>{% endif %}
-{%- if let Some(l) = p.link %}<a class="lchip" href="{{ l }}" target="_blank" rel="noopener noreferrer">{{ p.link_label() }} ↗</a>{% endif %}
+{%- if let Some(l) = p.link %}<span class="jchip"><a class="lchip" href="{{ l }}" target="_blank" rel="noopener noreferrer">{{ p.link_label() }} ↗</a>{% if let Some(jk) = p.jira_key() %}{% let (ju, jurl) = ("p{}"|format(p.id), l.as_str()) %}{% include "partials/jira_menu.html" %}{% endif %}</span>{% endif %}
 {%- if let Some(k) = p.epic_key %}<a href="/epics/{{ k }}"><span class="chip key">{{ k }}</span></a>{% endif %}
 {%- if full && p.pinned && p.is_open() %}<span class="chip">pinned</span>{% endif %}
 {%- if !full && p.is_open() && p.due.is_none() && !p.pinned %}<span class="small muted">{{ p.age(today) }}</span>{% endif %}

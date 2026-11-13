@@ -87,3 +87,23 @@ pub fn set_auth_failed(conn: &Connection, failed: bool) -> rusqlite::Result<()> 
     }
     Ok(())
 }
+
+/// The cached status name (`None` = not cached).
+pub fn status(conn: &Connection, key: &str) -> rusqlite::Result<Option<String>> {
+    use rusqlite::OptionalExtension;
+    conn.query_row(
+        "SELECT status FROM jira_issues WHERE key = ?1",
+        [key],
+        |r| r.get(0),
+    )
+    .optional()
+}
+
+/// After a move: the cache shows the new status at once (the next refresh confirms it).
+pub fn moved(conn: &Connection, key: &str, status: &str, cat: &str) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE jira_issues SET status = ?2, status_cat = ?3, fetched_at = datetime('now') WHERE key = ?1",
+        params![key, status, cat],
+    )?;
+    Ok(())
+}

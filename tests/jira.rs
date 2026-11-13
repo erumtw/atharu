@@ -96,7 +96,7 @@ async fn off_without_all_three_keys() {
     let b = get(&st, "/epics").await.body;
     assert!(b.contains("action=\"/jira/refresh\"") && !b.contains("t0k"));
     // The ↗ chip: cached status, linking the issue on the configured site (trailing / dropped).
-    let chip = r#"<a class="lchip" href="https://acme.atlassian.net/browse/OPS-101" target="_blank" rel="noopener noreferrer" title="Open OPS-101 in Jira">In Progress ↗</a>"#;
+    let chip = r#"<a class="lchip" href="https://acme.atlassian.net/browse/OPS-101" target="_blank" rel="noopener noreferrer" title="Open OPS-101 in Jira"><span class="jst-OPS-101">In Progress</span> ↗</a>"#;
     assert!(b.contains(chip), "{b}");
     assert!(get(&st, "/epics/OPS-101").await.body.contains(chip));
     assert!(
@@ -221,4 +221,193 @@ async fn refresh_reads_hierarchy_flags_assigned_and_names_a_dead_token() {
         ),
         0
     );
+}
+
+/// A fake Jira workflow for one issue: Ready → In Progress → Done (needs Resolution) / Won't do; posts are recorded.
+async fn fake_workflow(
+    posted: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
+    status: std::sync::Arc<std::sync::atomic::AtomicU16>,
+) -> String {
+    use axum::{extract::Path, http::StatusCode, routing::get};
+    let at = std::sync::Arc::new(std::sync::Mutex::new("Ready".to_string()));
+    let (at_get, at_post) = (at.clone(), at.clone());
+    let (st_get, st_post) = (status.clone(), status.clone());
+    let app = axum::Router::new().route(
+        "/rest/api/3/issue/{key}/transitions",
+        get(move |Path(_k): Path<String>| {
+            let at = at_get.clone();
+            let code = st_get.load(std::sync::atomic::Ordering::SeqCst);
+            async move {
+                // From Ready: only forward. From In Progress: back to Ready, Done (needs a field), Won't do.
+                let body = if *at.lock().unwrap() == "Ready" {
+                    r#"{"transitions":[{"id":"21","name":"Start","to":{"name":"In Progress","statusCategory":{"key":"indeterminate"}}}]}"#
+                } else {
+                    r#"{"transitions":[
+                      {"id":"11","name":"Back to ready","to":{"name":"Ready","statusCategory":{"key":"new"}}},
+                      {"id":"31","name":"Done","to":{"name":"Done","statusCategory":{"key":"done"}},
+                       "fields":{"resolution":{"required":true,"name":"Resolution"}}},
+                      {"id":"41","name":"Won't do","to":{"name":"Won't do","statusCategory":{"key":"done"}}}]}"#
+                };
+                (StatusCode::from_u16(code).unwrap(), body)
+            }
+        })
+        .post(move |Path(_k): Path<String>, body: String| {
+            let (at, posted) = (at_post.clone(), posted.clone());
+            let code = st_post.load(std::sync::atomic::Ordering::SeqCst);
+            async move {
+                posted.lock().unwrap().push(body.clone());
+                if code != 200 {
+                    return (StatusCode::from_u16(code).unwrap(), String::new());
+                }
+                let to = match body.as_str() {
+                    b if b.contains("\"21\"") => "In Progress",
+                    b if b.contains("\"11\"") => "Ready",
+                    b if b.contains("\"31\"") => {
+                        return (StatusCode::BAD_REQUEST, r#"{"errors":{"resolution":"Resolution is required."}}"#.into());
+                    }
+                    _ => "Won't do",
+                };
+                *at.lock().unwrap() = to.into();
+                (StatusCode::NO_CONTENT, String::new())
+            }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{addr}")
+}
+
+#[tokio::test]
+async fn status_moves_on_press_with_undo() {
+    use std::sync::{
+        Arc, Mutex,
+        atomic::{AtomicU16, Ordering},
+    };
+    let posted = Arc::new(Mutex::new(Vec::new()));
+    let status = Arc::new(AtomicU16::new(200));
+    let base = fake_workflow(posted.clone(), status.clone()).await;
+    let st = jira_state(&base, "moves");
+    exec(
+        &st,
+        "INSERT INTO epics(key, title) VALUES ('OPS-130', 'Cold chain');
+         INSERT INTO jira_issues(key, summary, status, status_cat) VALUES ('OPS-130', 'Cold-chain alerts', 'Ready', 'new');",
+    );
+    // Every Jira chip has the ▾; nothing is sent to Jira until the menu opens.
+    let list = get(&st, "/epics").await.body;
+    assert!(
+        list.contains("<span class=\"jst-OPS-130\">Ready</span>")
+            && list.contains("hx-get=\"/jira/OPS-130/moves?back=/epics\""),
+        "{list}"
+    );
+    assert!(posted.lock().unwrap().is_empty());
+
+    // The menu: Jira's allowed moves, read live, + Open in Jira.
+    let menu = get(&st, "/jira/OPS-130/moves?back=/epics").await.body;
+    assert!(
+        menu.contains("<input type=\"hidden\" name=\"to\" value=\"21\">")
+            && menu.contains(">In Progress <span class=\"small muted\">· Start</span>"),
+        "{menu}"
+    );
+    assert!(menu.contains(
+        "/browse/OPS-130\" target=\"_blank\" rel=\"noopener noreferrer\">Open in Jira ↗</a>"
+    ));
+
+    // Pick: one POST, the cache follows, the toast offers Undo back to Ready; chips update out-of-band.
+    let r = post(
+        &st,
+        "/jira/OPS-130/move",
+        &form(&[("to", "21"), ("back", "/epics")]),
+        true,
+    )
+    .await;
+    assert_eq!(
+        posted.lock().unwrap().as_slice(),
+        [r#"{"transition":{"id":"21"}}"#]
+    );
+    assert!(
+        r.body.contains("Moved OPS-130 to In Progress in Jira"),
+        "{}",
+        r.body
+    );
+    assert!(
+        r.body.contains("action=\"/jira/OPS-130/undo\"")
+            && r.body.contains("name=\"to\" value=\"Ready\"")
+    );
+    assert!(
+        r.body
+            .contains("<span hx-swap-oob=\"innerHTML:.jst-OPS-130\">In Progress</span>")
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM jira_issues WHERE status = 'In Progress' AND status_cat = 'indeterminate'"
+        ),
+        1
+    );
+
+    // Undo = the move back to the previous status.
+    let r = post(&st, "/jira/OPS-130/undo", &form(&[("to", "Ready")]), true).await;
+    assert!(r.body.contains("Moved OPS-130 back to Ready in Jira") && !r.body.contains("/undo"));
+    // From Ready there's no move to "Won't do": say so, send nothing.
+    let n = posted.lock().unwrap().len();
+    let r = post(
+        &st,
+        "/jira/OPS-130/undo",
+        &form(&[("to", "Won't do")]),
+        true,
+    )
+    .await;
+    assert!(
+        r.body.contains("Can&#39;t undo in Jira: open OPS-130"),
+        "{}",
+        r.body
+    );
+    assert_eq!(posted.lock().unwrap().len(), n);
+
+    // A move that needs a field: hand over to Jira, never guess; the cache stays.
+    post(&st, "/jira/OPS-130/move", &form(&[("to", "21")]), true).await;
+    let r = post(&st, "/jira/OPS-130/move", &form(&[("to", "31")]), true).await;
+    assert!(
+        r.body
+            .contains("Jira needs Resolution for “Done”. Open in Jira"),
+        "{}",
+        r.body
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM jira_issues WHERE status = 'In Progress'"
+        ),
+        1
+    );
+
+    // No JS: 303 back.
+    let r = post(
+        &st,
+        "/jira/OPS-130/move",
+        &form(&[("to", "11"), ("back", "/epics/OPS-130")]),
+        false,
+    )
+    .await;
+    assert_eq!(r.status, 303);
+    assert_eq!(r.headers["location"], "/epics/OPS-130");
+
+    // 401: named (D9), stored, nothing moved.
+    status.store(401, Ordering::SeqCst);
+    let r = post(&st, "/jira/OPS-130/move", &form(&[("to", "21")]), true).await;
+    assert!(
+        r.body.contains("Token expired or revoked.")
+            && r.body
+                .contains("id.atlassian.com/manage-profile/security/api-tokens")
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM settings WHERE key = 'jira_auth_failed'"
+        ),
+        1
+    );
+    // Not a key: never reaches Jira.
+    assert_eq!(get(&st, "/jira/..%2Fadmin/moves").await.status, 404);
 }

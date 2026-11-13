@@ -1,18 +1,29 @@
 //! Jira (spec P6, 0.2.5 D1–D10): summary, status, type, parent, due, resolved and updated for keys we already have,
 //! plus the open issues assigned to me, cached in `jira_issues`. Never creates our rows. No page imports this slice:
 //! pages read the cache table through their own queries. The token never reaches a log line.
+mod moves;
 mod queries;
 
+pub use moves::{Move, TOKEN_URL, parse_moves};
 pub use queries::Issue;
 
 use crate::{app::AppState, config::Jira, domain::plan::jira_key, error::AppResult, web};
-use axum::{Form, Router, extract::State, response::Response, routing::post};
+use axum::{
+    Form, Router,
+    extract::State,
+    response::Response,
+    routing::{get, post},
+};
 use rusqlite::Connection;
 use serde::Deserialize;
 use std::{collections::BTreeSet, time::Duration};
 
 pub fn routes() -> Router<AppState> {
-    Router::new().route("/jira/refresh", post(refresh_button))
+    Router::new()
+        .route("/jira/refresh", post(refresh_button))
+        .route("/jira/{key}/moves", get(moves::moves))
+        .route("/jira/{key}/move", post(moves::move_to))
+        .route("/jira/{key}/undo", post(moves::undo))
 }
 
 #[derive(Deserialize)]

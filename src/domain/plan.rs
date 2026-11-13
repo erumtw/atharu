@@ -88,6 +88,12 @@ impl Plan {
         }
     }
 
+    /// The Jira issue this to-do links, when its cache row exists (so Jira is set up): its ▾ moves it.
+    pub fn jira_key(&self) -> Option<&str> {
+        self.jira.as_ref()?;
+        jira_key(self.link.as_deref()?)
+    }
+
     pub fn is_late(&self, today: &NaiveDate) -> bool {
         self.is_open() && self.due.is_some_and(|d| d < *today)
     }

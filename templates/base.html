@@ -62,6 +62,8 @@
 {%- block crumb_extra %}{% endblock %}
 </div>
 {% block content %}{% endblock %}
+{#- Jira move results (0.2.5 D8), on every page that shows a Jira chip. Empty = nothing shown. #}
+<div id="jtoast" role="status" aria-live="polite"></div>
 </div>
 </div>
 </body>

@@ -1,0 +1,3 @@
+{#- ▾ beside a Jira chip (0.2.5 D1, D8): needs `jk` (issue key), `ju` (unique on the page), `jurl` (browse link), `back`.
+    The popover loads Jira's allowed moves when it opens; without JS it still opens Jira. -#}
+<button class="jmv" type="button" popovertarget="jm-{{ ju }}" style="anchor-name: --jm-{{ ju }}" aria-label="Move {{ jk }} in Jira" title="Move {{ jk }} in Jira">▾</button><div class="menu jmenu" id="jm-{{ ju }}" popover role="menu" aria-label="Move {{ jk }} in Jira" style="position-anchor: --jm-{{ ju }}" hx-get="/jira/{{ jk }}/moves?back={{ back|urlencode }}" hx-trigger="toggle once" hx-swap="innerHTML"><a role="menuitem" href="{{ jurl }}" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a></div>
