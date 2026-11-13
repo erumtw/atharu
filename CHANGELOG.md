@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.13 — 2026-11-13
+
+### Fixes
+
+- Settings switches' sliding highlight keeps the macOS segment shape
+
+### Under the hood
+
+- V0.1.13 release screenshots
+
 ## v0.1.12 — 2026-11-13
 
 ### Features
