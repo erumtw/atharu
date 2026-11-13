@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.9 — 2026-11-13
+
+### Features
+
+- ticking a to-do asks for its follow-up; glass opacity may go below the AA floor
+
 ## v0.1.8 — 2026-11-13
 
 ### Other
