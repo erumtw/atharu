@@ -46,11 +46,12 @@ select.pin{cursor:pointer}
 .follow .nx{width:20px;flex:none;text-align:center;color:var(--muted)}
 .blk.ln>*{flex:none}
 .blk.ln>:is(.ltext,.edit-line,span:not([class])){flex:1 1 0;min-width:0;padding-block:calc((var(--lh) - 22px) / 2);overflow-wrap:anywhere}
-.blk.ln>:not(.ltext,.edit-line,span:not([class]),.chip,.k){min-height:var(--lh);display:inline-flex;align-items:center}
+.blk.ln>:not(.ltext,.edit-line,span:not([class]),.chip,.lchip,.k){min-height:var(--lh);display:inline-flex;align-items:center}
 .blk.ln>.row{flex-wrap:nowrap}
 .blk.ln>:empty{display:none}
 .blk.ln :is(.chip,.lchip){line-height:18px}
-.blk.ln>.chip{margin-top:calc((var(--lh) - 20px) / 2)}
+/* A link chip is a chip: same 20px pill, not stretched to the row height by the rule above. */
+.blk.ln>:is(.chip,.lchip){margin-top:calc((var(--lh) - 20px) / 2)}
 .blk.ln>.k{margin-top:calc((var(--lh) - 22px) / 2)}
 /* A series name is the long one: capped so the text keeps most of the row, "…" + full name on hover. */
 .blk.ln>:is(.via,a:has(>.chip:not(.key))){max-width:min(35%,16rem)}
@@ -59,7 +60,7 @@ select.pin{cursor:pointer}
 .blk.ln>.row .btn.ghost.s{min-width:58px;justify-content:center}
 /* A chip inside a link (epic key, note row) answers the hover too, not just the underline. */
 a:hover>.chip{background:var(--sep)}
-.lchip{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:0 8px;font-size:12px;color:var(--accent);background:var(--fill-2);white-space:nowrap;letter-spacing:0}
+.lchip{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--accent);background:var(--fill-2);white-space:nowrap;letter-spacing:0}
 .lchip:hover{background:var(--sep);text-decoration:none}
 .flag{display:inline-flex;font-size:12px;border-radius:9999px;padding:1px 10px;font-weight:500;white-space:nowrap;letter-spacing:0}
 .flag.stale{background:var(--fill-2);color:var(--ink-2)}
