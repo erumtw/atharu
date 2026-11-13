@@ -58,52 +58,43 @@ pub fn set_notes(conn: &Connection, id: i64, notes: &str) -> rusqlite::Result<bo
 pub struct MeetingRow {
     pub id: i64,
     pub day: String,
-    pub name: String,
-    pub notes: String,
     pub ended_at: Option<String>,
     /// NULL for meetings from before migration 007.
     pub started_at: Option<String>,
     /// Transcript lines across its recordings (0 = never recorded).
     pub tx_lines: i64,
     pub decisions: i64,
-    pub learned: i64,
     pub open: i64,
     pub done: i64,
     pub dropped: i64,
 }
 
-/// Series by latest meeting, newest day first inside; `name` narrows to one series.
-pub fn meetings(conn: &Connection, name: Option<&str>) -> rusqlite::Result<Vec<MeetingRow>> {
+/// The meetings of one series, newest first.
+pub fn meetings(conn: &Connection, name: &str) -> rusqlite::Result<Vec<MeetingRow>> {
     let mut stmt = conn.prepare(
-        "SELECT m.id, m.day, m.name, m.notes, m.ended_at,
+        "SELECT m.id, m.day, m.ended_at, m.started_at,
+                (SELECT COALESCE(SUM(json_array_length(t.segments)), 0) FROM meeting_transcripts t
+                  WHERE t.meeting_id = m.id),
                 COUNT(CASE WHEN e.kind = 'decision' THEN 1 END),
-                COUNT(CASE WHEN e.kind = 'learn' THEN 1 END),
                 COUNT(CASE WHEN e.plan_state = 'open' THEN 1 END),
                 COUNT(CASE WHEN e.plan_state = 'done' THEN 1 END),
-                COUNT(CASE WHEN e.plan_state = 'dropped' THEN 1 END),
-                m.started_at,
-                (SELECT COALESCE(SUM(json_array_length(t.segments)), 0) FROM meeting_transcripts t
-                  WHERE t.meeting_id = m.id)
+                COUNT(CASE WHEN e.plan_state = 'dropped' THEN 1 END)
          FROM meetings m LEFT JOIN entries e ON e.meeting_id = m.id
-         WHERE ?1 IS NULL OR m.name = ?1
+         WHERE m.name = ?1
          GROUP BY m.id
-         ORDER BY (SELECT MAX(x.day) FROM meetings x WHERE x.name = m.name) DESC, m.name,
-                  m.day DESC, m.id DESC",
+         ORDER BY m.day DESC, m.id DESC",
     )?;
     stmt.query_map([name], |r| {
         Ok(MeetingRow {
             id: r.get(0)?,
             day: r.get(1)?,
-            name: r.get(2)?,
-            notes: r.get(3)?,
-            ended_at: r.get(4)?,
+            ended_at: r.get(2)?,
+            started_at: r.get(3)?,
+            tx_lines: r.get(4)?,
             decisions: r.get(5)?,
-            learned: r.get(6)?,
-            open: r.get(7)?,
-            done: r.get(8)?,
-            dropped: r.get(9)?,
-            started_at: r.get(10)?,
-            tx_lines: r.get(11)?,
+            open: r.get(6)?,
+            done: r.get(7)?,
+            dropped: r.get(8)?,
         })
     })?
     .collect()
@@ -140,6 +131,10 @@ pub fn rename_series(conn: &mut Connection, old: &str, new: &str) -> rusqlite::R
     )?;
     tx.execute(
         "UPDATE taggings SET item_id = ?2 WHERE item_type = 'series' AND item_id = ?1",
+        params![old, new],
+    )?;
+    tx.execute(
+        "UPDATE series_archive SET name = ?2 WHERE name = ?1",
         params![old, new],
     )?;
     // `[[old]]` in any note would turn into a dead link: follow the rename (the body's only change).
@@ -246,6 +241,65 @@ pub fn lines(conn: &Connection, id: i64) -> rusqlite::Result<Vec<LineRow>> {
 }
 
 /// Action items: plans logged in the meeting, any state.
+/// One row per series for the Meetings list, latest meeting first.
+pub struct SeriesRow {
+    pub name: String,
+    pub meetings: i64,
+    pub last_day: String,
+    pub open: i64,
+    pub archived: bool,
+}
+
+pub fn series_rows(conn: &Connection) -> rusqlite::Result<Vec<SeriesRow>> {
+    let mut stmt = conn.prepare(
+        "SELECT m.name, COUNT(DISTINCT m.id), MAX(m.day),
+                COUNT(CASE WHEN e.plan_state = 'open' THEN 1 END),
+                m.name IN (SELECT name FROM series_archive)
+         FROM meetings m LEFT JOIN entries e ON e.meeting_id = m.id
+         GROUP BY m.name ORDER BY MAX(m.day) DESC, m.name",
+    )?;
+    stmt.query_map([], |r| {
+        Ok(SeriesRow {
+            name: r.get(0)?,
+            meetings: r.get(1)?,
+            last_day: r.get(2)?,
+            open: r.get(3)?,
+            archived: r.get(4)?,
+        })
+    })?
+    .collect()
+}
+
+pub fn is_archived(conn: &Connection, name: &str) -> rusqlite::Result<bool> {
+    conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM series_archive WHERE name = ?1)",
+        [name],
+        |r| r.get(0),
+    )
+}
+
+/// Archive (`on`) or bring back a series; idempotent both ways.
+pub fn set_archived(conn: &Connection, name: &str, on: bool) -> rusqlite::Result<()> {
+    if on {
+        conn.execute(
+            "INSERT OR IGNORE INTO series_archive(name) SELECT ?1 WHERE EXISTS (SELECT 1 FROM meetings WHERE name = ?1)",
+            [name],
+        )?;
+    } else {
+        conn.execute("DELETE FROM series_archive WHERE name = ?1", [name])?;
+    }
+    Ok(())
+}
+
+/// Open action items logged in any meeting of the series, oldest first.
+pub fn series_plans(conn: &Connection, name: &str) -> rusqlite::Result<Vec<Plan>> {
+    let mut stmt = conn.prepare(&format!(
+        "{SELECT_PLAN} WHERE meeting_id IN (SELECT id FROM meetings WHERE name = ?1)
+           AND kind = 'plan' AND plan_state = 'open' ORDER BY id"
+    ))?;
+    stmt.query_map([name], crate::db::plan)?.collect()
+}
+
 pub fn plans(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Plan>> {
     let mut stmt = conn.prepare(&format!(
         "{SELECT_PLAN} WHERE meeting_id = ?1 AND kind = 'plan' ORDER BY id"

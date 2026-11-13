@@ -64,6 +64,7 @@ pub fn meetings(
 ) -> rusqlite::Result<Vec<MeetingRow>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT id, day, name, ended_at FROM meetings WHERE day BETWEEN ?1 AND ?2
+           AND name NOT IN (SELECT name FROM series_archive)
            AND (json_array_length(?3) = 0 OR name IN {ANY} OR EXISTS (SELECT 1 FROM taggings t
                  WHERE t.item_type = 'series' AND t.item_id = meetings.name AND t.tag IN {ANY}))
          ORDER BY day, id"

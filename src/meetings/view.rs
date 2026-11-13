@@ -33,17 +33,18 @@ pub struct ListRow {
     /// `16 lines` of transcript, or empty.
     pub transcript: String,
     pub decisions: i64,
-    pub learned: i64,
     /// `1 open · 1 done`, or `—`.
     pub actions: String,
-    /// First line of the notes, cut short, or `—`.
-    pub notes: String,
     pub running: bool,
 }
 
-pub struct SeriesGroup {
+/// One series on the Meetings list (one row each; its page lists the meetings).
+pub struct SeriesItem {
     pub name: String,
-    pub rows: Vec<ListRow>,
+    pub meetings: i64,
+    /// `today` / `Mon 9 Nov`.
+    pub last: String,
+    pub open: i64,
 }
 
 #[derive(Template)]
@@ -52,9 +53,33 @@ pub struct List {
     pub layout: Layout,
     pub side: Vec<SideSeries>,
     pub banner: Banner,
-    pub groups: Vec<SeriesGroup>,
-    /// Set when `?name=` narrows the list to one series.
-    pub filter: Option<String>,
+    pub series: Vec<SeriesItem>,
+    /// Archived series, folded under the list (D4).
+    pub archived: Vec<SeriesItem>,
+    /// `3 series · 4 meetings · last met today`.
+    pub fact: String,
+}
+
+/// `/meetings?name=X`: one series, on the shared page template.
+#[derive(Template)]
+#[template(path = "meetings/series.html")]
+pub struct Series {
+    pub layout: Layout,
+    pub side: Vec<SideSeries>,
+    pub name: String,
+    /// `2 meetings · last met today`.
+    pub fact: String,
+    pub archived: bool,
+    pub rows: Vec<ListRow>,
+    pub plans: Vec<Plan>,
+    pub today: NaiveDate,
+    pub back: String,
+    /// The series Tags prop posts through its latest meeting (`meetings/tags.html` needs `id`).
+    pub id: i64,
+    pub field: crate::layout::TagField,
+    pub same: crate::layout::SameName,
+    pub refs: Vec<crate::layout::Ref>,
+    pub ref_name: String,
 }
 
 pub struct KindGroup {

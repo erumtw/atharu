@@ -50,19 +50,6 @@ fn actions(open: i64, done: i64, dropped: i64) -> String {
     }
 }
 
-fn first_line(notes: &str) -> String {
-    let line = notes
-        .lines()
-        .find(|l| !l.trim().is_empty())
-        .unwrap_or("")
-        .trim();
-    match line.char_indices().nth(40) {
-        None if line.is_empty() => "—".into(),
-        None => line.to_string(),
-        Some((i, _)) => format!("{}…", &line[..i]),
-    }
-}
-
 fn label(day: &str) -> String {
     NaiveDate::parse_from_str(day, "%Y-%m-%d")
         .map(dates::label)
@@ -74,47 +61,135 @@ pub struct ListQuery {
     name: Option<String>,
 }
 
-fn render_list(st: &AppState, filter: Option<String>, b: Banner) -> AppResult<view::List> {
+fn list_row(m: queries::MeetingRow) -> view::ListRow {
+    view::ListRow {
+        id: m.id,
+        day: label(&m.day),
+        time: span_label(m.started_at.as_deref(), m.ended_at.as_deref()),
+        transcript: match m.tx_lines {
+            0 => String::new(),
+            1 => "1 line".into(),
+            n => format!("{n} lines"),
+        },
+        decisions: m.decisions,
+        actions: actions(m.open, m.done, m.dropped),
+        running: m.ended_at.is_none(),
+    }
+}
+
+/// `today`, else the day label.
+fn when(st: &AppState, day: &str) -> String {
+    if day == dates::iso(st.today()) {
+        "today".into()
+    } else {
+        label(day)
+    }
+}
+
+fn plural(n: i64, one: &str, many: &str) -> String {
+    format!("{n} {}", if n == 1 { one } else { many })
+}
+
+fn render_list(st: &AppState, b: Banner) -> AppResult<view::List> {
     let conn = st.conn();
-    let mut groups: Vec<view::SeriesGroup> = Vec::new();
-    for m in queries::meetings(&conn, filter.as_deref())? {
-        let row = view::ListRow {
-            id: m.id,
-            day: label(&m.day),
-            time: span_label(m.started_at.as_deref(), m.ended_at.as_deref()),
-            transcript: match m.tx_lines {
-                0 => String::new(),
-                1 => "1 line".into(),
-                n => format!("{n} lines"),
-            },
-            decisions: m.decisions,
-            learned: m.learned,
-            actions: actions(m.open, m.done, m.dropped),
-            notes: first_line(&m.notes),
-            running: m.ended_at.is_none(),
+    let (mut series, mut archived) = (Vec::new(), Vec::new());
+    let mut total = 0;
+    for r in queries::series_rows(&conn)? {
+        let item = view::SeriesItem {
+            last: when(st, &r.last_day),
+            name: r.name,
+            meetings: r.meetings,
+            open: r.open,
         };
-        // Rows come sorted by series, so a new name always means a new group.
-        match groups.last_mut() {
-            Some(g) if g.name == m.name => g.rows.push(row),
-            _ => groups.push(view::SeriesGroup {
-                name: m.name,
-                rows: vec![row],
-            }),
+        if r.archived {
+            archived.push(item);
+        } else {
+            total += item.meetings;
+            series.push(item);
         }
     }
+    let fact = match series.first() {
+        None => String::new(),
+        Some(f) => format!(
+            "{} · {} · last met {}",
+            plural(series.len() as i64, "series", "series"),
+            plural(total, "meeting", "meetings"),
+            f.last
+        ),
+    };
     Ok(view::List {
         layout: Layout::load(&conn, "meetings", "Meetings", vec![])?,
         side: side(&conn)?,
         banner: b,
-        groups,
-        filter,
+        series,
+        archived,
+        fact,
+    })
+}
+
+fn render_series(st: &AppState, name: &str) -> AppResult<view::Series> {
+    let conn = st.conn();
+    let rows: Vec<queries::MeetingRow> = queries::meetings(&conn, name)?;
+    let Some(latest) = rows.first() else {
+        return Err(AppError::NotFound);
+    };
+    let (id, last) = (latest.id, when(st, &latest.day));
+    let archived = queries::is_archived(&conn, name)?;
+    let fact = format!(
+        "{} · last met {last}{}",
+        plural(rows.len() as i64, "meeting", "meetings"),
+        if archived { " · archived" } else { "" }
+    );
+    Ok(view::Series {
+        layout: Layout::load(
+            &conn,
+            "meetings",
+            name,
+            vec![crumb("Meetings", "/meetings")],
+        )?,
+        side: side(&conn)?,
+        name: name.to_string(),
+        fact,
+        archived,
+        rows: rows.into_iter().map(list_row).collect(),
+        plans: queries::series_plans(&conn, name)?,
+        today: st.today(),
+        back: format!("/meetings?name={name}"),
+        id,
+        field: tag_field(&conn, name)?,
+        same: crate::layout::same_name(&conn, name, "series")?,
+        // `[[series]]` / `#series` notes and the notes on lines logged in any of its meetings.
+        refs: crate::layout::refs(&conn, Some(name), Some(crate::layout::Lines::Series(name)))?,
+        ref_name: name.to_string(),
     })
 }
 
 pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> AppResult<Response> {
+    if let Some(name) = q.name.filter(|n| !n.is_empty()) {
+        return web::html(&render_series(&st, &name)?);
+    }
     let b = banner(&st, &st.conn(), "/meetings".into(), String::new(), None)?;
-    let filter = q.name.filter(|n| !n.is_empty());
-    web::html(&render_list(&st, filter, b)?)
+    web::html(&render_list(&st, b)?)
+}
+
+#[derive(Deserialize)]
+pub struct ArchiveForm {
+    name: String,
+    /// `1` archives, anything else brings it back.
+    on: Option<String>,
+    back: Option<String>,
+}
+
+/// Archive / Unarchive a series (D4): a plain POST, then back where it came from.
+pub async fn archive(
+    State(st): State<AppState>,
+    Form(f): Form<ArchiveForm>,
+) -> AppResult<Response> {
+    queries::set_archived(&st.conn(), &f.name, f.on.as_deref() == Some("1"))?;
+    let back = f
+        .back
+        .filter(|b| b.starts_with('/') && !b.starts_with("//"));
+    Ok(web::back(back.as_deref().unwrap_or("/meetings")))
 }
 
 #[derive(Deserialize)]
@@ -158,7 +233,7 @@ pub async fn start(
         return web::html_status(status, &view::BannerSwap { banner: b });
     }
     // No JS and rejected: the meetings page carries the same box, with the message.
-    web::html_status(status, &render_list(&st, None, b)?)
+    web::html_status(status, &render_list(&st, b)?)
 }
 
 #[derive(Deserialize)]

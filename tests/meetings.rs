@@ -109,10 +109,13 @@ async fn lines_logged_during_a_meeting_get_its_id() {
     .await;
     assert!(r.body.contains("✓ saved"));
     let b = get(&st, "/meetings").await.body;
-    assert!(b.contains("<summary>oms-sync"));
-    assert!(b.contains("<td>1 open</td>"));
-    assert!(b.contains("Revisit queue design"));
-    assert!(!b.contains("if traffic doubles"));
+    // One row per series: name, meetings, last met, open action items.
+    assert!(
+        b.contains(
+            r#"<a class="ink" href="/meetings?name=oms-sync"><b>oms-sync</b></a></td><td>1</td>"#
+        ),
+        "{b}"
+    );
     assert!(b.contains("<span class=\"ell\">oms-sync</span><span>· 1</span>"));
     assert!(
         get(&st, "/")
@@ -142,9 +145,11 @@ async fn series_filter_and_report_numbers() {
            ('2026-11-11', 'plan', 'f', NULL, 'dropped', '2026-11-11'),
            ('2026-11-02', 'plan', 'last week', NULL, 'open', NULL);",
     );
+    // The series page: its meetings only, under the shared head.
     let b = get(&st, "/meetings?name=planning").await.body;
-    assert!(b.contains("<summary>planning"));
-    assert!(!b.contains("<summary>oms-sync"));
+    assert!(b.contains(r#"<h1 class="ptitle">planning</h1>"#));
+    assert!(b.contains(r#"href="/meetings/3""#) && !b.contains(r#"href="/meetings/1""#));
+    assert_eq!(get(&st, "/meetings?name=nope").await.status, 404);
 
     let b = get(&st, "/meetings/2").await.body;
     assert!(b.contains("ended 10:42"));
@@ -245,7 +250,7 @@ async fn migration_010_moves_notes_text_into_a_note() {
     {
         let c = atharu::db::open(&path).unwrap();
         c.execute_batch(
-            "ALTER TABLE meetings DROP COLUMN note_id; PRAGMA user_version = 9;
+            "ALTER TABLE meetings DROP COLUMN note_id; DROP TABLE series_archive; PRAGMA user_version = 9;
              INSERT INTO meetings(id, day, name, notes, ended_at) VALUES
                (1, '2026-11-10', 'oms-sync', 'ship friday #cshub', '2026-11-10 10:00:00'),
                (2, '2026-11-11', 'oms-sync', '', '2026-11-11 10:00:00');",
@@ -299,4 +304,77 @@ async fn migration_010_moves_notes_text_into_a_note() {
         1
     );
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[tokio::test]
+async fn archive_hides_a_series_from_meetings_and_calendar() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO meetings(id, day, name, ended_at) VALUES
+           (1, '2026-11-11', 'oms-sync', '2026-11-11 10:42:00'),
+           (2, '2026-11-10', 'planning', '2026-11-10 11:00:00');",
+    );
+    let row = r#"href="/meetings?name=oms-sync"><b>oms-sync</b>"#;
+    let cal = r#"href="/meetings/1">oms-sync"#;
+    assert!(get(&st, "/meetings").await.body.contains(row));
+
+    let r = post(
+        &st,
+        "/meetings/archive",
+        &form(&[("name", "oms-sync"), ("on", "1")]),
+        false,
+    )
+    .await;
+    assert_eq!(r.status, 303);
+    let b = get(&st, "/meetings").await.body;
+    assert!(
+        !b.contains(row) && b.contains("Archived <span class=\"normal\">· 1</span>"),
+        "{b}"
+    );
+    assert!(!get(&st, "/calendar").await.body.contains(cal));
+    // Its pages stay, and say so.
+    assert!(
+        get(&st, "/meetings?name=oms-sync")
+            .await
+            .body
+            .contains("· archived")
+    );
+
+    // A rename carries the archive with it.
+    post(
+        &st,
+        "/meetings/1/rename",
+        &form(&[("name", "oms-weekly")]),
+        false,
+    )
+    .await;
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM series_archive WHERE name = 'oms-weekly'"
+        ),
+        1
+    );
+
+    post(
+        &st,
+        "/meetings/archive",
+        &form(&[("name", "oms-weekly")]),
+        false,
+    )
+    .await;
+    assert!(
+        get(&st, "/meetings")
+            .await
+            .body
+            .contains(r#"<b>oms-weekly</b>"#)
+    );
+    assert!(
+        get(&st, "/calendar")
+            .await
+            .body
+            .contains(r#"href="/meetings/1">oms-weekly"#)
+    );
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM series_archive"), 0);
 }

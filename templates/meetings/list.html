@@ -1,27 +1,28 @@
 {% extends "base.html" %}
 {% block side %}{% include "meetings/side.html" %}{% endblock %}
 {% block content %}
-<main class="doc wide">
-<h1 class="ptitle">Meetings</h1>
-<p class="lead">Every meeting you logged in. Start one from Today; lines you log while it runs attach to it.</p>
+<main class="doc">
+<header class="pghead"><h1 class="ptitle">Meetings</h1>{% if !fact.is_empty() %}<p class="fact">{{ fact }}</p>{% endif %}</header>
 <section id="meeting">{% include "partials/meeting_banner.html" %}</section>
-{%- if let Some(n) = filter %}
-<div class="row small"><span class="chip">Only {{ n }}</span><a href="/meetings">All meetings</a></div>
-{%- endif %}
-{%- if groups.is_empty() %}
-<p class="small muted" style="margin: 0">No meetings yet.</p>
-{%- endif %}
-{%- for g in groups %}
-
-<details open>
-<summary>{{ g.name }} <span class="muted normal">· {{ g.rows.len() }}</span></summary>
+{%- if series.is_empty() %}
+<p class="small muted" style="margin: 0">No meetings yet. Start one above; reuse a name to add to its series.</p>
+{%- else %}
+{#- One row per series (D14): its page lists the meetings. Archive is a plain POST, so it works without JS. #}
 <div class="tw"><table>
-<tr><th>When</th><th>Transcript</th><th>Decisions</th><th>Action items</th><th>Learned</th><th>Notes</th></tr>
-{%- for r in g.rows %}
-<tr><td><a class="ink" href="/meetings/{{ r.id }}"><b>{{ r.day }}</b>{% if !r.time.is_empty() %} <span class="mono small">{{ r.time }}</span>{% endif %}</a>{% if r.running && r.time.is_empty() %} <span class="chip">running</span>{% endif %}</td><td>{% if r.transcript.is_empty() %}<span class="muted">—</span>{% else %}<a href="/meetings/{{ r.id }}#tx">{{ r.transcript }}</a>{% endif %}</td><td>{{ r.decisions }}</td><td>{{ r.actions }}</td><td>{{ r.learned }}</td><td class="muted">{{ r.notes }}</td></tr>
+<tr><th>Series</th><th>Meetings</th><th>Last met</th><th>Open action items</th><th></th></tr>
+{%- for s in series %}
+<tr><td><a class="ink" href="/meetings?name={{ s.name }}"><b>{{ s.name }}</b></a></td><td>{{ s.meetings }}</td><td>{{ s.last }}</td><td>{% if s.open > 0 %}{{ s.open }}{% else %}<span class="muted">—</span>{% endif %}</td><td style="text-align: right"><form class="inline" method="post" action="/meetings/archive"><input type="hidden" name="name" value="{{ s.name }}"><input type="hidden" name="on" value="1"><button class="btn ghost s" type="submit" title="Hides it from Meetings and the Calendar. Its pages stay.">Archive</button></form></td></tr>
 {%- endfor %}
 </table></div>
-</details>
+{%- endif %}
+{%- if !archived.is_empty() %}
+<details><summary class="small muted mid">Archived <span class="normal">· {{ archived.len() }}</span></summary>
+<div class="blocks small">
+{%- for s in archived %}
+<div class="blk"><a class="ink" href="/meetings?name={{ s.name }}">{{ s.name }}</a><span class="muted">{{ s.meetings }} meeting{% if s.meetings != 1 %}s{% endif %} · last met {{ s.last }}</span><form class="inline" style="margin-left: auto" method="post" action="/meetings/archive"><input type="hidden" name="name" value="{{ s.name }}"><button class="btn ghost s" type="submit">Unarchive</button></form></div>
 {%- endfor %}
+</div>
+</details>
+{%- endif %}
 </main>
 {% endblock %}

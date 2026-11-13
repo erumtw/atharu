@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block side %}{% include "meetings/side.html" %}{% endblock %}
+{% block crumb_extra %}<span class="pend">{% include "partials/pmenu_btn.html" %}</span>
+<div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/meetings?name={{ name }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a><a role="menuitem" href="/meetings/{{ id }}">Rename… <span class="small muted">on its latest meeting</span></a><form method="post" action="/meetings/archive"><input type="hidden" name="name" value="{{ name }}"><input type="hidden" name="back" value="{{ back }}">{% if !archived %}<input type="hidden" name="on" value="1">{% endif %}<button role="menuitem" type="submit">{% if archived %}Unarchive{% else %}Archive{% endif %}</button></form><div class="mf" role="presentation">Archive hides it from Meetings and the Calendar. Its pages stay.</div></div>{% endblock %}
+{% block content %}
+{%- let (full, pin_error) = (false, false) %}
+<main class="doc">
+<header class="pghead">
+<div class="pgk"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#meetings"/></svg><span>Meeting series</span></div>
+<h1 class="ptitle">{{ name }}</h1>
+<p class="fact">{{ fact }}</p>
+</header>
+<dl class="props">{% include "partials/same_name.html" %}</dl>
+{%- if field.tags.is_empty() %}
+<details class="addp"><summary class="addprop">+ Add property <span class="small">· tags</span></summary>{% include "meetings/tags.html" %}</details>
+{%- else %}
+{% include "meetings/tags.html" %}
+{%- endif %}
+<details class="tg" open><summary>Meetings <span class="small muted normal">· {{ rows.len() }}</span></summary>
+<div class="blocks">
+{%- for r in rows %}
+<a class="blk ink" href="/meetings/{{ r.id }}"><b>{{ r.day }}</b>{% if !r.time.is_empty() %}<span class="mono small muted">{{ r.time }}</span>{% endif %}{% if r.running && r.time.is_empty() %}<span class="chip">running</span>{% endif %}<span class="small muted">{% if r.decisions > 0 %}{{ r.decisions }} decision{% if r.decisions != 1 %}s{% endif %} · {% endif %}{% if r.actions != "—" %}{{ r.actions }}{% else %}no action items{% endif %}{% if !r.transcript.is_empty() %} · {{ r.transcript }} of transcript{% endif %}</span></a>
+{%- endfor %}
+</div>
+</details>
+{#- A to-do row's edit / Undo (D51) answers `plans-changed`: re-fetch this list. #}
+<div hidden hx-get="{{ back }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#splans" hx-select="#splans" hx-swap="outerHTML"></div>
+<div id="splans">
+{%- if !plans.is_empty() %}
+<details class="tg" open><summary>Open action items <span class="small muted normal">· {{ plans.len() }}</span></summary>
+<div class="blocks">
+{%- for p in plans %}
+{% include "partials/plan_row.html" %}
+{%- endfor %}
+</div>
+</details>
+{%- endif %}
+</div>
+{% include "partials/refs.html" %}
+</main>
+{% endblock %}
