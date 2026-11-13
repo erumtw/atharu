@@ -24,7 +24,7 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 | `topics` | learn pages, **the owner's own understanding** | `slug`, `summary`, `own_words`, `resources` |
 | `depth_ratings` | append-only self-rating 1 heard of · 2 can explain · 3 can build w/o AI · 4 can teach | `topic`, `day`, `depth` |
 | `notes` | markdown notes; `[[X]]` links a page | `id`, `title`, `body`, `author`, `updated_at` |
-| `events` | calendar events | `source` (own · google), `title`, `starts_at`, `ends_at` |
+| `events` | calendar events | `source` (own · google · mac = macOS Calendar via the Mac app), `title`, `starts_at`, `ends_at` |
 | `taggings` | lookup of `#tags`, rebuilt from the text / tags field on every save (never write it) | `tag`, `item_type` (entry · note · epic · …), `item_id` |
 | `entry_tags` (view) | a line's tags incl. inherited from its epic / meeting series | `entry_id`, `tag`, `via` (NULL = in the text) |
 
