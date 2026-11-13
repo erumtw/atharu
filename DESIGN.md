@@ -458,11 +458,14 @@ the log scrolls under it.
   stops the recording and the meeting keeps running; not live, click starts one; blocked → disabled and the name row reads **Allow
   recording**, linking the meeting page in the main window; finishing → time "Transcribing…", no mic) · **End meeting** (text button,
   `rgba(255,255,255,.14)`). Ended → "✓ Ended **X** · Open meeting" above the idle row.
-- **To-dos**: today + overdue only, overdue first, late ones with the existing `.due.late`; rows 32 (check 20 · text with ellipsis ·
-  due right). The list takes what is left of the 480 and scrolls on its own; header, capture and meeting never move. At most 8 rows;
-  "+ N more open · Open Atharu" links `/todos`. Ticking posts at once; the struck row stays until the popover closes (untick = reopen).
-  Empty: "**Nothing due today** · No overdue to-dos either. Add one: start a line with `>`" + "N open to-dos · Open Atharu";
-  the lines wrap balanced (WebKit's SF ran the one-liner past 360) with the `>` chip glued to "with".
+- **To-dos** (0.2.6): today + overdue only, overdue first. Header "To-dos **2 overdue** · 1 today" (the overdue part in `--err`, only
+  when > 0). Rows are 32: check 20 · text on one line with ellipsis · the note button · the **quiet due date** on the right (the To-dos
+  list's words: `Today` in `--accent-2` 6.2:1, a late one `--err` 600 with its day, `Fri 6 Nov`, else `--muted`). **No inner scroll**: at most
+  **5** rows, the window's height comes from the content, and five rows fit the 480 at rest (idle, recording, and the no-speech-model
+  line; measured at 360 × 480 in T7; with Glass everywhere only the no-model line clips the last link). "+ N more · Open Atharu" links
+  `/todos`. Ticking posts at once; the struck row stays until the popover closes (untick = reopen). Empty: "Nothing due. Start a line with
+  `>` to add one." + "N open · Open Atharu". Sections are flat: a `--line` hairline between them, 10 padding (the capture sits under the
+  header with no rule); Glass everywhere keeps its cards (8/12 padding, 6 apart).
 - **Keyboard**: opens focused in the line. Tab from the line: Log ↵ → series pills → name → Start / End meeting → each check →
   + N more; Shift+Tab: Note tile → kind tiles (one stop, ←→ picks) → Open Atharu. Enter saves (unless an option was arrowed to). Esc closes an open
   menu, else hides the popover; blur hides it; Ctrl+Opt+Space toggles it. Any link opens in the main window and hides the popover.

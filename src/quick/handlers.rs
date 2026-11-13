@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, markdown},
+    domain::{dates, markdown, plan},
     error::AppResult,
     layout::Layout,
     recording::MeetingState,
@@ -18,8 +18,8 @@ use serde::Deserialize;
 pub const SERIES: usize = 3;
 /// The start box's series menu (T93): enough to find last month's, few enough to scan.
 const MENU_SERIES: usize = 12;
-/// To-do rows before "+ N more"; the rest of the 480 px window scrolls, but past 8 it's a list for /todos.
-const TODOS: usize = 8;
+/// To-do rows before "+ N more": five rows fit the 480 px window with no inner scroll (0.2.6); past that it's /todos' list.
+const TODOS: usize = 5;
 
 #[derive(Deserialize)]
 pub struct PageQuery {
@@ -71,8 +71,10 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
             view::Todo {
                 id: p.id,
                 text: p.text.clone(),
-                due: due_label(d, today),
+                // The to-do row's quiet due date, as on Today and To-dos (`Plan::due_quiet` is this).
+                due: plan::quiet(d, today),
                 late: d < today,
+                today: d == today,
                 note: p.note.clone(),
             }
         })
@@ -115,25 +117,12 @@ fn since(started: &str, now: NaiveDateTime) -> String {
     }
 }
 
-/// Short, the row is 360 wide: `today`, a weekday within the past week, else `3 Nov`.
-fn due_label(d: NaiveDate, today: NaiveDate) -> String {
-    match (today - d).num_days() {
-        0 => "today".into(),
-        1..=6 => d.format("%a").to_string(),
-        _ => d.format("%-d %b").to_string(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn labels() {
-        let t: NaiveDate = "2026-11-12".parse().unwrap();
-        assert_eq!(due_label(t, t), "today");
-        assert_eq!(due_label("2026-11-10".parse().unwrap(), t), "Tue");
-        assert_eq!(due_label("2026-11-03".parse().unwrap(), t), "3 Nov");
         let now =
             NaiveDateTime::parse_from_str("2026-11-12 09:41:00", "%Y-%m-%d %H:%M:%S").unwrap();
         assert_eq!(since("2026-11-12 09:17:30", now), "23 min");

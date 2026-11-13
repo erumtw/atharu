@@ -17,7 +17,7 @@ async fn renders_the_three_sections_without_the_app_chrome() {
         "name=\"kind\" value=\"+\"",
         "<b>+</b>impact",
         "Start a meeting",
-        "Nothing due today",
+        "Nothing due. Start a line with <b>&gt;</b> to add one.",
         "name=\"back\" value=\"/quick\"",
     ] {
         assert!(b.contains(want), "{want}");
@@ -123,7 +123,7 @@ async fn kind_tile_sets_the_prefix_and_a_typed_one_wins() {
 }
 
 #[tokio::test]
-async fn todos_are_today_and_overdue_overdue_first_capped_at_eight() {
+async fn todos_are_today_and_overdue_overdue_first_capped_at_five() {
     let st = state();
     exec(
         &st,
@@ -148,17 +148,19 @@ async fn todos_are_today_and_overdue_overdue_first_capped_at_eight() {
         .collect();
     assert_eq!(
         rows,
-        [
-            "late old", "late tue", "today a", "today b", "today c", "today d", "today e",
-            "today f"
-        ]
+        ["late old", "late tue", "today a", "today b", "today c"]
     );
-    assert!(b.contains("· 2 overdue, 7 today"));
-    assert!(b.contains("<span class=\"due late\">due 2 Nov</span>"));
-    assert!(b.contains("<span class=\"due late\">due Tue</span>"));
-    assert!(b.contains("<span class=\"due\">due today</span>"));
-    // 11 open, 8 shown: today g, later, no date.
-    assert!(b.contains("+ 3 more open · Open Atharu"));
+    // Header: the overdue part in --err, then today; no inner scroll (no .qlist overflow, rows are plain).
+    assert!(
+        b.contains("To-dos<span class=\"late\">2 overdue</span><span class=\"n\">· 7 today</span>")
+    );
+    // The quiet due date on each row (Plan::due_quiet's words); late red, today blue.
+    assert!(b.contains("<span class=\"qd late\">Mon 2 Nov</span>"));
+    assert!(b.contains("<span class=\"qd late\">Tue 10 Nov</span>"));
+    assert!(b.contains("<span class=\"qd today\">Today</span>"));
+    // 11 open, 5 shown: today d–g, later, no date.
+    assert!(b.contains("+ 6 more · Open Atharu"));
+    assert!(!b.contains("class=\"qt\""));
 
     // Ticking posts to the plans slice; a plain form comes back here.
     let r = post(

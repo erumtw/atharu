@@ -20,9 +20,10 @@ pub struct Saved {
 pub struct Todo {
     pub id: i64,
     pub text: String,
-    /// `today`, `Tue`, `3 Nov`.
+    /// The quiet due date: `Today`, `Tue 10 Nov`.
     pub due: String,
     pub late: bool,
+    pub today: bool,
     pub note: Option<NoteRef>,
 }
 

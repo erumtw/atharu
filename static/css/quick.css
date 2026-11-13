@@ -6,7 +6,7 @@ html.q,html.q body{background:transparent;margin:0;min-height:0;height:100%;over
 
 /* The panel = the .menu glass recipe (rim, light, shadow, lens, RT/IC, --muted-tint, --err-tint) at the user's --glass-a
    like the sidebar (+5%): the look's wallpaper paints inside the window, so the look's own AA floor holds (aa81b.py). */
-.menu.quick{--lg-min:0%;--s:5%;position:relative;width:360px;max-height:480px;height:100%;border-radius:18px;padding:4px 12px 8px;gap:0;z-index:auto;
+.menu.quick{--lg-min:0%;--s:5%;position:relative;width:360px;max-height:480px;height:100%;border-radius:18px;padding:4px 12px 6px;gap:0;z-index:auto;
   font-size:14px}
 /* Atharu.app: the window is the panel; the native popover material (window-vibrancy) is the base, the look's wallpaper
    paints over it at .8 (looks.css), the glass on top. A smooth mesh gains nothing from a CSS blur, so it's dropped.
@@ -17,7 +17,7 @@ html[data-app=mac] .menu.quick{--lg-min:35%;height:100vh;max-height:none;backdro
 html.q[data-app=mac] body::before{border-radius:18px}
 /* Glass everywhere: the panel is the sheet (−5%) and each section a card on it (+10%), as on the main pages. */
 html[data-glass=all] .menu.quick{--s:-5%}
-html[data-glass=all] .quick .qsec{border:1px solid var(--glass-edge);border-radius:12px;padding:10px 12px;margin-top:8px;
+html[data-glass=all] .quick .qsec{border:1px solid var(--glass-edge);border-radius:12px;padding:8px 12px;margin-top:6px;
   background:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + 10%),transparent)}
 html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 /* In the panel: links and the hint one blue step darker (--accent 4.44 over a black desktop), check ring --muted (5.92;
@@ -36,9 +36,14 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 /* .ic's stroke recipe lives in responsive.css, which this page doesn't load. */
 .quick .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-.qsec{border-top:1px solid rgba(0,0,0,.08);padding:10px 0;display:flex;flex-direction:column;gap:8px;flex:none}
+/* Flat sections (0.2.6): a --line hairline between them, 10 padding (12 left no room for the no-speech-model line at 480); the capture sits right under the header (no rule). Glass
+   everywhere keeps its cards (below). */
+.qsec{border-top:1px solid var(--line);padding:10px 0;display:flex;flex-direction:column;gap:8px;flex:none}
+.qsec.qcap{border-top:0;padding-top:4px}
 .qlbl{margin:0;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0;display:flex;align-items:center;gap:6px;line-height:1}
 .qlbl .n{font-weight:500}
+/* "2 overdue" in --err (= --err-tint on the panel), then "· 1 today" quiet. */
+.qlbl .late{color:var(--err)}
 
 /* 8 between the field, the legend and the hint: the section's own gap (DESIGN §3). */
 .qcap form{display:flex;flex-direction:column;gap:8px}
@@ -83,7 +88,7 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .q2sv{display:flex;justify-content:flex-end}
 
 .qfield{position:relative}
-.qhint{min-height:18px;font-size:13px;line-height:1.4;color:var(--accent-2);padding:0 4px}
+.qhint{min-height:16px;font-size:13px;line-height:1.4;color:var(--accent-2);padding:0 4px}
 .qhint .tick{color:var(--accent-2);font-weight:600}
 .qhint .err{font-size:13px}
 
@@ -133,22 +138,23 @@ label.q2mic:has(:checked) .off{display:none}
 .q2run .q2mic[aria-pressed=true]{background:var(--rec-on-dark);color:#fff}
 .q2run .q2mic:disabled{opacity:.4}
 
-/* To-dos take the rest of the 480 and scroll on their own; header, capture and meeting never move. */
+/* To-dos (0.2.6): at most five 32 px rows, no inner scroll: the window's height comes from the content, and five rows fit the 480
+   at rest (T7 measures). Due is the quiet date on the right: Today --accent-2 (6.2 on white), late --err 600, else --muted. */
 .qtodo{flex:1 1 auto;min-height:0;padding-bottom:0}
-.qlist{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;margin:0 -12px;padding:0 12px}
-.qt{display:flex;align-items:center;gap:10px;min-height:32px;flex:none}
-.qt form{display:contents}
-.qt .qtx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.qt .due{flex:none}
-.qt .done-text{color:var(--muted)}
-.qmore{font-size:13px;padding:6px 0 0;flex:none}
-.qempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:13px;color:var(--muted);padding:12px 0}
-.qempty b{color:var(--ink);font-weight:600;font-size:14px}
-/* WebKit's SF is wider than Chrome's fallback and the one-liner ran past 360: wrap, balanced, chip glued to "with". */
-.qempty>*{max-width:100%;text-wrap:balance}
+.qlist{display:flex;flex-direction:column}
+.q2t{display:flex;align-items:center;gap:10px;height:32px;flex:none}
+.q2t form{display:contents}
+.q2t .qtx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.q2t .qd{flex:none;font-size:12px;color:var(--muted);white-space:nowrap}
+.q2t .qd.late{color:var(--err);font-weight:600}
+.q2t .qd.today{color:var(--accent-2)}
+.q2t .done-text{color:var(--muted)}
+.q2more{display:block;font-size:13px;line-height:20px;margin:0}
+.q2empty{margin:0 2px;font-size:13px;color:var(--muted)}
+.q2empty b{font-family:ui-monospace,'SF Mono',Menlo,monospace;color:var(--ink-2);font-weight:600}
 
 /* Touch (browser /quick on a phone): the 44 floor responsive.css would have given. */
-@media (hover:none){.q2f,.quick .fld{height:48px}.q2k,.q2f .btn,.q2sv .btn{height:38px}.q2menu .mi{height:40px}.qt{min-height:44px}.qpills .btn,.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}.q2mic,.q2cam,.q2end{min-height:38px}.q2mic,.q2cam{min-width:38px}}
+@media (hover:none){.q2f,.quick .fld{height:48px}.q2k,.q2f .btn,.q2sv .btn{height:38px}.q2menu .mi{height:40px}.q2t{height:44px}.qpills .btn,.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}.q2mic,.q2cam,.q2end{min-height:38px}.q2mic,.q2cam{min-width:38px}}
 /* Reduce Transparency: looks.css already makes .menu solid + hairline; the panel goes fully opaque too. */
 @media (prefers-reduced-transparency: reduce){.menu.quick{--lg-min:100%}
   html[data-glass=all] .quick .qsec{border-color:var(--line)}}

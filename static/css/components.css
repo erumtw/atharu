@@ -629,7 +629,7 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .ib.note{width:28px;height:28px;color:var(--muted);opacity:.35}
 .ib.note .ic{width:18px;height:18px}
 .ib.note:hover{color:var(--ink)}
-:is(.blk,.qt):is(:hover,:focus-within) .ib.note,.ib.note:focus-visible{opacity:1}
+:is(.blk,.q2t):is(:hover,:focus-within) .ib.note,.ib.note:focus-visible{opacity:1}
 .ib.note.has{opacity:1;color:var(--accent)}
 /* Has a note: the page fills in the accent, its lines turn white (inline paths, see note_btn.html). */
 .ib.note.has .pg{fill:currentColor}

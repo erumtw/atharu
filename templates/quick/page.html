@@ -115,18 +115,19 @@
 <section class="qsec qtodo" id="qtodo" aria-labelledby="qt">
 {%- if todos.is_empty() %}
 <h2 class="qlbl" id="qt">To-dos</h2>
-<div class="qempty"><b>Nothing due today</b><span>No overdue to-dos either. Add one: start a line with&nbsp;<span class="k">&gt;</span></span>{% if more > 0 %}<a href="/todos">{{ more }} open to-do{% if more != 1 %}s{% endif %} · Open Atharu</a>{% endif %}</div>
+<p class="q2empty">Nothing due. Start a line with <b>&gt;</b> to add one.</p>
+{%- if more > 0 %}<a class="q2more" href="/todos">{{ more }} open · Open Atharu</a>{% endif %}
 {%- else %}
-<h2 class="qlbl" id="qt">To-dos<span class="n">· {{ overdue }} overdue, {{ due_today }} today</span></h2>
+<h2 class="qlbl" id="qt">To-dos{% if overdue > 0 %}<span class="late">{{ overdue }} overdue</span>{% endif %}{% if due_today > 0 %}<span class="n">· {{ due_today }} today</span>{% endif %}</h2>
 <div class="qlist" role="list">
 {%- for t in todos %}
 {#- Ticking posts at once; the row stays (struck) until the popover reloads, so a mis-tick can be unticked = reopened. #}
-<div class="qt" role="listitem"><form method="post" action="/plans/{{ t.id }}" hx-post="/plans/{{ t.id }}" hx-trigger="change" hx-swap="none"><input type="hidden" name="back" value="/quick"><input type="hidden" name="state" value="done"><input class="check" type="checkbox" aria-label="Mark done: {{ t.text }}" hx-on:change="this.form.elements.state.value = this.checked ? 'done' : 'open'; this.closest('.qt').querySelector('.qtx').classList.toggle('done-text', this.checked)"><noscript><button class="btn ghost s" type="submit">Done</button></noscript></form><span class="qtx">{{ t.text }}</span><span class="due{% if t.late %} late{% endif %}">due {{ t.due }}</span>
+<div class="q2t" role="listitem"><form method="post" action="/plans/{{ t.id }}" hx-post="/plans/{{ t.id }}" hx-trigger="change" hx-swap="none"><input type="hidden" name="back" value="/quick"><input type="hidden" name="state" value="done"><input class="check" type="checkbox" aria-label="Mark done: {{ t.text }}" hx-on:change="this.form.elements.state.value = this.checked ? 'done' : 'open'; this.closest('.q2t').querySelector('.qtx').classList.toggle('done-text', this.checked)"><noscript><button class="btn ghost s" type="submit">Done</button></noscript></form><span class="qtx">{{ t.text }}</span>
 {#- A link opens the main window (the app's navigation hook); the add form is fetched by quick.ts, then the same. #}
-{%- let line_id = t.id %}{% let note_ref = t.note.as_ref() %}{% include "partials/note_btn.html" %}</div>
+{%- let line_id = t.id %}{% let note_ref = t.note.as_ref() %}{% include "partials/note_btn.html" %}<span class="qd{% if t.late %} late{% else if t.today %} today{% endif %}">{{ t.due }}</span></div>
 {%- endfor %}
 </div>
-{%- if more > 0 %}<a class="qmore" href="/todos">+ {{ more }} more open · Open Atharu</a>{% endif %}
+{%- if more > 0 %}<a class="q2more" href="/todos">+ {{ more }} more · Open Atharu</a>{% endif %}
 {%- endif %}
 </section>
 </div>
