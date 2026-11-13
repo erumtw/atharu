@@ -137,7 +137,7 @@ pub const SELECT_PLAN: &str =
     "SELECT id, day, epic_key, text, link, due, pinned, plan_state, closed_day,
          (SELECT j.key || ' · ' || j.summary FROM jira_issues j
            WHERE (link || '#') GLOB '*[/=]' || j.key || '[^0-9]*' LIMIT 1),
-         note_id, (SELECT title FROM notes WHERE notes.id = entries.note_id)
+         author, note_id, (SELECT title FROM notes WHERE notes.id = entries.note_id)
          FROM entries";
 
 /// `entries.kind` at column `i`; the CHECK constraint guarantees one of the six, so the fallback never fires.
@@ -168,9 +168,10 @@ pub fn plan(r: &rusqlite::Row) -> rusqlite::Result<Plan> {
         state: r.get(7)?,
         closed_day: date(r.get(8)?),
         jira: r.get(9)?,
-        note: NoteRef::from_cols(r.get(10)?, r.get(11)?),
-        // Only To-dos' filtered list selects it (13th column).
-        via: match r.get(12) {
+        author: r.get(10)?,
+        note: NoteRef::from_cols(r.get(11)?, r.get(12)?),
+        // Only To-dos' filtered list selects it (14th column).
+        via: match r.get(13) {
             Err(rusqlite::Error::InvalidColumnIndex(_)) => None,
             v => v?,
         },

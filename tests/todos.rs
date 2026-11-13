@@ -302,8 +302,8 @@ async fn link_shows_once_as_its_chip() {
     let st = state();
     exec(
         &st,
-        "INSERT INTO entries(day, kind, text, link, plan_state) VALUES
-           ('2026-11-12', 'plan', 'reply to vendor https://acme.slack.com/archives/C1/p2 today', 'https://acme.slack.com/archives/C1/p2', 'open');",
+        "INSERT INTO entries(day, kind, text, link, plan_state, author) VALUES
+           ('2026-11-12', 'plan', 'reply to vendor https://acme.slack.com/archives/C1/p2 today', 'https://acme.slack.com/archives/C1/p2', 'open', 'claude');",
     );
     let b = get(&st, "/todos").await.body;
     // The URL rides in the ↗ chip only; the text around it stays.
@@ -314,4 +314,6 @@ async fn link_shows_once_as_its_chip() {
     );
     assert!(b.contains("reply to vendor today"));
     assert!(b.contains("Slack ↗"));
+    // An agent's to-do carries its @chip like any line (D1).
+    assert!(b.contains(r#"<span class="chip tag at" title="Filed by claude">claude</span>"#));
 }

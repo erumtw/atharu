@@ -26,6 +26,8 @@ pub struct Plan {
     /// Under a tag filter: the epic / series the matching tag comes from, when the text lacks it.
     pub via: Option<String>,
     pub note: Option<NoteRef>,
+    /// `me`, or the agent that filed it (its @chip).
+    pub author: String,
 }
 
 impl Plan {

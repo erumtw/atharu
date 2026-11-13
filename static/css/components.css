@@ -720,6 +720,7 @@ details.tg>summary .small{font-size:13px}
 .side a.sub .mono{margin-left:auto;color:var(--muted)}
 .side a.sub i{color:var(--muted)}
 .etab{table-layout:fixed;width:100%}
+.etab td{overflow:hidden;text-overflow:ellipsis}
 /* Today (0.2.0): Start meeting pill's field and the View menu (positioned with .pmenu above). */
 .startm #meeting{display:flex;flex-direction:column;gap:8px}
 .startm #meeting>.small,.startm #meeting>.err{padding:0 !important}
