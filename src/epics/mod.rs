@@ -20,6 +20,7 @@ pub fn routes() -> Router<AppState> {
                 .post(handlers::update),
         )
         .route("/epics/{key}/title", post(handlers::set_title))
+        .route("/epics/{key}/track", post(handlers::track))
         .route("/epics/{key}/delete", post(handlers::delete))
         .route("/epics/{key}/restore", post(handlers::restore))
         .route("/epics/{key}/evidence", post(handlers::add_evidence))

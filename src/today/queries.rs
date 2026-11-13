@@ -310,3 +310,12 @@ pub fn older_mentions(conn: &Connection, tag: &str, except: i64) -> rusqlite::Re
     }
     Ok(n)
 }
+
+/// D5: how many open Jira issues the last refresh found assigned to me.
+pub fn jira_assigned(conn: &Connection) -> rusqlite::Result<i64> {
+    conn.query_row(
+        "SELECT COUNT(*) FROM jira_issues WHERE assigned_me = 1",
+        [],
+        |r| r.get(0),
+    )
+}

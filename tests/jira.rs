@@ -32,7 +32,9 @@ async fn cache_upserts_and_shows_where_our_title_is_empty() {
     let page = get(&st, "/epics/OPS-101").await.body;
     assert!(page.contains("Jira: Faster checkout · In Progress"));
     let list = get(&st, "/epics").await.body;
-    assert!(list.contains("Faster checkout · In Progress") && list.contains("Title for OPS-101"));
+    // D7: no title typed → Jira's is the name, marked; OPS-9 (not in Jira) still asks for one.
+    assert!(list.contains("<b>Faster checkout</b></a><span class=\"small muted\" title=\"Jira's title, until you type one\">from Jira</span>"), "{list}");
+    assert!(list.contains("Title for OPS-9") && !list.contains("Title for OPS-101"));
     // Our title wins; the cache is display-only and never copied into epics.
     exec(
         &st,
@@ -97,7 +99,10 @@ async fn off_without_all_three_keys() {
     assert!(b.contains("action=\"/jira/refresh\"") && !b.contains("t0k"));
     // The ↗ chip: cached status, linking the issue on the configured site (trailing / dropped).
     let chip = r#"<a class="lchip" href="https://acme.atlassian.net/browse/OPS-101" target="_blank" rel="noopener noreferrer" title="Open OPS-101 in Jira"><span class="jst-OPS-101">In Progress</span> ↗</a>"#;
-    assert!(b.contains(chip), "{b}");
+    assert!(
+        b.contains(&chip.replace("class=\"lchip\"", "class=\"lchip jc-\"")),
+        "{b}"
+    );
     assert!(get(&st, "/epics/OPS-101").await.body.contains(chip));
     assert!(
         get(&st, "/epics?jira=failed")
@@ -410,4 +415,93 @@ async fn status_moves_on_press_with_undo() {
     );
     // Not a key: never reaches Jira.
     assert_eq!(get(&st, "/jira/..%2Fadmin/moves").await.status, 404);
+}
+
+#[tokio::test]
+async fn epics_list_reads_jira_assigned_parents_and_flags() {
+    // Today is Wed 11 Nov 2026. Cached rows only: nothing here talks to Jira.
+    let st = jira_state("https://acme.atlassian.net", "list");
+    exec(
+        &st,
+        "INSERT INTO epics(key, title, okr, target) VALUES
+           ('OPS-101', 'Checkout latency', 'O2', NULL), ('OPS-118', 'Reorder', 'O2', NULL),
+           ('OPS-142', '', '', '2026-12-20');
+         INSERT INTO entries(day, epic_key, kind, text) VALUES ('2026-11-11', 'OPS-101', 'done', 'shipped'), ('2026-11-11', 'OPS-142', 'done', 'repro'), ('2026-11-09', 'OPS-118', 'done', 'spec');
+         INSERT INTO jira_issues(key, summary, status, status_cat, issue_type, parent_key, parent_summary, due, updated_at, assigned_me) VALUES
+           ('OPS-500', 'Checkout platform', 'In progress', 'indeterminate', 'Epic', NULL, NULL, NULL, NULL, 0),
+           ('OPS-101', 'Faster checkout', 'Done', 'done', 'Story', 'OPS-500', 'Checkout platform', NULL, '2026-11-10T09:00', 0),
+           ('OPS-118', 'Reorder from history', 'In review', 'indeterminate', 'Story', 'OPS-500', 'Checkout platform', NULL, '2026-11-11T09:00', 1),
+           ('OPS-142', 'Driver app crash', 'To do', 'new', 'Bug', NULL, NULL, '2026-12-24', NULL, 0),
+           ('OPS-160', 'Supplier price feed v2', 'To do', 'new', 'Epic', NULL, NULL, '2026-12-04', '2026-11-11T10:00', 1),
+           ('OPS-161', 'Retry price feed', 'In progress', 'indeterminate', 'Story', 'OPS-160', 'Supplier price feed v2', '2026-11-13', '2026-11-11T08:00', 1);
+         INSERT INTO settings(key, value) VALUES ('jira_auth_failed', '2026-11-11 08:00:00');",
+    );
+    let b = get(&st, "/epics").await.body;
+    // D5/D6: assigned section; an Epic offers Track, a Story a filled to-do, a tracked one ✓.
+    assert!(
+        b.contains("In Jira, assigned to you <span class=\"muted normal\">· 3 open</span>"),
+        "{b}"
+    );
+    assert!(b.contains("action=\"/epics/OPS-160/track\""));
+    assert!(b.contains("name=\"line\" value=\"OPS-161 &#62; Retry price feed https://acme.atlassian.net/browse/OPS-161 by 2026-11-13\""));
+    assert!(b.contains("<span class=\"muted\">due Fri</span>") && b.contains("✓ tracked"));
+    // D4: OPS-101 and OPS-118 sit under the untracked OPS-500 header.
+    let head = b
+        .find("<tr class=\"jhead\"><td><span class=\"chip key\">OPS-500</span>")
+        .expect("parent header");
+    assert!(
+        head < b
+            .find("<tr class=\"child\"><td><a href=\"/epics/OPS-101\"")
+            .unwrap()
+    );
+    assert!(b.contains(
+        "<b>Checkout platform</b><span class=\"small muted\">Jira epic · not tracked</span>"
+    ));
+    // Category drives the chip, never the name.
+    assert!(b.contains("class=\"lchip jc-done\"") && b.contains("class=\"lchip jc-new\""));
+    // D7 + flags: OPS-142 named from Jira; its Jira due differs from the target; OPS-118 moved in Jira after no log.
+    assert!(b.contains("<b>Driver app crash</b>"));
+    assert!(
+        b.contains("due dates differ")
+            && b.contains("Jira due Thu 24 Dec · your target Sun 20 Dec")
+    );
+    assert!(b.contains("Jira moved, no log"));
+    // D9: the dead token is named, the last copy stays.
+    assert!(b.contains("⚠ Jira token expired or revoked.") && b.contains("api-tokens"));
+    assert!(
+        get(&st, "/settings")
+            .await
+            .body
+            .contains("Token expired or revoked.")
+    );
+    // Today: one line, to the section.
+    assert!(
+        get(&st, "/")
+            .await
+            .body
+            .contains("<a href=\"/epics#assigned\">3 Jira tickets assigned to you →</a>")
+    );
+
+    // + Track as epic: the stub, named by Jira (D7); ✓ tracked after.
+    let r = post(
+        &st,
+        "/epics/OPS-160/track",
+        &form(&[("back", "/epics#assigned")]),
+        false,
+    )
+    .await;
+    assert_eq!(r.headers["location"], "/epics#assigned");
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM epics WHERE key = 'OPS-160' AND title = ''"
+        ),
+        1
+    );
+    assert!(
+        !get(&st, "/epics")
+            .await
+            .body
+            .contains("action=\"/epics/OPS-160/track\"")
+    );
 }

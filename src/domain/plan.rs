@@ -75,17 +75,7 @@ impl Plan {
     /// The row's quiet due date (owner, 2026-11-14: always shown, like before 0.2.0): `Today` · `Tomorrow` · the weekday
     /// within the coming week · `Wed 18 Nov` this year · ISO beyond. Late dates keep the day so you see how late.
     pub fn due_quiet(&self, today: &NaiveDate) -> String {
-        let Some(d) = self.due else {
-            return String::new();
-        };
-        let days = (d - *today).num_days();
-        match days {
-            0 => "Today".into(),
-            1 => "Tomorrow".into(),
-            2..=6 => d.format("%a").to_string(),
-            _ if d.year() == today.year() => d.format("%a %-d %b").to_string(),
-            _ => d.format("%Y-%m-%d").to_string(),
-        }
+        self.due.map(|d| quiet(d, *today)).unwrap_or_default()
     }
 
     /// The Jira issue this to-do links, when its cache row exists (so Jira is set up): its ▾ moves it.
@@ -163,6 +153,18 @@ impl Bucket {
 }
 
 /// Chip text for a source link: Jira · Slack · GitHub · Docs, else the bare domain.
+/// A date the way you'd say it next to today: `Today` · `Tomorrow` · the weekday within the coming week ·
+/// `Wed 18 Nov` this year · ISO beyond (the to-do row's quiet due date, the Jira due on Epics).
+pub fn quiet(d: NaiveDate, today: NaiveDate) -> String {
+    match (d - today).num_days() {
+        0 => "Today".into(),
+        1 => "Tomorrow".into(),
+        2..=6 => d.format("%a").to_string(),
+        _ if d.year() == today.year() => d.format("%a %-d %b").to_string(),
+        _ => d.format("%Y-%m-%d").to_string(),
+    }
+}
+
 pub fn link_label(url: &str) -> String {
     let rest = url.split_once("://").map_or(url, |(_, r)| r);
     let host = rest

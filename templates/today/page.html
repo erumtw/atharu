@@ -20,6 +20,9 @@
 </div>
 </section>
 {%- endif %}
+{%- if jira_assigned > 0 %}
+<p class="small"><a href="/epics#assigned">{{ jira_assigned }} Jira ticket{% if jira_assigned != 1 %}s{% endif %} assigned to you →</a></p>
+{%- endif %}
 {#- Group by + tag filter (D29), always visible as in 0.1.x (owner, 2026-11-13: no View menu). Plain GET links / form. #}
 <h3 style="margin: 10px 0 0">{% if day.is_today %}Logged today{% else %}Logged on {{ day.label }}{% endif %}</h3>
 <div class="row" style="gap: 8px; flex-wrap: wrap" role="group" aria-label="View">{% include "partials/tag_filter.html" %}<span class="row small" style="margin-left: auto; gap: 8px"><span class="muted">Group by</span><form class="seg" role="group" aria-label="Group by" method="get" action="/"><input type="hidden" name="day" value="{{ day.iso }}">{% if !filter.tags.is_empty() %}<input type="hidden" name="tag" value="{{ filter.joined() }}">{% endif %}{% for (v, label) in [("epic", "Epic"), ("tag", "Tag"), ("type", "Type")] %}<button{% if group == *v %} class="on" aria-pressed="true"{% endif %} type="submit" name="group" value="{{ v }}">{{ label }}</button>{% endfor %}</form></span></div>

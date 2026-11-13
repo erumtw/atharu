@@ -27,10 +27,40 @@ fn flag(e: &queries::EpicRow, today: NaiveDate) -> Option<view::Flag> {
         last_activity: date(e.last_log.as_deref()),
         open_plans: e.open_plans,
     };
-    flags::flag(&facts, today).map(|f| view::Flag {
-        class: f.flag.class(),
-        label: f.flag.label(),
-        reason: f.reason,
+    flags::flag(&facts, today)
+        .map(|f| view::Flag {
+            class: f.flag.class(),
+            label: f.flag.label(),
+            reason: f.reason,
+        })
+        .or_else(|| jira_flag(e))
+}
+
+/// 0.2.5: what Jira says that Atharu doesn't, when no flag of our own speaks first. Active epics only.
+fn jira_flag(e: &queries::EpicRow) -> Option<view::Flag> {
+    if e.status != "active" {
+        return None;
+    }
+    if let (Some(due), Some(target)) = (&e.jira_due, &e.target)
+        && !target.is_empty()
+        && due != target
+    {
+        let label = |d: &str| date(Some(d)).map_or_else(|| d.to_string(), dates::label);
+        return Some(view::Flag {
+            class: "flag stale",
+            label: "due dates differ",
+            reason: format!("Jira due {} · your target {}", label(due), label(target)),
+        });
+    }
+    // Jira changed after the last line here: worth a line (or a look).
+    let moved = e.jira_updated.as_deref().and_then(|u| u.get(..10))?;
+    (e.last_log.as_deref().is_none_or(|l| moved > l)).then(|| view::Flag {
+        class: "flag stale",
+        label: "Jira moved, no log",
+        reason: format!(
+            "updated in Jira {}",
+            date(Some(moved)).map_or_else(|| moved.to_string(), dates::label)
+        ),
     })
 }
 
@@ -84,16 +114,137 @@ fn list_row(st: &AppState, e: queries::EpicRow, today: NaiveDate) -> view::ListR
         .iter()
         .all(|v| !v.is_empty())
         .then(|| (e.before.clone(), e.after.clone(), e.metric.clone()));
+    // D7: no title typed → Jira's is the name, marked; never copied into epics.
+    let from_jira = e.title.is_empty() && e.jira_summary.as_deref().is_some_and(|s| !s.is_empty());
     view::ListRow {
         jira: jira_link(st, &e.key, e.jira_status.as_deref()),
-        jira_hint: e.jira.filter(|_| e.title.is_empty()),
+        jira_hint: e.jira.filter(|_| e.title.is_empty() && !from_jira),
+        from_jira,
+        cat: e.jira_cat.unwrap_or_default(),
+        child: false,
+        title: if from_jira {
+            e.jira_summary.unwrap_or_default()
+        } else {
+            e.title
+        },
         key: e.key,
-        title: e.title,
         open: e.open_plans,
         impact,
         last_log,
         flag,
     }
+}
+
+/// A list row with its Jira parent (key, Jira's title for it), if any.
+type Parented = (Option<(String, String)>, view::ListRow);
+
+/// D4: stories sit under their Jira parent. A parent that is a row here takes its children right under it; one that
+/// isn't gets a header row (its Jira title + status + "+ Track as epic"), first in the group. Rows keep key order.
+fn by_parent(
+    st: &AppState,
+    conn: &Connection,
+    rows: Vec<Parented>,
+) -> AppResult<Vec<view::ListItem>> {
+    let here: std::collections::HashSet<String> = rows.iter().map(|(_, r)| r.key.clone()).collect();
+    let mut heads: Vec<(String, String, Vec<view::ListRow>)> = Vec::new();
+    let mut under: std::collections::HashMap<String, Vec<view::ListRow>> = Default::default();
+    let mut top = Vec::new();
+    for (parent, mut row) in rows {
+        match parent {
+            Some((p, title)) => {
+                row.child = true;
+                if here.contains(&p) {
+                    under.entry(p).or_default().push(row);
+                } else if let Some(h) = heads.iter_mut().find(|h| h.0 == p) {
+                    h.2.push(row);
+                } else {
+                    heads.push((p, title, vec![row]));
+                }
+            }
+            None => top.push(row),
+        }
+    }
+    let mut items = Vec::new();
+    for (key, title, kids) in heads {
+        let cached = queries::jira_issue(conn, &key)?;
+        let (status, cat) = cached.as_ref().map_or((None, String::new()), |(_, s, c)| {
+            (Some(s.as_str()), c.clone())
+        });
+        items.push(view::ListItem::Head(view::Head {
+            jira: jira_link(st, &key, status),
+            title: if title.is_empty() {
+                cached.map(|c| c.0).unwrap_or_default()
+            } else {
+                title
+            },
+            key,
+            cat,
+        }));
+        items.extend(kids.into_iter().map(view::ListItem::Row));
+    }
+    for row in top {
+        let kids = under.remove(&row.key).unwrap_or_default();
+        items.push(view::ListItem::Row(row));
+        items.extend(kids.into_iter().map(view::ListItem::Row));
+    }
+    // A child whose parent row is itself a child elsewhere: keep it, at the end.
+    items.extend(under.into_values().flatten().map(view::ListItem::Row));
+    Ok(items)
+}
+
+/// D5/D6: open Jira issues assigned to me. An Epic offers "+ Track as epic"; anything else "+ To-do", filled with the
+/// key, Jira's title, its link and due date.
+fn assigned(
+    st: &AppState,
+    conn: &Connection,
+    today: NaiveDate,
+) -> AppResult<Vec<view::AssignedRow>> {
+    Ok(queries::assigned(conn)?
+        .into_iter()
+        .map(|a| {
+            let jira = jira_link(st, &a.key, Some(&a.status));
+            let due_date = date(a.due.as_deref());
+            let line = format!(
+                "{} > {} {}{}",
+                a.key,
+                a.summary,
+                jira.as_ref().map(|(_, u)| u.as_str()).unwrap_or_default(),
+                a.due
+                    .as_ref()
+                    .map(|d| format!(" by {d}"))
+                    .unwrap_or_default()
+            );
+            view::AssignedRow {
+                epic: a.issue_type == "Epic",
+                due: due_date.map(|d| format!("due {}", crate::domain::plan::quiet(d, today))),
+                jira,
+                line,
+                key: a.key,
+                summary: a.summary,
+                issue_type: a.issue_type,
+                cat: a.cat,
+                tracked: a.tracked,
+            }
+        })
+        .collect())
+}
+
+#[derive(Deserialize)]
+pub struct TrackForm {
+    back: Option<String>,
+}
+
+/// "+ Track as epic" on an assigned Jira Epic (D6): the epic stub; its name stays Jira's until one is typed (D7).
+pub async fn track(
+    State(st): State<AppState>,
+    Path(key): Path<String>,
+    Form(f): Form<TrackForm>,
+) -> AppResult<Response> {
+    if !crate::domain::entry::is_epic_key(&key) {
+        return Err(AppError::NotFound);
+    }
+    queries::track(&st.conn(), &key)?;
+    Ok(web::back(web::safe_back(f.back.as_deref(), "/epics")))
 }
 
 #[derive(Deserialize)]
@@ -108,6 +259,7 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
     let mut done_month = 0;
     let (mut untitled, mut groups, mut closed) =
         (Vec::new(), Vec::<view::OkrGroup>::new(), Vec::new());
+    let mut okr_rows: Vec<(String, Vec<Parented>)> = Vec::new();
     for e in queries::all_epics(&conn)? {
         if e.status != "active" {
             let done = e.status == "done";
@@ -127,7 +279,7 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
                 title: e.title,
                 done,
             });
-        } else if e.title.is_empty() {
+        } else if e.title.is_empty() && e.jira_summary.as_deref().is_none_or(str::is_empty) {
             untitled.push(list_row(&st, e, today));
         } else {
             let okr = if e.okr.is_empty() {
@@ -135,18 +287,26 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
             } else {
                 e.okr.clone()
             };
-            let row = list_row(&st, e, today);
+            let parent = e
+                .jira_parent
+                .clone()
+                .map(|p| (p, e.jira_parent_summary.clone().unwrap_or_default()));
+            let row = (parent, list_row(&st, e, today));
             // Query sorts by OKR, so a new OKR always means a new group.
-            match groups.last_mut() {
-                Some(g) if g.okr == okr => g.rows.push(row),
-                _ => groups.push(view::OkrGroup {
-                    okr,
-                    rows: vec![row],
-                }),
+            match okr_rows.last_mut() {
+                Some((o, rows)) if *o == okr => rows.push(row),
+                _ => okr_rows.push((okr, vec![row])),
             }
         }
     }
-    let active: usize = groups.iter().map(|g| g.rows.len()).sum();
+    for (okr, rows) in okr_rows {
+        groups.push(view::OkrGroup {
+            okr,
+            active: rows.len(),
+            items: by_parent(&st, &conn, rows)?,
+        });
+    }
+    let active: usize = groups.iter().map(|g| g.active).sum();
     let mut fact = vec![format!("{active} active")];
     if done_month > 0 {
         fact.push(format!("{done_month} done this month"));
@@ -160,6 +320,9 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
         untitled,
         groups,
         closed,
+        assigned: assigned(&st, &conn, today)?,
+        dead_token: queries::jira_auth_failed(&conn)?.is_some(),
+        token_url: crate::jira::TOKEN_URL,
         jira_on: st.settings.jira().is_some(),
         jira_failed: q.jira.as_deref() == Some("failed"),
         jira_done: q.jira.as_deref() == Some("ok"),

@@ -29,13 +29,84 @@ pub struct EpicRow {
     pub tags: String,
     /// Jira status alone, for the ↗ chip (cached; None = not in Jira or never fetched).
     pub jira_status: Option<String>,
+    /// 0.2.5: Jira's own title (D7: the name until ours is typed), status category, due, last update and parent.
+    pub jira_summary: Option<String>,
+    pub jira_cat: Option<String>,
+    pub jira_due: Option<String>,
+    pub jira_updated: Option<String>,
+    pub jira_parent: Option<String>,
+    pub jira_parent_summary: Option<String>,
+}
+
+/// An open Jira issue assigned to me (D5), and whether Atharu already tracks it (an epic of that key, or an open
+/// to-do linking it).
+pub struct Assigned {
+    pub key: String,
+    pub summary: String,
+    pub status: String,
+    pub cat: String,
+    pub issue_type: String,
+    pub due: Option<String>,
+    pub tracked: bool,
+}
+
+/// Newest-updated first, as Jira returned them.
+pub fn assigned(conn: &Connection) -> rusqlite::Result<Vec<Assigned>> {
+    let mut stmt = conn.prepare(
+        "SELECT j.key, j.summary, j.status, j.status_cat, j.issue_type, j.due,
+                EXISTS (SELECT 1 FROM epics WHERE key = j.key)
+                OR EXISTS (SELECT 1 FROM entries WHERE plan_state = 'open' AND link LIKE '%/browse/' || j.key)
+           FROM jira_issues j WHERE j.assigned_me = 1 ORDER BY j.updated_at DESC, j.key",
+    )?;
+    stmt.query_map([], |r| {
+        Ok(Assigned {
+            key: r.get(0)?,
+            summary: r.get(1)?,
+            status: r.get(2)?,
+            cat: r.get(3)?,
+            issue_type: r.get(4)?,
+            due: r.get(5)?,
+            tracked: r.get(6)?,
+        })
+    })?
+    .collect()
+}
+
+/// A parent's cached (summary, status, status category), for its header row.
+pub fn jira_issue(
+    conn: &Connection,
+    key: &str,
+) -> rusqlite::Result<Option<(String, String, String)>> {
+    conn.query_row(
+        "SELECT summary, status, status_cat FROM jira_issues WHERE key = ?1",
+        [key],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+    )
+    .optional()
+}
+
+/// D9: when Jira last refused the token (None = fine).
+pub fn jira_auth_failed(conn: &Connection) -> rusqlite::Result<Option<String>> {
+    conn.query_row(
+        "SELECT value FROM settings WHERE key = 'jira_auth_failed'",
+        [],
+        |r| r.get(0),
+    )
+    .optional()
+}
+
+/// "+ Track as epic" (D6): the stub only; its name stays Jira's until one is typed (D7).
+pub fn track(conn: &Connection, key: &str) -> rusqlite::Result<()> {
+    conn.execute("INSERT OR IGNORE INTO epics(key) VALUES (?1)", [key])?;
+    Ok(())
 }
 
 const SELECT_EPIC: &str =
     "SELECT ep.key, ep.title, ep.role, ep.okr, ep.status, ep.start, ep.target, ep.done_on,
         ep.metric, ep.before, ep.after, (SELECT MAX(e.day) FROM entries e WHERE e.epic_key = ep.key),
         (SELECT COUNT(*) FROM entries e WHERE e.epic_key = ep.key AND e.plan_state = 'open'),
-        ep.author, j.summary || ' · ' || j.status, ep.tags, j.status
+        ep.author, j.summary || ' · ' || j.status, ep.tags, j.status,
+        j.summary, j.status_cat, j.due, j.updated_at, j.parent_key, j.parent_summary
  FROM epics ep LEFT JOIN jira_issues j ON j.key = ep.key";
 
 fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
@@ -57,6 +128,12 @@ fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
         jira: r.get(14)?,
         tags: r.get(15)?,
         jira_status: r.get(16)?,
+        jira_summary: r.get(17)?,
+        jira_cat: r.get(18)?,
+        jira_due: r.get(19)?,
+        jira_updated: r.get(20)?,
+        jira_parent: r.get(21)?,
+        jira_parent_summary: r.get(22)?,
     })
 }
 

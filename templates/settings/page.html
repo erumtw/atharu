@@ -59,7 +59,7 @@
 <div class="grp">
 <div class="gi"><div class="t"><b>Google Calendar</b><span>Read-only, refreshed every 15 min. Add <span class="mono">ical_url = "…"</span> to data/config.toml and restart{% if !google %}: in Google Calendar, Settings › your calendar › Integrate calendar › Secret address in iCal format{% endif %}.</span></div>{% if google %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
 {% include "settings/maccal.html" %}
-<div class="gi"><div class="t"><b>Jira titles</b><span>Read-only. Base URL, email and API token in data/config.toml.</span></div>{% if jira %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
+<div class="gi"><div class="t"><b>Jira</b><span>Reads titles, status, type, parent and due dates; moves a status only when you pick one. Base URL, email and API token in data/config.toml.</span>{% if jira_dead %}<span><span class="err">Token expired or revoked.</span> <a href="{{ token_url }}" target="_blank" rel="noopener noreferrer">Make a new one ↗</a></span>{% endif %}</div>{% if jira_dead %}<span class="pill">Token expired</span>{% else if jira %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
 </div>
 
 <h2 class="sec">Transcription</h2>

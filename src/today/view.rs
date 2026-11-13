@@ -115,6 +115,8 @@ pub struct Need {
 #[template(path = "today/page.html")]
 pub struct Page {
     pub layout: Layout,
+    /// D5: open Jira issues assigned to me (a count; the list is on Epics).
+    pub jira_assigned: i64,
     pub banner: crate::recording::Banner,
     pub today: NaiveDate,
     pub plans: Plans,

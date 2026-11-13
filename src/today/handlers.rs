@@ -272,6 +272,7 @@ fn render_page(
         ),
         today: st.today(),
         needs: needs(&conn, st.today())?,
+        jira_assigned: queries::jira_assigned(&conn)?,
         plans,
         day: view::Day::new(day, st.today()),
         groups: groups(&conn, day, &o)?,

@@ -24,6 +24,41 @@ pub struct ListRow {
     pub jira: Option<(String, String)>,
     /// Jira `summary · status`, shown on an unnamed row as a hint.
     pub jira_hint: Option<String>,
+    /// The name shown is Jira's (no title typed yet, D7): marked "from Jira".
+    pub from_jira: bool,
+    /// Jira status category (new · indeterminate · done), for the chip's look.
+    pub cat: String,
+    /// Under its Jira parent (D4): indented.
+    pub child: bool,
+}
+
+/// A row of an OKR group: an epic, or the header of a Jira parent that isn't tracked (D4).
+pub enum ListItem {
+    Row(ListRow),
+    Head(Head),
+}
+
+/// A Jira parent its tracked stories sit under; not an epic until "+ Track as epic" (D4).
+pub struct Head {
+    pub key: String,
+    pub title: String,
+    pub jira: Option<(String, String)>,
+    pub cat: String,
+}
+
+/// "In Jira, assigned to you" (D5, D6).
+pub struct AssignedRow {
+    pub key: String,
+    pub summary: String,
+    pub issue_type: String,
+    pub jira: Option<(String, String)>,
+    pub cat: String,
+    /// `due 4 Dec` / `due Fri`.
+    pub due: Option<String>,
+    pub tracked: bool,
+    /// Type Epic: "+ Track as epic"; anything else: "+ To-do" with this line (D6).
+    pub epic: bool,
+    pub line: String,
 }
 
 /// A flag as the epic pages show it.
@@ -36,7 +71,9 @@ pub struct Flag {
 pub struct OkrGroup {
     /// The OKR text, or "No OKR".
     pub okr: String,
-    pub rows: Vec<ListRow>,
+    pub items: Vec<ListItem>,
+    /// Active epics in it (header rows aren't epics).
+    pub active: usize,
 }
 
 pub struct Closed {
@@ -65,6 +102,10 @@ pub struct List {
     pub jira_age: Option<String>,
     pub groups: Vec<OkrGroup>,
     pub closed: Vec<Closed>,
+    pub assigned: Vec<AssignedRow>,
+    /// D9: Jira refused the token on the last call; the page keeps the last copy and says so.
+    pub dead_token: bool,
+    pub token_url: &'static str,
 }
 
 /// htmx answer to the inline title box: the row, now named.

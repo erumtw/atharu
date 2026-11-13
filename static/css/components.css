@@ -63,6 +63,13 @@ a:hover>.chip{background:var(--sep)}
 .lchip{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--accent);background:var(--fill-2);white-space:nowrap;letter-spacing:0}
 /* A Jira chip and its ▾ (0.2.5): the ▾ opens Jira's allowed moves; one pill visually. */
 .jchip{display:inline-flex;align-items:center;gap:0}
+/* Status chip by Jira category (never by name): new grey ink, in progress the accent, done muted with ✓. */
+.lchip.jc-new{color:var(--ink-2)}
+.lchip.jc-done{color:var(--muted)}
+.lchip.jc-done>span::before{content:"✓ "}
+/* D4: a Jira parent header row and the stories under it. */
+.etab tr.jhead td{background:var(--fill-3)}
+.etab tr.child td:first-child{padding-left:28px}
 .jchip .lchip{border-top-right-radius:0;border-bottom-right-radius:0}
 .jmv{font:inherit;font-size:11px;line-height:1;height:20px;padding:0 6px;border:0;border-left:1px solid var(--line);border-radius:0 6px 6px 0;background:var(--fill-2);color:var(--accent);cursor:pointer}
 .jmv:hover{background:var(--sep)}
