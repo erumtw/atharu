@@ -51,8 +51,10 @@ pub struct Hub {
     /// Past the first page of recent lines, folded.
     pub older: Vec<LineRow>,
     pub epics: Vec<HubEpic>,
-    /// (id, title, author, `9 Nov` / `today`).
-    pub notes: Vec<(i64, String, String, String)>,
+    /// Linked references: notes with `#tag` or `[[tag]]`, and notes on its lines.
+    pub refs: Vec<crate::layout::Ref>,
+    /// The `[[…]]` name the empty Linked references line suggests.
+    pub ref_name: String,
     pub meetings: Vec<HubMeeting>,
     pub topics: Vec<HubTopic>,
     /// The topic of the same name (one name, one hub).

@@ -69,7 +69,7 @@ async fn new_note_autosave_and_render() {
         b.contains(">chekout</span>"),
         "dead link shown plain in Links"
     );
-    assert!(b.contains("<span class=\"chip\">you</span>"));
+    assert!(b.contains("<dt>Written by</dt><dd>you</dd>"));
 
     // Linked references on the linked pages (`[[X]]` lands the same everywhere). A series' mentions live on the series
     // page (T5), not on each meeting.

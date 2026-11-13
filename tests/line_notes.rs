@@ -74,7 +74,7 @@ async fn first_click_makes_the_note_and_links_survive_deletes() {
         &format!("UPDATE entries SET note_id = {n} WHERE id = 2"),
     );
     let page = get(&st, &format!("/notes/{n}")).await.body;
-    assert!(page.contains(r#"<h2 id="lnh-h">Lines · 2</h2>"#), "{page}");
+    assert!(page.contains(r#"<h4>Lines · 2</h4>"#), "{page}");
     assert!(page.contains(r#"<a class="chip tag" href="/tags/hotel">hotel</a>"#));
     assert!(page.contains(r#"<span class="chip key">OPS-140</span>"#));
     assert!(page.contains(r#"<a class="day" href="/?day=2026-11-11">logged today</a>"#));
@@ -130,7 +130,7 @@ async fn header_checks_and_dates_todos_and_folds_past_five() {
            (1, '2026-11-09', 'plan', 'reply to vendor', 'open', '2026-11-13', 7);",
     );
     let page = get(&st, "/notes/7").await.body;
-    assert!(page.contains(r#"<h2 id="lnh-h">Line</h2>"#));
+    assert!(page.contains(r#"<h4>Line</h4>"#));
     assert!(page.contains(
         r#"hx-get="/notes/7/lines" hx-trigger="plans-changed from:body, atharu-sync from:body""#
     ));

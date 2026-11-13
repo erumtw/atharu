@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{#- ⋯ = a native popover of links (Esc / light dismiss, no JS); each opens its confirm step on this page, so it works as plain GET + POST. #}
-{% block crumb_extra %}{% if !tagged_by.is_empty() || !used.is_empty() %}<button class="ib more" style="margin-left: auto; anchor-name: --tagacts" type="button" popovertarget="tagacts" aria-label="Tag actions"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#more"/></svg></button>
-<div class="menu acts-menu" id="tagacts" popover role="menu" aria-label="Tag actions"><a role="menuitem" href="/tags/{{ tag }}?act=rename">Rename…</a><a role="menuitem" href="/tags/{{ tag }}?act=merge">Merge into another tag…</a><a role="menuitem" class="err" href="/tags/{{ tag }}?act=delete">Delete tag…</a><div class="mf" role="presentation">Rename and merge rewrite the #word in every line and note; delete keeps the word, drops the #.</div></div>{% endif %}{% endblock %}
+{#- ⋯ = the page menu, a native popover of links (Esc / light dismiss, no JS); each opens its confirm step on this page, so it works as plain GET + POST. #}
+{% block crumb_extra %}<span class="pend">{% include "partials/pmenu_btn.html" %}</span>
+<div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/tags/{{ tag }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a>{% if !tagged_by.is_empty() || !used.is_empty() %}<a role="menuitem" href="/tags/{{ tag }}?act=rename">Rename…</a><a role="menuitem" href="/tags/{{ tag }}?act=merge">Merge into another tag…</a><a role="menuitem" class="err" href="/tags/{{ tag }}?act=delete">Delete tag…</a><div class="mf" role="presentation">Rename and merge rewrite the #word in every line and note; delete keeps the word, drops the #.</div>{% endif %}</div>{% endblock %}
 {% block content %}
 <main class="doc">
 {%- if let Some(a) = act %}
@@ -18,14 +18,18 @@
 {%- if let Some(e) = error %}<span class="err">{{ e }}</span>{% endif %}
 </form>
 {%- endif %}
-<h1 class="ptitle" style="margin-top: 0"><span class="hash">#</span>{{ tag }}</h1>
+<header class="pghead">
+<div class="pgk"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#tags"/></svg><span>Tag</span></div>
+<h1 class="ptitle"><span class="hash">#</span>{{ tag }}</h1>
+{%- if !used.is_empty() %}<p class="fact">{{ used }}</p>{% endif %}
+</header>
 {%- if merged() %}
 <div class="callout"><div style="display: flex; flex-direction: column; gap: 4px"><b>One name, one page</b><span class="small">The tag <span class="chip tag">{{ tag }}</span>{% if topic.is_some() %}{% if series.is_some() %},{% else %} and{% endif %} the topic <span class="mono">{{ tag }}</span>{% endif %}{% if series.is_some() %} and the meeting series <span class="chip">{{ tag }}</span>{% endif %} share this hub. <span class="mono">[[{{ tag }}]]</span> in a note lands here.</span></div></div>
 {%- endif %}
 {%- if is_empty() %}
 <p class="small muted">Nothing is tagged <span class="mono">#{{ tag }}</span> yet. Type <span class="mono">#{{ tag }}</span> in a line or a note, or add it to an epic’s Tags.</p>
 {%- else %}
-<dl class="props">{% if !used.is_empty() %}<dt>Used</dt><dd class="small">{{ used }}</dd>{% endif %}
+<dl class="props">
 {%- if let Some(t) = topic %}
 <dt>Topic</dt><dd class="small"><span class="meter" aria-label="{% if t.depth == 0 %}Not rated{% else %}Depth {{ t.depth }} of 4{% endif %}">{% for i in 1..=4 %}<i{% if i <= t.depth %} class="on"{% endif %}></i>{% endfor %}</span><span>{{ t.label() }}</span><a href="/learn/{{ tag }}">Open topic page →</a></dd>
 {%- endif %}
@@ -38,29 +42,29 @@
 </dl>
 {%- endif %}
 {%- if let Some(t) = topic %}{% if !t.own_words.is_empty() %}
-<section class="hsec"><h3>From the topic</h3><p class="small" style="margin: 0">{{ t.own_words }} <span class="muted">· your own words</span></p></section>
+<details class="tg" open><summary>From the topic</summary><p class="small" style="margin: 0">{{ t.own_words }} <span class="muted">· your own words</span></p></details>
 {%- endif %}{% endif %}
 {#- To-do rows edit and delete like log lines (D51); their edit / Undo answers `plans-changed`, which re-fetches this block. #}
 <div hidden hx-get="{{ self.back() }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#htodos" hx-select="#htodos" hx-swap="outerHTML"></div>
 {%- let back = self.back() %}{% let (full, pin_error, editable) = (false, false, false) %}
 <div id="htodos">
 {%- if !todos.is_empty() %}
-<section class="hsec"><h3>Open to-dos <span class="small muted normal">· {{ todos.len() }}</span></h3><div class="blocks">
+<details class="tg" open><summary>Open to-dos <span class="small muted normal">· {{ todos.len() }}</span></summary><div class="blocks">
 {%- for p in todos %}
 {%- include "partials/plan_row.html" %}
 {%- endfor %}
-</div></section>
+</div></details>
 {%- endif %}
 </div>
 {%- if !hi.is_empty() %}
-<section class="hsec"><h3>Decisions, blockers, impact <span class="small muted normal">· {{ hi.len() }}</span></h3><div class="hi blocks">
+<details class="tg" open><summary>Decisions, blockers, impact <span class="small muted normal">· {{ hi.len() }}</span></summary><div class="hi blocks">
 {%- for row in hi %}
 {%- include "partials/entry_row.html" %}
 {%- endfor %}
-</div></section>
+</div></details>
 {%- endif %}
 {%- if !recent.is_empty() %}
-<section class="hsec"><h3>Recent lines <span class="small muted normal">· {{ recent.len() + older.len() }}</span></h3><div class="blocks">
+<details class="tg" open><summary>Recent lines <span class="small muted normal">· {{ recent.len() + older.len() }}</span></summary><div class="blocks">
 {%- for row in recent %}
 {%- include "partials/entry_row.html" %}
 {%- endfor %}
@@ -72,42 +76,38 @@
 {%- endfor %}
 </div></details>
 {%- endif %}
-</section>
+</details>
 {%- endif %}
-{%- if !epics.is_empty() || !notes.is_empty() %}
-<div class="cols">
-<section class="hsec"><h3>Epics <span class="small muted normal">· {{ epics.len() }}</span></h3><div class="blocks">
+{%- if !epics.is_empty() %}
+<div>
+<details class="tg" open><summary>Epics <span class="small muted normal">· {{ epics.len() }}</span></summary><div class="blocks">
 {%- for e in epics %}
 <a class="blk ink" href="/epics/{{ e.key }}"><span class="chip key">{{ e.key }}</span><span>{{ e.title }}</span><span class="small muted">{% if e.status == "done" %}done{% if let Some(d) = e.done_on %} {{ d }}{% endif %}{% else %}{{ e.status }}{% endif %} · {% if e.tags_it %}tags it{% if e.lines > 0 %}, {{ e.lines }} line{% if e.lines != 1 %}s{% endif %} pass down{% endif %}{% else %}{{ e.lines }} line{% if e.lines != 1 %}s{% endif %} tagged{% endif %}</span></a>
 {%- endfor %}
-</div></section>
-<section class="hsec"><h3>Notes <span class="small muted normal">· {{ notes.len() }}</span></h3><div class="blocks small">
-{%- for (id, title, author, day) in notes %}
-<a class="blk ink" href="/notes/{{ id }}"><span>{{ title }}</span>{% if author != "me" %}<span class="chip llm" title="Written by {{ author }}">{{ author }}</span>{% endif %}<span class="small muted">edited {{ day }}</span></a>
-{%- endfor %}
-</div></section>
+</div></details>
 </div>
 {%- endif %}
 {%- if !meetings.is_empty() || !topics.is_empty() %}
 <div class="cols">
-<section class="hsec"><h3>Meetings <span class="small muted normal">· {{ meetings.len() }}</span></h3><div class="blocks small">
+<details class="tg" open><summary>Meetings <span class="small muted normal">· {{ meetings.len() }}</span></summary><div class="blocks small">
 {%- for m in meetings %}
 <a class="blk ink" href="/meetings?name={{ m.name }}" title="{{ m.name }}"><span class="chip">{{ m.name }}</span><span>{{ m.text }}</span></a>
 {%- endfor %}
-</div></section>
-<section class="hsec"><h3>Topics <span class="small muted normal">· {{ topics.len() }}</span></h3><div class="blocks small">
+</div></details>
+<details class="tg" open><summary>Topics <span class="small muted normal">· {{ topics.len() }}</span></summary><div class="blocks small">
 {%- for t in topics %}
 <a class="blk ink" href="/learn/{{ t.slug }}"><span class="mono">{{ t.slug }}</span><span class="muted">{% if t.tags_it %}tags it{% else %}same name{% endif %}</span><span class="meter" aria-label="{% if t.depth == 0 %}Not rated{% else %}Depth {{ t.depth }} of 4{% endif %}">{% for i in 1..=4 %}<i{% if i <= t.depth %} class="on"{% endif %}></i>{% endfor %}</span></a>
 {%- endfor %}
-</div></section>
+</div></details>
 </div>
 {%- endif %}
 {%- if !coming.is_empty() %}
-<section class="hsec"><h3>Coming up <span class="small muted normal">· {{ coming.len() }}</span></h3><div class="blocks small">
+<details class="tg" open><summary>Coming up <span class="small muted normal">· {{ coming.len() }}</span></summary><div class="blocks small">
 {%- for (at, title, own) in coming %}
 <div class="blk"><span class="due" style="width: 92px">{{ at }}</span>{% if *own %}<span class="ltext">{% let text = title.as_str() %}{% include "partials/tag_text.html" %}</span><span class="small muted">your event</span>{% else %}<span>{{ title }}</span><span class="chip">Google</span><span class="small muted" title="Google events are never tagged; they show here when a word in the title matches">matched by word</span>{% endif %}</div>
 {%- endfor %}
-</div></section>
+</div></details>
 {%- endif %}
+{% include "partials/refs.html" %}
 </main>
 {% endblock %}

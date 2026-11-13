@@ -7,10 +7,9 @@
 <div id="impact-line" class="mono muted">{{ line }}</div>
 </div>
 {%- else %}
-<div class="callout" style="flex-direction: column; gap: 6px"><span class="small muted">Impact line</span><span class="small muted">Fill Metric, Before and After on this page to build your impact line.</span></div>
+<p class="small muted" style="margin: 0">Fill Metric, Before and After on this page to build your impact line.</p>
 {%- endif %}
-
-<h3>Evidence</h3>
+<details class="tg"{% if !live.evidence.is_empty() %} open{% endif %}><summary>Evidence <span class="small muted normal">· {{ live.evidence.len() }}</span></summary>
 <div class="blocks">
 {%- for v in live.evidence %}
 <div class="blk">•<a href="{{ v.url }}" rel="noopener noreferrer" target="_blank">{{ v.url }}</a>{% if !v.note.is_empty() %}<span class="small muted">{{ v.note }}</span>{% endif %}{% let row = v %}{% include "partials/author.html" %}<form class="inline" style="margin-left: auto" method="post" action="/epics/{{ live.key }}/evidence/{{ v.id }}/delete" hx-delete="/epics/{{ live.key }}/evidence/{{ v.id }}" hx-target="#live" hx-swap="outerHTML"><button class="x" type="submit" title="Delete evidence" aria-label="Delete evidence">×</button></form></div>
@@ -20,4 +19,5 @@
 <span class="err">{{ e }}</span>
 {%- endif %}
 </div>
+</details>
 </div>

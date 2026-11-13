@@ -139,7 +139,7 @@ async fn series_topic_and_event_tags() {
         "{hub}"
     );
     assert!(hub.contains(r#"<a class="mono" href="/learn/vat-rules">vat-rules</a>"#));
-    assert!(hub.contains("<h3>Topics"));
+    assert!(hub.contains("<summary>Topics"));
     assert!(
         hub.contains("Coming up <span class=\"small muted normal\">· 2</span>"),
         "{hub}"

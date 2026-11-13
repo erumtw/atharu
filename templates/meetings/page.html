@@ -1,48 +1,34 @@
 {% extends "base.html" %}
 {% block head %}<script src="/static/js/editor.js" defer></script>{% endblock %}
 {% block side %}{% include "meetings/side.html" %}{% endblock %}
+{% block crumb_extra %}<span class="pend">{% include "partials/pmenu_btn.html" %}</span>
+<div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/meetings/{{ id }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a><a role="menuitem" href="/meetings?name={{ name }}">All {{ name }} meetings</a><form method="post" action="/meetings/{{ id }}/delete" hx-post="/meetings/{{ id }}/delete" hx-target="main.doc" hx-swap="outerHTML" onsubmit="this.closest('[popover]').hidePopover()"><button role="menuitem" class="err" type="submit">Delete meeting…</button></form><div class="mf" role="presentation">Its lines stay on their days. Delete keeps an Undo.</div></div>{% endblock %}
 {% block content %}
 {%- let full = false %}{% let pin_error = false %}
 <main class="doc">
 {%- if let Some(banner) = banner %}
 <section id="meeting">{% include "partials/meeting_banner.html" %}</section>
 {%- endif %}
+<header class="pghead">
+<div class="pgk"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#meetings"/></svg><span>Meeting</span></div>
 {#- The title is the series name, editable in place (T92): Enter / leaving the field saves, Esc puts it back. Renames
     every meeting in the series; a refusal (taken / empty) shows under it. -#}
 <form class="ttl" method="post" action="/meetings/{{ id }}/rename" hx-post="/meetings/{{ id }}/rename" hx-trigger="change" hx-target="#ttl-err" hx-swap="innerHTML">
 <h1 class="ptitle"><textarea name="name" rows="1" aria-label="Meeting name (renames the series)" title="Click to rename" spellcheck="false" onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); } else if (event.key === 'Escape') { this.value = this.defaultValue; this.blur(); }" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'">{{ name }}</textarea></h1>
 <p id="ttl-err" class="err small" role="alert" style="margin: 0"></p><noscript><button class="btn ghost s" type="submit">Rename</button></noscript>
 </form>
+<p class="fact">{{ day }} · {% if let Some(t) = ended %}ended {{ t }}{% else %}running{% endif %}</p>
+</header>
 <dl class="props">
 <dt>Day</dt><dd>{{ day }}</dd>
 <dt>State</dt><dd>{% if let Some(t) = ended %}<span class="chip">ended {{ t }}</span>{% else %}<span class="chip">running</span><form class="inline" method="post" action="/meetings/{{ id }}/end"><input type="hidden" name="back" value="{{ back }}"><button class="btn ghost s" type="submit">End meeting</button></form>{% endif %}</dd>
 <dt>Series</dt><dd class="small">{% for (i, l) in siblings %}<a href="/meetings/{{ i }}">{{ l }}</a>·{% endfor %}<a href="/meetings?name={{ name }}">all {{ series_count }}</a></dd>
 </dl>
+{%- if field.tags.is_empty() %}
+<details class="addp"><summary class="addprop">+ Add property <span class="small">· series tags</span></summary>{% include "meetings/tags.html" %}</details>
+{%- else %}
 {% include "meetings/tags.html" %}
-<hr class="hr">
-{%- if plans.is_empty() && groups.is_empty() %}
-<p class="small muted" style="margin: 0">Nothing logged in this meeting.</p>
 {%- endif %}
-{#- A to-do row's edit / Undo (D51) answers `plans-changed`: re-fetch this list, as Today and To-dos do theirs. #}
-<div hidden hx-get="/meetings/{{ id }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#mplans" hx-select="#mplans" hx-swap="outerHTML"></div>
-<div id="mplans">
-{%- if !plans.is_empty() %}
-<h3 style="margin-top: 0">Action items <span class="small muted normal">· plans you logged in this meeting</span></h3>
-<div class="blocks">
-{%- for p in plans %}
-{% include "partials/plan_row.html" %}
-{%- endfor %}
-</div>
-{%- endif %}
-</div>
-{%- for g in groups %}
-<h3>{{ g.title }}</h3>
-<div class="blocks">
-{%- for row in g.lines %}{% let editable = false %}
-{%- include "partials/entry_row.html" %}
-{%- endfor %}
-</div>
-{%- endfor %}
 {#- Notes are a real note (T90, D58): the Notes editor in place, posting to /notes/<id> like the note page does
     (editor.js binds #note / #editor / #note-md; it builds from the markdown, so no server render is needed). #}
 <section id="notes">
@@ -58,9 +44,33 @@
 <form method="post" action="/meetings/{{ id }}/note"><button class="btn ghost s" type="submit">Start notes</button> <span class="small muted">A note of its own: <span class="mono">/</span> blocks, <span class="mono">[[</span> links, #tags, drawings.</span></form>
 {%- endif %}
 </section>
+{%- if plans.is_empty() && groups.is_empty() %}
+<p class="small muted" style="margin: 0">Nothing logged in this meeting.</p>
+{%- endif %}
+{#- A to-do row's edit / Undo (D51) answers `plans-changed`: re-fetch this list, as Today and To-dos do theirs. #}
+<div hidden hx-get="/meetings/{{ id }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#mplans" hx-select="#mplans" hx-swap="outerHTML"></div>
+<div id="mplans">
+{%- if !plans.is_empty() %}
+<details class="tg" open><summary>Action items <span class="small muted normal">· {{ plans.len() }}</span></summary>
+<div class="blocks">
+{%- for p in plans %}
+{% include "partials/plan_row.html" %}
+{%- endfor %}
+</div>
+</details>
+{%- endif %}
+</div>
+{%- for g in groups %}
+<details class="tg" open><summary>{{ g.title }} <span class="small muted normal">· {{ g.lines.len() }}</span></summary>
+<div class="blocks">
+{%- for row in g.lines %}{% let editable = false %}
+{%- include "partials/entry_row.html" %}
+{%- endfor %}
+</div>
+</details>
+{%- endfor %}
 {{ shots|safe }}
 {{ tx|safe }}
 {% include "partials/refs.html" %}
-<form method="post" action="/meetings/{{ id }}/delete" hx-post="/meetings/{{ id }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Its lines stay on their days">Delete meeting</button></form>
 </main>
 {% endblock %}

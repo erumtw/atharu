@@ -34,6 +34,36 @@ fn flag(e: &queries::EpicRow, today: NaiveDate) -> Option<view::Flag> {
     })
 }
 
+/// The head's one read-only line: `Owner · O1 · target 3 Dec · 20d · last log today` (empty parts left out).
+fn fact(e: &queries::EpicRow, today: NaiveDate) -> String {
+    let mut parts = vec![
+        if e.role == "owner" {
+            "Owner"
+        } else {
+            "Contributor"
+        }
+        .to_string(),
+    ];
+    if !e.okr.is_empty() {
+        parts.push(e.okr.clone());
+    }
+    if let Some(t) = date(e.target.as_deref()) {
+        parts.push(match (t - today).num_days() {
+            0 => format!("target {} · today", view::short(t)),
+            d if d < 0 => format!("target {} · {}d late", view::short(t), -d),
+            d => format!("target {} · {d}d", view::short(t)),
+        });
+    }
+    parts.push(
+        match date(e.last_log.as_deref()).map(|d| (today - d).num_days()) {
+            None => "nothing logged yet".to_string(),
+            Some(0) => "last log today".to_string(),
+            Some(n) => format!("last log {n}d ago"),
+        },
+    );
+    parts.join(" · ")
+}
+
 fn list_row(e: queries::EpicRow, today: NaiveDate) -> view::ListRow {
     let flag = flag(&e, today);
     let (target, target_note, late) = match date(e.target.as_deref()) {
@@ -201,7 +231,12 @@ fn render_page(
             )
         })
         .collect();
+    let mut todos: Vec<Plan> = Vec::new();
     for r in queries::timeline(&conn, key)? {
+        if plans.get(&r.id).is_some_and(|p| p.is_open()) {
+            todos.extend(plans.remove(&r.id));
+            continue;
+        }
         if r.day != last_day {
             let label = match date(Some(&r.day)) {
                 Some(d) if d == today => "Today".to_string(),
@@ -236,6 +271,7 @@ fn render_page(
         .filter_map(|d| date(Some(d)))
         .collect();
     let weeks = flags::weekly_counts(&days, today);
+    let fact = fact(&e, today);
     let max = weeks.iter().copied().max().unwrap_or(0).max(1);
     let title = if e.title.is_empty() {
         e.key.clone()
@@ -261,7 +297,9 @@ fn render_page(
         refs: crate::layout::refs(&conn, Some(key), Some(crate::layout::Lines::Epic(key)))?,
         ref_name: key.to_string(),
         live,
+        todos,
         timeline,
+        fact,
         today,
         save_error,
         delete_error: None,

@@ -462,8 +462,6 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .menu .mf{font-size:12px;color:var(--muted);padding:4px 10px 2px;border-top:1px solid rgba(0,0,0,.06);margin-top:2px;letter-spacing:0}
 /* Hub */
 .ptitle .hash{color:var(--accent);margin-right:2px}
-.hsec{display:flex;flex-direction:column;gap:6px}
-.hsec h3{margin:10px 0 0}
 .hi{background:var(--fill);border-radius:12px;padding:8px 14px}
 .hi .blk:hover{background:rgba(0,0,0,.04)}
 .via{font-size:12px;color:var(--muted);white-space:nowrap;display:inline-flex;gap:4px;align-items:center}
@@ -473,8 +471,6 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .menu [role=menuitem]{padding:0 10px;min-height:32px;display:flex;align-items:center;gap:10px;border-radius:8px;color:var(--ink);text-decoration:none}
 .menu [role=menuitem]:hover,.menu [role=menuitem]:focus-visible{background:var(--accent-wash);text-decoration:none}
 .menu [role=menuitem].err{color:var(--err);font-size:inherit}
-.acts-menu[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:220px}
-@supports (position-anchor:--a){.acts-menu[popover]{position-anchor:--tagacts;top:calc(anchor(bottom) + 6px);right:anchor(right)}}
 /* Tags prop (epic / series / topic): chips, each with its × (a submit button), then the add box. */
 .tagf .chip.tag{padding:1px 4px 1px 8px;gap:2px}
 .tagf .rm{border:0;background:none;font:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9999px;color:var(--ink-2);padding:0}
@@ -552,8 +548,7 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
 /* Header on /notes/<id>: the lines this note belongs to. Content, so no glass: a white card (a --fill panel failed AA:
    --muted 4.27 under the .hi hover, the check ring --ctl-edge 2.99 on --fill). Rows take no hover tint. */
-.lnh{background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 14px 6px;display:flex;flex-direction:column}
-.lnh>h2{margin:0;padding:6px 0 2px;font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted)}
+.lnh{margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 14px 6px;display:flex;flex-direction:column}
 .lnh .blk:hover{background:none}
 .lnh .day{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap;text-decoration:none;border-radius:4px}
 .lnh .day:hover{color:var(--ink);text-decoration:underline}
@@ -568,7 +563,7 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .lnh .gone-text{color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Notes list: the first linked line's kind square before the title. */
 .blk.ink>.k{margin-right:-2px}
-@media (prefers-contrast: more){.lnh{border-color:var(--ink)}.ib.note:not(.has),.lnh :is(.day,.gone-text,h2){color:var(--muted-hc)}}
+@media (prefers-contrast: more){.lnh{border-color:var(--ink)}.ib.note:not(.has),.lnh :is(.day,.gone-text){color:var(--muted-hc)}}
 
 /* Meeting recording (T53, DESIGN.md §6, boards Meeting.*): banner, start switch, transcript, permission steps. */
 /* The only red: --rec-on-dark on --dark (4.90:1). Pulses; still under reduced motion. Shared with the quick popover. */
@@ -688,9 +683,19 @@ progress.prog::-moz-progress-bar{background:var(--accent)}
 .pghead .ptitle{margin:0}
 .pghead .fact{margin:0;font-size:14px;color:var(--muted)}
 .pghead .fact b{color:var(--ink-2);font-weight:500}
-/* .pmenu: the page ⋯ menu under the crumb (the hub's .acts-menu, made the one menu every entity page has). */
-.pmenu{width:230px;position-anchor:--pmenu;top:anchor(bottom);right:anchor(right);margin-top:4px;position:fixed}
-/* .addprop: empty properties are hidden (D6); this row adds one. Sits in the props grid, full width. */
+/* .pmenu: the page ⋯ menu under the crumb, one per entity page (partials/pmenu_btn.html). Fixed fallback where anchor
+   positioning is missing. Delete is a form button styled as a menu item, so it still works as a plain POST. */
+.pmenu[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:230px}
+@supports (position-anchor:--a){.pmenu[popover]{position-anchor:--pmenu;top:calc(anchor(bottom) + 6px);right:anchor(right)}}
+.menu form{display:contents}
+.menu button[role=menuitem]{border:0;background:none;font:inherit;width:100%;text-align:left;cursor:pointer}
+/* Crumb's right end: save status + ⋯. */
+.crumb .pend{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
+/* .addprop: empty properties are hidden (D6); this row adds one. JS-free: the summary of a details that holds the
+   empty props (still inside the page's form, so an autosave PATCH carries them). Opening it reveals them for good. */
+details.addp>summary{list-style:none}
+details.addp>summary::-webkit-details-marker{display:none}
+details.addp[open]>summary{display:none}
 .addprop{grid-column:1/-1;justify-self:start;display:inline-flex;align-items:center;gap:6px;border:0;background:none;font:inherit;font-size:14px;color:var(--muted);padding:5px 8px;margin:2px 0 0 -8px;border-radius:6px;cursor:pointer;min-height:30px}
 .addprop:hover{background:var(--fill);color:var(--ink)}
 /* .refs: Linked references, grouped by source, snippet around the mention. Content: no glass. */

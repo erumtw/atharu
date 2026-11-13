@@ -95,9 +95,9 @@ async fn lines_logged_during_a_meeting_get_its_id() {
     let b = get(&st, "/meetings/1").await.body;
     let pos = |s: &str| b.find(s).unwrap_or_else(|| panic!("missing {s}"));
     assert!(pos("Action items") < pos("profile join"));
-    assert!(pos("profile join") < pos("<h3>Decisions"));
-    assert!(pos("<h3>Decisions") < pos("keep sync path"));
-    assert!(pos("<h3>Learned") < pos("lag is rebalance"));
+    assert!(pos("profile join") < pos("<summary>Decisions"));
+    assert!(pos("<summary>Decisions") < pos("keep sync path"));
+    assert!(pos("<summary>Learned") < pos("lag is rebalance"));
     assert!(b.contains("ended "));
 
     let r = post(

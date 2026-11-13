@@ -1,39 +1,59 @@
 {% extends "base.html" %}
-{% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto">{%- include "epics/saved.html" -%}</span>{% endblock %}
+{% block crumb_extra %}<span class="pend"><span id="saved" class="saved">{%- include "epics/saved.html" -%}</span>{% include "partials/pmenu_btn.html" %}</span>
+<div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/epics/{{ epic.key }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a><form method="post" action="/epics/{{ epic.key }}/delete" hx-post="/epics/{{ epic.key }}/delete" hx-target="main.doc" hx-swap="outerHTML" onsubmit="this.closest('[popover]').hidePopover()"><button role="menuitem" class="err" type="submit">Delete epic…</button></form><div class="mf" role="presentation">Only while nothing is logged on it. Delete keeps an Undo.</div></div>{% endblock %}
 {% block content %}
 <main class="doc">
-<div class="row"><span class="chip key">{{ epic.key }}</span>{% if let Some(f) = flag %}<span class="{{ f.class }}">{{ f.label }}</span><span class="small muted">{{ f.reason }}</span>{% endif %}</div>
-{%- if let Some(j) = epic.jira %}
-<p class="small muted" style="margin: 4px 0 0" title="From Jira, read-only">Jira: {{ j }}</p>
-{%- endif %}
-{#- Every change PATCHes the whole form (unchanged fields rewrite their own value); no-JS posts it via Save. #}
+{#- Every change PATCHes the whole form (unchanged fields rewrite their own value, hidden empty props included); no-JS posts it via Save. #}
 {#- novalidate: min/max only grey the picker's days; a typed backwards date still posts, so the server's message shows instead of htmx silently not saving. #}
-<form method="post" action="/epics/{{ epic.key }}" hx-patch="/epics/{{ epic.key }}" hx-trigger="change, submit" hx-target="#live" hx-swap="outerHTML" novalidate>
-<h1 class="ptitle" style="margin-top: 0"><textarea class="pin" name="title" rows="1" placeholder="Untitled" aria-label="Title" onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }" oninput="if (this.value.includes('\n')) this.value = this.value.replace(/\n/g, ' '); this.style.height = ''; this.style.height = this.scrollHeight + 'px'">{{ epic.title }}</textarea></h1>
+<form method="post" action="/epics/{{ epic.key }}" hx-patch="/epics/{{ epic.key }}" hx-trigger="change, submit" hx-target="#live" hx-swap="outerHTML" novalidate style="display: flex; flex-direction: column; gap: 12px">
+<header class="pghead">
+<div class="pgk"><span class="chip key">{{ epic.key }}</span>{% if let Some(f) = flag %}<span class="{{ f.class }}">{{ f.label }}</span><span>{{ f.reason }}</span>{% endif %}{% if let Some(j) = epic.jira %}<span title="From Jira, read-only">Jira: {{ j }}</span>{% endif %}<span>Epic</span></div>
+<h1 class="ptitle"><textarea class="pin" name="title" rows="1" placeholder="Untitled" aria-label="Title" onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }" oninput="if (this.value.includes('\n')) this.value = this.value.replace(/\n/g, ' '); this.style.height = ''; this.style.height = this.scrollHeight + 'px'">{{ epic.title }}</textarea></h1>
+<p class="fact">{{ fact }}</p>
+<p id="epic-del" class="err small" role="alert" style="margin: 0">{% if let Some(e) = delete_error %}{{ e }}{% endif %}</p>
+</header>
+{#- Filled props show; the empty ones wait behind "+ Add property" (D2). Status and Role always have a value. #}
+{%- let has_dates = !epic.start.is_empty() || !epic.target.is_empty() || !epic.done_on.is_empty() %}
 <dl class="props">
-<dt><label for="role">Role</label></dt><dd><select id="role" name="role" class="pin" style="flex: none">{% for o in ["owner", "contributor"] %}<option{% if epic.role.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
 <dt><label for="status">Status</label></dt><dd><select id="status" name="status" class="pin" style="flex: none">{% for o in ["active", "done", "dropped"] %}<option{% if epic.status.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
-<dt><label for="tags">Tags</label></dt><dd class="tagf" id="tagf">{% include "partials/tag_field.html" %}<span class="small muted">every line on this epic counts under these tags</span></dd>
-<dt><label for="okr">OKR</label></dt><dd><input id="okr" name="okr" class="pin" value="{{ epic.okr }}" placeholder="e.g. O1 · Faster ordering"></dd>
-<dt>Dates</dt><dd><span class="small muted">start</span><input class="pin" type="date" name="start" value="{{ epic.start }}"{% if !epic.target.is_empty() %} max="{{ epic.target }}"{% endif %} onchange="this.form.elements.target.min = this.value" style="flex: none" aria-label="Start"><span class="small muted">target</span><input class="pin" type="date" name="target" value="{{ epic.target }}"{% if !epic.start.is_empty() %} min="{{ epic.start }}"{% endif %} onchange="this.form.elements.start.max = this.value" style="flex: none" aria-label="Target"><span class="small muted">done on</span><input class="pin" type="date" id="done_on" name="done_on" value="{{ epic.done_on }}" style="flex: none" aria-label="Done on"></dd>
-<dt>Metric</dt><dd><input class="pin" name="metric" value="{{ live.metric }}" placeholder="e.g. checkout p95" style="flex: 0 1 140px" aria-label="Metric name"><span class="small muted">before</span><input class="pin" name="before" value="{{ live.before }}" style="flex: 0 0 48px" aria-label="Before"><span class="small muted">after</span><input class="pin" name="after" value="{{ live.after }}" style="flex: 0 0 48px" aria-label="After"></dd>
+<dt><label for="role">Role</label></dt><dd><select id="role" name="role" class="pin" style="flex: none">{% for o in ["owner", "contributor"] %}<option{% if epic.role.as_str() == *o %} selected{% endif %}>{{ o }}</option>{% endfor %}</select></dd>
+{%- if !field.tags.is_empty() %}{% include "epics/prop_tags.html" %}{% endif %}
+{%- if !epic.okr.is_empty() %}{% include "epics/prop_okr.html" %}{% endif %}
+{%- if has_dates %}{% include "epics/prop_dates.html" %}{% endif %}
+{%- if !live.metric.is_empty() %}{% include "epics/prop_metric.html" %}{% endif %}
 <dt>Activity</dt><dd><div class="bars" style="width: 120px; height: 20px" aria-hidden="true">{% for p in activity %}<span style="height: {{ p }}%"></span>{% endfor %}</div><span class="small muted">logs/week, 8 wks</span></dd>
 </dl>
-<noscript><button class="btn" type="submit">Save</button></noscript>
+{%- if field.tags.is_empty() || epic.okr.is_empty() || !has_dates || live.metric.is_empty() %}
+<details class="addp"><summary class="addprop">+ Add property <span class="small">·{% if field.tags.is_empty() %} tags{% endif %}{% if epic.okr.is_empty() %} OKR{% endif %}{% if !has_dates %} dates{% endif %}{% if live.metric.is_empty() %} metric{% endif %}</span></summary>
+<dl class="props">
+{%- if field.tags.is_empty() %}{% include "epics/prop_tags.html" %}{% endif %}
+{%- if epic.okr.is_empty() %}{% include "epics/prop_okr.html" %}{% endif %}
+{%- if !has_dates %}{% include "epics/prop_dates.html" %}{% endif %}
+{%- if live.metric.is_empty() %}{% include "epics/prop_metric.html" %}{% endif %}
+</dl>
+</details>
+{%- endif %}
+<noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
-{% include "partials/refs.html" %}
-
-<hr class="hr">
 
 {% include "epics/live.html" %}
 
-<h3>Timeline</h3>
+{#- To-do lines edit and delete like log lines (D51); their edit / Undo answers `plans-changed`, which re-fetches both sections. #}
+<div hidden hx-get="/epics/{{ epic.key }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#timeline" hx-select="#timeline" hx-swap="outerHTML"></div>
+<div id="timeline">{% let back = "/epics/{}"|format(epic.key) %}{% let (full, pin_error, editable) = (false, false, false) %}
+{%- if !todos.is_empty() %}
+<details class="tg" open><summary>Open to-dos <span class="small muted normal">· {{ todos.len() }}</span></summary>
+<div class="blocks">
+{%- for p in todos %}
+{%- include "partials/plan_row.html" %}
+{%- endfor %}
+</div>
+</details>
+{%- endif %}
+<details class="tg" open><summary>Timeline <span class="small muted normal">· {{ timeline.len() }} day{% if timeline.len() != 1 %}s{% endif %}</span></summary>
 {%- if timeline.is_empty() %}
 <p class="small muted">Nothing logged on {{ epic.key }} yet. Start a line with {{ epic.key }} on Today.</p>
 {%- endif %}
-{#- To-do lines edit and delete like log lines (D51); their edit / Undo answers `plans-changed`, which re-fetches the timeline. #}
-<div hidden hx-get="/epics/{{ epic.key }}" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-target="#timeline" hx-select="#timeline" hx-swap="outerHTML"></div>
-<div id="timeline">{% let back = "/epics/{}"|format(epic.key) %}{% let (full, pin_error, editable) = (false, false, false) %}
 {%- for g in timeline %}
 <h4 class="muted small">{{ g.label }}</h4>
 <div class="blocks">
@@ -46,7 +66,8 @@
 {%- endfor %}
 </div>
 {%- endfor %}
+</details>
 </div>
-<form class="row small" method="post" action="/epics/{{ epic.key }}/delete" hx-post="/epics/{{ epic.key }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Only while nothing is logged on it">Delete epic</button><span id="epic-del" class="err">{% if let Some(e) = delete_error %}{{ e }}{% endif %}</span></form>
+{% include "partials/refs.html" %}
 </main>
 {% endblock %}

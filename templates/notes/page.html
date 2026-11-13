@@ -2,30 +2,29 @@
 {#- The only page that loads the editor bundle (spec: other pages ship no editor JS). #}
 {% block head %}<script src="/static/js/editor.js" defer></script>{% endblock %}
 {% block side %}{% include "notes/side.html" %}{% endblock %}
-{% block crumb_extra %}<span id="saved" class="saved" style="margin-left: auto"><span class="m-hide">Changes save as you type{% if !ago.is_empty() %} · {% endif %}</span>{% if !ago.is_empty() %}✓ saved {{ ago }}{% endif %}</span>{% endblock %}
+{% block crumb_extra %}<span class="pend"><span id="saved" class="saved"><span class="m-hide">Changes save as you type{% if !ago.is_empty() %} · {% endif %}</span>{% if !ago.is_empty() %}✓ saved {{ ago }}{% endif %}</span>{% include "partials/pmenu_btn.html" %}</span>
+<div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/notes/{{ id }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a><form method="post" action="/notes/{{ id }}/delete" hx-post="/notes/{{ id }}/delete" hx-target="main.doc" hx-swap="outerHTML" onsubmit="this.closest('[popover]').hidePopover()"><button role="menuitem" class="err" type="submit">Delete note…</button></form><div class="mf" role="presentation">Delete keeps an Undo.</div></div>{% endblock %}
 {% block content %}
 <main class="doc">
-<form class="fld m" role="search" method="get" action="/notes"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#search"/></svg><input name="q" placeholder="Search notes" aria-label="Search notes"></form>
 {#- editor.js mounts Tiptap on #editor and keeps the textarea's markdown in sync; without JS the textarea is the editor. #}
-{#- The title sits outside #note (form="note") so the line header between them can hold its own forms: forms don't nest.
-    Its events don't bubble into #note, hence the `from:#note-title` triggers. #}
+{#- The title sits outside #note (form="note"); its events don't bubble into #note, hence the `from:#note-title` triggers. #}
 <div style="display: flex; flex-direction: column; gap: 12px">
 <h1 class="ptitle" style="margin-top: 0"><textarea class="pin" id="note-title" form="note" name="title" rows="1" placeholder="Untitled" aria-label="Title" onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }" oninput="if (this.value.includes('\n')) this.value = this.value.replace(/\n/g, ' '); this.style.height = ''; this.style.height = this.scrollHeight + 'px'">{{ title }}</textarea></h1>
-{{ head|safe }}
 <form id="note" method="post" action="/notes/{{ id }}" hx-post="/notes/{{ id }}" hx-trigger="input delay:1s, change, submit, input delay:1s from:#note-title, change from:#note-title" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
 <dl class="props">
-<dt>Written by</dt><dd><span class="chip{% if agent.is_some() %} llm{% endif %}">{% if let Some(a) = agent %}{{ a }}{% else %}you{% endif %}</span></dd>
+<dt>Written by</dt><dd>{% if let Some(a) = agent %}<span class="chip tag at" title="Written by {{ a }} from Claude Code: summaries of links you gave it, and lint reports. It never changes your topics or depth ratings.">{{ a }}</span>{% else %}you{% endif %}</dd>
 {%- if !links.is_empty() %}
 <dt>Links</dt><dd class="small">{% for l in links %}{% if !loop.first %}·{% endif %}{% if let Some(h) = l.href %}<a href="{{ h }}">{{ l.label }}</a>{% else %}<span class="muted" title="Links to nothing yet: a typo, or a topic you haven't made">{{ l.label }}</span>{% endif %}{% endfor %}</dd>
 {%- endif %}
 </dl>
+{%- if body.trim().is_empty() %}
 <p class="small muted" style="margin: 0">Type <span class="mono">/</span> for blocks, <span class="mono">[[</span> to link a page. Markdown shortcuts work: <span class="mono">#</span> heading, <span class="mono">-</span> list, <span class="mono">[]</span> to-do.</p>
+{%- endif %}
 <div id="editor" class="note-body">{{ html|safe }}</div>
 <textarea id="note-md" name="body" class="note-md" rows="14" aria-label="Note (markdown)">{{ body }}</textarea>
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
 </div>
-<form method="post" action="/notes/{{ id }}/delete" hx-post="/notes/{{ id }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit">Delete note</button></form>
-<div class="callout small"><span><span class="chip llm">LLM</span> Notes under “Written by LLM” come from Claude Code (summaries of links you gave it, and lint reports). They never change your topics or depth ratings.</span></div>
+{{ head|safe }}
 </main>
 {% endblock %}

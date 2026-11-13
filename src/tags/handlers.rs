@@ -153,10 +153,7 @@ fn render_hub(
     let older = recent.split_off(recent.len().min(RECENT));
     let notes_raw = queries::notes(conn, &tag)?;
     let last_note = notes_raw.iter().map(|x| x.3.clone()).max();
-    let notes = notes_raw
-        .into_iter()
-        .map(|(id, title, author, day)| (id, title, author, when(&day, today)))
-        .collect::<Vec<_>>();
+    let notes = notes_raw.len();
     let same_series = series.iter().find(|s| s.0 == tag).cloned();
     let mut used = Vec::new();
     if total > 0 {
@@ -165,8 +162,8 @@ fn render_hub(
     if !todos.is_empty() {
         used.push(n(todos.len(), "open to-do", "open to-dos"));
     }
-    if !notes.is_empty() {
-        used.push(n(notes.len(), "note", "notes"));
+    if notes > 0 {
+        used.push(n(notes, "note", "notes"));
     }
     if let Some(s) = &same_series {
         used.push(n(s.1 as usize, "meeting", "meetings"));
@@ -230,7 +227,8 @@ fn render_hub(
         recent,
         older,
         epics: queries::epics(conn, &tag)?,
-        notes,
+        refs: crate::layout::refs(conn, Some(&tag), Some(crate::layout::Lines::Tag(&tag)))?,
+        ref_name: tag.clone(),
         meetings,
         topics,
         topic,

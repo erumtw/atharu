@@ -122,7 +122,11 @@ pub struct Page {
     /// Entries per week, last 8 weeks, as % of the busiest.
     pub activity: Vec<i64>,
     pub live: Live,
+    /// Open to-dos, pulled out of the timeline into their own section.
+    pub todos: Vec<Plan>,
     pub timeline: Vec<DayGroup>,
+    /// The head's read-only fact line.
+    pub fact: String,
     /// For the to-do rows' due / late labels.
     pub today: NaiveDate,
     /// Top-bar status after a plain (no-JS) save failed: the reason.

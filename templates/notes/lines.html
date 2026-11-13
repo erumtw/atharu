@@ -1,6 +1,8 @@
-{#- The note header (D49): lines linked to this note. Nothing at all when none are (an ordinary note). -#}
+{#- The note's Linked references (D49): lines linked to this note. Nothing at all when none are (an ordinary note). -#}
 {%- if count() > 0 %}
-<section class="lnh" id="lnh" aria-labelledby="lnh-h" hx-get="/notes/{{ id }}/lines" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-swap="outerHTML"><h2 id="lnh-h">{% if count() == 1 %}Line{% else %}Lines · {{ count() }}{% endif %}</h2>
+<section class="refs" id="lnh" aria-labelledby="lnh-h" hx-get="/notes/{{ id }}/lines" hx-trigger="plans-changed from:body, atharu-sync from:body" hx-swap="outerHTML"><header><h3 id="lnh-h">Linked references <span class="small muted normal">· {{ count() }}</span></h3></header>
+<h4>{% if count() == 1 %}Line{% else %}Lines · {{ count() }}{% endif %}</h4>
+<div class="lnh">
 {%- for (text, snap) in gone %}
 <div class="blk"><span class="k gone" aria-hidden="true"></span><span class="gone-text">Line deleted · “{{ text }}”</span><form class="inline" method="post" action="/entries/restore" style="margin-left: auto"><input type="hidden" name="snap" value="{{ snap }}"><input type="hidden" name="back" value="/notes/{{ id }}"><button class="linkbtn small" type="submit">Undo</button></form></div>
 {%- endfor %}
@@ -14,5 +16,6 @@
 {%- endfor %}
 </details>
 {%- endif %}
+</div>
 </section>
 {%- endif %}
