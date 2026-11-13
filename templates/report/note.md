@@ -7,6 +7,22 @@
 - {{ s }}
 {%- endfor %}
 {%- endif %}
+{%- if !note.resolved.is_empty() %}
+
+## Resolved in Jira this period
+{%- for g in note.resolved %}
+{%- if let Some(p) = g.parent %}
+- {{ p }}
+{%- for i in g.items %}
+  - {{ i }}
+{%- endfor %}
+{%- else %}
+{%- for i in g.items %}
+- {{ i }}
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
 {%- for sec in note.sections %}
 
 ## {{ sec.heading }}

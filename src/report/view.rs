@@ -25,6 +25,15 @@ pub struct Note {
     pub sections: Vec<Section>,
     /// `vector-search: depth 2 → 3 (can build without AI)`.
     pub learning: Vec<String>,
+    /// "Resolved in Jira this period", grouped under each issue's Jira parent (D3).
+    pub resolved: Vec<Resolved>,
+}
+
+/// One Jira parent (or none) and its issues resolved in range: `OPS-131 Alert at 6°C`.
+pub struct Resolved {
+    /// `OPS-500 Checkout platform`; None = no parent.
+    pub parent: Option<String>,
+    pub items: Vec<String>,
 }
 
 #[derive(Template)]
@@ -107,5 +116,6 @@ impl Page {
         self.note.shipped.is_empty()
             && self.note.sections.is_empty()
             && self.note.learning.is_empty()
+            && self.note.resolved.is_empty()
     }
 }

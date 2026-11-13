@@ -96,3 +96,23 @@ async fn empty_range_nudges_wider() {
     assert!(b.contains("Nothing logged in this range. Try</span><a class=\"small\" href=\"/report?preset=month\">This month</a>"));
     assert!(markdown(&b) == "# Week of 9 Nov");
 }
+
+#[tokio::test]
+async fn resolved_in_jira_groups_under_parent() {
+    // Today is Wed 11 Nov 2026; this week = Mon 9 – Sun 15 Nov. Cached rows only.
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO jira_issues(key, summary, status, status_cat, parent_key, parent_summary, resolved_on) VALUES
+           ('OPS-131', 'Alert at 6°C', 'Done', 'done', 'OPS-130', 'Cold-chain alerts', '2026-11-10'),
+           ('OPS-132', 'Driver push', 'Done', 'done', 'OPS-130', 'Cold-chain alerts', '2026-11-11'),
+           ('PAY-9', 'Refund flow', 'Done', 'done', NULL, NULL, '2026-11-12'),
+           ('OPS-99', 'Last month', 'Done', 'done', NULL, NULL, '2026-10-02');",
+    );
+    let b = get(&st, "/report").await.body;
+    assert!(b.contains("<h3>Resolved in Jira this period</h3>"), "{b}");
+    assert!(b.contains("<p class=\"small muted\" style=\"margin: 6px 0 0\">OPS-130 Cold-chain alerts</p>\n<ul style=\"margin: 0; padding-left: 22px\"><li>OPS-131 Alert at 6°C</li><li>OPS-132 Driver push</li></ul>"));
+    assert!(b.contains("<li>PAY-9 Refund flow</li>") && !b.contains("OPS-99"));
+    // The copied note says the same.
+    assert!(b.contains("## Resolved in Jira this period\n- OPS-130 Cold-chain alerts\n  - OPS-131 Alert at 6°C\n  - OPS-132 Driver push\n- PAY-9 Refund flow"));
+}

@@ -213,11 +213,28 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> Ap
         }
     }
 
+    // D3: Jira resolutions in range, under their parent (parents in key order, "no parent" last).
+    let mut resolved: Vec<view::Resolved> = Vec::new();
+    for r in queries::jira_resolved(&conn, &f, &t)? {
+        let parent = r.parent_key.map(|k| match r.parent_summary.as_deref() {
+            Some(s) if !s.is_empty() => format!("{k} {s}"),
+            _ => k,
+        });
+        let item = format!("{} {}", r.key, r.summary);
+        match resolved.last_mut() {
+            Some(g) if g.parent == parent => g.items.push(item),
+            _ => resolved.push(view::Resolved {
+                parent,
+                items: vec![item],
+            }),
+        }
+    }
     let note = view::Note {
         title: title(preset, from, to),
         shipped,
         sections,
         learning,
+        resolved,
     };
     let markdown = view::NoteMd { note: &note }.render()?;
 

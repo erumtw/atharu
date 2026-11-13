@@ -137,3 +137,32 @@ pub fn ratings(conn: &Connection, to: &str) -> rusqlite::Result<Vec<(String, Str
     stmt.query_map([to], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
         .collect()
 }
+
+pub struct JiraResolved {
+    pub key: String,
+    pub summary: String,
+    pub parent_key: Option<String>,
+    pub parent_summary: Option<String>,
+}
+
+/// Jira issues Jira resolved in [from, to], parent by parent (no parent last), key order inside (D3).
+pub fn jira_resolved(
+    conn: &Connection,
+    from: &str,
+    to: &str,
+) -> rusqlite::Result<Vec<JiraResolved>> {
+    let mut stmt = conn.prepare(
+        "SELECT key, summary, parent_key, parent_summary FROM jira_issues
+          WHERE resolved_on BETWEEN ?1 AND ?2
+          ORDER BY parent_key IS NULL, parent_key, key",
+    )?;
+    stmt.query_map(params![from, to], |r| {
+        Ok(JiraResolved {
+            key: r.get(0)?,
+            summary: r.get(1)?,
+            parent_key: r.get(2)?,
+            parent_summary: r.get(3)?,
+        })
+    })?
+    .collect()
+}
