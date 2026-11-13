@@ -27,7 +27,10 @@
 <div class="col{% if d.now %} today{% endif %}">
 {%- for h in cal.hours() %}<a class="slot" href="{{ cal.slot_href(d, h) }}" tabindex="-1" style="top: calc(var(--px) * {{ h - cal.h0 }})" aria-label="New event {{ d.wd }} {{ d.num }} at {{ "{:02}"|format(h) }}:00"><span>+ {{ "{:02}"|format(h) }}:00</span></a>{% endfor %}
 {%- for t in d.timed %}{% let i = t.i() %}
-<div class="tev" style="top: calc(var(--px) * {{ t.top }} / 60); height: calc(var(--px) * {{ t.len }} / 60 - 2px); left: calc({{ t.col }} * 100% / {{ t.cols }} + 2px); width: calc(100% / {{ t.cols }} - 4px)">{% include "calendar/ev.html" %}</div>
+<div class="tev{% if t.short() %} short{% endif %}" style="top: calc(var(--px) * {{ t.top }} / 60); height: calc(var(--px) * {{ t.len }} / 60 - 2px); left: calc({{ t.col }} * 100% / {{ t.cols }} + 2px); width: calc(100% / {{ t.cols }} - 4px)">{% include "calendar/ev.html" %}</div>
+{%- endfor %}
+{%- for m in d.more %}
+<a class="tev tmore" href="{{ cal.day_href(d) }}" style="top: calc(var(--px) * {{ m.top }} / 60); left: calc({{ m.col }} * 100% / {{ m.cols }} + 2px); width: calc(100% / {{ m.cols }} - 4px)" aria-label="{{ m.n }} more on {{ d.wd }} {{ d.num }}: open the day">+{{ m.n }}</a>
 {%- endfor %}
 {%- if d.now %}{% if let Some(m) = cal.now_min %}<div class="nowl" style="top: calc(var(--px) * {{ m }} / 60)" aria-hidden="true"></div>{% endif %}{% endif %}
 </div>

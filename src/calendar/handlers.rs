@@ -179,7 +179,7 @@ impl Range {
     fn views(&self) -> Vec<view::ViewLink> {
         [
             ("Day", View::Day),
-            ("N days", View::Days),
+            ("", View::Days),
             ("Week", View::Week),
             ("Month", View::Month),
         ]
@@ -196,9 +196,19 @@ impl Range {
                 ..self.clone()
             };
             view::ViewLink {
-                label,
+                // Says the number it shows ("5 days"); calendar.ts rewrites it to the width's N elsewhere.
+                label: if v == View::Days {
+                    if n == 1 {
+                        "1 day".into()
+                    } else {
+                        format!("{n} days")
+                    }
+                } else {
+                    label.into()
+                },
                 href: to.link(self.given.then_some(self.anchor)),
                 on: v == self.view,
+                ndays: v == View::Days,
             }
         })
         .collect()
@@ -254,8 +264,11 @@ fn end_of(start_at: &str, end_at: Option<&str>, fallback: u32) -> u32 {
     }
 }
 
-/// A short item still needs room for its title: what the grid draws and lays out.
-const MIN_LEN: u32 = 20;
+/// A short item (a 5-minute test call) still needs one readable line, ~20 px at 46 px an hour: what the grid
+/// draws and lays out, so a 1-minute and a 10-minute meeting never overlap their neighbours' titles.
+const MIN_LEN: u32 = 26;
+/// Narrowest column a title still reads in, against ~1000 px of grid split over the shown days.
+const MIN_COL_PX: u32 = 60;
 
 fn cal(
     conn: &Connection,
@@ -278,6 +291,7 @@ fn cal(
             logged: 0,
             all_day: Vec::new(),
             timed: Vec::new(),
+            more: Vec::new(),
         })
         .collect();
     // ponytail: the real clock even under a fixed test day; tests never assert the now line's place.
@@ -454,17 +468,35 @@ fn cal(
         .max(21);
     timed.sort_by_key(|t| (t.0, t.1));
     // Overlap columns per day: `timed` is sorted by day, so each day is one run.
-    let cols_of: Vec<(usize, usize)> = timed
+    let cols_of: Vec<(usize, usize, usize)> = timed
         .chunk_by(|a, b| a.0 == b.0)
         .flat_map(|run| timegrid::columns(&run.iter().map(|t| (t.1, t.2)).collect::<Vec<_>>()))
         .collect();
-    for ((day, s, e, item), (col, cols)) in timed.into_iter().zip(cols_of) {
-        days[day].timed.push(view::Timed {
+    // At most `fit` columns side by side; a busier cluster shows the first ones and folds the rest into "+N" in its
+    // last column, which opens the Day view (more room).
+    let fit = (1000 / (days.len() as u32 * MIN_COL_PX)).clamp(2, 6) as usize;
+    for ((day, s, e, item), (col, cols, k)) in timed.into_iter().zip(cols_of) {
+        let d = &mut days[day];
+        let top = s - h0 * 60;
+        if cols > fit && col >= fit - 1 {
+            match d.more.iter_mut().find(|m| m.cluster == k) {
+                Some(m) => m.n += 1,
+                None => d.more.push(view::More {
+                    cluster: k,
+                    top,
+                    n: 1,
+                    col: fit - 1,
+                    cols: fit,
+                }),
+            }
+            continue;
+        }
+        d.timed.push(view::Timed {
             item,
-            top: s - h0 * 60,
+            top,
             len: e - s,
             col,
-            cols,
+            cols: cols.min(fit),
         });
     }
     let now_min = (!month && (from..=to).contains(&today) && (h0 * 60..h1 * 60).contains(&now))

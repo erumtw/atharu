@@ -17,12 +17,15 @@ if (url.pathname === '/calendar' && !url.searchParams.has('view') && String(n) !
   document.documentElement.style.visibility = 'hidden'
   location.replace(url)
 } else {
-  // The hour grid opens scrolled to 08:00.
   addEventListener('DOMContentLoaded', () => {
+    // Away from N days the button says what it would show at this width ("5 days").
+    const b = document.querySelector<HTMLElement>('[data-ndays]')
+    if (b && !b.classList.contains('on')) b.textContent = n === 1 ? '1 day' : `${n} days`
+    // The hour grid opens scrolled to 08:00, its label clear of the top edge.
     const cg = document.querySelector<HTMLElement>('.cg[data-h0]')
     const bs = cg?.querySelector<HTMLElement>('.bs')
     if (!cg || !bs) return
     const px = parseFloat(getComputedStyle(cg).getPropertyValue('--px')) || 46
-    bs.scrollTop = Math.max(0, 8 - Number(cg.dataset.h0)) * px
+    bs.scrollTop = Math.max(0, (8 - Number(cg.dataset.h0)) * px - 12)
   })
 }

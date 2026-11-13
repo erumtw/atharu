@@ -1,13 +1,14 @@
 //! Calendar time grid: overlapping timed items sit side by side, as in Google Calendar.
 
-/// `(start, end)` minutes per item, any order → `(col, cols)` per item, in input order.
-/// Items that overlap directly or through a chain form one cluster and share its column count,
-/// so every item in a cluster has the same width; a free column is reused by a later item.
-pub fn columns(spans: &[(u32, u32)]) -> Vec<(usize, usize)> {
+/// `(start, end)` minutes per item, any order → `(col, cols, cluster)` per item, in input order.
+/// Items that overlap directly or through a chain form one cluster (numbered from 0 in start order) and share
+/// its column count, so every item in a cluster has the same width; a free column is reused by a later item.
+pub fn columns(spans: &[(u32, u32)]) -> Vec<(usize, usize, usize)> {
     let mut order: Vec<usize> = (0..spans.len()).collect();
     // Longer first on a tie, so the long item takes the left column.
     order.sort_by_key(|&i| (spans[i].0, std::cmp::Reverse(spans[i].1)));
-    let mut out = vec![(0, 1); spans.len()];
+    let mut out = vec![(0, 1, 0); spans.len()];
+    let mut n = 0;
     let mut cluster: Vec<usize> = Vec::new();
     // Per column: where its last item ends.
     let mut ends: Vec<u32> = Vec::new();
@@ -23,6 +24,7 @@ pub fn columns(spans: &[(u32, u32)]) -> Vec<(usize, usize)> {
             cluster.clear();
             ends.clear();
             cluster_end = 0;
+            n += 1;
         }
         let col = match ends.iter().position(|&end| end <= s) {
             Some(c) => {
@@ -35,6 +37,7 @@ pub fn columns(spans: &[(u32, u32)]) -> Vec<(usize, usize)> {
             }
         };
         out[i].0 = col;
+        out[i].2 = n;
         cluster.push(i);
         cluster_end = cluster_end.max(e);
     }
@@ -46,7 +49,13 @@ pub fn columns(spans: &[(u32, u32)]) -> Vec<(usize, usize)> {
 
 #[cfg(test)]
 mod tests {
-    use super::columns;
+    /// `(col, cols)` only; clusters are checked on their own.
+    fn columns(spans: &[(u32, u32)]) -> Vec<(usize, usize)> {
+        super::columns(spans)
+            .into_iter()
+            .map(|(c, n, _)| (c, n))
+            .collect()
+    }
 
     #[test]
     fn overlaps_side_by_side_and_clusters_share_width() {
@@ -77,6 +86,12 @@ mod tests {
             columns(&[(600, 700), (610, 700), (620, 700)]),
             vec![(0, 3), (1, 3), (2, 3)]
         );
+        // Cluster numbers follow start order: Thursday's pair is 0, the 15:00 one 1.
+        let k: Vec<usize> = super::columns(&[(900, 960), (600, 635), (615, 660)])
+            .into_iter()
+            .map(|t| t.2)
+            .collect();
+        assert_eq!(k, [1, 0, 0]);
         // Zero-length still counts.
         assert_eq!(columns(&[(600, 600), (600, 660)]), vec![(1, 2), (0, 2)]);
     }

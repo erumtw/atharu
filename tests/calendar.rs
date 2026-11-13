@@ -73,7 +73,7 @@ async fn week_assembles_what_we_have() {
     assert!(!b.contains(">far<"));
     // Header: Today · ‹ › · range · view switch (no view in the URL = N days) · + Event.
     assert!(b.contains("<a class=\"btn ghost s\" href=\"/calendar\">Today</a>"));
-    assert!(b.contains("<nav class=\"seg\" aria-label=\"View\"><a href=\"/calendar?view=day\">Day</a><a href=\"/calendar\" class=\"on\" aria-current=\"page\">N days</a><a href=\"/calendar?view=week\">Week</a><a href=\"/calendar?view=month\">Month</a></nav>"), "{b}");
+    assert!(b.contains("<nav class=\"seg\" aria-label=\"View\"><a href=\"/calendar?view=day\">Day</a><a href=\"/calendar\" class=\"on\" aria-current=\"page\" data-ndays>7 days</a><a href=\"/calendar?view=week\">Week</a><a href=\"/calendar?view=month\">Month</a></nav>"), "{b}");
     // No legend, no setup paragraph (it lives in Settings), no Refresh without ical_url.
     assert!(!b.contains("Secret address in iCal format") && !b.contains("lines logged that day"));
     assert!(
@@ -310,7 +310,7 @@ async fn day_and_n_day_views() {
     // Pointed: `d` is the first day.
     let b = get(&st, "/calendar?n=3&d=2026-11-29").await.body;
     assert!(b.contains("29 Nov – 1 Dec") && b.contains("--n: 3"));
-    assert!(b.contains("<a href=\"/calendar?d=2026-11-29&#38;n=3\" class=\"on\" aria-current=\"page\">N days</a><a href=\"/calendar?d=2026-11-29&#38;view=week\">Week</a>"));
+    assert!(b.contains("<a href=\"/calendar?d=2026-11-29&#38;n=3\" class=\"on\" aria-current=\"page\" data-ndays>3 days</a><a href=\"/calendar?d=2026-11-29&#38;view=week\">Week</a>"));
     // Out-of-range n falls back into 1–7.
     assert!(get(&st, "/calendar?n=40").await.body.contains("8 – 14 Nov"));
 }
@@ -518,4 +518,31 @@ fn replace_mac_events_swaps_the_window_only() {
         ),
         1
     );
+}
+
+#[tokio::test]
+async fn short_and_crowded_events_stay_readable() {
+    let st = state();
+    // Four 5-minute test calls at once on Thu 12 Nov, and a 2-minute one at 15:00.
+    exec(
+        &st,
+        "INSERT INTO events(source, ext_id, title, starts_at, ends_at) VALUES
+           ('google', 'a', 'Test A', '2026-11-12T10:00', '2026-11-12T10:05'),
+           ('google', 'b', 'Test B', '2026-11-12T10:01', '2026-11-12T10:06'),
+           ('google', 'c', 'Test C', '2026-11-12T10:02', '2026-11-12T10:07'),
+           ('google', 'd', 'Test D', '2026-11-12T10:03', '2026-11-12T10:08'),
+           ('google', 'e', 'Quick', '2026-11-12T15:00', '2026-11-12T15:02');",
+    );
+    // A week (7 days) fits 2 columns: Test A, then "+3" to the Day view; every block one readable line (26 min).
+    let b = get(&st, "/calendar").await.body;
+    assert!(
+        b.contains("<h4>Test A</h4>") && !b.contains("<h4>Test B</h4>"),
+        "{b}"
+    );
+    assert!(b.contains("<a class=\"tev tmore\" href=\"/calendar?d=2026-11-12&#38;view=day\""));
+    assert!(b.contains(">+3</a>"));
+    assert!(b.contains("<div class=\"tev short\" style=\"top: calc(var(--px) * 480 / 60); height: calc(var(--px) * 26 / 60 - 2px)"));
+    // The Day view has room for all four.
+    let b = get(&st, "/calendar?view=day&d=2026-11-12").await.body;
+    assert!(b.contains("<h4>Test D</h4>") && !b.contains("tmore"));
 }

@@ -34,6 +34,17 @@ pub struct Day {
     pub all_day: Vec<Item>,
     /// In start order.
     pub timed: Vec<Timed>,
+    /// Clusters too busy for the width: their folded items as one "+N" each.
+    pub more: Vec<More>,
+}
+
+/// "+N" in a busy cluster's last column, at its first folded item; opens the Day view.
+pub struct More {
+    pub cluster: usize,
+    pub top: u32,
+    pub n: usize,
+    pub col: usize,
+    pub cols: usize,
 }
 
 impl Day {
@@ -50,6 +61,11 @@ impl Day {
 impl Timed {
     pub fn i(&self) -> &Item {
         &self.item
+    }
+
+    /// Under ~2 lines tall: the title alone, never a time cut in half.
+    pub fn short(&self) -> bool {
+        self.len < 40
     }
 }
 
@@ -139,9 +155,11 @@ pub struct Page {
 
 /// One button of the Day · N days · Week · Month switch.
 pub struct ViewLink {
-    pub label: &'static str,
+    pub label: String,
     pub href: String,
     pub on: bool,
+    /// The N days button, whose label follows the width.
+    pub ndays: bool,
 }
 
 #[derive(Default)]

@@ -293,7 +293,10 @@ form.inline{display:inline}
 .cg :is(.ad,.mo) .ev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 6px;font-size:11px}
 .cg :is(.ad,.mo) .ev small{display:none}
 .cg .more{font-size:11px;color:var(--muted);padding:0 6px}
-.cg .bs{max-height:max(360px,calc(100vh - 240px));overflow-y:auto}
+/* The grid scrolls in its own box; the header rows reserve the same scrollbar gutter, so columns line up when
+   the scrollbar takes width ("Show scroll bars: Always"). */
+.cg .bs{max-height:max(360px,calc(100vh - 240px));overflow-y:auto;scrollbar-gutter:stable}
+.cg :is(.hd,.ad){overflow-y:hidden;scrollbar-gutter:stable}
 .cg .bd{position:relative}
 .cg .hrs{position:relative}
 .cg .hrs span{position:absolute;right:8px;font-size:10px;color:var(--muted);transform:translateY(-50%)}
@@ -304,6 +307,10 @@ form.inline{display:inline}
 .cg .bd .ev .t{display:none}
 .cg .bd .ev b{font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cg .bd .ev small{color:var(--muted)}
+/* Short blocks (< 40 min) hold the title line only; the time would be cut mid-line. */
+.cg .tev.short>.ev{padding-block:2px}
+.cg .tev.short small{display:none}
+.cg .tmore{display:flex;align-items:center;justify-content:center;height:calc(var(--px) * 26 / 60 - 2px);border-radius:6px;background:var(--fill-2);color:var(--ink-2);font-size:11px;font-weight:600;text-decoration:none}
 .cg .nowl{position:absolute;left:0;right:0;border-top:2px solid var(--err);z-index:2;pointer-events:none}
 .cg .nowl::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--err)}
 .cg .mh{grid-template-columns:repeat(7,minmax(0,1fr))}

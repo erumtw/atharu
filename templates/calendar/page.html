@@ -11,7 +11,7 @@
 {%- if has_ical %}
 <form class="inline" method="post" action="/calendar/refresh" hx-post="/calendar/refresh" hx-target="#cal" hx-swap="outerHTML">{% include "calendar/range.html" %}<button class="btn ghost s" type="submit">Refresh</button></form>
 {%- endif %}
-<nav class="seg" aria-label="View">{% for v in views %}<a href="{{ v.href }}"{% if v.on %} class="on" aria-current="page"{% endif %}>{{ v.label }}</a>{% endfor %}</nav>
+<nav class="seg" aria-label="View">{% for v in views %}<a href="{{ v.href }}"{% if v.on %} class="on" aria-current="page"{% endif %}{% if v.ndays %} data-ndays{% endif %}>{{ v.label }}</a>{% endfor %}</nav>
 <details class="evadd"{% if !form.title.is_empty() || !form.date.is_empty() %} open{% endif %}>
 <summary class="btn s">+ Event</summary>
 {#- Reset only after this form's own 2xx: a rejected add keeps what was typed. #}
