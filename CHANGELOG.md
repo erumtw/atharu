@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.11 — 2026-11-13
+
+### Other
+
+- perf: transcript lines saved in one write; Mac app keeps DB reads off the main thread; recorder retries 5xx
+
 ## v0.1.10 — 2026-11-13
 
 ### Fixes
