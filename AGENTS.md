@@ -8,6 +8,10 @@ Atharu is the owner's personal work log: one Rust binary serving http://127.0.0.
 
 Read anything with `sqlite3 data/atharu.db` (e.g. `.tables`, `.schema entries`, `SELECT …`). Reads are always fine.
 
+**Never read `data/config.toml`** (no `cat`, Read, grep or parsing it in a script): it holds the owner's credentials
+(iCal secret address, Jira API token). Need to know whether an integration is set up? Ask the owner, or check the app's
+Settings › Connections page. Writing a fresh template is fine only when the owner asks and the file doesn't exist yet.
+
 Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row):
 
 | table | what | key columns |
