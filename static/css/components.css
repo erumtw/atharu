@@ -722,13 +722,12 @@ progress.prog::-moz-progress-bar{background:var(--accent)}
 .pghead .fact b{color:var(--ink-2);font-weight:500}
 /* .pmenu: the page ⋯ menu under the crumb, one per entity page (partials/pmenu_btn.html). Fixed fallback where anchor
    positioning is missing. Delete is a form button styled as a menu item, so it still works as a plain POST. */
-.pmenu[popover],.startm[popover],.viewm[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:230px}
-.startm[popover],.viewm[popover]{width:360px;padding:10px;gap:10px}
-@supports (position-anchor:--a){:is(.pmenu,.startm,.viewm)[popover]{top:calc(anchor(bottom) + 6px);right:anchor(right)}
-  .pmenu{position-anchor:--pmenu}.startm{position-anchor:--startm}.viewm{position-anchor:--viewm}}
+.pmenu[popover],.startm[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:230px}
+.startm[popover]{width:360px;padding:10px;gap:10px}
+@supports (position-anchor:--a){:is(.pmenu,.startm)[popover]{top:calc(anchor(bottom) + 6px);right:anchor(right)}
+  .pmenu{position-anchor:--pmenu}.startm{position-anchor:--startm}}
 /* A menu item that posts is a bare form around its button; a switch (.seg) or a field (.fld) keeps its own box. */
 .menu form:not(.seg,.fld){display:contents}
-.viewm .seg{flex:none}
 .menu button[role=menuitem]{border:0;background:none;font:inherit;width:100%;text-align:left;cursor:pointer}
 /* Crumb's right end: save status + ⋯. */
 .crumb .pend{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:nowrap}

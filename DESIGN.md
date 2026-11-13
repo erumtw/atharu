@@ -192,7 +192,7 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
 | Linked references | `section.refs` (`partials/refs.html`) | last on every entity page: notes that point here, grouped by how (`h4` Mentioned in · On its lines · Tagged), one `.ref` row each with the @chip; empty = one line naming how to link (`[[name]]`). A note's own refs are its lines (`#lnh`, the white `.lnh` box inside) |
 | Same name | `partials/same_name.html` | a prop on topic, meeting and series pages linking the tag hub / topic / series of the same name, so "one name, one hub" reads both ways |
 | Start meeting pill | `.btn.ghost.s` + `.menu.startm` | Today's crumb, before the day nav (0.2.0 D5): opens the start field in a popover (`hx-disable`: a plain POST back to the day, where the running banner heads the page). Hidden while a meeting runs and on phones (start from Meetings) |
-| View menu | `.btn.ghost.s` + `.menu.viewm` | beside "Logged today": Group by `.seg` + tag filter in one popover; the button names a non-default view (`View · tag · #expense`) |
+| Log view row | `.row` + tag filter + Group by `.seg` | under "Logged today", always visible (no menu, owner 2026-11-13): tag filter left, Group by Epic · Tag · Type right, the same row as To-dos |
 | Epics table | `table.etab` (`epics/row.html`) | fixed layout Key · Title (+ Jira ↗) · Open to-dos · Impact · Last log · Flag, one table per OKR; unnamed stubs last, titled in place; the one `.doc.wide` list besides Calendar |
 
 ### Drawing block (canvas row "Drawings · Excalidraw in notes", T41; D23, D24)
@@ -566,7 +566,7 @@ holds every timing; `launch.ts` only prepares the SVG. Setting `launch` = `ink` 
    an empty section folds away or is one line naming how to fill it ("No note points here yet. Write `[[OPS-101]]` in a note…").
 8. **Today** (0.2.0 D3): head + fact line (`1 due today · 1 overdue · 6 lines logged · in oms-sync`) · the running meeting's banner ·
    **Focus** = the pinned top 3 + every overdue to-do, overdue first, each once, then "n more open in To-dos →" · **Needs you** =
-   flagged epics only · Logged today with the View menu · the capture bar.
+   flagged epics only · Logged today with its tag filter + Group by row · the capture bar.
 9. **Archive** (0.2.0 D4): a meeting series' ⋯ or row Archive hides it from Meetings and the Calendar (folded "Archived · n" under the
    list); its series and meeting pages stay, a rename carries it.
 
