@@ -399,3 +399,69 @@ async fn tag_filter_keeps_days_auto_and_out_of_range_add_moves() {
     assert_eq!(r.status, 200);
     assert_eq!(r.headers["hx-location"], "/calendar?d=2026-12-02&view=week");
 }
+
+#[test]
+fn migration_012_lets_events_come_from_mac_and_keeps_rows() {
+    // `events` is unchanged from 001 to 011: an 001 table with rows stands in for an 0.2.3 DB.
+    let conn = rusqlite::Connection::open_in_memory().unwrap();
+    conn.execute_batch(include_str!("../migrations/001_init.sql"))
+        .unwrap();
+    conn.execute_batch(
+        "INSERT INTO events(id, source, ext_id, title, starts_at) VALUES
+           (4, 'own', NULL, 'dentist', '2026-11-11T16:00'), (9, 'google', 'g1', 'sync', '2026-11-12');",
+    )
+    .unwrap();
+    assert!(
+        conn.execute(
+            "INSERT INTO events(source, title, starts_at) VALUES ('mac', 'x', '2026-11-12')",
+            []
+        )
+        .is_err()
+    );
+    conn.execute_batch(include_str!("../migrations/012_mac_events.sql"))
+        .unwrap();
+    let rows: Vec<String> = conn
+        .prepare("SELECT id || ':' || source || ':' || title FROM events ORDER BY id")
+        .unwrap()
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(rows, ["4:own:dentist", "9:google:sync"]);
+    conn.execute(
+        "INSERT INTO events(source, ext_id, title, starts_at) VALUES ('mac', 'm1', 'Standup', '2026-11-12T09:30')",
+        [],
+    )
+    .unwrap();
+    // UNIQUE (source, ext_id) and the start index survive the rebuild.
+    assert!(conn
+        .execute("INSERT INTO events(source, ext_id, title, starts_at) VALUES ('mac', 'm1', 'again', '2026-11-12')", [])
+        .is_err());
+    let idx: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE name = 'events_start'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(idx, 1);
+}
+
+#[tokio::test]
+async fn mac_events_look_like_google_ones() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO events(source, ext_id, title, starts_at, ends_at) VALUES
+           ('mac', 'm1@2026-11-12T09:30', 'Standup', '2026-11-12T09:30', '2026-11-12T09:45')",
+    );
+    let b = get(&st, "/calendar").await.body;
+    assert!(
+        b.contains("<button class=\"ev meet\" type=\"button\" popovertarget=\"evc1\""),
+        "{b}"
+    );
+    assert!(b.contains("<h4>Standup</h4>") && b.contains("<small>09:30 – 09:45</small>"));
+    // Read-only like Google: its card starts a meeting, no Delete.
+    assert!(b.contains("value=\"Standup\"><input type=\"hidden\" name=\"back\" value=\"/\"><button class=\"btn s\" type=\"submit\">Start meeting</button>"));
+    assert!(!b.contains("/calendar/events/1/delete"));
+}
