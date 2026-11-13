@@ -143,7 +143,9 @@ alters a token, component, glass surface or pattern updates `DESIGN.md` in the s
 - Release page: release.sh's draft (`.git/release-notes-vX.Y.Z.md`) goes to CHANGELOG.md as is; for the GitHub release, rewrite it
   as `## Highlights` (one `###` per user-visible change, two plain sentences on what the owner can now do) + Fixes / Performance
   bullets in plain words + `## Upgrade` (`atharu update --app`; data stays) + `**Full changelog:** vPREV...vX.Y.Z`. A UI change
-  gets a screenshot: from a seeded demo DB only (never `data/atharu.db`: the repo is public), 1280 wide, saved as
+  gets a screenshot: from a freshly seeded demo DB only (never `data/atharu.db` or a copy of it, not even its settings: the
+  repo is public; v0.2.4 leaked real coworker names from Settings › Names and history had to be rewritten). Before
+  committing a shot, look at it for real names, companies, tickets or URLs. 1280 wide, saved as
   `docs/releases/vX.Y.Z/<name>.png` and committed before `release.sh`, linked as
   `https://raw.githubusercontent.com/erumtw/atharu/vX.Y.Z/docs/releases/vX.Y.Z/<name>.png`. Perf / internal changes get none.
 - Schema changes: a new `migrations/00N_*.sql` appended in `src/db.rs`; never edit a shipped one.
