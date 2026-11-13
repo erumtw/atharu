@@ -97,18 +97,14 @@ async fn off_without_all_three_keys() {
     );
     let b = get(&st, "/epics").await.body;
     assert!(b.contains("action=\"/jira/refresh\"") && !b.contains("t0k"));
-    // The ↗ chip: cached status, linking the issue on the configured site (trailing / dropped).
-    let chip = r#"<a class="lchip" href="https://acme.atlassian.net/browse/OPS-101" target="_blank" rel="noopener noreferrer" title="Open OPS-101 in Jira"><span class="jst-OPS-101">In Progress</span> ↗</a>"#;
-    assert!(
-        b.contains(&chip.replace("class=\"lchip\"", "class=\"lchip jc-\"")),
-        "{b}"
-    );
-    assert!(
-        get(&st, "/epics/OPS-101")
-            .await
-            .body
-            .contains(&chip.replace("class=\"lchip\"", "class=\"lchip jc-\""))
-    );
+    // The status chip: ONE pill "In Progress ▾" opening the move menu, whose last item opens the issue on the
+    // configured site (trailing / dropped).
+    let chip = r#"<button class="lchip st jc-" type="button" popovertarget="jm-eOPS-101" style="anchor-name: --jm-eOPS-101" title="Move OPS-101 in Jira"><span class="jst-OPS-101">In Progress</span><span class="cv" aria-hidden="true">▾</span></button>"#;
+    assert!(b.contains(chip), "{b}");
+    let open = r#"<a role="menuitem" href="https://acme.atlassian.net/browse/OPS-101" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a>"#;
+    assert!(b.contains(open));
+    let page = get(&st, "/epics/OPS-101").await.body;
+    assert!(page.contains(&chip.replace("eOPS-101", "pg")) && page.contains(open));
     assert!(
         get(&st, "/epics?jira=failed")
             .await
@@ -316,7 +312,11 @@ async fn status_moves_on_press_with_undo() {
     let menu = get(&st, "/jira/OPS-130/moves?back=/epics").await.body;
     assert!(
         menu.contains(r##"hx-vals='{"to": "21", "back": "/epics"}' hx-target="#jtoast""##)
-            && menu.contains(">In Progress <span class=\"small muted\">· Start</span>"),
+            && menu.contains(
+                "<span class=\"lchip jc-indeterminate\">In Progress</span> <span class=\"small muted\">· Start</span>"
+            )
+            && menu.contains(">Move OPS-130 in Jira</div>")
+            && menu.contains("Only the moves your workflow allows from “Ready”</div>"),
         "{menu}"
     );
     assert!(menu.contains(
@@ -449,7 +449,7 @@ async fn epics_list_reads_jira_assigned_parents_and_flags() {
     );
     assert!(b.contains("action=\"/epics/OPS-160/track\""));
     assert!(b.contains("name=\"line\" value=\"OPS-161 &#62; Retry price feed https://acme.atlassian.net/browse/OPS-161 by 2026-11-13\""));
-    assert!(b.contains("<span class=\"muted\">due Fri</span>") && b.contains("✓ tracked"));
+    assert!(b.contains("<span class=\"muted small\">due Fri</span>") && b.contains("✓ tracked"));
     // D4: OPS-101 and OPS-118 sit under the untracked OPS-500 header.
     let head = b
         .find("<tr class=\"jhead\"><td><span class=\"chip key\">OPS-500</span>")
@@ -463,7 +463,7 @@ async fn epics_list_reads_jira_assigned_parents_and_flags() {
         "<b>Checkout platform</b><span class=\"small muted\">Jira epic · not tracked</span>"
     ));
     // Category drives the chip, never the name.
-    assert!(b.contains("class=\"lchip jc-done\"") && b.contains("class=\"lchip jc-new\""));
+    assert!(b.contains("class=\"lchip st jc-done\"") && b.contains("class=\"lchip st jc-new\""));
     // D7 + flags: OPS-142 named from Jira; its Jira due differs from the target; OPS-118 moved in Jira after no log.
     assert!(b.contains("<b>Driver app crash</b>"));
     assert!(
@@ -529,7 +529,7 @@ async fn epic_page_follows_jira_done_tickets_and_suggests_moves() {
     // D2 banner, D3 tickets: children from Jira's parent field, logged or not.
     let b = get(&st, "/epics/OPS-500").await.body;
     assert!(
-        b.contains("Jira says <span class=\"chip key\">OPS-500</span> is Done on Thu 12 Nov."),
+        b.contains("Jira says <b>OPS-500</b> is Done on Thu 12 Nov."),
         "{b}"
     );
     assert!(b.contains("form=\"jdone\" name=\"act\" value=\"done\">Mark done</button>"));
@@ -547,7 +547,7 @@ async fn epic_page_follows_jira_done_tickets_and_suggests_moves() {
     // Story head (D3): its type, and what it sits under (tracked → its page here); named by Jira (D7).
     let s = get(&st, "/epics/OPS-118").await.body;
     assert!(s.contains("<div class=\"pgk\"><span>Story</span>"));
-    assert!(s.contains("under <a href=\"/epics/OPS-500\"><span class=\"chip key\">OPS-500</span> Checkout platform</a>"));
+    assert!(s.contains("<span class=\"under\">under <a href=\"/epics/OPS-500\">OPS-500 Checkout platform</a></span>"));
     assert!(
         s.contains("<title>Atharu · Reorder from history</title>"),
         "page title from Jira"

@@ -192,6 +192,8 @@ pub struct Moves {
     pub url: Option<String>,
     pub back: String,
     pub note: Option<String>,
+    /// The cached status, named in the footer ("from “In review”"); empty when not cached yet.
+    pub current: String,
     pub token_url: &'static str,
     pub dead_token: bool,
 }
@@ -214,6 +216,7 @@ pub async fn moves(
         moves: Vec::new(),
         back: web::safe_back(q.back.as_deref(), "/epics").to_string(),
         note: None,
+        current: String::new(),
         token_url: TOKEN_URL,
         dead_token: false,
     };
@@ -227,6 +230,7 @@ pub async fn moves(
             Err(Fail::Token) => page.dead_token = true,
             Err(Fail::Unreachable) => page.note = Some("Couldn't reach Jira.".into()),
         }
+        page.current = current;
     }
     web::html(&page)
 }

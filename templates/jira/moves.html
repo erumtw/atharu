@@ -1,9 +1,11 @@
-{#- The ▾ menu on a Jira chip (0.2.5 D1, D8): Jira's allowed moves for this issue, read live, + Open in Jira. A pick posts
-    one transition; the result lands in the page's #jtoast. Buttons, not forms: this lands inside other forms (htmx only
-    loads it, so no-JS never sees it). -#}
+{#- The Jira move menu's body (0.2.5 D1, D8): Jira's allowed moves for this issue, read live, each a status pill coloured
+    by its category, + Open in Jira. A pick posts one transition; the result lands in the page's #jtoast. Buttons, not
+    forms: this lands inside other forms (htmx only loads it, so no-JS never sees it). -#}
+<div class="mh" role="presentation">Move {{ key }} in Jira</div>
 {%- if dead_token %}<div class="mf err" role="presentation">Token expired or revoked. <a href="{{ token_url }}" target="_blank" rel="noopener noreferrer">Make a new one ↗</a></div>{% endif %}
 {%- if let Some(n) = note %}<div class="mf" role="presentation">{{ n }}</div>{% endif %}
 {%- for m in moves %}
-<button role="menuitem" type="button" hx-post="/jira/{{ key }}/move" hx-vals='{"to": "{{ m.id }}", "back": "{{ back }}"}' hx-target="#jtoast" hx-swap="innerHTML" hx-on:click="this.closest('[popover]')?.hidePopover()">{{ m.to }}{% if m.name != m.to %} <span class="small muted">· {{ m.name }}</span>{% endif %}</button>
+<button role="menuitem" type="button" hx-post="/jira/{{ key }}/move" hx-vals='{"to": "{{ m.id }}", "back": "{{ back }}"}' hx-target="#jtoast" hx-swap="innerHTML" hx-on:click="this.closest('[popover]')?.hidePopover()"><span class="lchip jc-{{ m.to_cat }}">{{ m.to }}</span>{% if m.name != m.to %} <span class="small muted">· {{ m.name }}</span>{% endif %}</button>
 {%- endfor %}
+{%- if !moves.is_empty() %}<div class="mf" role="presentation">Only the moves your workflow allows{% if !current.is_empty() %} from “{{ current }}”{% endif %}</div>{% endif %}
 {%- if let Some(u) = url %}<a role="menuitem" href="{{ u }}" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a>{% endif %}

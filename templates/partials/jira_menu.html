@@ -1,4 +1,4 @@
-{#- ▾ beside a Jira chip (0.2.5 D1, D8): needs `jk` (issue key), `ju` (unique on the page), `jurl` (browse link), `back`.
-    The popover loads Jira's allowed moves when it opens; without JS it still opens Jira. It often sits inside a page's
-    form (the epic head), so it names its own target (hx-target inherits) and its moves are buttons, not nested forms. -#}
-<button class="jmv" type="button" popovertarget="jm-{{ ju }}" style="anchor-name: --jm-{{ ju }}" aria-label="Move {{ jk }} in Jira" title="Move {{ jk }} in Jira">▾</button><div class="menu jmenu" id="jm-{{ ju }}" popover role="menu" aria-label="Move {{ jk }} in Jira" style="position-anchor: --jm-{{ ju }}" hx-get="/jira/{{ jk }}/moves?back={{ back|urlencode }}" hx-trigger="toggle once" hx-target="this" hx-swap="innerHTML"><a role="menuitem" href="{{ jurl }}" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a></div>
+{#- The Jira move menu (0.2.5 D1, D8): a popover whose trigger sets popovertarget="jm-{{ ju }}" + anchor --jm-{{ ju }}.
+    Needs `jk`, `ju`, `jurl`, `back`. It loads Jira's allowed moves when it opens; without JS it still opens Jira. It
+    often sits inside a page's form (the epic head), so it names its own target (hx-target inherits). -#}
+<div class="menu jmenu" id="jm-{{ ju }}" popover role="menu" aria-label="Move {{ jk }} in Jira" style="position-anchor: --jm-{{ ju }}" hx-get="/jira/{{ jk }}/moves?back={{ back|urlencode }}" hx-trigger="toggle once" hx-target="this" hx-swap="innerHTML"><div class="mh" role="presentation">Move {{ jk }} in Jira</div><a role="menuitem" href="{{ jurl }}" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a></div>

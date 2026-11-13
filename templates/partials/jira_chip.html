@@ -1,3 +1,4 @@
-{#- A Jira status chip + its ▾ (0.2.5): needs `jk` (key), `js` (status), `jc` (status category), `jurl`, `ju` (unique on
-    the page), `back`. The status text is `.jst-KEY`, so a move updates every chip of that key out-of-band. -#}
-<span class="jchip"><a class="lchip jc-{{ jc }}" href="{{ jurl }}" target="_blank" rel="noopener noreferrer" title="Open {{ jk }} in Jira"><span class="jst-{{ jk }}">{{ js }}</span> ↗</a>{% include "partials/jira_menu.html" %}</span>
+{#- A Jira status chip (0.2.5, T8b): ONE pill "In review ▾" that opens the move menu (Open in Jira is its last item).
+    Needs `jk` (key), `js` (status), `jc` (status category), `jurl`, `ju` (unique on the page), `back`. The status text
+    is `.jst-KEY`, so a move updates every chip of that key out-of-band. -#}
+<button class="lchip st jc-{{ jc }}" type="button" popovertarget="jm-{{ ju }}" style="anchor-name: --jm-{{ ju }}" title="Move {{ jk }} in Jira"><span class="jst-{{ jk }}">{{ js }}</span><span class="cv" aria-hidden="true">▾</span></button>{% include "partials/jira_menu.html" %}
