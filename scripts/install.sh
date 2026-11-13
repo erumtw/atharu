@@ -83,7 +83,9 @@ if ! mkdir "$lock" 2>/dev/null; then
     echo "another install is running (pid $holder)"
     exit 1
   fi
-  rm -rf "$lock"
+  # Reclaim by renaming it away: of several runs that see the same stale lock only one wins the rename, the others stop here.
+  mv "$lock" "$lock.stale.$$" 2>/dev/null || { echo "another install is running"; exit 1; }
+  rm -rf "$lock.stale.$$"
   mkdir "$lock" 2>/dev/null || { echo "another install is running"; exit 1; }
 fi
 echo $$ >"$lock/pid"
