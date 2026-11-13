@@ -48,14 +48,12 @@ pub fn day_entries(
     )?;
     let filter = serde_json::to_string(filter).unwrap_or_else(|_| "[]".into());
     stmt.query_map(params![day, filter], |r| {
-        let kind: String = r.get(3)?;
         let tags: String = r.get(8)?;
         Ok(LoggedRow {
             id: r.get(0)?,
             epic_key: r.get(1)?,
             epic_title: r.get(2)?,
-            // The CHECK constraint guarantees one of the six.
-            kind: Kind::parse(&kind).unwrap_or(Kind::Done),
+            kind: crate::db::kind(r, 3)?,
             topic: r.get(4)?,
             text: r.get(5)?,
             meeting: r.get(6)?,
@@ -204,10 +202,9 @@ pub fn entry_line(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String
         "SELECT day, epic_key, kind, topic, text, due, link FROM entries WHERE id = ?1",
         [id],
         |r| {
-            let kind: String = r.get(2)?;
             let e = Entry {
                 epic_key: r.get(1)?,
-                kind: Kind::parse(&kind).unwrap_or(Kind::Done),
+                kind: crate::db::kind(r, 2)?,
                 topic: r.get(3)?,
                 text: r.get(4)?,
                 due: date(r.get(5)?),

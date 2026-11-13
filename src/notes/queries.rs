@@ -121,11 +121,10 @@ pub fn lines(conn: &Connection, note: i64) -> rusqlite::Result<Vec<LinkedLine>> 
          FROM entries WHERE note_id = ?1 ORDER BY day DESC, id DESC",
     )?;
     stmt.query_map([note], |r| {
-        let kind: String = r.get(2)?;
         Ok(LinkedLine {
             id: r.get(0)?,
             day: r.get(1)?,
-            kind: Kind::parse(&kind).unwrap_or(Kind::Done),
+            kind: crate::db::kind(r, 2)?,
             topic: r.get(3)?,
             text: r.get(4)?,
             epic_key: r.get(5)?,

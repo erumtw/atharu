@@ -129,6 +129,11 @@ pub async fn refresh(st: &AppState) -> Result<Option<usize>, String> {
             let bad = rejected(&body, chunk);
             let rest: Vec<String> = chunk.iter().filter(|k| !bad.contains(k)).cloned().collect();
             if bad.is_empty() || rest.is_empty() {
+                // Skipped keys refresh next time; status only, the body may hold work data.
+                eprintln!(
+                    "Jira answered 400 naming no key to drop; skipping {} keys",
+                    chunk.len()
+                );
                 continue;
             }
             (code, body) = search(&client, &j, &rest).await?;

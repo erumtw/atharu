@@ -219,9 +219,12 @@ pub fn post(
             .and_then(|s| s.parse().ok())
             .unwrap_or(0))
     };
-    // The DB lock can be busy for a moment (CLI write, big page): retry before giving the lines up.
+    // The DB lock can be busy for a moment (CLI write, big page): SQLite BUSY comes back as a 500, so retry
+    // on that and on I/O errors before giving the lines up. Safe: the server dedupes on (speaker, t). 4xx (and 0, an unreadable status line) is final.
     for _ in 0..3 {
-        if let Ok(code) = send() {
+        if let Ok(code) = send()
+            && code < 500
+        {
             return Some(code);
         }
         std::thread::sleep(Duration::from_millis(500));
@@ -233,7 +236,9 @@ pub fn post(
 /// One SCK output: converts to 16 kHz mono, feeds the worker, lights the meter.
 struct Out {
     who: usize,
-    tx: Mutex<mpsc::Sender<(usize, Vec<f32>)>>,
+    tx: mpsc::Sender<(usize, Vec<f32>)>,
+    /// Input left over from the last buffer; SCK calls `&self`, so interior mutability.
+    resample: Mutex<pipeline::To16k>,
     mac: Arc<Mac>,
 }
 
@@ -257,13 +262,13 @@ impl SCStreamOutputTrait for Out {
             .iter()
             .map(|c| f32::from_le_bytes(*c))
             .collect();
-        let x = pipeline::to_16k(&raw, rate);
-        self.mac.levels.lock().unwrap_or_else(|e| e.into_inner())[self.who] = pipeline::level(&x);
-        let _ = self
-            .tx
+        let x = self
+            .resample
             .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .send((self.who, x));
+            .push(raw, rate);
+        self.mac.levels.lock().unwrap_or_else(|e| e.into_inner())[self.who] = pipeline::level(&x);
+        let _ = self.tx.send((self.who, x));
     }
 }
 
@@ -293,7 +298,8 @@ fn capture(tx: mpsc::Sender<(usize, Vec<f32>)>, mac: Arc<Mac>) -> Result<SCStrea
     let mut st = SCStream::new(&filter, &config).map_err(|x| e(&x))?;
     let out = |who| Out {
         who,
-        tx: Mutex::new(tx.clone()),
+        tx: tx.clone(),
+        resample: Mutex::default(),
         mac: mac.clone(),
     };
     st.add_output_handler(out(1), SCStreamOutputType::Audio)

@@ -126,7 +126,8 @@ alters a token, component, glass surface or pattern updates `DESIGN.md` in the s
   no feature; features never import each other; SQL only in a slice's `queries.rs`; HTML only in `templates/`;
   every htmx action returns one partial and also works as a plain form POST (303 back). `src/cli/` is an entry
   point like `app.rs` and may call slices' queries. `src/layout/` is shared page chrome (sidebar, breadcrumb, look), not a
-  feature: every slice may import it, like `web.rs`.
+  feature: every slice may import it, like `web.rs`. `src/recording/` is shared meeting-recording state (running
+  meeting, recorder status, the Mac app's `Want`), not a feature: slices may import it, like `layout`.
 - Releases (D40, D41): `scripts/release.sh X.Y.Z` on main (`--hotfix` on `release/X.Y`) bumps, writes CHANGELOG.md,
   tags `vX.Y.Z`; install/update follow tags. Cutting or pushing a release is the owner's call; an agent asked to run it
   sets `ATHARU_COAUTHOR` and answers N to the push prompt.

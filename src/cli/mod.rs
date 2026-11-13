@@ -349,7 +349,7 @@ fn meeting(conn: &Connection, pos: &[String]) -> Result<Value, Fail> {
                 "id": t.id,
                 "startedAt": t.started_at,
                 "endedAt": t.ended_at,
-                "status": t.status,
+                "status": t.status.as_str(),
                 "model": t.model,
                 "lang": t.lang,
                 // Voices the split told apart (`Speaker 2` until the owner names it); a segment's speaker is one of
@@ -465,7 +465,7 @@ fn note(
                 .map_err(|e| Fail(1, format!("Can't read the note body from stdin: {e}")))?;
         }
     }
-    let mut body = body.trim_end().to_string();
+    body.truncate(body.trim_end().len());
     // `--links vector-search,OPS-101` → a closing `[[…]]` line, the same links the editor makes.
     let extra: Vec<String> = links
         .unwrap_or("")

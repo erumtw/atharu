@@ -108,11 +108,10 @@ pub fn lines(conn: &Connection, tag: &str) -> rusqlite::Result<Vec<HubLine>> {
           ORDER BY e.day DESC, e.id DESC",
     )?;
     stmt.query_map([tag], |r| {
-        let kind: String = r.get(2)?;
         Ok(HubLine {
             id: r.get(0)?,
             day: r.get(1)?,
-            kind: Kind::parse(&kind).unwrap_or(Kind::Done),
+            kind: crate::db::kind(r, 2)?,
             topic: r.get(3)?,
             text: r.get(4)?,
             plan_state: r.get(5)?,
@@ -251,11 +250,10 @@ pub fn merged_lines(conn: &Connection, name: &str) -> rusqlite::Result<Vec<HubLi
           WHERE (e.kind = 'learn' AND e.topic = ?1) OR m.name = ?1",
     )?;
     stmt.query_map([name], |r| {
-        let kind: String = r.get(2)?;
         Ok(HubLine {
             id: r.get(0)?,
             day: r.get(1)?,
-            kind: Kind::parse(&kind).unwrap_or(Kind::Done),
+            kind: crate::db::kind(r, 2)?,
             topic: r.get(3)?,
             text: r.get(4)?,
             plan_state: r.get(5)?,

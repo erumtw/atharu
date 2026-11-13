@@ -58,7 +58,7 @@ pub fn list(root: &Path, id: i64) -> Vec<String> {
         .filter(|f| valid_name(f))
         .collect();
     // By time, then the -N repeat ('-' sorts before '.', so a plain sort puts `-2` first).
-    v.sort_by_key(|f| {
+    v.sort_by_cached_key(|f| {
         let stem = f.trim_end_matches(".png");
         let (t, n) = stem.split_once('-').unwrap_or((stem, "1"));
         (t.to_string(), n.parse::<u32>().unwrap_or(1))

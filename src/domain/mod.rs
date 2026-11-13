@@ -12,3 +12,4 @@ pub mod parse;
 pub mod people;
 pub mod plan;
 pub mod tags;
+pub mod transcript;

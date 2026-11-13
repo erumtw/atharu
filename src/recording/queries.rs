@@ -1,3 +1,4 @@
+use crate::domain::transcript::TxStatus;
 use rusqlite::{Connection, OptionalExtension, params};
 
 /// The meeting with no `ended_at`, if any.
@@ -24,26 +25,26 @@ pub fn series(conn: &Connection) -> rusqlite::Result<Vec<String>> {
 }
 
 /// The running meeting's recording that is still live or finishing: (status, started_at).
-pub fn running(conn: &Connection) -> rusqlite::Result<Option<(String, String)>> {
+pub fn running(conn: &Connection) -> rusqlite::Result<Option<(TxStatus, String)>> {
     conn.query_row(
         "SELECT t.status, t.started_at FROM meeting_transcripts t
          JOIN meetings m ON m.id = t.meeting_id
          WHERE m.ended_at IS NULL AND t.status IN ('live', 'finishing')
          ORDER BY t.id DESC LIMIT 1",
         [],
-        |r| Ok((r.get(0)?, r.get(1)?)),
+        |r| Ok((crate::db::tx_status(r, 0)?, r.get(1)?)),
     )
     .optional()
 }
 
 /// Newest recording live or finishing, any meeting (End also stops): (id, status, lang, meeting name).
-pub fn want(conn: &Connection) -> rusqlite::Result<Option<(i64, String, String, String)>> {
+pub fn want(conn: &Connection) -> rusqlite::Result<Option<(i64, TxStatus, String, String)>> {
     conn.query_row(
         "SELECT t.id, t.status, t.lang, m.name FROM meeting_transcripts t
          JOIN meetings m ON m.id = t.meeting_id
          WHERE t.status IN ('live', 'finishing') ORDER BY t.id DESC LIMIT 1",
         [],
-        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+        |r| Ok((r.get(0)?, crate::db::tx_status(r, 1)?, r.get(2)?, r.get(3)?)),
     )
     .optional()
 }

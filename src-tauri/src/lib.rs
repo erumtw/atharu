@@ -114,16 +114,23 @@ pub fn run() {
                 }
             });
             quick(app.handle(), &url)?;
-            tray(app.handle())?;
-            tray_state(app.handle());
+            let m = tray_data(app.handle());
+            tray(app.handle(), &m)?;
+            tray_state(app.handle(), tray_summary(&m));
             // Meetings also start / end / record from a browser on the shared DB (D52), with no request
             // through this app, so the icon polls too (one cheap query a second: the recording clock ticks).
             let h = app.handle().clone();
             std::thread::spawn(move || {
                 loop {
                     std::thread::sleep(std::time::Duration::from_secs(1));
+                    let s = tray_summary(&tray_data(&h));
+                    // Same state and no clock to redraw: nothing for the main thread to do.
+                    if s.0 == TRAY_STATE.load(std::sync::atomic::Ordering::Relaxed) && s.2.is_none()
+                    {
+                        continue;
+                    }
                     let h2 = h.clone();
-                    let _ = h.run_on_main_thread(move || tray_state(&h2));
+                    let _ = h.run_on_main_thread(move || tray_state(&h2, s));
                 }
             });
             Ok(())
@@ -183,7 +190,7 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
     if let Some(dir) = db_path.parent() {
         state.settings = Arc::new(FileConfig::load(&dir.join("config.toml")));
     }
-    look_icon(&state);
+    look_icon(current_look(&state));
     // The tray menu reads the running meeting and recent series through it.
     handle.manage(state.clone());
 
@@ -235,12 +242,26 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
                     sync_recording(&h);
                 }
                 if look_saved {
-                    let st = st.clone();
-                    let _ = h.run_on_main_thread(move || look_icon(&st));
+                    // Read the look here, off the main thread; only the AppKit calls hop.
+                    let look = current_look(&st);
+                    let _ = h.run_on_main_thread(move || look_icon(look));
                 }
                 if meetings {
+                    // The DB read stays off the main thread (see `tray_data`); only the AppKit calls hop.
+                    // Two quick POSTs race their threads: only the newest read may redraw the menu.
+                    static GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                    use std::sync::atomic::Ordering::SeqCst;
+                    let g = GEN.fetch_add(1, SeqCst) + 1;
                     let h2 = h.clone();
-                    let _ = h.run_on_main_thread(move || refresh_menu(&h2));
+                    std::thread::spawn(move || {
+                        let m = tray_data(&h2);
+                        let h3 = h2.clone();
+                        let _ = h2.run_on_main_thread(move || {
+                            if GEN.load(SeqCst) == g {
+                                refresh_menu(&h3, &m);
+                            }
+                        });
+                    });
                 }
                 res
             }
@@ -267,14 +288,14 @@ fn sync_recording(h: &AppHandle) {
     std::thread::spawn(move || rec.sync(&st));
 }
 
-fn tray(handle: &AppHandle) -> tauri::Result<()> {
+fn tray(handle: &AppHandle, m: &atharu::quick::TrayMenu) -> tauri::Result<()> {
     TrayIconBuilder::with_id("main")
         // MENU.I from docs/design/icon/options.html, black on clear at 22 pt @2x; macOS tints templates.
         .icon(Image::from_bytes(include_bytes!("../icons/tray.png"))?)
         .icon_as_template(true)
         .tooltip("Atharu")
         // Left click = the popover; the menu is the right click only.
-        .menu(&tray_menu(handle)?)
+        .menu(&tray_menu(handle, m)?)
         .show_menu_on_left_click(false)
         .on_tray_icon_event(|tray, e| {
             if let TrayIconEvent::Click {
@@ -311,21 +332,24 @@ fn tray(handle: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+/// The tray's data, read under the DB lock. Never call it on the main thread: a handler holding the lock
+/// would freeze the menu bar and every window (the poll and the menu refresh read here, then hop).
+fn tray_data(h: &AppHandle) -> atharu::quick::TrayMenu {
+    let st = h.state::<app::AppState>();
+    atharu::quick::tray_menu(&st.conn(), st.mac.as_deref()).unwrap_or_default()
+}
+
 /// Right-click menu: Open Atharu · Start meeting › recent series (or End meeting · name) · Quit.
-fn tray_menu(h: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+fn tray_menu(h: &AppHandle, m: &atharu::quick::TrayMenu) -> tauri::Result<Menu<tauri::Wry>> {
     let atharu::quick::TrayMenu {
         running, series, ..
-    } = {
-        let st = h.state::<app::AppState>();
-        let conn = st.conn();
-        atharu::quick::tray_menu(&conn, st.mac.as_deref()).unwrap_or_default()
-    };
+    } = m;
     let mut menu = MenuBuilder::new(h).text("open", "Open Atharu");
     menu = match running {
         Some((id, name)) => menu.text(format!("end:{id}"), format!("End meeting · {name}")),
         None => {
             let mut sub = SubmenuBuilder::new(h, "Start meeting").enabled(!series.is_empty());
-            for s in &series {
+            for s in series {
                 sub = sub.text(format!("meet:{s}"), s);
             }
             menu.item(&sub.build()?)
@@ -335,32 +359,36 @@ fn tray_menu(h: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     menu.separator().item(&quit).build()
 }
 
-fn refresh_menu(h: &AppHandle) {
-    if let (Some(tray), Ok(menu)) = (h.tray_by_id("main"), tray_menu(h)) {
+fn refresh_menu(h: &AppHandle, m: &atharu::quick::TrayMenu) {
+    if let (Some(tray), Ok(menu)) = (h.tray_by_id("main"), tray_menu(h, m)) {
         let _ = tray.set_menu(Some(menu));
     }
-    tray_state(h);
+    tray_state(h, tray_summary(m));
 }
 
 /// Tray icon state: 0 idle, 1 meeting running, 2 recording. Only a change touches the icon.
 static TRAY_STATE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
+/// (icon state, tooltip, recording clock): what `tray_state` draws, computed off the main thread.
+type TraySummary = (u8, String, Option<String>);
+
+fn tray_summary(m: &atharu::quick::TrayMenu) -> TraySummary {
+    match (&m.running, &m.recording) {
+        (Some((_, name)), Some(clock)) => (
+            2,
+            format!("Atharu · Recording · {name}"),
+            Some(clock.clone()),
+        ),
+        (Some((_, name)), None) => (1, format!("Atharu · Meeting · {name}"), None),
+        (None, _) => (0, "Atharu".to_string(), None),
+    }
+}
+
 /// Menu-bar icon shows the meeting state (`recording::MeetingState` via `quick::tray_menu`): a badge dot while a
 /// meeting runs, the whole mark red while audio is captured,
 /// with the recording's elapsed time as the item's title. Red can't be a template image (macOS would tint it), so
 /// that one is drawn in #ff3b30, readable on light and dark bars.
-fn tray_state(h: &AppHandle) {
-    let (state, tip, title) = {
-        let st = h.state::<app::AppState>();
-        let m = atharu::quick::tray_menu(&st.conn(), st.mac.as_deref()).unwrap_or_default();
-        match (m.running, m.recording) {
-            (Some((_, name)), Some(clock)) => {
-                (2, format!("Atharu · Recording · {name}"), Some(clock))
-            }
-            (Some((_, name)), None) => (1, format!("Atharu · Meeting · {name}"), None),
-            (None, _) => (0, "Atharu".to_string(), None),
-        }
-    };
+fn tray_state(h: &AppHandle, (state, tip, title): TraySummary) {
     let Some(tray) = h.tray_by_id("main") else {
         return;
     };
@@ -613,8 +641,11 @@ fn place(w: &WebviewWindow, tray: Option<Rect>) {
 }
 
 /// Dock icon + bundle icon = the current look (spec "Looks").
-fn look_icon(state: &app::AppState) {
-    let look = Layout::load(&state.conn(), "", "", vec![]).map_or("sumi", |l| l.look);
+fn current_look(state: &app::AppState) -> &'static str {
+    Layout::load(&state.conn(), "", "", vec![]).map_or("sumi", |l| l.look)
+}
+
+fn look_icon(look: &'static str) {
     #[cfg(target_os = "macos")]
     {
         let png: &[u8] = match look {

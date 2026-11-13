@@ -1,4 +1,9 @@
-use crate::domain::{entry::NoteRef, plan::Plan, tags};
+use crate::domain::{
+    entry::{Kind, NoteRef},
+    plan::Plan,
+    tags,
+    transcript::TxStatus,
+};
 use chrono::NaiveDate;
 use rusqlite::Connection;
 use std::path::Path;
@@ -134,6 +139,21 @@ pub const SELECT_PLAN: &str =
          note_id, (SELECT title FROM notes WHERE notes.id = entries.note_id)
          FROM entries";
 
+/// `entries.kind` at column `i`; the CHECK constraint guarantees one of the six, so the fallback never fires.
+pub fn kind(r: &rusqlite::Row, i: usize) -> rusqlite::Result<Kind> {
+    let s: String = r.get(i)?;
+    Ok(Kind::parse(&s).unwrap_or(Kind::Done))
+}
+
+/// `meeting_transcripts.status` at column `i`; the CHECK constraint guarantees one of the four, so an unknown
+/// value is an error, not a guess.
+pub fn tx_status(r: &rusqlite::Row, i: usize) -> rusqlite::Result<TxStatus> {
+    let s: String = r.get(i)?;
+    TxStatus::parse(&s).ok_or_else(|| {
+        rusqlite::Error::InvalidColumnType(i, "status".into(), rusqlite::types::Type::Text)
+    })
+}
+
 pub fn plan(r: &rusqlite::Row) -> rusqlite::Result<Plan> {
     let date = |s: Option<String>| s.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
     Ok(Plan {
@@ -149,6 +169,9 @@ pub fn plan(r: &rusqlite::Row) -> rusqlite::Result<Plan> {
         jira: r.get(9)?,
         note: NoteRef::from_cols(r.get(10)?, r.get(11)?),
         // Only To-dos' filtered list selects it (13th column).
-        via: r.get(12).unwrap_or(None),
+        via: match r.get(12) {
+            Err(rusqlite::Error::InvalidColumnIndex(_)) => None,
+            v => v?,
+        },
     })
 }

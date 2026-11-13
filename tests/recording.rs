@@ -256,6 +256,31 @@ async fn segments_append_dedupe_and_close() {
 }
 
 #[tokio::test]
+async fn a_batch_repeating_a_speaker_and_time_lands_once() {
+    let (st, mac) = mac_state("batch-dup", true);
+    post(
+        &st,
+        "/meetings",
+        &form(&[("name", "oms"), ("record", "1")]),
+        false,
+    )
+    .await;
+    let dup = r#"{"segments":[{"t":5.0,"speaker":"me","text":"first"},
+                              {"t":5.0,"speaker":"me","text":"second"},
+                              {"t":5.0,"speaker":"others","text":"same time, other voice"}]}"#;
+    post_json(&st, "/meetings/transcripts/1/segments", dup).await;
+    assert_eq!(
+        count(
+            &st,
+            "SELECT json_array_length(segments) FROM meeting_transcripts"
+        ),
+        2
+    );
+    assert!(segs(&st, 1).contains("first") && !segs(&st, 1).contains("second"));
+    let _ = std::fs::remove_dir_all(&mac.dir);
+}
+
+#[tokio::test]
 async fn speaker_split_replaces_others_and_names_follow_every_line() {
     let (st, mac) = mac_state("split", true);
     post(

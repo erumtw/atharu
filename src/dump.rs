@@ -8,6 +8,8 @@ pub fn write(conn: &Connection, out: &Path) -> anyhow::Result<()> {
 }
 
 pub fn to_sql(conn: &Connection) -> rusqlite::Result<String> {
+    // One read snapshot: in WAL mode a write between the per-table SELECTs would otherwise tear the backup.
+    let _snap = conn.unchecked_transaction()?;
     let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0))?;
     let mut s = String::from("PRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\n");
     let mut stmt = conn.prepare(

@@ -1,7 +1,7 @@
 use super::{queries, view};
 use crate::{
     app::AppState,
-    domain::{dates, entry::Kind, entry::slugify},
+    domain::{dates, entry::Kind, entry::slugify, transcript::TxStatus},
     error::{AppError, AppResult},
     layout::{Layout, crumb},
     recording::{self, Banner, MeetingState},
@@ -148,18 +148,10 @@ pub async fn start(
             Err(running) => Some(format!("End {running} first.")),
         }
     };
-    if error.is_none() && !web::is_htmx(&headers) {
-        return Ok(web::back(&back));
-    }
-    let status = if error.is_some() {
-        StatusCode::UNPROCESSABLE_ENTITY
-    } else {
-        StatusCode::OK
-    };
-    let kept = if error.is_some() {
-        f.name
-    } else {
-        String::new()
+    let (status, kept) = match &error {
+        None if !web::is_htmx(&headers) => return Ok(web::back(&back)),
+        None => (StatusCode::OK, String::new()),
+        Some(_) => (StatusCode::UNPROCESSABLE_ENTITY, f.name),
     };
     let b = banner(&st, &st.conn(), back, kept, error)?;
     if web::is_htmx(&headers) {
@@ -293,9 +285,6 @@ pub async fn rename(
             Ok(([("HX-Redirect", to)], StatusCode::OK).into_response())
         }
         None => Ok(web::back(&to)),
-        Some(e) if web::is_htmx(&headers) => {
-            Ok((StatusCode::UNPROCESSABLE_ENTITY, e).into_response())
-        }
         Some(e) => Ok((StatusCode::UNPROCESSABLE_ENTITY, e).into_response()),
     }
 }
@@ -560,13 +549,13 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
         prev = sp;
     }
     let recorded = || recording::span(ran.unwrap_or(0));
-    let (meta, finishing) = match t.status.as_str() {
-        "live" if mac => (
+    let (meta, finishing) = match t.status {
+        TxStatus::Live if mac => (
             format!("Live · about 30 s behind · {} · {lines} lines", t.lang),
             None,
         ),
-        "live" => (format!("Live · {}", t.lang), None),
-        "finishing" => {
+        TxStatus::Live => (format!("Live · {}", t.lang), None),
+        TxStatus::Finishing => {
             let total = ran.unwrap_or(0).max(1) as f64;
             let pct = (last / total * 100.0).clamp(0.0, 99.0) as u8;
             (
@@ -583,7 +572,7 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
                 )),
             )
         }
-        _ => (
+        TxStatus::Done | TxStatus::Interrupted => (
             format!(
                 "Recorded {} · {lines} lines · {} · {}",
                 recorded(),
@@ -599,11 +588,11 @@ fn tx_view(t: queries::Transcript, mac: bool, q: &str) -> view::TxView {
         rows,
         copy,
         lines,
-        live: t.status == "live",
+        live: t.status == TxStatus::Live,
         finishing,
-        interrupted: (t.status == "interrupted").then(|| recording::clock(last)),
-        done: t.status == "done",
-        speakers: if t.status == "done" {
+        interrupted: (t.status == TxStatus::Interrupted).then(|| recording::clock(last)),
+        done: t.status == TxStatus::Done,
+        speakers: if t.status == TxStatus::Done {
             t.speakers()
         } else {
             Vec::new()

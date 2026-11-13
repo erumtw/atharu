@@ -1,9 +1,12 @@
 use crate::db::SELECT_PLAN;
 use crate::domain::{
-    entry::{Kind, LineRow, NoteRef},
+    entry::{LineRow, NoteRef},
     plan::Plan,
+    transcript::TxStatus,
 };
 use rusqlite::{Connection, OptionalExtension, params};
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 /// (name, meetings) per series, most recently met first.
 pub fn series(conn: &Connection) -> rusqlite::Result<Vec<(String, i64)>> {
@@ -221,11 +224,10 @@ pub fn lines(conn: &Connection, id: i64) -> rusqlite::Result<Vec<LineRow>> {
          WHERE e.meeting_id = ?1 AND e.kind != 'plan' ORDER BY e.id",
     )?;
     stmt.query_map([id], |r| {
-        let kind: String = r.get(2)?;
         Ok(LineRow {
             id: r.get(0)?,
             day: r.get(1)?,
-            kind: Kind::parse(&kind).unwrap_or(Kind::Done),
+            kind: crate::db::kind(r, 2)?,
             epic: r.get(3)?,
             topic: r.get(4)?,
             text: r.get(5)?,
@@ -372,6 +374,33 @@ pub enum Append {
     Closed,
 }
 
+/// A transcript line as stored; field order is the stored JSON key order (the tests assert it).
+#[derive(Serialize, Deserialize)]
+struct Seg {
+    t: f64,
+    speaker: String,
+    text: String,
+}
+
+/// Appends `new` to `have`, skipping a (speaker, t) already there or repeated in the batch. Equality is on
+/// `t`'s bits: `tidy` rounded both sides to tenths, so equal times are the same f64.
+fn push_new(have: &mut Vec<Seg>, new: &[(f64, String, String)]) {
+    let mut seen: HashSet<(String, u64)> = have
+        .iter()
+        .map(|s| (s.speaker.clone(), s.t.to_bits()))
+        .collect();
+    for (t, speaker, text) in new {
+        // A non-finite t would serialise as null and make the whole blob unreadable.
+        if t.is_finite() && seen.insert((speaker.clone(), t.to_bits())) {
+            have.push(Seg {
+                t: *t,
+                speaker: speaker.clone(),
+                text: text.clone(),
+            });
+        }
+    }
+}
+
 /// The app's segments, one recording. A (speaker, t) already there is skipped, so a retried post
 /// (or an overlap window repeating a line) never doubles it. `split` (the speaker split, T56) replaces
 /// every line that isn't "me". `done` closes the recording; one that
@@ -385,40 +414,35 @@ pub fn append_segments(
     at: &str,
 ) -> rusqlite::Result<Append> {
     let tx = conn.unchecked_transaction()?;
-    let status: Option<String> = tx
+    let row: Option<(TxStatus, String)> = tx
         .query_row(
-            "SELECT status FROM meeting_transcripts WHERE id = ?1",
+            "SELECT status, segments FROM meeting_transcripts WHERE id = ?1",
             [tid],
-            |r| r.get(0),
+            |r| Ok((crate::db::tx_status(r, 0)?, r.get(1)?)),
         )
         .optional()?;
-    match status.as_deref() {
+    let blob = match row {
         None => return Ok(Append::NotFound),
-        Some("live" | "finishing") => {}
-        Some(_) => return Ok(Append::Closed),
-    }
-    let mut add = tx.prepare_cached(
-        "UPDATE meeting_transcripts
-         SET segments = json_insert(segments, '$[#]', json_object('t', ?2, 'speaker', ?3, 'text', ?4))
-         WHERE id = ?1 AND NOT EXISTS (
-           SELECT 1 FROM json_each(segments)
-           WHERE value ->> 'speaker' = ?3 AND value ->> 't' = ?2)",
-    )?;
-    for (t, speaker, text) in segs {
-        add.execute(params![tid, t, speaker, text])?;
-    }
-    if let Some(split) = split {
-        tx.execute(
-            "UPDATE meeting_transcripts SET segments = (SELECT json_group_array(json(value))
-               FROM json_each(segments) WHERE value ->> 'speaker' = 'me')
-             WHERE id = ?1",
-            [tid],
-        )?;
-        for (t, speaker, text) in split {
-            add.execute(params![tid, t, speaker, text])?;
+        Some((TxStatus::Done | TxStatus::Interrupted, _)) => return Ok(Append::Closed),
+        Some((TxStatus::Live | TxStatus::Finishing, blob)) => blob,
+    };
+    if !segs.is_empty() || split.is_some() {
+        // One read, one write: a json_each dedupe per segment plus a blob rewrite each was O(n²) under the
+        // global DB lock (0.40 s at 1,200 segments).
+        let conv = |e: serde_json::Error| {
+            rusqlite::Error::FromSqlConversionFailure(1, rusqlite::types::Type::Text, e.into())
+        };
+        let mut have: Vec<Seg> = serde_json::from_str(&blob).map_err(conv)?;
+        push_new(&mut have, segs);
+        if let Some(split) = split {
+            have.retain(|s| s.speaker == "me");
+            push_new(&mut have, split);
         }
+        tx.execute(
+            "UPDATE meeting_transcripts SET segments = ?2 WHERE id = ?1",
+            params![tid, serde_json::to_string(&have).map_err(conv)?],
+        )?;
     }
-    drop(add);
     if done {
         tx.execute(
             "DELETE FROM meeting_transcripts WHERE id = ?1 AND json_array_length(segments) = 0",
@@ -457,7 +481,7 @@ pub struct Transcript {
     pub id: i64,
     pub started_at: String,
     pub ended_at: Option<String>,
-    pub status: String,
+    pub status: TxStatus,
     pub model: String,
     pub lang: String,
     /// (t, speaker, text), in time order.
@@ -489,7 +513,7 @@ pub fn transcripts(conn: &Connection, meeting: i64) -> rusqlite::Result<Vec<Tran
                 id: r.get(0)?,
                 started_at: r.get(1)?,
                 ended_at: r.get(2)?,
-                status: r.get(3)?,
+                status: crate::db::tx_status(r, 3)?,
                 model: r.get(4)?,
                 lang: r.get(5)?,
                 segments: Vec::new(),

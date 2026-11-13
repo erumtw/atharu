@@ -6,6 +6,7 @@ mod state;
 
 pub use state::{Banner, MeetingState, Running};
 
+use crate::domain::transcript::TxStatus;
 use rusqlite::Connection;
 use std::{
     path::PathBuf,
@@ -293,7 +294,7 @@ impl Rec {
         let Some((status, started)) = queries::running(conn)? else {
             return Ok(rec);
         };
-        if status == "finishing" {
+        if status == TxStatus::Finishing {
             rec.finishing = true;
             return Ok(rec);
         }
@@ -341,7 +342,7 @@ pub fn wanted(conn: &Connection) -> rusqlite::Result<Option<Want>> {
     let names: Vec<String> = people.into_iter().map(|p| p.said).collect();
     Ok(Some(Want {
         tid,
-        live: status == "live",
+        live: status == TxStatus::Live,
         lang,
         prompt: glossary(&meeting, &names, &epics),
     }))

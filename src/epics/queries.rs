@@ -1,6 +1,6 @@
 use crate::db::SELECT_PLAN;
 use crate::domain::{
-    entry::{Kind, LineRow, NoteRef},
+    entry::{LineRow, NoteRef},
     plan::Plan,
 };
 use rusqlite::{Connection, OptionalExtension, params};
@@ -158,11 +158,10 @@ pub fn timeline(conn: &Connection, key: &str) -> rusqlite::Result<Vec<LineRow>> 
          ORDER BY e.day DESC, e.id DESC",
     )?;
     stmt.query_map([key], |r| {
-        let kind: String = r.get(2)?;
         Ok(LineRow {
             id: r.get(0)?,
             day: r.get(1)?,
-            kind: Kind::parse(&kind).unwrap_or(Kind::Done),
+            kind: crate::db::kind(r, 2)?,
             topic: r.get(3)?,
             text: r.get(4)?,
             author: r.get(5)?,

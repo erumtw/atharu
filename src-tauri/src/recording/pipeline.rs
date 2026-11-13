@@ -168,24 +168,54 @@ fn clean(t: &str) -> String {
     t.trim_start_matches(['-', ':', ' ']).trim().to_string()
 }
 
-/// 48 kHz (the mic, whatever SCK is asked for) or any other rate → 16 kHz, box-averaged.
+/// 48 kHz (the mic, whatever SCK is asked for) or any other rate → 16 kHz, box-averaged. Box i of the whole
+/// stream is input `[⌊i·step⌋, ⌊(i+1)·step⌋)`, so a callback's unused tail leads the next one: chunk sizes never
+/// change the output (flooring per callback dropped up to step-1 samples each time, so Me drifted against Others).
 // ponytail: box filter, no proper low-pass; fine for speech into whisper, swap for a polyphase filter if music matters.
-pub fn to_16k(x: &[f32], rate: f64) -> Vec<f32> {
-    if (rate - RATE as f64).abs() < 1.0 || rate <= 0.0 {
-        return x.to_vec();
+#[derive(Default)]
+pub struct To16k {
+    rate: f64,
+    /// Input not yet covered by a finished box.
+    carry: Vec<f32>,
+    /// Input samples already dropped from the front of `carry`.
+    base: u64,
+    /// Boxes emitted so far.
+    emitted: u64,
+}
+
+impl To16k {
+    /// Takes the buffer so a stream already at 16 kHz passes through without a copy.
+    pub fn push(&mut self, x: Vec<f32>, rate: f64) -> Vec<f32> {
+        // The mic can change rate mid-recording (input device switch): positions of the old rate mean nothing now.
+        if rate != self.rate {
+            *self = To16k {
+                rate,
+                ..Default::default()
+            };
+        }
+        // A non-finite rate would loop forever below (NaN step → every box at 0): pass it through instead.
+        if !(rate.is_finite() && rate > 0.0) || (rate - RATE as f64).abs() < 1.0 {
+            return x;
+        }
+        self.carry.extend_from_slice(&x);
+        let step = rate / RATE as f64;
+        let at = |i: u64| (i as f64 * step) as u64;
+        let mut out = Vec::with_capacity((x.len() as f64 / step) as usize + 1);
+        loop {
+            let a = (at(self.emitted) - self.base) as usize;
+            // Below 16 kHz a box can be empty: hold the sample instead.
+            let b = ((at(self.emitted + 1) - self.base) as usize).max(a + 1);
+            let Some(w) = self.carry.get(a..b) else {
+                break;
+            };
+            out.push(w.iter().sum::<f32>() / w.len() as f32);
+            self.emitted += 1;
+        }
+        let used = at(self.emitted) - self.base;
+        self.carry.drain(..used as usize);
+        self.base += used;
+        out
     }
-    let step = rate / RATE as f64;
-    let n = (x.len() as f64 / step) as usize;
-    (0..n)
-        .map(|i| {
-            let (a, b) = (
-                (i as f64 * step) as usize,
-                (((i + 1) as f64 * step) as usize).min(x.len()),
-            );
-            let w = &x[a..b.max(a + 1).min(x.len())];
-            w.iter().sum::<f32>() / w.len().max(1) as f32
-        })
-        .collect()
 }
 
 /// RMS → 0–6 lit bars: -60 dBFS (nothing) to -12 dBFS (full).
@@ -206,14 +236,40 @@ mod tests {
     fn downsample_and_levels() {
         let x: Vec<f32> = (0..48).map(|i| (i / 3) as f32).collect();
         assert_eq!(
-            to_16k(&x, 48_000.0),
+            To16k::default().push(x, 48_000.0),
             (0..16).map(|i| i as f32).collect::<Vec<_>>()
         );
-        assert_eq!(to_16k(&[1.0, 2.0], 16_000.0), vec![1.0, 2.0]);
+        assert_eq!(
+            To16k::default().push(vec![1.0, 2.0], 16_000.0),
+            vec![1.0, 2.0]
+        );
         assert_eq!(level(&[0.0; 160]), 0);
         assert_eq!(level(&[0.5; 160]), 6);
         assert_eq!(level(&[0.012; 160]), 3); // -38 dBFS
         assert_eq!(clean(" Glossary: Great. So"), "Great. So");
         assert_eq!(clean("-แต่ว่า"), "แต่ว่า");
+    }
+
+    /// 1024 is not a multiple of 3 (48 kHz) nor of 2.75625 (44.1 kHz): per-callback flooring used to lose samples.
+    #[test]
+    fn resampling_ignores_chunking() {
+        let x: Vec<f32> = (0..144_017).map(|i| (i % 97) as f32).collect();
+        // A bogus rate passes through instead of looping forever.
+        assert_eq!(To16k::default().push(vec![1.0; 10], f64::NAN).len(), 10);
+        for rate in [48_000.0, 44_100.0] {
+            let whole = To16k::default().push(x.clone(), rate);
+            let mut r = To16k::default();
+            let chunked: Vec<f32> = x
+                .chunks(1024)
+                .flat_map(|c| r.push(c.to_vec(), rate))
+                .collect();
+            assert_eq!(chunked, whole, "{rate} Hz");
+        }
+        assert_eq!(To16k::default().push(x, 48_000.0).len(), 144_017 / 3);
+        // A rate switch restarts the stream instead of indexing with the old rate's positions.
+        let mut r = To16k::default();
+        r.push(vec![0.0; 1000], 48_000.0);
+        assert_eq!(r.push(vec![0.0; 1000], 16_000.0).len(), 1000);
+        assert!(!r.push(vec![0.0; 1000], 44_100.0).is_empty());
     }
 }
