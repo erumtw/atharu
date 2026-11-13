@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.2.6 — 2026-11-14
+
+### Features
+
+- Settings › Update in the Mac app (check, Update, progress, Restart); shared src/updater.rs
+- N-space / ⌘N in Today's capture bar saves a note (shared note box with the popover)
+- Popover to-dos are five flat rows with the quiet due date, no inner scroll
+- Popover meeting section is one row (name, mic toggle, Start; running: dot, name, time, camera, mic, End)
+- Popover capture is one field (kind menu inside, Log inside, legend, header note button)
+
+### Fixes
+
+- One install at a time (install.sh lock dir with pid; updater busy flag held until the process ends; timed-out row says it is still running)
+- In-app update no longer quits its own app (install.sh flag, log file not pipes, 20 min deadline); no-JS n-note lands on Today; to-do cap counts the mic's consent line
+- Popover capture section ends right under the hint (no extra gap); one row less in the tight Glass everywhere states
+- Assigned-to-you rows on fixed columns so the status chips line up; phone = key · status · action, title under
+
+### Under the hood
+
+- Rustfmt tests/jira.rs
+- V0.2.6 release screenshots (popover at rest, a meeting recording, Today's note box) from a fresh fictional demo DB
+- Simplify the 0.2.6 popover and update code (dead pill CSS, derived kind fields, one update-row helper)
+- Quick popover section matches the compact layout (header, keyboard order, recording row, AA); README capture paragraph
+- Src/updater.rs in the layout notes (shared update logic)
+- Line grammar notes `n ` = a note in the capture box (Today and popover)
+- Release screenshots only from a freshly seeded demo DB, checked for real names
+
 ## v0.2.5 — 2026-11-14
 
 ### Features
