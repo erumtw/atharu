@@ -456,8 +456,8 @@ fn release_bumps_tags_branches_and_hotfixes() {
     assert_eq!(
         log,
         format!(
-            "# Changelog\n\n## v0.2.0 — {date}\n\n### Features\n\n- add a\n\n### Fixes\n\n- repair b\n\n\
-             ### Docs\n\n- explain c\n\n### Other\n\n- chore: add release.sh\n- chore: version files\n- init\n"
+            "# Changelog\n\n## v0.2.0 — {date}\n\n### Features\n\n- Add a\n\n### Fixes\n\n- Repair b\n\n\
+             ### Under the hood\n\n- Explain c\n- Add release.sh\n- Version files\n\n### Other\n\n- init\n"
         )
     );
     // No tty: nothing is pushed, the commands are printed instead.
@@ -484,7 +484,7 @@ fn release_bumps_tags_branches_and_hotfixes() {
     let log = std::fs::read_to_string(repo.join("CHANGELOG.md")).unwrap();
     assert!(
         log.starts_with(&format!(
-            "# Changelog\n\n## v0.2.1 — {date}\n\n### Features\n\n- add d\n\n## v0.2.0"
+            "# Changelog\n\n## v0.2.1 — {date}\n\n### Features\n\n- Add d\n\n## v0.2.0"
         )),
         "{log}"
     );

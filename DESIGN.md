@@ -70,6 +70,7 @@ No second accent. State is shown with ink weight, not colour: stale = grey fill,
 Glass surfaces, and nothing else: **sidebar `.side`, sticky breadcrumb `.crumb`, floating capture bar `.newline`, menus/popovers `.menu` `.acts`**,
 plus the controls that sit on them or float like them (canvas "Controls", T28): glass pills `.btn.ghost`, fields `.fld`, day nav `.dnav`,
 text boxes `.ta`/`.note-md`. On the solid sheet (Glass everywhere off) those controls render white with a `--line` border.
+One more: the **launch sheet** (`.launch .plate`, §6 "Launch animation"), a full-window pane over the wallpaper that clears before any content shows (rim + light, no shadow, no text on it).
 
 Text boxes come two ways (D25, Settings › Appearance › **Blur text boxes**): **off** (default) = tint only, no backdrop filter;
 **on** (`<html data-blur=text>`) = they take `--lg-filter` like the chrome. AA with it on, each look at its floor over its darkest
@@ -111,6 +112,7 @@ wallpaper: ink ≥ 13.61, placeholder ≥ 7.35 (Glass Tinted; T33). Reduce Trans
 | Glass | deep blue `#2466ea` gradient |
 
 Coloured meshes sit under a 45% white veil; sidebar text over the worst spot stays ≥ 4.6:1.
+Each look also carries `--bloom` (looks.css), the glow behind the icon in the launch animation: Sumi `#e9d9b6`, Sora `#bfe6ff`, Wakaba `#d6ffe2`, Glass `#cfe6ff`.
 
 ## 6. Components (`components.css`)
 
@@ -162,6 +164,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Slider | `.sl` > `.rng` + `.val` | native range on the true 0–100 scale; below `--f` hatched (the look's AA floor: a warning, still reachable), `--v` = value |
 | Look tile / status | `.lk`, `.pill`, `.pill.ok` | app-icon tile, accent ring when picked (dashed on focus); status pill grey / solid ink (On) |
 | Preview tile | `.prev` | the look's wallpaper behind a mini glass sidebar + sheet, same alpha math as the real chrome |
+| Launch animation | `form#launch` > `.gi` + `.gi.lprow` > `.launch.mini` | `.seg.mac` (Ink · Liquid Glass · Off, submit buttons, htmx 204) + a 96 px preview of the real launch (`launch.css`, §6 "Launch animation"); the preview row is hidden while Off |
 | Disclosure | `.chev`, `details > summary` | settings row value in muted / toggles that fold secondary things (count + hint inline, 400 weight) |
 | Meter | `.meter` | depth 0–4 as five 14×6 pills, on = accent |
 | Bars | `.bars` | activity / impact bars in `--accent-soft` |
@@ -500,7 +503,7 @@ and it lists its lines at the top.
 
 ### Motion (0.1.4; D61, grilled with the owner 2026-11-12)
 
-Apple-subtle: motion says where something went, never performs. Tokens in `tokens.css`: `--dur-1` 120 ms (menus, fades) ·
+Apple-subtle: motion says where something went, never performs (one exception, the launch animation below). Tokens in `tokens.css`: `--dur-1` 120 ms (menus, fades) ·
 `--dur-2` 200 ms (rows, toast, switch thumb) · `--dur-3` 250 ms (glides, banner height, page cross-fade) · `--ease-out`
 (fast start, soft settle) · `--ease-spring` (the to-do check only). Movement 4–8 px at most. CSS + `motion.ts`; no library.
 
@@ -516,6 +519,24 @@ Apple-subtle: motion says where something went, never performs. Tokens in `token
 
 **Reduce Motion**: no movement anywhere (no rise, glide, slide, height, spring); opacity fades stay, ≤ 100 ms. `motion.ts`
 skips FLIP and height morphs entirely. Polling never animates (the banner every 1 s, transcripts every 5 s).
+
+#### Launch animation (2026-11-13; owner decision: the one place motion may perform)
+
+The Mac app's main window opens `/launch` instead of `/` (a browser still opens `/`). The look's icon is inlined and brushed onto a
+full-window Liquid Glass sheet over the look's wallpaper (`--wall`, `--glass-a`, the sheet takes `--lg-filter` / `--lg-rim` / `--lg-light`),
+then the sheet clears and the page does `location.replace('/')`. Both pages carry `@view-transition{navigation:auto}`, so the hand-over is
+the usual `--dur-3` root dissolve over the same wallpaper, never a white flash. `/` is fetched while it plays to wake the server. `static/css/launch.css`
+holds every timing; `launch.ts` only prepares the SVG. Setting `launch` = `ink` (default) · `glass` · `off` (`/launch` redirects to `/`).
+
+| Variant | Beats (ms from start) | Ends |
+|---|---|---|
+| **A · Ink** | sheet fades in 60 → 760 · icon drops in with a spring + tilt (0 → 700) · the ensō is brushed in one stroke, head to tail, slow start / fast middle / lift-off (380 → 1200) · the dab is thrown at 1180: its biggest circle slaps (squash 1.32 × .72, rebound), the small circles fly out of it to where the icon has them, 14 seeded specks scatter and fade (→ 1800) · glow 200 → 1600 · ripples 1220 + 1340 · light sweeps 1450 → 2200 | lifts (blur, −10 px, 1.08×) and the sheet clears 2150 → 2470 |
+| **B · Liquid Glass** | sheet as A · icon condenses out of a colour blur (0 → 800) · quicker brush 280 → 880 · dab thrown at 860 · glow 100 → 1300 · sweep 450 → 1350 · one ripple 700 · one breath 1000 → 1600 | lifts and clears 1750 → 2070 |
+
+- **Reduce Motion**: nothing moves. The finished mark (no brush mask, no splash) fades in over 100 ms with the sheet, then hands over; the view transition is 100 ms.
+- **Reduce Transparency**: the sheet is solid white (`--glass-a` is forced to 100%, no backdrop blur, hairline `--line` edge) over the flat wallpaper colour. **Increase Contrast**: ink edge, no rim.
+- Brush: a mask circle along the ensō starting at the head, found by sampling `isPointInFill` around the ring for the largest empty gap (butt caps, `pathLength=1`, dash = the covered fraction), so any icon redraw keeps working. If the icon can't be fetched the animation plays without it and still hands over; a 3.6 s timer opens the app even if the window never runs the animation (hidden at start).
+- Settings › Appearance › **Launch animation**: Ink · Liquid Glass · Off, autosaved. A 96 px preview (`.launch.mini.keep`, the same CSS and `launch.js`) rests on the finished mark, replays when a variant is picked or clicked, stops on the mark instead of clearing, and is hidden while Off.
 
 ## 7. UX patterns (from Notion)
 

@@ -19,6 +19,7 @@ const entries = {
   quick: '/* atharu menu-bar quick popover, built by editor/build.mjs from editor/src/quick.ts. */',
   suggest: '/* atharu suggestion menu for list= inputs, built by editor/build.mjs from editor/src/suggest.ts. */',
   motion: '/* atharu motion (FLIP rows, banner height, switch thumb), built by editor/build.mjs from editor/src/motion.ts. */',
+  launch: '/* atharu launch animation on /launch + its Settings preview, built by editor/build.mjs from editor/src/launch.ts. */',
 }
 
 // One build per entry: esbuild's banner is per build, and each file names what it bundles.

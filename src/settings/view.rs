@@ -18,6 +18,17 @@ pub struct Page {
     pub built: &'static str,
     pub db: Db,
     pub tr: Transcription,
+    /// The stored launch animation (`domain::look::LAUNCH`).
+    pub launch: &'static str,
+}
+
+/// `/launch`: the standalone page the Mac app opens first; no sidebar, so it needs only the look and glass fields.
+#[derive(Template)]
+#[template(path = "settings/launch.html")]
+pub struct Launch {
+    pub layout: Layout,
+    /// `ink` or `glass` (`off` never renders; it redirects).
+    pub variant: &'static str,
 }
 
 /// Settings › Transcription; polled while the model downloads.

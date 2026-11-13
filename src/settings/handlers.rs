@@ -38,6 +38,7 @@ fn full(st: &AppState, conn: &rusqlite::Connection, db: view::Db) -> AppResult<v
         built: build_info::BUILT,
         db,
         tr: transcription(st, conn)?,
+        launch: look::launch(queries::get(conn, "launch")?.as_deref()),
     })
 }
 
@@ -287,6 +288,45 @@ pub async fn save_glass(
     if let Some(t) = tint {
         queries::set(&conn, "glass_tint", t)?;
     }
+    Ok(if web::is_htmx(&headers) {
+        StatusCode::NO_CONTENT.into_response()
+    } else {
+        web::back("/settings")
+    })
+}
+
+/// The Mac app's first page: the launch animation, then it replaces itself with Today. `off` skips straight there.
+pub async fn launch(State(st): State<AppState>) -> AppResult<Response> {
+    let conn = st.conn();
+    let variant = look::launch(queries::get(&conn, "launch")?.as_deref());
+    if variant == "off" {
+        return Ok(web::back("/"));
+    }
+    web::html(&view::Launch {
+        layout: Layout::load(&conn, "today", "Atharu", vec![])?,
+        variant,
+    })
+}
+
+#[derive(Deserialize)]
+pub struct LaunchForm {
+    launch: String,
+}
+
+/// htmx saves on click (204; the preview is already playing); a plain form POST gets a 303 back.
+pub async fn save_launch(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    Form(f): Form<LaunchForm>,
+) -> AppResult<Response> {
+    if !look::LAUNCH.contains(&f.launch.as_str()) {
+        return Ok((
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Pick Ink, Liquid Glass or Off.",
+        )
+            .into_response());
+    }
+    queries::set(&st.conn(), "launch", &f.launch)?;
     Ok(if web::is_htmx(&headers) {
         StatusCode::NO_CONTENT.into_response()
     } else {

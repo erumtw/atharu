@@ -7,14 +7,15 @@ html[data-look]{--muted:var(--muted-look);--veil:linear-gradient(rgba(255,255,25
 html[data-look] .wl{background:transparent}
 html[data-look] body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--wall)}
 
-html[data-look=sumi]{--base:#f6f1e6;--wall:radial-gradient(circle 60vmax at 90% 10%,#ece3cf,transparent),#f6f1e6}
-html[data-look=sora]{--base:#63b6ff;--wall:var(--veil),
+/* --bloom: the glow behind the icon in the launch animation (launch.css), tuned by eye per look. */
+html[data-look=sumi]{--base:#f6f1e6;--bloom:#e9d9b6;--wall:radial-gradient(circle 60vmax at 90% 10%,#ece3cf,transparent),#f6f1e6}
+html[data-look=sora]{--base:#63b6ff;--bloom:#bfe6ff;--wall:var(--veil),
   radial-gradient(circle 45vmax at 84% 18%,#8ef5b8,transparent),radial-gradient(circle 41vmax at 86% 88%,#4fd6f2,transparent),
   radial-gradient(circle 47vmax at 16% 55%,#3d8ff0,transparent),radial-gradient(circle 29vmax at 51% 51%,#7fd0ff,transparent),#63b6ff}
-html[data-look=wakaba]{--base:#94f7b6;--wall:var(--veil),
+html[data-look=wakaba]{--base:#94f7b6;--bloom:#d6ffe2;--wall:var(--veil),
   radial-gradient(circle 37vmax at 88% 25%,#2fc49a,transparent),radial-gradient(circle 41vmax at 12% 55%,#62b6ff,transparent),
   radial-gradient(circle 35vmax at 86% 92%,#45d4f0,transparent),radial-gradient(circle 31vmax at 51% 41%,#a4fcb4,transparent),#94f7b6}
-html[data-look=glass]{--base:#2466ea;--wall:var(--veil),
+html[data-look=glass]{--base:#2466ea;--bloom:#cfe6ff;--wall:var(--veil),
   radial-gradient(circle 43vmax at 29% 25%,rgba(143,230,255,.75),transparent),linear-gradient(135deg,#5aa6ff,#2466ea 50%,#1340b5)}
 
 /* Reduce transparency: no mesh, one flat colour (veiled like the mesh so contrast holds). */

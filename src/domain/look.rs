@@ -63,6 +63,18 @@ pub fn glass_alpha(stored: Option<&str>) -> u8 {
         .min(100)
 }
 
+/// What plays when the Mac app opens (Settings › Launch animation): `ink` (the default) and `glass` are the two
+/// variants of /launch, `off` skips it.
+pub const LAUNCH: [&str; 3] = ["ink", "glass", "off"];
+
+/// The stored choice if it's one of `LAUNCH`, else the default (a hand-edited DB can't break the launch).
+pub fn launch(stored: Option<&str>) -> &'static str {
+    LAUNCH
+        .into_iter()
+        .find(|v| Some(*v) == stored)
+        .unwrap_or(LAUNCH[0])
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -73,6 +85,14 @@ mod tests {
         assert_eq!(super::glass_alpha(Some("250")), 100);
         assert_eq!(super::glass_alpha(Some("x")), 60, "junk → default");
         assert_eq!(super::glass_alpha(None), 60);
+    }
+
+    #[test]
+    fn launch_falls_back_to_ink() {
+        assert_eq!(super::launch(Some("glass")), "glass");
+        assert_eq!(super::launch(Some("off")), "off");
+        assert_eq!(super::launch(Some("spin")), "ink");
+        assert_eq!(super::launch(None), "ink");
     }
 
     #[test]

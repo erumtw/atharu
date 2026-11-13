@@ -305,16 +305,40 @@ fn fields(form: &HashMap<String, String>) -> Option<Vec<(&'static str, Option<St
 const SAVE_FAILED: &str = "Couldn't save. Try again.";
 const TARGET_BEFORE_START: &str = "Target can't be before the start.";
 
-/// Target before start after this save (a field not in the form keeps its stored value). The date inputs
-/// carry min/max so the picker greys those days, but a typed or scripted value still lands here.
+/// A column's value after this save: the submitted one, else the stored one (a field not in the form keeps it).
+fn pick(
+    f: &[(&'static str, Option<String>)],
+    col: &str,
+    stored: &Option<String>,
+) -> Option<String> {
+    f.iter()
+        .find(|(c, _)| *c == col)
+        .map_or(stored.clone(), |(_, v)| v.clone())
+}
+
+/// Target before start after this save. The date inputs carry min/max so the picker greys those days, but a
+/// typed or scripted value still lands here.
 fn backwards(e: &queries::EpicRow, f: &[(&'static str, Option<String>)]) -> bool {
-    let pick = |col: &str, stored: &Option<String>| {
-        f.iter()
-            .find(|(c, _)| *c == col)
-            .map_or(stored.clone(), |(_, v)| v.clone())
-    };
     // ISO dates compare as strings.
-    matches!((pick("start", &e.start), pick("target", &e.target)), (Some(s), Some(t)) if t < s)
+    matches!((pick(f, "start", &e.start), pick(f, "target", &e.target)), (Some(s), Some(t)) if t < s)
+}
+
+/// Done without a date drops out of the report (it counts `done_on`), so the save that MARKS it done stamps today.
+/// Only on that change: a later edit of an epic already done (e.g. its "after" metric) must not date it this week.
+/// An existing date is never touched. True when it stamped.
+fn stamp_done(
+    e: &queries::EpicRow,
+    f: &mut Vec<(&'static str, Option<String>)>,
+    today: NaiveDate,
+) -> bool {
+    let done =
+        e.status != "done" && pick(f, "status", &Some(e.status.clone())).as_deref() == Some("done");
+    if !done || pick(f, "done_on", &e.done_on).is_some_and(|d| !d.is_empty()) {
+        return false;
+    }
+    f.retain(|(c, _)| *c != "done_on");
+    f.push(("done_on", Some(today.to_string())));
+    true
 }
 
 /// Autosave: htmx PATCHes the form on every change; without JS the same form POSTs.
@@ -334,14 +358,18 @@ pub async fn update(
         );
         form.insert("tags".into(), list.join(","));
     }
+    let mut stamped = false;
     let error = match fields(&form) {
-        Some(f) => {
+        Some(mut f) => {
             let conn = st.conn();
-            if backwards(&load(&conn, &key)?, &f) {
+            let cur = load(&conn, &key)?;
+            if backwards(&cur, &f) {
                 Some(TARGET_BEFORE_START)
-            } else if !queries::update_fields(&conn, &key, &f)? {
-                return Err(AppError::NotFound);
             } else {
+                stamped = stamp_done(&cur, &mut f, st.today());
+                if !queries::update_fields(&conn, &key, &f)? {
+                    return Err(AppError::NotFound);
+                }
                 None
             }
         }
@@ -367,6 +395,8 @@ pub async fn update(
             live: live(&conn, &e, String::new(), None)?,
             save_error: error,
             field: Some(tag_field(&conn, tags::parse_list(&e.tags))?),
+            // The "done on" input isn't in the swapped block: show the date the save just filled in.
+            done_on: stamped.then(|| e.done_on.clone().unwrap_or_default()),
         },
     )
 }
@@ -407,6 +437,7 @@ pub async fn add_evidence(
             live: live(&conn, &e, kept, error)?,
             save_error: None,
             field: None,
+            done_on: None,
         },
     )
 }
@@ -428,6 +459,7 @@ pub async fn delete_evidence(
         live: live(&conn, &e, String::new(), None)?,
         save_error: None,
         field: None,
+        done_on: None,
     })
 }
 

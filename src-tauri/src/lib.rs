@@ -61,7 +61,9 @@ pub fn run() {
         .setup(|app| {
             let url = serve(app.handle())?;
             app.manage(Quick::default());
-            let win = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url.clone()))
+            // /launch plays the launch animation, then replaces itself with Today (Off redirects straight there).
+            let first = url.join("launch")?;
+            let win = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(first))
                 .title("Atharu")
                 .inner_size(1180.0, 780.0)
                 .min_inner_size(390.0, 500.0)

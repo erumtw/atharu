@@ -3,3 +3,6 @@
 {%- if let Some(field) = field %}
 <dd class="tagf" id="tagf" hx-swap-oob="true">{% include "partials/tag_field.html" %}<span class="small muted">every line on this epic counts under these tags</span></dd>
 {%- endif %}
+{%- if let Some(d) = done_on %}
+<input class="pin" type="date" id="done_on" name="done_on" value="{{ d }}" style="flex: none" aria-label="Done on" hx-swap-oob="true">
+{%- endif %}

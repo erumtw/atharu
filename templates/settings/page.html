@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% block head %}<script src="/static/js/glass.js" defer></script>{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/launch.css">
+<script src="/static/js/glass.js" defer></script>
+<script src="/static/js/launch.js" defer></script>{% endblock %}
 {% block content %}
 {#- Canvas row "Settings · appearance" (D18): Apple grouped inset list, Notion label + help left, one control right. #}
 <main class="doc set">
@@ -39,6 +41,17 @@
 <div class="prev" aria-hidden="true"><div class="pane"><b>Atharu</b><i></i><i></i><i></i></div><div class="sheet"><i></i><i></i><i></i></div></div>
 </div>
 <noscript><div class="gi"><button class="btn" type="submit">Save</button></div></noscript>
+</form>
+{#- Launch animation (2026-11-13): each segment is a submit button like the Glass presets (htmx saves with a 204, no
+    Save button); launch.js plays the preview, which rests on the finished mark. Hidden while Off. #}
+<form id="launch" class="gform" method="post" action="/settings/launch" hx-post="/settings/launch" hx-trigger="submit" hx-swap="none">
+<div class="gi"><div class="t"><b>Launch animation</b><span>Plays when the Mac app opens, then Today appears.</span></div>
+<div class="seg mac" role="group" aria-label="Launch animation">
+<button type="submit" name="launch" value="ink" aria-pressed="{% if launch == "ink" %}true{% else %}false{% endif %}">Ink</button>
+<button type="submit" name="launch" value="glass" aria-pressed="{% if launch == "glass" %}true{% else %}false{% endif %}">Liquid Glass</button>
+<button type="submit" name="launch" value="off" aria-pressed="{% if launch == "off" %}true{% else %}false{% endif %}">Off</button>
+</div></div>
+<div class="gi lprow"{% if launch == "off" %} hidden{% endif %}><button class="launch mini keep" type="button" data-launch="{{ launch }}" aria-label="Replay the launch animation"><span class="plate"></span><span class="logo"></span></button><span class="help">Click the preview to play it again.</span></div>
 </form>
 </div>
 

@@ -254,3 +254,104 @@ async fn about_shows_the_running_version_and_the_update_command() {
     assert!(b.contains(atharu::build_info::SHA));
     assert!(b.contains("<code id=\"upd-cmd\">atharu update</code>"));
 }
+
+#[tokio::test]
+async fn launch_page_wears_the_look_and_off_skips_it() {
+    let st = state();
+    let r = get(&st, "/launch").await;
+    assert_eq!(r.status, 200);
+    // Standalone: the same <html> look + glass attributes as every page, the sheet + logo shell, no sidebar.
+    assert!(
+        r.body
+            .contains("<html lang=\"en\" data-look=\"sumi\" style=\"--glass-a:60%\">"),
+        "{:.300}",
+        r.body
+    );
+    assert!(
+        r.body.contains("data-launch=\"ink\" data-then=\"/\""),
+        "ink is the default"
+    );
+    for asset in ["/static/css/launch.css", "/static/js/launch.js"] {
+        assert!(r.body.contains(asset), "{asset}");
+        assert_eq!(get(&st, asset).await.status, 200, "{asset}");
+    }
+    assert!(!r.body.contains("class=\"side"));
+
+    post(&st, "/settings", &form(&[("look", "wakaba")]), false).await;
+    post(
+        &st,
+        "/settings/glass",
+        &form(&[("glass_opacity", "40"), ("preset", "tinted")]),
+        true,
+    )
+    .await;
+    post(&st, "/settings/launch", &form(&[("launch", "glass")]), true).await;
+    let b = get(&st, "/launch").await.body;
+    assert!(b.contains("data-look=\"wakaba\""), "{b:.300}");
+    assert!(
+        b.contains("data-tint=\"tinted\" style=\"--glass-a:85%\""),
+        "{b:.300}"
+    );
+    assert!(b.contains("href=\"/static/icon/wakaba.svg\""));
+    assert!(b.contains("data-launch=\"glass\""));
+
+    // Off: straight to Today, no page.
+    post(&st, "/settings/launch", &form(&[("launch", "off")]), true).await;
+    let r = get(&st, "/launch").await;
+    assert_eq!(r.status, 303);
+    assert_eq!(r.headers["location"], "/");
+    // A hand-edited value can't break the launch: unknown → Ink.
+    exec(
+        &st,
+        "UPDATE settings SET value = 'spin' WHERE key = 'launch'",
+    );
+    assert_eq!(get(&st, "/launch").await.status, 200);
+}
+
+#[tokio::test]
+async fn launch_setting_saves_validates_and_shows_in_settings() {
+    let st = state();
+    let pressed = |b: &str, v: &str, on: bool| {
+        b.contains(&format!(
+            "name=\"launch\" value=\"{v}\" aria-pressed=\"{on}\""
+        ))
+    };
+    let s = get(&st, "/settings").await.body;
+    assert!(pressed(&s, "ink", true) && pressed(&s, "glass", false) && pressed(&s, "off", false));
+    assert!(s.contains("Launch animation</b>"));
+    assert!(
+        s.contains("class=\"gi lprow\"><button class=\"launch mini keep\""),
+        "preview shows"
+    );
+
+    // htmx autosave: 204, nothing else.
+    let r = post(&st, "/settings/launch", &form(&[("launch", "glass")]), true).await;
+    assert_eq!(r.status, 204);
+    let s = get(&st, "/settings").await.body;
+    assert!(pressed(&s, "glass", true) && pressed(&s, "ink", false));
+    assert!(s.contains("data-launch=\"glass\""));
+
+    // No JS: a plain POST goes back to Settings.
+    let r = post(&st, "/settings/launch", &form(&[("launch", "off")]), false).await;
+    assert_eq!(r.status, 303);
+    assert_eq!(r.headers["location"], "/settings");
+    let s = get(&st, "/settings").await.body;
+    assert!(pressed(&s, "off", true));
+    assert!(
+        s.contains("class=\"gi lprow\" hidden>"),
+        "no preview while Off"
+    );
+
+    // Unknown value: refused, the stored one stays.
+    for bad in ["spin", "", "INK"] {
+        let r = post(&st, "/settings/launch", &form(&[("launch", bad)]), true).await;
+        assert_eq!(r.status, 422, "{bad:?}");
+    }
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM settings WHERE key = 'launch' AND value = 'off'"
+        ),
+        1
+    );
+}

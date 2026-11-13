@@ -141,4 +141,6 @@ pub struct Swap {
     pub save_error: Option<&'static str>,
     /// The Tags prop, swapped out-of-band: a chip edit changes it.
     pub field: Option<crate::layout::TagField>,
+    /// The "done on" input, out-of-band, when this save filled the date in.
+    pub done_on: Option<String>,
 }

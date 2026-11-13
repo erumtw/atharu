@@ -137,6 +137,76 @@ async fn field_patch_persists_only_that_field() {
 }
 
 #[tokio::test]
+async fn done_without_a_date_is_stamped_today_so_the_report_counts_it() {
+    let st = state();
+    seed(&st);
+    let shipped = |st: &atharu::app::AppState, key: &str, on: &str| {
+        count(
+            st,
+            &format!(
+                "SELECT COUNT(*) FROM epics WHERE key='{key}' AND status='done' AND done_on='{on}'"
+            ),
+        )
+    };
+    // htmx autosave posts the whole form: status flips, "done on" is still empty.
+    let r = request(
+        &st,
+        "PATCH",
+        "/epics/OPS-101",
+        &form(&[("status", "done"), ("done_on", "")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert_eq!(shipped(&st, "OPS-101", TODAY), 1);
+    // The input sits outside the swapped block, so the answer carries the filled date.
+    assert!(
+        r.body
+            .contains("id=\"done_on\" name=\"done_on\" value=\"2026-11-11\""),
+        "{}",
+        r.body
+    );
+    assert!(
+        get(&st, "/report")
+            .await
+            .body
+            .contains("- Did Checkout latency")
+    );
+
+    // A date that was typed stays; status alone (no done_on field) stamps too.
+    post(
+        &st,
+        "/epics/OPS-092",
+        &form(&[("status", "done"), ("done_on", "2026-11-03")]),
+        false,
+    )
+    .await;
+    assert_eq!(shipped(&st, "OPS-092", "2026-11-03"), 1);
+    post(&st, "/epics/OPS-140", &form(&[("status", "done")]), false).await;
+    assert_eq!(shipped(&st, "OPS-140", TODAY), 1);
+
+    // Not done, or already done with a date: nothing is stamped or moved.
+    request(
+        &st,
+        "PATCH",
+        "/epics/OPS-087",
+        &form(&[("status", "done"), ("done_on", "2026-10-20")]),
+        true,
+    )
+    .await;
+    assert_eq!(shipped(&st, "OPS-087", "2026-10-20"), 1);
+    exec(&st, "INSERT INTO epics(key) VALUES ('OPS-200')");
+    post(&st, "/epics/OPS-200", &form(&[("okr", "O2")]), false).await;
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM epics WHERE key='OPS-200' AND done_on IS NULL"
+        ),
+        1
+    );
+}
+
+#[tokio::test]
 async fn target_before_start_is_refused() {
     let st = state();
     seed(&st);

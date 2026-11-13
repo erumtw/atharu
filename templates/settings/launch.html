@@ -1,0 +1,22 @@
+<!doctype html>
+{#- Standalone (no sidebar, no base.html): the same <html> look + glass attributes as every page, so the wallpaper and
+    the sheet are the real ones. launch.js fills .logo with the look's icon, plays, then replaces this page with Today. #}
+<html lang="en" data-look="{{ layout.look }}"{% if layout.glass_all %} data-glass="all"{% endif %}{% if layout.tinted %} data-tint="tinted"{% endif %}{% if layout.text_blur %} data-blur="text"{% endif %} style="--glass-a:{{ layout.glass_a }}%">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atharu</title>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/looks.css">
+<link rel="stylesheet" href="/static/css/launch.css">
+<link rel="icon" type="image/svg+xml" href="/static/icon/{{ layout.look }}.svg">
+<script src="/static/js/launch.js" defer></script>
+{#- Without JS nothing would ever leave this page. #}
+<noscript><meta http-equiv="refresh" content="0;url=/"></noscript>
+{#- Backstop for any failure before the animation starts (a hung icon fetch): the normal hand-over replaces this page first. #}
+<meta http-equiv="refresh" content="6;url=/">
+</head>
+<body>
+<main class="launch" data-launch="{{ variant }}" data-then="/" aria-label="Atharu"><span class="plate"></span><span class="logo"></span></main>
+</body>
+</html>
