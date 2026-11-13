@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.2.4 — 2026-11-14
+
+### Features
+
+- Every to-do row shows its due date again, quietly (last column, muted, red when late)
+- Calendar entitlement for the signed (hardened runtime) Mac app (D6)
+- The Mac app reads macOS Calendar (EventKit) into the Calendar page
+- Mac calendars on the server side (settings row, replace_mac_events)
+- Migration 012 lets events come from macOS Calendar (source 'mac')
+
+### Fixes
+
+- Final-gate findings for 0.2.4 (Mac all-day history, autorelease pool, switch off, hub label, Day view fold, DST, row poll)
+- Link chips join the grey pill family (blue text + ↗); epic head stays one line with the Jira title ending in …
+- Calendar real-data fixes (N-days label, column alignment, short and crowded events, 08:00 label)
+- Switch highlight re-measures when its buttons resize (picked label turning semibold left it short)
+- Today's tag filter and Group by back as an always-visible row (no View menu)
+
+### Under the hood
+
+- Day view never folds a cluster
+- Events.source includes mac
+- V0.2.4 release screenshots (demo DB: Calendar with Mac events, Settings › Mac calendars)
+- Mac calendars in DESIGN.md (Settings row, Calendar sources) and README Configuration
+
 ## v0.2.3 — 2026-11-13
 
 ### Features
