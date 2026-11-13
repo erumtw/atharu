@@ -21,4 +21,5 @@ pub mod settings;
 pub mod tags;
 pub mod today;
 pub mod todos;
+pub mod updater;
 pub mod web;

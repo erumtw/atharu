@@ -33,6 +33,8 @@ pub struct AppState {
     pub mac: Option<Arc<crate::recording::Mac>>,
     /// Set only inside Atharu.app: its macOS calendars (EventKit, 0.2.4). `None` = a browser view.
     pub mac_cals: Option<Arc<crate::recording::MacCalendars>>,
+    /// Settings › Update (0.2.6): where the Mac app's Update button is, one update at a time.
+    pub update: crate::updater::Shared,
 }
 
 /// A deleted line as its note's header shows it: the text, and the snapshot Undo posts back.
@@ -59,6 +61,7 @@ impl AppState {
             gone: Arc::default(),
             mac: None,
             mac_cals: None,
+            update: Arc::default(),
         }
     }
 

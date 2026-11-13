@@ -88,6 +88,8 @@ atharu                      # serves http://127.0.0.1:7070
 
 Later, `atharu update [--app] [--docker]` installs the newest release if there is one. `--version vX.Y.Z` pins a tag, and
 `--dev` builds the latest commit instead. The script prints the `PATH` / `ATHARU_DB` lines to add; it never edits your shell profile.
+In the Mac app, Settings › About › Update does the same with buttons: Check for updates, Update (it builds the newest release tag with
+`scripts/install.sh --version <tag> --app`, writing its output to `update.log` next to your database), then Restart Atharu.
 
 <details>
 <summary><b>Docker</b></summary>

@@ -22,6 +22,8 @@ pub struct Page {
     pub db: Db,
     pub tr: Transcription,
     pub mc: MacCal,
+    /// About › Update, the Mac app's button (0.2.6).
+    pub upd: Update,
     /// The stored launch animation (`domain::look::LAUNCH`).
     pub launch: &'static str,
 }
@@ -100,4 +102,72 @@ impl MacCal {
 #[template(path = "settings/maccal.html")]
 pub struct MacCalRow {
     pub mc: MacCal,
+}
+
+/// Where the Update button is (`updater::UpdateState`, flattened for the template).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Phase {
+    Idle,
+    UpToDate,
+    Available,
+    Running,
+    Done,
+    Failed,
+}
+
+/// About › Update, the Mac app's part: check → Update → progress → Restart. Polls itself only while it runs.
+#[derive(Template)]
+#[template(path = "settings/update.html")]
+pub struct Update {
+    pub phase: Phase,
+    /// The tag it is about: the newest, the one installing, the one installed.
+    pub tag: String,
+    /// `45 s` / `2 min` while it runs.
+    pub elapsed: String,
+    /// The last line `install.sh` printed.
+    pub last: String,
+    pub why: String,
+    /// The failure was the check itself, not an install.
+    pub check_failed: bool,
+    /// Where the full output of the last run is.
+    pub log: String,
+}
+
+impl Update {
+    pub fn new(s: &crate::updater::UpdateState, log: String) -> Update {
+        use crate::updater::UpdateState as S;
+        let mut u = Update {
+            phase: Phase::Idle,
+            tag: String::new(),
+            elapsed: String::new(),
+            last: String::new(),
+            why: String::new(),
+            check_failed: false,
+            log,
+        };
+        match s {
+            S::Idle => {}
+            S::UpToDate(t) => (u.phase, u.tag) = (Phase::UpToDate, t.clone()),
+            S::Available(t) => (u.phase, u.tag) = (Phase::Available, t.clone()),
+            S::Running { to, started, last } => {
+                let secs = started.elapsed().as_secs();
+                u.phase = Phase::Running;
+                u.tag = to.clone();
+                u.last = last.clone();
+                u.elapsed = if secs < 60 {
+                    format!("{secs} s")
+                } else {
+                    format!("{} min", secs / 60)
+                };
+            }
+            S::Done(t) => (u.phase, u.tag) = (Phase::Done, t.clone()),
+            S::Failed { to, why } => {
+                u.phase = Phase::Failed;
+                u.check_failed = to.is_empty();
+                u.tag = to.clone();
+                u.why = why.clone();
+            }
+        }
+        u
+    }
 }

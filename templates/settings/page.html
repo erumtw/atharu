@@ -79,6 +79,7 @@
 <div class="gi"><div class="t"><b>Built</b></div><span class="chev">{{ built }}</span></div>
 {{ db|safe }}
 <div class="gi"><div class="t"><b>Update</b><span>Run in Terminal. Installs the newest release tag.</span><span class="mac-only">Add --app to update this app too.</span></div><span class="cmd"><code id="upd-cmd">atharu update</code><button class="btn" type="button" data-copy="#upd-cmd">Copy</button></span></div>
+{{ upd|safe }}
 </div>
 </main>
 {% endblock %}

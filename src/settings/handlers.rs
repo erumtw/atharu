@@ -6,6 +6,7 @@ use crate::{
     error::{AppError, AppResult},
     layout::Layout,
     recording::{self, Mac, Model},
+    updater::{self, UpdateState},
     web,
 };
 use axum::{
@@ -14,7 +15,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Deserialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub async fn page(State(st): State<AppState>) -> AppResult<Response> {
     let conn = st.conn();
@@ -43,6 +44,7 @@ fn full(st: &AppState, conn: &rusqlite::Connection, db: view::Db) -> AppResult<v
         db,
         tr: transcription(st, conn)?,
         mc: mac_cal(st, conn)?,
+        upd: update_part(st, conn),
         launch: look::launch(queries::get(conn, "launch")?.as_deref()),
     })
 }
@@ -408,4 +410,87 @@ pub async fn save_launch(
     } else {
         web::back("/settings")
     })
+}
+
+// ---- About › Update, the Mac app's button (0.2.6) ------------------------------------------------------------------
+
+/// `update.log` next to the open DB (a temp file for an in-memory one, i.e. in tests).
+fn update_log(conn: &rusqlite::Connection) -> PathBuf {
+    let file = queries::db_file(conn).unwrap_or_default();
+    Path::new(&file)
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .map_or_else(std::env::temp_dir, Path::to_path_buf)
+        .join("update.log")
+}
+
+fn update_part(st: &AppState, conn: &rusqlite::Connection) -> view::Update {
+    view::Update::new(
+        &updater::snapshot(&st.update),
+        update_log(conn).display().to_string(),
+    )
+}
+
+/// The partial, or (a plain form) back to the row: every POST here works without JS.
+fn update_answer(st: &AppState, headers: &HeaderMap) -> AppResult<Response> {
+    if !web::is_htmx(headers) {
+        return Ok(web::back("/settings#update"));
+    }
+    let part = update_part(st, &st.conn());
+    web::html(&part)
+}
+
+/// The row alone: its poll while an update runs.
+pub async fn update_get(State(st): State<AppState>) -> AppResult<Response> {
+    let part = update_part(&st, &st.conn());
+    web::html(&part)
+}
+
+/// "Check for updates": fetch the tags (a blocking git call, off the runtime) and say whether a newer release exists.
+pub async fn update_check(State(st): State<AppState>, headers: HeaderMap) -> AppResult<Response> {
+    if !matches!(updater::snapshot(&st.update), UpdateState::Running { .. }) {
+        let repo = updater::repo();
+        let found = tokio::task::spawn_blocking(move || updater::newest(Path::new(&repo))).await;
+        let next = match found {
+            Ok(Ok(Some(tag))) if updater::is_newer(updater::installed(), &tag) => {
+                UpdateState::Available(tag)
+            }
+            Ok(Ok(Some(tag))) => UpdateState::UpToDate(tag),
+            Ok(Ok(None)) => UpdateState::Failed {
+                to: String::new(),
+                why: "No release tags yet: there is nothing to install.".into(),
+            },
+            Ok(Err(why)) => UpdateState::Failed {
+                to: String::new(),
+                why,
+            },
+            Err(_) => UpdateState::Failed {
+                to: String::new(),
+                why: "The check didn't finish.".into(),
+            },
+        };
+        let mut s = updater::lock(&st.update);
+        // A run that started while the check ran keeps its state.
+        if !matches!(*s, UpdateState::Running { .. }) {
+            *s = next;
+        }
+    }
+    update_answer(&st, &headers)
+}
+
+/// "Update": install the tag the last check found, only from Atharu.app (it can restart itself), one at a time. Nothing in the
+/// request picks the tag or the command: it is the state's own.
+pub async fn update_start(State(st): State<AppState>, headers: HeaderMap) -> AppResult<Response> {
+    let app = headers
+        .get(axum::http::header::USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|ua| ua.contains("AtharuMac"));
+    if !app {
+        return Ok((StatusCode::FORBIDDEN, "Update from Terminal: atharu update").into_response());
+    }
+    if let UpdateState::Available(tag) = updater::snapshot(&st.update) {
+        let log = update_log(&st.conn());
+        updater::start(&st.update, PathBuf::from(updater::repo()), tag, log);
+    }
+    update_answer(&st, &headers)
 }

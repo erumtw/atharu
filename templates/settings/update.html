@@ -1,0 +1,26 @@
+{#- Settings › About › Update, the Mac app's part (0.2.6; browsers keep the Terminal row above and never see this): check → Update →
+    progress → Restart Atharu. One row, swapped whole by htmx; it polls itself every 2 s only while an update runs. Every button is a
+    plain form too (303 back to #update). The install is `scripts/install.sh --version <tag> --app`, the same as `atharu update --app`. -#}
+<div id="update" class="mac-only"{% if phase == Phase::Running %} hx-get="/settings/update" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+<div class="gi">
+{%- match phase %}
+{%- when Phase::Idle %}
+<div class="t"><b>Update this app</b><span>Looks for a newer release.</span></div>
+<form class="inline" method="post" action="/settings/update/check" hx-post="/settings/update/check" hx-target="#update" hx-swap="outerHTML"><button class="btn ghost" type="submit">Check for updates</button></form>
+{%- when Phase::UpToDate %}
+<div class="t"><b>✓ {{ tag }} is the newest</b></div>
+<form class="inline" method="post" action="/settings/update/check" hx-post="/settings/update/check" hx-target="#update" hx-swap="outerHTML"><button class="btn ghost" type="submit">Check again</button></form>
+{%- when Phase::Available %}
+<div class="t"><b>{{ tag }} is available</b><span>Builds it from the release tag; your data stays.</span></div>
+<form class="inline" method="post" action="/settings/update/start" hx-post="/settings/update/start" hx-target="#update" hx-swap="outerHTML"><button class="btn" type="submit">Update</button></form>
+{%- when Phase::Running %}
+<div class="t"><b>Updating to {{ tag }} · {{ elapsed }}</b>{% if !last.is_empty() %}<span class="mono upd-last">{{ last }}</span>{% endif %}</div>
+{%- when Phase::Done %}
+<div class="t"><b>✓ {{ tag }} is installed</b><span>Restart Atharu to use it.</span></div>
+<a class="btn" href="/app/restart">Restart Atharu</a>
+{%- when Phase::Failed %}
+<div class="t"><b class="err">{% if check_failed %}Couldn’t check for updates{% else %}Couldn’t install {{ tag }}{% endif %}</b><span>{{ why }}</span>{% if !check_failed %}<span>Log: <span class="mono">{{ log }}</span></span>{% endif %}</div>
+<form class="inline" method="post" action="/settings/update/check" hx-post="/settings/update/check" hx-target="#update" hx-swap="outerHTML"><button class="btn ghost" type="submit">Try again</button></form>
+{%- endmatch %}
+</div>
+</div>

@@ -24,6 +24,9 @@ pub fn routes() -> Router<AppState> {
             "/settings/maccal",
             get(handlers::mac_cal_get).post(handlers::save_mac_cal),
         )
+        .route("/settings/update", get(handlers::update_get))
+        .route("/settings/update/check", post(handlers::update_check))
+        .route("/settings/update/start", post(handlers::update_start))
         .route("/settings/db", post(handlers::save_db))
         .route("/settings/db/note", post(handlers::db_note_seen))
 }

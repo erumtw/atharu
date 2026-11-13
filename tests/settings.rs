@@ -459,3 +459,92 @@ async fn mac_calendars_row() {
         1
     );
 }
+
+// ---- About › Update, the Mac app's button (0.2.6). Never drives `check` (a real `git fetch`) or a real `start` (it would
+// run this checkout's scripts/install.sh): those are unit-tested in updater.rs against a fake script.
+
+use atharu::updater::{self, UpdateState};
+use std::time::Instant;
+
+#[tokio::test]
+async fn update_button_is_the_apps_and_never_started_from_a_browser() {
+    let st = state();
+    // The browser page keeps the Terminal row; the app's row is in the page (CSS shows it by data-app).
+    let b = get(&st, "/settings").await.body;
+    assert!(b.contains("<code id=\"upd-cmd\">atharu update</code>"));
+    assert!(b.contains("<div id=\"update\" class=\"mac-only\">"));
+    assert!(b.contains("Check for updates</button>"));
+
+    // Start from a browser UA: refused, and nothing starts even with a tag found.
+    *updater::lock(&st.update) = UpdateState::Available("v9.9.9".into());
+    let r = post(&st, "/settings/update/start", "", true).await;
+    assert_eq!(r.status, 403);
+    assert!(r.body.contains("Update from Terminal: atharu update"));
+    assert_eq!(
+        updater::snapshot(&st.update),
+        UpdateState::Available("v9.9.9".into())
+    );
+
+    // From the app but with nothing found yet (Idle): a no-op that answers with the row.
+    *updater::lock(&st.update) = UpdateState::Idle;
+    let req = axum::http::Request::post("/settings/update/start")
+        .header("user-agent", "Mozilla/5.0 AppleWebKit/605.1.15 AtharuMac")
+        .header("hx-request", "true")
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let r = send(atharu::app::router(st.clone()), req).await;
+    assert_eq!(r.status, 200);
+    assert_eq!(updater::snapshot(&st.update), UpdateState::Idle);
+    assert!(r.body.contains("Check for updates"));
+}
+
+#[tokio::test]
+async fn update_row_says_each_state_in_plain_words() {
+    let st = state();
+    let row = |s: UpdateState| {
+        *updater::lock(&st.update) = s;
+        let st = st.clone();
+        async move { get(&st, "/settings/update").await.body }
+    };
+    let b = row(UpdateState::UpToDate("v0.2.6".into())).await;
+    assert!(b.contains("✓ v0.2.6 is the newest") && b.contains("Check again"));
+    assert!(!b.contains("hx-trigger=\"every 2s\""));
+
+    let b = row(UpdateState::Available("v0.2.7".into())).await;
+    assert!(b.contains("v0.2.7 is available") && b.contains(">Update</button>"));
+    assert!(b.contains("action=\"/settings/update/start\""));
+
+    // Running: the title, the last line, and the poll (only here).
+    let b = row(UpdateState::Running {
+        to: "v0.2.7".into(),
+        started: Instant::now(),
+        last: "Compiling atharu v0.2.7 <x>".into(),
+    })
+    .await;
+    assert!(b.contains("Updating to v0.2.7 · 0 s"), "{b}");
+    assert!(b.contains("<span class=\"mono upd-last\">Compiling atharu v0.2.7 &#60;x&#62;</span>"));
+    assert!(b.contains("hx-get=\"/settings/update\" hx-trigger=\"every 2s\""));
+    assert!(!b.contains("action=\"/settings/update/start\""));
+
+    let b = row(UpdateState::Done("v0.2.7".into())).await;
+    assert!(b.contains("✓ v0.2.7 is installed"));
+    assert!(b.contains("<a class=\"btn\" href=\"/app/restart\">Restart Atharu</a>"));
+
+    let b = row(UpdateState::Failed {
+        to: "v0.2.7".into(),
+        why: "install.sh exited 3; v0.2.6 is still installed".into(),
+    })
+    .await;
+    assert!(
+        b.contains("Couldn’t install v0.2.7")
+            && b.contains("install.sh exited 3; v0.2.6 is still installed")
+    );
+    assert!(b.contains("update.log") && b.contains("Try again"));
+
+    let b = row(UpdateState::Failed {
+        to: String::new(),
+        why: "git fetch failed in /x: offline".into(),
+    })
+    .await;
+    assert!(b.contains("Couldn’t check for updates") && !b.contains("Log:"));
+}

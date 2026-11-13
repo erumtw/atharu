@@ -626,6 +626,9 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .cmd{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 3px 0 12px;border:1px solid var(--line);border-radius:9999px;background:#fff;flex:none}
 .cmd code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px}
 .cmd .btn{height:26px;padding:0 10px}
+/* Settings › Update, the app's row (0.2.6): the install's last line under the title, muted mono, one line with an ellipsis.
+   --muted 5.07 on --fill. The row is `.mac-only` (looks.css reverts it to a block, its `.gi` keeps the flex). */
+.upd-last{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Line notes (D49, DESIGN.md §6 "Line notes"). Note button on every list of lines: 28 like .x so rows stay 32.
    No note = --muted outline (4.66 on the --fill row hover), hidden like × until the row is hovered or holds focus.

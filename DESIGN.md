@@ -268,6 +268,14 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
   POST 303 without JS) and each save makes the app sync. States: waiting for macOS · access off (`.err` "Calendar access is off. Open
   System Settings › Privacy & Security › Calendars.") · no calendars yet. In a browser: one status row ("Set up in the Mac app" + last
   sync, `.pill`).
+- **Settings › About › Update** (0.2.6, `settings/update.html`): the browser keeps the Terminal row ("Run in Terminal" + the `.cmd` chip
+  `atharu update` + Copy). In Atharu.app a second `.gi` row (`#update`, `.mac-only`) walks one update: **Check for updates** (ghost) →
+  "✓ v0.2.6 is the newest" + Check again, or "v0.2.7 is available" + the one primary **Update** → "Updating to v0.2.7 · 1 min" with the
+  install's last line under it (12 px mono `--muted`, one line, ellipsis; the row polls itself every 2 s only in this state) → "✓ v0.2.7
+  is installed" + primary **Restart Atharu** (the app's `/app/restart`). A failure is an `.err` title + the reason + "Log: …/update.log" +
+  Try again; a failed check says "Couldn’t check for updates". It runs `scripts/install.sh --version <tag> --app` (fixed arguments, the tag
+  from `git tag --list` that passed semver; no request value reaches the command line), one at a time, output to `update.log` next to the
+  database; Update from a browser answers 403 "Update from Terminal: atharu update". Plain sentences, no exclamation marks, no new token.
 - **Settings › Transcription** (between Connections and Accessibility): Speech model (Download 574 MB = primary · downloading:
   `progress.prog` + "212 of 574 MB · about 1 min left" + Cancel · "Checking the file…" · Ready `.pill.ok` + Delete `.dng` · checksum
   failed `.err` + Try again) · Language `.seg.mac` Auto | Thai | English (Thai default; help says Auto can translate) · Vocabulary
