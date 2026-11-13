@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 {% block head %}<script src="/static/js/capture.js" defer></script>{% endblock %}
 {% block crumb_extra %}<span class="pend">
-{%- if banner.state.running.is_none() %}
-{#- Start meeting (D5): a ghost pill beside the day nav opening the start field. hx-disable: a plain POST that comes
-    back to this day, where the running meeting's banner takes the top of the page. #}
-<button class="btn ghost s m-hide" type="button" popovertarget="startm" style="anchor-name: --startm">Start meeting</button>
-<div class="menu startm" id="startm" popover aria-label="Start a meeting" hx-disable><section id="meeting">{% include "partials/meeting_banner.html" %}</section></div>
-{%- endif %}
 {#- Day nav = one glass capsule (Controls board). The date is a native date input over its label; datepicker.js opens the Atharu popover on click (no JS: the OS picker). #}<div class="dnav" role="group" aria-label="Day">{%- if !day.is_today %}<a href="/" aria-label="Jump back to today">Today</a>{% endif -%}<a class="i" href="/?day={{ day.prev }}" aria-label="Previous day: {{ day.prev_label }}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#prev"/></svg></a><form method="get" action="/"><span class="m-hide">{{ day.label }}</span><svg class="ic dn m-hide" aria-hidden="true"><use href="/static/icon/ui.svg#down"/></svg><svg class="ic m-only" aria-hidden="true"><use href="/static/icon/ui.svg#calendar"/></svg><input type="date" name="day" value="{{ day.iso }}" aria-label="Log for another day" required onchange="this.form.submit()"></form><a class="i" href="/?day={{ day.next }}" aria-label="Next day: {{ day.next_label }}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#next"/></svg></a></div></span>{% endblock %}
 {% block content %}
 <main class="doc">
@@ -14,9 +8,8 @@
 {%- if !day.is_today %}
 <div class="row small"><span class="chip">Logging for {{ day.label }}</span><a href="/">Back to today</a></div>
 {%- endif %}
-{%- if banner.state.running.is_some() %}
+{#- Start field back in the page (0.2.5, as before 0.2.0): one compact row; the running meeting's banner swaps in here. #}
 <section id="meeting">{% include "partials/meeting_banner.html" %}</section>
-{%- endif %}
 <section id="plans">{% include "today/plans.html" %}</section>
 {%- if !needs.is_empty() %}
 <section class="needs"><h3>Needs you <span class="small muted normal">· {{ needs.len() }} · epics late, due soon or gone quiet</span></h3>

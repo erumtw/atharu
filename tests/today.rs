@@ -227,20 +227,19 @@ async fn group_by_type_puts_decisions_first_and_keeps_the_epic() {
 }
 
 #[tokio::test]
-async fn start_meeting_is_a_pill_until_one_runs() {
+async fn start_meeting_is_a_row_in_the_page_until_one_runs() {
     let st = state();
-    // Idle: the start field lives in the pill's popover, posting plainly (no htmx) back to this day.
+    // Idle: the start field is in the page again (0.2.5), no crumb pill or popover over the series list.
     let b = get(&st, "/").await.body;
-    assert!(b.contains(r#"popovertarget="startm""#));
-    assert!(b.contains(
-        r#"<div class="menu startm" id="startm" popover aria-label="Start a meeting" hx-disable>"#
-    ));
+    assert!(!b.contains("startm"));
+    assert!(b.contains(r#"<section id="meeting">"#));
+    assert!(b.contains(r#"<form id="start-meeting""#));
     exec(
         &st,
         "INSERT INTO meetings(day, name) VALUES ('2026-11-11', 'oms-sync')",
     );
-    // Running: no pill; the banner heads the page and the fact line names the meeting.
+    // Running: the banner takes the same place; the fact line names the meeting.
     let b = get(&st, "/").await.body;
-    assert!(!b.contains(r#"popovertarget="startm""#));
+    assert!(!b.contains(r#"<form id="start-meeting""#));
     assert!(b.contains("· in oms-sync</p>"), "{b}");
 }

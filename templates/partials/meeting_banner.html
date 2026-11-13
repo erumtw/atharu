@@ -49,7 +49,7 @@
 {%- if let Some((eid, ename)) = banner.ended %}
 <div class="callout row" role="status" style="align-items: center"><span class="tick" aria-hidden="true">✓</span><span>Ended <b>{{ ename }}</b>. Its lines, notes and transcript are on the meeting page.</span><a class="btn ghost s" style="margin-left: auto" href="/meetings/{{ eid }}">Open meeting</a></div>
 {%- endif %}
-<form id="start-meeting" class="fld{% if banner.error.is_some() %} bad{% endif %}" method="post" action="/meetings" hx-post="/meetings" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><input name="name" value="{{ banner.name }}" placeholder="Start a meeting, e.g. oms-sync" list="series" aria-label="Meeting name" autocomplete="off"{% if banner.error.is_some() %} aria-invalid="true"{% endif %}><button class="btn ghost" type="submit">Start</button></form>
+<form id="start-meeting" class="fld{% if banner.error.is_some() %} bad{% endif %}" method="post" action="/meetings" hx-post="/meetings" hx-target="#meeting" hx-swap="outerHTML"><input type="hidden" name="back" value="{{ banner.back }}"><input name="name" value="{{ banner.name }}" placeholder="Start a meeting, e.g. oms-sync" list="series" aria-label="Meeting name" title="Reuse a name to group meetings into a series. “OMS Sync” is saved as oms-sync." autocomplete="off"{% if banner.error.is_some() %} aria-invalid="true"{% endif %}><button class="btn ghost" type="submit">Start</button></form>
 <datalist id="series">{% for s in banner.state.series %}<option value="{{ s }}"></option>{% endfor %}</datalist>
 {%- if banner.state.rec.mac %}
 {#- Off by default every time (D31): recording is a choice per meeting. Consent swaps in by CSS, no JS. -#}

@@ -730,10 +730,9 @@ progress.prog::-moz-progress-bar{background:var(--accent)}
 .pghead .fact b{color:var(--ink-2);font-weight:500}
 /* .pmenu: the page ⋯ menu under the crumb, one per entity page (partials/pmenu_btn.html). Fixed fallback where anchor
    positioning is missing. Delete is a form button styled as a menu item, so it still works as a plain POST. */
-.pmenu[popover],.startm[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:230px}
-.startm[popover]{width:360px;padding:10px;gap:10px}
-@supports (position-anchor:--a){:is(.pmenu,.startm)[popover]{top:calc(anchor(bottom) + 6px);right:anchor(right)}
-  .pmenu{position-anchor:--pmenu}.startm{position-anchor:--startm}}
+.pmenu[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:230px}
+@supports (position-anchor:--a){ .pmenu[popover]{top:calc(anchor(bottom) + 6px);right:anchor(right)}
+  .pmenu{position-anchor:--pmenu}}
 /* A menu item that posts is a bare form around its button; a switch (.seg) or a field (.fld) keeps its own box. */
 .menu form:not(.seg,.fld){display:contents}
 .menu button[role=menuitem]{border:0;background:none;font:inherit;width:100%;text-align:left;cursor:pointer}
@@ -768,9 +767,12 @@ details.tg>summary .small{font-size:13px}
 .side a.sub i{color:var(--muted)}
 .etab{table-layout:fixed;width:100%}
 .etab td{overflow:hidden;text-overflow:ellipsis}
-/* Today (0.2.0): Start meeting pill's field (positioned with .pmenu above). */
-.startm #meeting{display:flex;flex-direction:column;gap:8px}
-.startm #meeting>.small,.startm #meeting>.err{padding:0 !important}
+/* Start field (0.2.5): one row, field · Record · help in the field's title; the consent line and errors wrap below. */
+#meeting:has(>#start-meeting){display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+#meeting>#start-meeting{flex:1 1 280px;min-width:0}
+#meeting:has(>#start-meeting)>:is(.callout,#recperm,.err){flex-basis:100%}
+#meeting:has(>#start-meeting)>.small.muted,#meeting:has(>#start-meeting) .recopt .off{display:none}
+#meeting:has(>#start-meeting) :is(.recopt,.err){padding:0 !important}
 .needs h3{margin:10px 0 6px}
 /* To-do rows: actions show on hover / keyboard focus where there is a pointer; phones keep the ⋯ sheet. */
 /* Hidden actions must not keep their width (they squeezed the text to one word per line on real rows, 0.2.0): out of
