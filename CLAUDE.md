@@ -51,6 +51,8 @@ name → `/meetings?name=X`, else nothing (a dead link).
 - `by <when>` only on `>` lines: `today`, `tomorrow`, a weekday (`fri`, today counts), `20 Nov`, `2026-11-20`.
   Words after `by` that aren't a date stay text (`> refactor by hand`); an impossible date (`by 32 Nov`) is refused.
 - `xml parser fixed` is a done line: `x` is a prefix only when followed by a space.
+- `n ` (n + space) at the start of the capture box (Today or the menu-bar popover) saves a **note**, not a line
+  (`nginx fixed` stays a line). `atharu log` is unchanged: agents write notes with `atharu note`.
 - `#tag` anywhere in the text (`#[a-z0-9][a-z0-9-]*`, case folded) tags the line or note: `booked e2e review #expense`.
   Not a tag: `#` alone, `#123`, a `#` mid-word or in a URL, inside `code`, a markdown heading `# x`.
 
