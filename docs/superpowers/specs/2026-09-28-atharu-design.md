@@ -18,7 +18,7 @@ Rule: never store what Jira already knows. Store plans, decisions, impact, learn
 ## Assumptions
 
 - single user, localhost, no auth, no hosting
-- Jira = key + link; read-only title/status lookup in P6 (no writes, no issue lists)
+- Jira = key + link; title/status/type/parent lookup (P6, widened 2026-11-14); the only write is a status move on an explicit press (D1)
 - SQLite = single source of truth (no markdown files)
 - not a Notion clone: no block editor, nesting, DB views, drag-drop
 
@@ -33,7 +33,7 @@ Each phase shippable + used daily before next starts.
 | 3 | learn pages + depth heatmap | needs weeks of `?` data first |
 | 4 | notes + `[[links]]` + LLM layer | only if Obsidian/Notion not enough; LLM needs notes + topics to work on |
 | 5 | calendar view → Google Calendar read-only (iCal) | needs due dates + meetings from P2 to have something to show |
-| 6 | Jira read-only titles (cache summary · status for known keys) | needs epics + links from P1/P2; added 2026-11-11 |
+| 6 | Jira titles (cache summary · status for known keys); 0.2.5: + type, parent, dates, assigned to me, status moves on press | needs epics + links from P1/P2; added 2026-11-11, widened 2026-11-14 |
 | 7 | Mac app: Tauri 2 shell around the same server | needs every page to exist; added 2026-11-11 |
 
 Phase 1 grammar already parses all prefixes (`>` and `?` saved as entries); their pages arrive in later phases.
@@ -293,6 +293,23 @@ Deterministic checks (stale topic, unrated topic, dead `[[X]]`) stay in Rust on 
 - shown as display only: epic list/page shows `summary · status` under the key when our `title` is empty ("No title yet" stays editable); Jira link chips read `ABC-123 · summary`
 - config `data/config.toml`: `jira_base_url`, `jira_email`, `jira_token` (all optional; any missing → feature off, no callout noise); token is a credential, never logged or in git
 - never writes to Jira; never creates epics/todos from Jira; tests use a fixture JSON, no network
+
+**Epics × Jira (0.2.5, 2026-11-14, owner grill D1–D10; replaces "never writes to Jira" above)**
+- reads more for the same keys: issue type, `statusCategory.key` (new · indeterminate · done), parent (key + title), due, resolution
+  date, updated (migration 013); plus `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC` ≤50, flagged
+  `assigned_me` (D5). Grouping and Done logic use the category, never a status name (each team names its own).
+- **writes one thing only: a status move, only on an explicit press** (D1): a Jira chip's ▾ reads the issue's allowed transitions
+  live and posts the one picked; a 5 s toast offers Undo = the transition back to the previous status, else "Can't undo in Jira" (D8).
+  A move that needs fields hands over to Jira ("Jira needs Resolution for “Done”. Open in Jira ↗"), never guesses. Titles, fields,
+  comments and assignees are never sent; nothing is created in Jira.
+- done disagreements are suggested both ways, one tap each, never automatic (D2): "Jira says KEY is Done on <date> · Mark done / Not
+  yet"; after Atharu marks an epic or a Jira-linked to-do done, "Also move KEY in Jira?" with the done-category moves; after
+  dropped, the cancel-type moves (Won't do / Cancelled / Rejected …), no such move → no prompt (D10).
+- a story keeps its own page and rolls up under its Jira parent: epic page "Tickets · N in Jira · M logged here", Epics list
+  header rows for untracked parents, Report "Resolved in Jira this period" (D3, D4). "+ Track as epic" only for type Epic; others
+  get "+ To-do" filled `KEY > title link by due` (D6). Jira's title names an epic until one is typed, never copied (D7).
+- a 401/403 is named on Epics and in Settings with a link to make a new token; the last copy stays shown (D9).
+- tests talk to a local fake Jira (an axum server on 127.0.0.1); nothing ever calls the owner's Jira from a test or a script.
 
 **Delete + edit (added 2026-11-12)** — notes, meetings and topics can be deleted with the same Undo toast as log lines; an epic can be deleted only while it has no lines (else "Mark it Done or Dropped instead."); a log line can be edited inline and is re-parsed with the capture grammar (id, time and author kept). Deleting a meeting keeps its lines; deleting a topic keeps its `?` lines (back to the Learn inbox). Agents can't delete or edit.
 

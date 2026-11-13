@@ -36,7 +36,7 @@ the week into a report you can paste.
 |---|---|
 | **Today** | A capture bar with live parsing, your top 3 plans for the week, and today's lines grouped by epic, tag or type. |
 | **To-dos** | `> reply to vendor by fri` becomes a to-do with a due date. Typing `by` opens a date menu, and ticking a to-do asks for the follow-up. |
-| **Epics** | Jira-keyed projects with OKR, dates, a before → after metric, evidence links, and an impact line ready to copy. |
+| **Epics** | Jira-keyed projects with OKR, dates, a before → after metric, evidence links, and an impact line ready to copy; Jira status, parents, your assigned issues and status moves on press. |
 | **Report** | Week, month or quarter: what shipped, decisions, blockers and learning, copied as Markdown in one click. |
 | **Learn** | `? topic: what clicked`. Topic pages hold your own words and a 1–4 depth rating over time, and are deliberately AI-free. |
 | **Notes** | A block editor with `[[links]]`, `#tags`, toggles, callouts and hand-drawn Excalidraw diagrams. |
@@ -125,6 +125,12 @@ Tauri 2 on the system WebView. It serves the same pages on a free local port and
 Optionally, add `data/config.toml` next to the database with `ical_url = "…"`, Google Calendar's secret iCal address. It's shown read-only on
 `/calendar` and refreshed every 15 minutes. It's a credential, so keep it out of git.
 
+**Jira** (`jira_base_url`, `jira_email`, `jira_token` in the same file, an API token from
+https://id.atlassian.com/manage-profile/security/api-tokens): Atharu reads the title, status, type, parent, due and resolution
+dates of the keys you log, plus the open issues assigned to you, every 15 minutes or on Refresh. It writes one thing only: a
+status move, when you pick one from a Jira chip's ▾ (with Undo). If Jira refuses the token, Epics and Settings say "Token expired or
+revoked" with a link to make a new one, and the last copy stays shown.
+
 **Mac calendars** (Mac app only): when your Google Workspace blocks the iCal address, add the account in macOS Calendar instead, then
 turn on Settings › Connections › Mac calendars and tick the calendars to show. macOS asks once for Calendar access. The app reads them
 (read-only) into `/calendar` on start, every 15 minutes and whenever Calendar changes; a browser on the same database shows what it synced.
@@ -171,4 +177,4 @@ It refuses a dirty tree, a version that isn't higher, or the wrong branch. See [
 ## Privacy
 
 Everything stays on your machine: the server binds to `127.0.0.1`, recordings are transcribed on device, and `data/` is
-gitignored. The only network calls are the ones you configure: Jira titles, a Google Calendar iCal feed (macOS Calendar is read on this Mac), and the one-time model downloads for transcription and the speaker split (Hugging Face).
+gitignored. The only network calls are the ones you configure: Jira (reads, and status moves you pick), a Google Calendar iCal feed (macOS Calendar is read on this Mac), and the one-time model downloads for transcription and the speaker split (Hugging Face).
