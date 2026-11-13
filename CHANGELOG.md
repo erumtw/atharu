@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.2.2 — 2026-11-13
+
+### Fixes
+
+- To-do hover toolbar sits above the row's corner, not over its note button
+
+## v0.2.1 — 2026-11-13
+
+### Fixes
+
+- View menu's Group by switch keeps its track and highlight; its tag field keeps its box
+- Real-data layout bugs in 0.2.0 (to-do text squeezed, Meetings table overflow, page jump on Notes filter, note rows run together)
+
+### Under the hood
+
+- Notes list rows match the nrow block
+
 ## v0.2.0 — 2026-11-13
 
 ### Features
