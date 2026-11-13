@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block head %}<script src="/static/js/calendar.js" defer></script>{% endblock %}
 {% block content %}
 <main class="doc wide">
 {#- Google-Calendar-style bar: Today · ‹ › · range · view switch · + Event (0.2.1 boards Redesign.Calendar*). #}
@@ -16,7 +17,7 @@
 {#- Reset only after this form's own 2xx: a rejected add keeps what was typed. #}
 <form class="card" method="post" action="/calendar/events" hx-post="/calendar/events" hx-target="#cal" hx-swap="outerHTML" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) { this.reset(); this.closest('details').open = false; }">
 {% include "calendar/range.html" %}
-<input class="fld m" name="title" value="{{ form.title }}" placeholder="Title, e.g. dentist" aria-label="Event title" required>
+<input class="fld m" name="title" value="{{ form.title }}" placeholder="Title, e.g. dentist" aria-label="Event title" required{% if !form.date.is_empty() && form.title.is_empty() %} autofocus{% endif %}>
 <input class="fld m" type="date" name="date" value="{{ form.date }}" aria-label="Date" required>
 <input class="fld m" type="time" name="time" value="{{ form.time }}" aria-label="Time (optional)">
 <button class="btn" type="submit">Add</button>

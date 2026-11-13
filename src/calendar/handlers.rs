@@ -27,6 +27,8 @@ pub struct RangeQuery {
     /// Tag filter, comma list (any of them); `add` = the filter row's add box.
     tag: Option<String>,
     add: Option<String>,
+    /// `YYYY-MM-DDTHH:MM` from an empty slot: "+ Event" opens with that day and time.
+    new: Option<String>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -283,7 +285,10 @@ fn cal(
     let now = now.hour() * 60 + now.minute();
     // (day index, start, end, item): placed once every day's hours are known.
     let mut timed: Vec<(usize, u32, u32, view::Item)> = Vec::new();
-    let mut put = |day: &str, at: Option<(u32, u32)>, item: view::Item| {
+    let mut uid = 0;
+    let mut put = |day: &str, at: Option<(u32, u32)>, mut item: view::Item| {
+        uid += 1;
+        item.uid = uid;
         let Some(i) = ix(from, day).filter(|i| *i < days.len()) else {
             return;
         };
@@ -320,7 +325,9 @@ fn cal(
                 time: start.map(hm),
                 text: m.name,
                 sub: Some(sub),
-                href: Some(format!("/meetings/{}", m.id)),
+                href: None,
+                meeting: Some(m.id),
+                uid: 0,
                 late: false,
                 own_id: None,
             },
@@ -354,6 +361,8 @@ fn cal(
                 }),
                 text: e.title,
                 href: None,
+                meeting: None,
+                uid: 0,
                 late: false,
                 own_id: own.then_some(e.id),
             },
@@ -370,6 +379,8 @@ fn cal(
                 text,
                 sub: None,
                 href: Some("/todos".into()),
+                meeting: None,
+                uid: 0,
                 late,
                 own_id: None,
             },
@@ -385,6 +396,8 @@ fn cal(
                 text: format!("target · {key}"),
                 sub: None,
                 href: Some(format!("/epics/{key}")),
+                meeting: None,
+                uid: 0,
                 late: false,
                 own_id: None,
             },
@@ -433,6 +446,7 @@ fn cal(
         n: r.n,
         d: dates::iso(r.d()),
         tag: r.tags.join(","),
+        here: r.href(r.d()),
         h0,
         h1,
         now_min,
@@ -474,7 +488,20 @@ fn render_page(
 
 pub async fn page(State(st): State<AppState>, Query(q): Query<RangeQuery>) -> AppResult<Response> {
     let r = Range::of(&q, st.today());
-    web::html(&render_page(&st, &r, None, view::EventForm::default())?)
+    // An empty slot's link: "+ Event" opens with its day and hour.
+    let form = match q
+        .new
+        .as_deref()
+        .map(|n| n.split_once('T').unwrap_or((n, "")))
+    {
+        Some((date, time)) => view::EventForm {
+            title: String::new(),
+            date: date.into(),
+            time: time.into(),
+        },
+        None => view::EventForm::default(),
+    };
+    web::html(&render_page(&st, &r, None, form)?)
 }
 
 /// After an action: htmx gets the grid, a plain form gets a 303 back to the same range.

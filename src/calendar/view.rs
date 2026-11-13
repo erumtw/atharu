@@ -9,8 +9,12 @@ pub struct Item {
     pub text: String,
     /// Under the text, e.g. `ended 10:42`.
     pub sub: Option<String>,
-    /// Link items (to-do, target, logged meeting). `None` = an event: click starts meeting mode.
+    /// Link items (to-do, target). `None` = a meeting or event: click opens its card.
     pub href: Option<String>,
+    /// A logged meeting: its card opens the meeting and its series. `None` on events, whose card starts one.
+    pub meeting: Option<i64>,
+    /// Unique in the section: the card's popover id and anchor name.
+    pub uid: usize,
     /// Open to-do past its due day.
     pub late: bool,
     /// Own event id, for its delete button.
@@ -71,6 +75,8 @@ pub struct Cal {
     /// The hour grid's first and last hour: 07–21, widened to fit the range's items.
     pub h0: u32,
     pub h1: u32,
+    /// This range's URL (with `d`), for the empty-slot links that open "+ Event" prefilled.
+    pub here: String,
     /// Minutes from `h0` to now, when today is in the range.
     pub now_min: Option<u32>,
     pub days: Vec<Day>,
@@ -94,6 +100,11 @@ impl Cal {
     /// How many of `n` items a cell shows: all of them in a one-day view or when ≤ 3, else 2 + "+N more".
     pub fn cap(&self, n: usize) -> usize {
         if self.days.len() == 1 || n <= 3 { n } else { 2 }
+    }
+
+    /// An empty hour slot: this range with "+ Event" open on that day and hour (a plain link, no JS).
+    pub fn slot_href(&self, d: &Day, h: &u32) -> String {
+        format!("{}&new={}T{h:02}:00", self.here, d.iso)
     }
 
     /// A day opens as the Day view (same tag filter).

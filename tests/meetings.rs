@@ -315,7 +315,7 @@ async fn archive_hides_a_series_from_meetings_and_calendar() {
            (2, '2026-11-10', 'planning', '2026-11-10 11:00:00');",
     );
     let row = r#"href="/meetings?name=oms-sync"><b>oms-sync</b>"#;
-    let cal = r#"href="/meetings/1"><b>oms-sync"#;
+    let cal = r#"href="/meetings/1">Open meeting"#;
     assert!(get(&st, "/meetings").await.body.contains(row));
 
     let r = post(
@@ -373,7 +373,7 @@ async fn archive_hides_a_series_from_meetings_and_calendar() {
         get(&st, "/calendar")
             .await
             .body
-            .contains(r#"href="/meetings/1"><b>oms-weekly</b>"#)
+            .contains(r#"<h4>oms-weekly</h4>"#)
     );
     assert_eq!(count(&st, "SELECT COUNT(*) FROM series_archive"), 0);
 }

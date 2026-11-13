@@ -45,14 +45,27 @@ async fn week_assembles_what_we_have() {
     assert!(b.contains("href=\"/epics/OPS-101\"><b>target · OPS-101</b></a>"));
     assert!(!b.contains("OPS-9"), "closed epics have no target to hit");
     // A meeting from before start times were kept sits in the all-day row.
-    assert!(b.contains("href=\"/meetings/1\"><b>oms-sync</b> <small>ended 10:42</small></a>"));
+    assert!(b.contains("<b>oms-sync</b> <small>ended 10:42</small></button>"));
+    // A meeting's chip opens its card: the meeting, its series, that day's log.
+    assert!(b.contains("<button class=\"ev meet\" type=\"button\" popovertarget=\"evc1\" style=\"anchor-name: --evc1\">"), "{b}");
+    assert!(
+        b.contains("<h4>oms-sync</h4>\n<span class=\"small muted\">Wed 11 · ended 10:42</span>")
+    );
+    assert!(b.contains("<a class=\"btn s\" href=\"/meetings/1\">Open meeting</a><a class=\"btn ghost s\" href=\"/meetings?name=oms-sync\">Open series</a>"));
+    assert!(b.contains("<a class=\"btn ghost s\" href=\"/?day=2026-11-11\">Day's log</a>"));
+    // An empty hour is a link that opens "+ Event" on that day and hour, keeping the range.
+    assert!(b.contains(
+        "<a class=\"slot\" href=\"/calendar?d=2026-11-11&#38;new=2026-11-12T16:00\" tabindex=\"-1\""
+    ));
     // Timed: the grid widens to 06:00 for "early", so 16:00 is 600 min down; an own event runs an hour.
     assert!(b.contains("top: calc(var(--px) * 1)\">07:00</span>") && !b.contains(">06:00<"));
     assert!(b.contains("<div class=\"tev\" style=\"top: calc(var(--px) * 600 / 60); height: calc(var(--px) * 60 / 60 - 2px); left: calc(0 * 100% / 1 + 2px); width: calc(100% / 1 - 4px)\">"));
-    assert!(b.contains("<input type=\"hidden\" name=\"name\" value=\"dentist\">"));
+    // An event's card starts meeting mode with its name; an own one can be deleted there.
+    assert!(b.contains("<input type=\"hidden\" name=\"name\" value=\"dentist\"><input type=\"hidden\" name=\"back\" value=\"/\"><button class=\"btn s\" type=\"submit\">Start meeting</button>"));
+    assert!(b.contains("· 16:00 · your event</span>"));
     assert!(b.contains("<span class=\"t\">16:00</span> <b>dentist</b>"));
     // Thu: the meeting (10:00–10:35) and the Google call (10:15–11:00) overlap, so they split the column.
-    assert!(b.contains("left: calc(0 * 100% / 2 + 2px); width: calc(100% / 2 - 4px)\"><a class=\"ev meet\" href=\"/meetings/2\"><span class=\"t\">10:00</span> <b>checkout-sync</b> <small>10:00 – 10:35</small>"));
+    assert!(b.contains("left: calc(0 * 100% / 2 + 2px); width: calc(100% / 2 - 4px)\"><button class=\"ev meet\" type=\"button\" popovertarget=\"evc2\" style=\"anchor-name: --evc2\"><span class=\"t\">10:00</span> <b>checkout-sync</b> <small>10:00 – 10:35</small>"));
     assert!(
         b.contains("left: calc(1 * 100% / 2 + 2px)") && b.contains("<small>10:15 – 11:00</small>")
     );
@@ -156,6 +169,17 @@ async fn own_event_add_and_delete() {
     .await;
     assert_eq!(r.status, 422);
     assert_eq!(count(&st, "SELECT COUNT(*) FROM events"), 2);
+
+    // An empty slot's link opens the form with its day and hour.
+    let b = get(&st, "/calendar?d=2026-11-11&new=2026-11-12T16:00")
+        .await
+        .body;
+    assert!(b.contains("<details class=\"evadd\" open>"));
+    assert!(
+        b.contains("name=\"date\" value=\"2026-11-12\"")
+            && b.contains("name=\"time\" value=\"16:00\"")
+    );
+    assert!(b.contains("required autofocus>"));
 
     let r = post(
         &st,

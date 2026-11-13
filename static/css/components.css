@@ -321,12 +321,18 @@ form.inline{display:inline}
 .ev.tgt{background:var(--fill-2)}
 .ev.own{background:#fff;border:1px dashed var(--faint)}
 .ev.late{color:var(--err)}
-/* Calendar events as start-meeting buttons, "+ Event" popover. */
-.evrow{display:flex;align-items:flex-start;gap:4px}
-.evrow form:first-child{flex:1;min-width:0}
-.evbtn{font:inherit;border:0;background:none;padding:0;text-align:left;cursor:pointer;color:inherit;width:100%}
-.evrow .x{width:18px;height:18px}
-.evrow:hover .x{opacity:1}
+/* Meetings and events are buttons that open their card (`.evcard`, a native popover under the chip; centred where
+   anchor positioning is missing). An empty hour (`.slot`) is a link that opens "+ Event" with its day and hour. */
+button.ev{font:inherit;font-size:12px;text-align:left;cursor:pointer;width:100%;border-top:0;border-right:0;border-bottom:0}
+button.ev.own{border:1px dashed var(--faint)}
+.cg .tev>button.ev{display:block}
+.evcard[popover]{position:fixed;inset:auto;margin:0;top:50%;left:50%;transform:translate(-50%,-50%);width:280px;padding:12px 14px;gap:8px}
+.evcard h4{margin:0;font-size:15px}
+@supports (position-anchor:--a){.evcard[popover]{transform:none;top:calc(anchor(bottom) + 6px);left:anchor(left);position-try-fallbacks:flip-block,flip-inline}}
+.cg .slot{position:absolute;left:0;right:0;height:var(--px);color:var(--accent);font-size:11px;padding:3px 6px;box-sizing:border-box;border-radius:6px}
+.cg .slot span{visibility:hidden}
+.cg .slot:hover{border:1.5px dashed var(--accent);background:var(--accent-wash);text-decoration:none}
+.cg .slot:hover span{visibility:visible}
 .evadd{position:relative}
 .evadd>summary{list-style:none}
 .evadd>summary::-webkit-details-marker{display:none}
