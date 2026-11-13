@@ -477,7 +477,8 @@ the log scrolls under it.
   when > 0). Rows are 32: check 20 · text on one line with ellipsis · the note button · the **quiet due date** on the right (the To-dos
   list's words: `Today` in `--accent-2` 6.2:1, a late one `--err` 600 with its day, `Fri 6 Nov`, else `--muted`). **No inner scroll**: at most
   **5** rows, the window's height comes from the content, and five rows fit the 480 at rest (idle, recording, and the no-speech-model
-  line; measured at 360 × 480 in T7; with Glass everywhere only the no-model line clips the last link). "+ N more · Open Atharu" links
+  line; measured at 360 × 480). With Glass everywhere the section cards cost ~17 px, so when the idle meeting section also has an extra line
+  (no speech model, or "Ended X") the list shows **4** rows (the server caps it; the "+ N more" stays true). "+ N more · Open Atharu" links
   `/todos`. Ticking posts at once; the struck row stays until the popover closes (untick = reopen). Empty: "Nothing due. Start a line with
   `>` to add one." + "N open · Open Atharu". Sections are flat: a `--line` hairline between them, 10 padding (the capture sits under the
   header with no rule); Glass everywhere keeps its cards (8/12 padding, 6 apart).

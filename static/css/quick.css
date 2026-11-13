@@ -39,13 +39,14 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 /* Flat sections (0.2.6): a --line hairline between them, 10 padding (12 left no room for the no-speech-model line at 480); the capture sits right under the header (no rule). Glass
    everywhere keeps its cards (below). */
 .qsec{border-top:1px solid var(--line);padding:10px 0;display:flex;flex-direction:column;gap:8px;flex:none}
-.qsec.qcap{border-top:0;padding-top:4px}
+.qsec.qcap{border-top:0;padding-top:4px;gap:0}
 .qlbl{margin:0;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0;display:flex;align-items:center;gap:6px;line-height:1}
 .qlbl .n{font-weight:500}
 /* "2 overdue" in --err (= --err-tint on the panel), then "· 1 today" quiet. */
 .qlbl .late{color:var(--err)}
 
-/* 8 between the field, the legend and the hint: the section's own gap (DESIGN §3). */
+/* The capture section has no flex gap (the board: field, 8, legend, the hint's 18 px right under it, 10, hairline): the legend carries
+   its own 8 above, the note box's Save its own 8 above. */
 .qcap form{display:flex;flex-direction:column;gap:8px}
 /* ONE field (0.2.6, board Redesign.Quick): the kind button inside on the left, Log ↵ inside on the right. 40 tall, 12 radius,
    --fill on the --ctl-edge ring (3.3:1 on white, the 3:1 floor for a control edge); focus-within = --accent + a 3 px --accent-wash ring.
@@ -75,7 +76,8 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .q2menu .mi:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .q2menu .kb{margin-left:auto;color:var(--muted);font-size:12px;font-weight:400;font-family:ui-monospace,'SF Mono',Menlo,monospace}
 /* Legend: the grammar in one line (12, --muted; the marks mono in --ink-2). Hidden with the line box in note mode. */
-.q2leg{margin:0 2px;font-size:12px;line-height:1.4;color:var(--muted)}
+.q2leg{margin:8px 2px 0;font-size:12px;line-height:1.4;color:var(--muted)}
+.q2start .q2leg{margin:0 2px}
 .q2leg b{font-family:ui-monospace,'SF Mono',Menlo,monospace;color:var(--ink-2);font-weight:600}
 
 /* The header's note button (T86, D53): turns the box into a note (first line = title, the rest = markdown body). Not a line
@@ -85,10 +87,10 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 /* Note box (board Quick, state 3): three lines, --accent edge + ring like the focused field, Save note bottom right. */
 .q2note{width:100%;box-sizing:border-box;min-height:84px;border-radius:12px;border:1px solid var(--accent);box-shadow:0 0 0 3px var(--accent-wash);background:var(--fill);padding:10px 12px;font:inherit;font-size:14px;line-height:20px;color:var(--ink);resize:none;outline:0}
 .q2note::placeholder{color:var(--muted-tint)}
-.q2sv{display:flex;justify-content:flex-end}
+.q2sv{display:flex;justify-content:flex-end;margin-top:8px}
 
 .qfield{position:relative}
-.qhint{min-height:16px;font-size:13px;line-height:1.4;color:var(--accent-2);padding:0 4px}
+.qhint{min-height:18px;font-size:13px;line-height:1.4;color:var(--accent-2);padding:0 4px}
 .qhint .tick{color:var(--accent-2);font-weight:600}
 .qhint .err{font-size:13px}
 

@@ -21,6 +21,16 @@ const MENU_SERIES: usize = 12;
 /// To-do rows before "+ N more": five rows fit the 480 px window with no inner scroll (0.2.6); past that it's /todos' list.
 const TODOS: usize = 5;
 
+/// Glass everywhere's section cards cost ~17 px, and one more line in the idle meeting section (no speech model, or "Ended X")
+/// another ~25: one row less then keeps the window unscrolled (measured at 360 × 480), with the true "+ N more".
+fn todo_cap(glass_all: bool, extra_meeting_line: bool) -> usize {
+    if glass_all && extra_meeting_line {
+        TODOS - 1
+    } else {
+        TODOS
+    }
+}
+
 #[derive(Deserialize)]
 pub struct PageQuery {
     /// Set by `POST /entries` with `back=/quick`: the line to confirm with Undo.
@@ -63,9 +73,18 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
     let all = queries::due_plans(&conn, &dates::iso(today))?;
     let overdue = all.iter().filter(|p| p.due < dates::iso(today)).count();
     let layout = Layout::load(&conn, "quick", "Quick", vec![])?;
+    let ended = match q.ended {
+        Some(id) => queries::meeting_name(&conn, id)?.map(|n| (id, n)),
+        None => None,
+    };
+    let idle = meeting.running.is_none();
+    let cap = todo_cap(
+        layout.glass_all,
+        idle && (ended.is_some() || (meeting.rec.mac && !meeting.rec.model_ready)),
+    );
     let todos: Vec<view::Todo> = all
         .iter()
-        .take(TODOS)
+        .take(cap)
         .map(|p| {
             let d = NaiveDate::parse_from_str(&p.due, "%Y-%m-%d").unwrap_or(today);
             view::Todo {
@@ -95,10 +114,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         saved,
         meeting,
         since,
-        ended: match q.ended {
-            Some(id) => queries::meeting_name(&conn, id)?.map(|n| (id, n)),
-            None => None,
-        },
+        ended,
         overdue,
         due_today: all.len() - overdue,
         more: layout.open_plans - todos.len() as i64,
@@ -125,6 +141,9 @@ mod tests {
             NaiveDateTime::parse_from_str("2026-11-12 09:41:00", "%Y-%m-%d %H:%M:%S").unwrap();
         assert_eq!(since("2026-11-12 09:17:30", now), "23 min");
         assert_eq!(since("junk", now), "");
+        assert_eq!(todo_cap(false, true), 5);
+        assert_eq!(todo_cap(true, false), 5);
+        assert_eq!(todo_cap(true, true), 4);
         assert_eq!(back_to_kind("+"), "/quick?kind=%2B");
         assert_eq!(back_to_kind(""), "/quick?kind=");
     }
