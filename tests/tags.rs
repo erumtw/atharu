@@ -385,7 +385,9 @@ async fn cli_tags_from_text_and_lists_them() {
         1
     );
     let list = get(&st, "/tags").await.body;
-    assert!(list.contains(r#"<a class="chip tag" href="/tags/expense">expense</a>"#));
+    assert!(
+        list.contains(r#"<a class="chip tag" href="/tags/expense" title="expense">expense</a>"#)
+    );
     assert!(list.contains("3 tags."));
 }
 

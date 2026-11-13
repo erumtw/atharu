@@ -28,7 +28,7 @@
 <tr><th>Topic</th><th>Depth</th><th></th><th>Last rated</th><th>Lines logged</th></tr>
 {%- for r in rows %}
 {%- let d = r.depth %}
-<tr><td><a class="mono" href="/learn/{{ r.slug }}">{{ r.slug }}</a></td><td>{% include "learn/meter.html" %}</td><td class="muted">{{ d.label }}</td><td>{% if r.last_rated.is_empty() %}<span class="muted">—</span>{% else %}{{ r.last_rated }}{% endif %}{% if !r.stale.is_empty() %} <span class="flag stale">{{ r.stale }}</span>{% endif %}</td><td class="muted">{{ r.lines }}</td></tr>
+<tr><td><a class="mono" href="/learn/{{ r.slug }}" title="{{ r.slug }}">{{ r.slug }}</a></td><td>{% include "learn/meter.html" %}</td><td class="muted">{{ d.label }}</td><td>{% if r.last_rated.is_empty() %}<span class="muted">—</span>{% else %}{{ r.last_rated }}{% endif %}{% if !r.stale.is_empty() %} <span class="flag stale">{{ r.stale }}</span>{% endif %}</td><td class="muted">{{ r.lines }}</td></tr>
 {%- endfor %}
 </table></div>
 {%- endif %}

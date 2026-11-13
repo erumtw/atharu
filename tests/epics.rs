@@ -617,7 +617,7 @@ async fn the_view_row_marks_the_current_pick_and_keeps_the_other_params() {
     );
     // The Hide tracked box is checked and belongs to its own form (which keeps q, group, show).
     assert!(b.contains(
-        "type=\"checkbox\" name=\"hide_tracked\" value=\"1\" form=\"hidetracked\" checked"
+        "type=\"checkbox\" role=\"switch\" name=\"hide_tracked\" value=\"1\" form=\"hidetracked\" checked"
     ));
     let h = b.find("<form id=\"hidetracked\"").unwrap();
     let h = &b[h..h + b[h..].find("</form>").unwrap()];

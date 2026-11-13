@@ -112,7 +112,7 @@ async fn lines_logged_during_a_meeting_get_its_id() {
     // One row per series: name, meetings, last met, open action items.
     assert!(
         b.contains(
-            r#"<a class="ink" href="/meetings?name=oms-sync"><b>oms-sync</b></a></td><td>1</td>"#
+            r#"<a class="ink" href="/meetings?name=oms-sync" title="oms-sync"><b>oms-sync</b></a></td><td>1</td>"#
         ),
         "{b}"
     );
@@ -319,7 +319,7 @@ async fn archive_hides_a_series_from_meetings_and_calendar() {
            (1, '2026-11-11', 'oms-sync', '2026-11-11 10:42:00'),
            (2, '2026-11-10', 'planning', '2026-11-10 11:00:00');",
     );
-    let row = r#"href="/meetings?name=oms-sync"><b>oms-sync</b>"#;
+    let row = r#"href="/meetings?name=oms-sync" title="oms-sync"><b>oms-sync</b>"#;
     let cal = r#"href="/meetings/1">Open meeting"#;
     assert!(get(&st, "/meetings").await.body.contains(row));
 

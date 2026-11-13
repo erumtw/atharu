@@ -7,7 +7,9 @@
 //
 // Checks: horizontal overflow (an element past its scroll container or the viewport), a line's text
 // (`.blk.ln .ltext`) narrower than 200 px on desktop / 120 px on phone, the `.doc` left edge moving between
-// pages at one width (compared per `.doc` variant: `.doc.wide`, `.doc.set` are meant to differ), any console error or uncaught exception.
+// pages at one width (compared per `.doc` variant: `.doc.wide`, `.doc.set` are meant to differ), anything past the sheet's right edge that
+// no clipping ancestor inside it cuts off (the sheet itself clips), text running out of a table cell that doesn't clip, any console error
+// or uncaught exception.
 import { spawn } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -48,6 +50,37 @@ const CHECK = `(() => {
       out.push('overflow: ' + name(el) + ' spans ' + Math.round(r.left) + '–' + Math.round(r.right) +
         ' px, its box ' + Math.round(b.left) + '–' + Math.round(b.right))
     }
+  }
+  // 0.2.7: what the sheet hides. The .pg sheet clips (overflow:clip), so the check above never sees an element that runs past the page's
+  // right edge: a long chip drew under the next control and past the edge (owner screenshot). Flag anything past that edge
+  // unless a clipping or scrolling ancestor, itself inside the edge, cuts it off on purpose (ellipsis).
+  const sheet = document.querySelector('.pg') || document.querySelector('main')
+  if (sheet) {
+    const edge = sheet.getBoundingClientRect().right
+    const seen = new Set()
+    for (const el of sheet.querySelectorAll('*')) {
+      if (el.closest('[hidden], [popover], .sr-only, .vh')) continue
+      const cs = getComputedStyle(el)
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0 || cs.position === 'fixed' || cs.visibility === 'hidden' || r.right <= edge + 1) continue
+      let cut = false
+      for (let p = el.parentElement; p && p !== sheet && !cut; p = p.parentElement) {
+        const o = getComputedStyle(p).overflowX
+        if (o !== 'visible' && p.getBoundingClientRect().right <= edge + 1) cut = true
+      }
+      if (cut || seen.has(el.parentElement)) continue
+      seen.add(el)
+      out.push('passes the page edge: ' + name(el) + ' ends at ' + Math.round(r.right) + ' px, the page at ' + Math.round(edge) + ' px')
+    }
+  }
+  // And text that runs out of its own table cell: a cell that doesn't clip lets a long name print over the next column.
+  for (const td of document.querySelectorAll('td')) {
+    if (getComputedStyle(td).overflowX !== 'visible' || td.closest('[hidden]')) continue
+    const range = document.createRange()
+    range.selectNodeContents(td)
+    const r = range.getBoundingClientRect()
+    if (r.width > 0 && r.right > td.getBoundingClientRect().right + 1)
+      out.push('text passes its cell: "' + td.textContent.trim().slice(0, 40) + '" ends at ' + Math.round(r.right) + ' px, the cell at ' + Math.round(td.getBoundingClientRect().right) + ' px')
   }
   const min = phone ? 120 : 200
   for (const t of document.querySelectorAll('.blk.ln .ltext')) {
@@ -113,8 +146,17 @@ async function selfTest() {
   const page = body => 'data:text/html,' + encodeURIComponent(`<!doctype html><meta name=viewport content="width=device-width"><body style="margin:0">${body}`)
   const bad = await c.load(page('<main class="doc"><div style="width:2000px">wide</div></main>'), 900, 600)
   const ok = await c.load(page('<main class="doc"><div style="overflow:hidden"><div style="width:2000px">clipped on purpose</div></div></main>'), 900, 600)
+  // The sheet clips (like .pg): a chip past its edge must still be flagged; one cut by an ellipsis box inside it must not.
+  const sheetBad = await c.load(page('<div class="pg" style="overflow:clip;width:600px"><main><div style="display:flex"><span style="white-space:nowrap">a chip that is far too long to fit in the sheet it sits in at all, really, truly, and then some more words to be sure it passes the right edge of the sheet by a mile</span></div></main></div>'), 900, 600)
+  const sheetOk = await c.load(page('<div class="pg" style="overflow:clip;width:600px"><main><div style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis"><span>an ellipsised name that is far too long to fit in the sheet it sits in at all, really, truly, and then some more words to be sure it passes the right edge of the sheet by a mile</span></div></main></div>'), 900, 600)
+  const cellBad = await c.load(page('<main class="doc"><table style="table-layout:fixed;width:200px"><tr><td style="white-space:nowrap">a long series name that prints over the next column</td><td>2</td></tr></table></main>'), 900, 600)
+  const cellOk = await c.load(page('<main class="doc"><table style="table-layout:fixed;width:200px"><tr><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">a long series name that is clipped with an ellipsis</td><td>2</td></tr></table></main>'), 900, 600)
   await c.close()
   const fail = []
+  if (!sheetBad.problems.some(p => p.startsWith('passes the page edge'))) fail.push('missed a chip past the sheet edge: ' + JSON.stringify(sheetBad.problems))
+  if (sheetOk.problems.length) fail.push('flagged an ellipsised box inside the sheet: ' + JSON.stringify(sheetOk.problems))
+  if (!cellBad.problems.some(p => p.startsWith('text passes its cell'))) fail.push('missed text past its cell: ' + JSON.stringify(cellBad.problems))
+  if (cellOk.problems.length) fail.push('flagged a clipped cell: ' + JSON.stringify(cellOk.problems))
   if (!bad.problems.some(p => p.startsWith('overflow: div'))) fail.push('missed an overflowing div: ' + JSON.stringify(bad.problems))
   if (ok.problems.length) fail.push('flagged a clipped div: ' + JSON.stringify(ok.problems))
   console.log(fail.length ? fail.join('\n') : 'self-test ok')

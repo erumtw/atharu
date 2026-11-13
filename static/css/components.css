@@ -56,6 +56,11 @@ select.pin{cursor:pointer}
 /* A series name is the long one: capped so the text keeps most of the row, "…" + full name on hover. */
 .blk.ln>:is(.via,a:has(>.chip:not(.key))){max-width:min(35%,16rem)}
 .blk.ln>:is(.via,a)>.chip{min-width:0;max-width:100%}
+/* "via <series>": the chip sits in .via > a > .chip. Nothing shrank it, so a 60-character series name ran past the page edge
+   and under the note icon (owner screenshot, 0.2.7): .via is a clipping flex row, the link shrinks, the chip ellipsizes. */
+.blk.ln>.via{display:flex;align-items:center;gap:.3em;min-width:0;overflow:hidden;white-space:nowrap}
+.via>a{display:inline-flex;min-width:0;overflow:hidden}
+.via>a>.chip{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 /* Pin and Unpin take one width so the Drop column stays put when a row is pinned. */
 .blk.ln>.row .btn.ghost.s{min-width:58px;justify-content:center}
 /* A chip inside a link (epic key, note row) answers the hover too, not just the underline. */
@@ -77,14 +82,18 @@ a:hover>.chip{background:var(--sep)}
 /* Epics table: the status chip stays on the title's line; the title gives way (ellipsis), never the chip. */
 .ettl{display:flex;align-items:center;gap:8px;min-width:0}
 .ettl>*{flex:none}
-.ettl>:is(a,b,form){flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ettl>:is(a,b,form){flex:0 1 auto;min-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The status chip gives way before the title does (real titles are long): it may shrink to an ellipsis, but never below 60 px (a bare ▾ says nothing). */
+.ettl>.lchip{flex:0 100 auto;min-width:60px;overflow:hidden}
+.ettl>.lchip>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
 /* Its muted note ("from Jira", "Jira epic · not tracked") gives way before the title. */
 .ettl>.small{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* "In Jira, assigned to you" (D5, D6): hairline rows; type · key · title left, status + due right, action last. */
+/* "In Jira, assigned to you" (D5, D6): hairline rows; type · key · title, then due, status and the action, so the status chip
+   sits next to its action (owner, 0.2.7). */
 /* Fixed columns (0.2.6): a flex row let "Story" vs "Task", the due and "+ To-do" vs "✓ tracked" push the status chip
    sideways row by row (owner screenshot). Every row renders all six cells, so the columns line up. */
 .arow[hidden],.etab tr[hidden]{display:none}
-.arow{display:grid;grid-template-columns:52px 76px minmax(0,1fr) 172px 64px 132px;align-items:center;column-gap:10px;
+.arow{display:grid;grid-template-columns:52px 76px minmax(0,1fr) 64px 172px 124px;align-items:center;column-gap:10px;
   min-height:44px;padding:2px 0;border-top:1px solid var(--fill-2);font-size:14px}
 .arow:first-child{border-top:0}
 .arow>.jtype,.arow>.chip.key{justify-self:start}
@@ -92,7 +101,7 @@ a:hover>.chip{background:var(--sep)}
 .arow>.ast{justify-self:end;display:flex;min-width:0;max-width:100%}
 .arow>.ast .lchip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .arow>.adue{white-space:nowrap}
-.arow>.aact{justify-self:end;white-space:nowrap}
+.arow>.aact{justify-self:start;white-space:nowrap}
 /* Phone: key · status · action on one line, the title under it (two lines at most). */
 @media (max-width:639px){.arow{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"k s a" "t t t";row-gap:2px;padding:6px 0}
   .arow>:is(.jtype,.adue){display:none}.arow>.chip.key{grid-area:k}.arow>.ast{grid-area:s}.arow>.aact{grid-area:a}
@@ -857,7 +866,11 @@ details.tg>summary .small{font-size:13px}
 table.series{width:100%;table-layout:fixed}
 table.series :is(th,td):nth-child(2){width:84px}table.series :is(th,td):nth-child(3){width:104px}
 table.series :is(th,td):nth-child(4){width:132px}table.series :is(th,td):nth-child(5){width:96px}
-table.series td:first-child{overflow-wrap:anywhere}
+/* A long first-column name clips with an ellipsis (the full name is the link's title), never over the next column
+   (a fixed-layout cell doesn't clip by itself: owner screenshot of /meetings, 0.2.7). */
+:is(table.series,.ltab,.ttab) td:first-child{overflow:hidden}
+:is(table.series,.ltab) td:first-child>a{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ttab td:first-child>a{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 /* Notes list: one note = one block (title line + preview line), a hairline between notes, so a preview never reads as
    the next note's (real lists, 0.2.0). */
 .blk.nrow{flex-wrap:wrap;row-gap:2px;padding-block:9px}
