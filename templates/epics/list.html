@@ -1,43 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<main class="doc wide">
+<main class="doc wide" data-group="{{ p.group.key() }}" data-show="{{ p.show.key() }}">
 <header class="pghead"><h1 class="ptitle">Epics</h1><p class="fact">{{ fact }}</p></header>
 {%- if jira_on %}
 <form class="row small" method="post" action="/jira/refresh" onsubmit="const b=this.querySelector('button');b.disabled=true;b.textContent='Refreshing…'"><input type="hidden" name="back" value="/epics"><span class="muted">Jira{% if let Some(a) = jira_age %} · updated {{ a }}{% endif %}.</span><button class="btn ghost s" type="submit">Refresh</button>{% if jira_done %}<span class="muted">✓ Refreshed from Jira</span>{% endif %}{% if jira_failed && !dead_token %}<span class="err">Couldn't reach Jira. Showing the last copy.</span>{% endif %}</form>
 {%- if dead_token %}<p class="small" role="alert"><span class="err">⚠ Jira token expired or revoked.</span> <a href="{{ token_url }}" target="_blank" rel="noopener noreferrer">Make a new one ↗</a> <span class="muted">· showing the last copy</span></p>{% endif %}
 {%- endif %}
-{%- if !assigned.is_empty() %}
+{%- if assigned_any %}
 
-{#- D5/D6: open Jira work assigned to me, newest-updated first; tracked ones say so. #}
+{#- D5/D6: open Jira work assigned to me, newest-updated first inside each group (a Jira status, or a parent); tracked ones say so. #}
 <details id="assigned" open>
-<summary>In Jira, assigned to you <span class="muted normal">· {{ assigned.len() }} open</span></summary>
+<summary>In Jira, assigned to you <span class="muted normal">· {{ assigned_count }}</span></summary>
+{%- for ag in assigned %}
+<details open class="ag"><summary class="small">{{ ag.label }} <span class="muted normal">· {{ ag.rows.len() }}</span></summary>
 <div class="arows">
-{%- for a in assigned %}
-<div class="arow"><span class="jtype">{{ a.issue_type }}</span><span class="chip key">{{ a.key }}</span><span class="t" title="{{ a.summary }}">{{ a.summary }}</span>
+{%- for a in ag.rows %}
+<div class="arow" data-q="{{ a.q }}"><span class="jtype">{{ a.issue_type }}</span><span class="chip key">{{ a.key }}</span><span class="t" title="{{ a.summary }}">{{ a.summary }}</span>
 <span class="ast">{%- if let Some((s, u)) = a.jira %}{% let (jk, js, jc, jurl, ju, back) = (a.key.as_str(), s.as_str(), a.cat.as_str(), u.as_str(), "a{}"|format(a.key), "/epics") %}{% include "partials/jira_chip.html" %}{% endif %}</span>
 <span class="adue muted small">{%- if let Some(d) = a.due %}{{ d }}{% endif %}</span>
 <span class="aact">{%- if a.tracked %}<span class="muted small">✓ tracked</span>{% else if a.epic %}<form class="inline" method="post" action="/epics/{{ a.key }}/track"><input type="hidden" name="back" value="/epics#assigned"><button class="btn ghost s" type="submit">+ Track as epic</button></form>{% else %}<form class="inline" method="post" action="/todos"><input type="hidden" name="line" value="{{ a.line }}"><button class="btn ghost s" type="submit" title="Adds: {{ a.line }}">+ To-do</button></form>{% endif %}</span></div>
 {%- endfor %}
 </div>
 </details>
+{%- endfor %}
+</details>
 {%- endif %}
 {%- for g in groups %}
 
+{%- if p.group == GroupBy::None %}
+{% include "epics/table.html" %}
+{%- else %}
 <details open>
-<summary>{{ g.okr }} <span class="muted normal">· {{ g.active }} active</span></summary>
-<div class="tw"><table class="etab">{% include "epics/cols.html" %}
-{%- for it in g.items %}
-{%- match it %}
-{%- when ListItem::Row(e) %}
-{% include "epics/row.html" %}
-{%- when ListItem::Head(h) %}
-{#- D4: a Jira parent that isn't tracked: its stories sit under it; "+ Track as epic" makes it one. One cell per column (no
-    colspan): a phone hides columns 3-5, and a cell spanning them would squeeze the title column. #}
-<tr class="jhead"><td><span class="chip key">{{ h.key }}</span></td><td><span class="ettl"><b>{{ h.title }}</b><span class="small muted">Jira epic · not tracked</span>{% if let Some((s, u)) = h.jira %}{% let (jk, js, jc, jurl, ju, back) = (h.key.as_str(), s.as_str(), h.cat.as_str(), u.as_str(), "h{}"|format(h.key), "/epics") %}{% include "partials/jira_chip.html" %}{% endif %}</span></td><td></td><td></td><td></td><td><form class="inline" method="post" action="/epics/{{ h.key }}/track"><input type="hidden" name="back" value="/epics"><button class="btn ghost s" type="submit">+ Track as epic</button></form></td></tr>
-{%- endmatch %}
-{%- endfor %}
-</table></div>
+<summary>{{ g.label }} <span class="muted normal">· {{ g.count }}</span></summary>
+{% include "epics/table.html" %}
 </details>
+{%- endif %}
 {%- endfor %}
 {%- if !closed.is_empty() %}
 

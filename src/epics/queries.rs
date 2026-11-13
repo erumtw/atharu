@@ -115,6 +115,9 @@ pub struct Assigned {
     pub tracked: bool,
     /// D6/D16: Jira's epic level (hierarchyLevel 1); unknown level → the type name "Epic".
     pub epic: bool,
+    /// Its Jira parent (key, Jira's title for it), for grouping by parent (0.2.7).
+    pub parent_key: Option<String>,
+    pub parent_summary: Option<String>,
 }
 
 /// Newest-updated first, as Jira returned them.
@@ -123,7 +126,7 @@ pub fn assigned(conn: &Connection) -> rusqlite::Result<Vec<Assigned>> {
         "SELECT j.key, j.summary, j.status, j.status_cat, j.issue_type, j.due,
                 EXISTS (SELECT 1 FROM epics WHERE key = j.key)
                 OR EXISTS (SELECT 1 FROM entries WHERE plan_state = 'open' AND link LIKE '%/browse/' || j.key)
-                , COALESCE(j.level = 1, j.issue_type = 'Epic')
+                , COALESCE(j.level = 1, j.issue_type = 'Epic'), j.parent_key, j.parent_summary
            FROM jira_issues j WHERE j.assigned_me = 1 ORDER BY j.updated_at DESC, j.key",
     )?;
     stmt.query_map([], |r| {
@@ -136,6 +139,8 @@ pub fn assigned(conn: &Connection) -> rusqlite::Result<Vec<Assigned>> {
             due: r.get(5)?,
             tracked: r.get(6)?,
             epic: r.get(7)?,
+            parent_key: r.get(8)?,
+            parent_summary: r.get(9)?,
         })
     })?
     .collect()

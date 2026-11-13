@@ -10,6 +10,7 @@ pub fn short(d: NaiveDate) -> String {
     d.format("%-d %b").to_string()
 }
 
+#[derive(Clone)]
 pub struct ListRow {
     pub key: String,
     pub title: String,
@@ -30,11 +31,15 @@ pub struct ListRow {
     pub cat: String,
     /// Under its Jira parent (D4): indented.
     pub child: bool,
+    /// A done / dropped epic shown as a row (Show = Done & dropped / All): `done 20 Oct` / `dropped`.
+    pub closed_chip: Option<String>,
+    /// What the filter reads, lowercased: key, title, Jira title, tags (the live filter's `data-q`).
+    pub q: String,
 }
 
 /// A row of an OKR group: an epic, or the header of a Jira parent that isn't tracked (D4).
 pub enum ListItem {
-    Row(ListRow),
+    Row(Box<ListRow>),
     Head(Head),
 }
 
@@ -44,6 +49,8 @@ pub struct Head {
     pub title: String,
     pub jira: Option<(String, String)>,
     pub cat: String,
+    /// Its children's `q` joined: the live filter keeps the header while one of them shows.
+    pub q: String,
 }
 
 /// "In Jira, assigned to you" (D5, D6).
@@ -59,21 +66,122 @@ pub struct AssignedRow {
     /// Type Epic: "+ Track as epic"; anything else: "+ To-do" with this line (D6).
     pub epic: bool,
     pub line: String,
+    /// What the filter reads, lowercased: key + Jira title.
+    pub q: String,
+}
+
+/// A group of "In Jira, assigned to you": a Jira status (or a Jira parent).
+pub struct AssignedGroup {
+    pub label: String,
+    pub rows: Vec<AssignedRow>,
 }
 
 /// A flag as the epic pages show it.
+#[derive(Clone)]
 pub struct Flag {
     pub class: &'static str,
     pub label: &'static str,
     pub reason: String,
 }
 
-pub struct OkrGroup {
-    /// The OKR text, or "No OKR".
-    pub okr: String,
+/// One group of the epics list, by the picked "Group by": an OKR, a Jira status, a Jira parent, a tag, or all.
+pub struct Group {
+    pub label: String,
     pub items: Vec<ListItem>,
-    /// Active epics in it (header rows aren't epics).
-    pub active: usize,
+    /// `2 active` · `2 of 5 active` · `3` · `3 of 7`: the summary's count (header rows aren't epics).
+    pub count: String,
+}
+
+/// The page's view: what the control row sets, all in the URL (defaults left out).
+#[derive(Clone, PartialEq, Debug)]
+pub struct Params {
+    /// As typed (trimmed, ≤ 80 chars), for the box.
+    pub q: String,
+    pub group: GroupBy,
+    pub show: Show,
+    /// "In Jira, assigned to you" without what is already tracked.
+    pub hide_tracked: bool,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum GroupBy {
+    Okr,
+    Status,
+    Parent,
+    Tag,
+    None,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Show {
+    Active,
+    Closed,
+    All,
+}
+
+impl GroupBy {
+    /// Unknown → the OKR grouping the page always had.
+    pub fn parse(s: Option<&str>) -> GroupBy {
+        match s {
+            Some("status") => GroupBy::Status,
+            Some("parent") => GroupBy::Parent,
+            Some("tag") => GroupBy::Tag,
+            Some("none") => GroupBy::None,
+            _ => GroupBy::Okr,
+        }
+    }
+    /// The query value; `okr` is the default.
+    pub fn key(self) -> &'static str {
+        match self {
+            GroupBy::Okr => "okr",
+            GroupBy::Status => "status",
+            GroupBy::Parent => "parent",
+            GroupBy::Tag => "tag",
+            GroupBy::None => "none",
+        }
+    }
+}
+
+impl Show {
+    /// Unknown → active epics only, as before.
+    pub fn parse(s: Option<&str>) -> Show {
+        match s {
+            Some("closed") => Show::Closed,
+            Some("all") => Show::All,
+            _ => Show::Active,
+        }
+    }
+    pub fn key(self) -> &'static str {
+        match self {
+            Show::Active => "active",
+            Show::Closed => "closed",
+            Show::All => "all",
+        }
+    }
+}
+
+impl Params {
+    pub fn parse(
+        q: Option<&str>,
+        group: Option<&str>,
+        show: Option<&str>,
+        hide: Option<&str>,
+    ) -> Params {
+        Params {
+            q: q.unwrap_or_default().trim().chars().take(80).collect(),
+            group: GroupBy::parse(group),
+            show: Show::parse(show),
+            hide_tracked: hide == Some("1"),
+        }
+    }
+    /// The lowercased needle; empty = no filter.
+    pub fn needle(&self) -> String {
+        self.q.to_lowercase()
+    }
+    /// A filter is narrowing the lists ("N of M").
+    pub fn filtering(&self) -> bool {
+        !self.q.is_empty()
+    }
 }
 
 pub struct Closed {
@@ -100,9 +208,14 @@ pub struct List {
     pub jira_done: bool,
     /// "updated 3 min ago" beside Refresh, so the button's effect is visible.
     pub jira_age: Option<String>,
-    pub groups: Vec<OkrGroup>,
+    pub groups: Vec<Group>,
     pub closed: Vec<Closed>,
-    pub assigned: Vec<AssignedRow>,
+    pub assigned: Vec<AssignedGroup>,
+    /// `4 open` · `2 of 4 open`; and whether Jira has any assigned work at all (else no section).
+    pub assigned_count: String,
+    pub assigned_any: bool,
+    /// The control row's current values.
+    pub p: Params,
     /// D9: Jira refused the token on the last call; the page keeps the last copy and says so.
     pub dead_token: bool,
     pub token_url: &'static str,

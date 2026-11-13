@@ -533,22 +533,23 @@ async fn epics_list_reads_jira_assigned_parents_and_flags() {
     );
     // D4: OPS-101 and OPS-118 sit under the untracked OPS-500 header.
     let head = b
-        .find("<tr class=\"jhead\"><td><span class=\"chip key\">OPS-500</span>")
+        .find("<tr class=\"jhead\" data-q=\"")
+        .and_then(|i| {
+            b[i..]
+                .find("<td><span class=\"chip key\">OPS-500</span></td><td><span class=\"ettl\">")
+                .map(|j| i + j)
+        })
         .expect("parent header");
-    assert!(
-        head < b
-            .find("<tr class=\"child\"><td><a href=\"/epics/OPS-101\"")
-            .unwrap()
-    );
+    assert!(head < b.find("<tr class=\"child\" data-q=\"ops-101 ").unwrap());
     assert!(b.contains(
         "<b>Checkout platform</b><span class=\"small muted\">Jira epic · not tracked</span>"
     ));
     // A parent tracked here (done, in another group) is not "not tracked": its story is a plain row.
     assert!(
-        !b.contains("<tr class=\"jhead\"><td><span class=\"chip key\">OPS-600</span>"),
+        !b.contains("<td><span class=\"chip key\">OPS-600</span></td><td><span class=\"ettl\">"),
         "{b}"
     );
-    assert!(b.contains("<tr><td><a href=\"/epics/OPS-601\""), "{b}");
+    assert!(b.contains("<tr data-q=\"ops-601 "), "{b}");
     // Category drives the chip, never the name.
     assert!(
         b.contains("<span class=\"jst-OPS-101 jc-done\">Done</span>")

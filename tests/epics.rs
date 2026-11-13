@@ -354,3 +354,204 @@ async fn jira_refresh_says_it_ran_and_how_old_the_copy_is() {
             .contains("Refreshed from Jira")
     );
 }
+
+// ---- 0.2.7: Epics view (filter, Group by, Show, Hide tracked), all from the Jira cache and the URL.
+
+const VIEW_SEED: &str = "
+    INSERT INTO epics(key, title, okr, status, tags, done_on) VALUES
+      ('OPS-1', 'Checkout latency', 'O2', 'active', 'perf,checkout', NULL),
+      ('OPS-2', 'Expense export', 'O1', 'active', 'expense', NULL),
+      ('OPS-3', 'Cold chain', 'O1', 'active', '', NULL),
+      ('OPS-4', 'Old thing', 'O2', 'done', '', '2026-11-01'),
+      ('OPS-5', 'Dropped idea', 'O2', 'dropped', '', NULL),
+      ('OPS-6', '', '', 'active', '', NULL),
+      ('OPS-7', 'Plain epic', 'O1', 'active', '', NULL),
+      ('OPS-8', 'Marked done in Jira', 'O2', 'active', '', NULL);
+    INSERT INTO jira_issues(key, summary, status, status_cat, parent_key, parent_summary, assigned_me) VALUES
+      ('OPS-1', 'Faster checkout', 'In Progress', 'indeterminate', 'OPS-90', 'Platform', 1),
+      ('OPS-2', 'Expenses CSV', 'Waiting for UAT', 'indeterminate', 'OPS-90', 'Platform', 0),
+      ('OPS-3', 'Cold-chain alerts', 'Backlog', 'new', NULL, NULL, 0),
+      ('OPS-4', 'x', 'Done', 'done', NULL, NULL, 0),
+      ('OPS-8', 'y', 'Done', 'done', NULL, NULL, 0),
+      ('OPS-70', 'Assigned only', 'In Progress', 'indeterminate', 'OPS-90', 'Platform', 1),
+      ('OPS-71', 'Assigned waiting', 'Waiting for UAT', 'indeterminate', NULL, NULL, 1),
+      ('OPS-72', 'Assigned backlog', 'Backlog', 'new', 'OPS-91', '', 1);";
+
+/// The group headers of the epics list, in page order (the assigned section and the folded list aren't groups).
+fn group_labels(body: &str) -> Vec<String> {
+    body.match_indices("<summary>")
+        .filter_map(|(i, m)| {
+            let rest = &body[i + m.len()..];
+            let label = rest
+                .split_once(" <span class=\"muted normal\">")
+                .map(|(l, _)| l)?;
+            (!label.starts_with("In Jira")
+                && !label.starts_with("Done &amp;")
+                && !label.contains('<'))
+            .then(|| label.to_string())
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn group_by_orders_groups_as_specified() {
+    let st = state();
+    exec(&st, VIEW_SEED);
+    let labels = |q: &str| {
+        let st = st.clone();
+        let q = q.to_string();
+        async move { group_labels(&get(&st, &format!("/epics{q}")).await.body) }
+    };
+    // OKR is today's page (and the default; an unknown value falls back to it).
+    assert_eq!(labels("").await, ["O1", "O2"]);
+    assert_eq!(labels("?group=okr").await, ["O1", "O2"]);
+    assert_eq!(labels("?group=xyz").await, ["O1", "O2"]);
+    // Status: in progress first (by name), then not started, then Jira's done, then epics not in Jira.
+    assert_eq!(
+        labels("?group=status").await,
+        [
+            "In Progress",
+            "Waiting for UAT",
+            "Backlog",
+            "Done",
+            "Not in Jira"
+        ]
+    );
+    // Parent: by Jira parent (title · key); epics without one last.
+    assert_eq!(
+        labels("?group=parent").await,
+        ["Platform · OPS-90", "No parent"]
+    );
+    // Tag: by tag name (an epic with two tags is in both), "No tag" last.
+    assert_eq!(
+        labels("?group=tag").await,
+        ["checkout", "expense", "perf", "No tag"]
+    );
+    let b = get(&st, "/epics?group=tag").await.body;
+    assert_eq!(b.matches("<td><a href=\"/epics/OPS-1\">").count(), 2);
+    // None: one table for the epics (plus the Unnamed stub's own), no group header.
+    let b = get(&st, "/epics?group=none").await.body;
+    assert!(group_labels(&b).is_empty());
+    assert_eq!(b.matches("<table class=\"etab\">").count(), 2);
+    for k in ["OPS-1", "OPS-2", "OPS-3", "OPS-7", "OPS-8"] {
+        assert!(b.contains(&format!("<a href=\"/epics/{k}\">")), "{k}");
+    }
+    // The fact line counts everything, whatever the view shows.
+    assert!(
+        b.contains("5 active · 1 done this month · 1 unnamed"),
+        "{b}"
+    );
+}
+
+#[tokio::test]
+async fn filter_reads_key_title_jira_title_and_tags() {
+    let st = state();
+    exec(&st, VIEW_SEED);
+    let keys = |b: &str| -> Vec<&'static str> {
+        ["OPS-1", "OPS-2", "OPS-3", "OPS-7", "OPS-8"]
+            .into_iter()
+            .filter(|k| b.contains(&format!("<td><a href=\"/epics/{k}\">")))
+            .collect()
+    };
+    for (q, want) in [
+        ("OPS-3", vec!["OPS-3"]),      // key, any case
+        ("latency", vec!["OPS-1"]),    // title
+        ("cold-chain", vec!["OPS-3"]), // the Jira title
+        ("perf", vec!["OPS-1"]),       // a tag
+        ("expens", vec!["OPS-2"]),     // title + tag + Jira title, one row
+        ("nothing-like-this", vec![]),
+    ] {
+        let b = get(&st, &format!("/epics?q={q}")).await.body;
+        assert_eq!(keys(&b), want, "q={q}");
+    }
+    // The summary says how many of the group's epics show (O1 has 3 active).
+    let b = get(&st, "/epics?q=expens").await.body;
+    assert!(b.contains("· 1 of 3 active</span>"), "{b}");
+    // The box keeps what was typed; the unfiltered page says "N active" plainly.
+    assert!(!get(&st, "/epics").await.body.contains(" of 3 active"));
+    // A D4 header row (OPS-90, not tracked) stays while one of its children matches, and goes when none does.
+    let b = get(&st, "/epics?q=latency").await.body;
+    assert!(b.contains("<td><span class=\"chip key\">OPS-90</span></td><td><span class=\"ettl\">"));
+    let b = get(&st, "/epics?q=cold").await.body;
+    assert!(!b.contains("class=\"jhead\""));
+}
+
+#[tokio::test]
+async fn show_closed_lists_done_and_dropped_as_rows() {
+    let st = state();
+    exec(&st, VIEW_SEED);
+    // Default: active only, and the folded "Done & dropped" list.
+    let b = get(&st, "/epics").await.body;
+    assert!(b.contains("Done &amp; dropped <span class=\"muted normal\">· 2</span>"));
+    assert!(!b.contains("<td><a href=\"/epics/OPS-4\">"));
+    // Closed: both as table rows with their status chip; no active rows, no folded list.
+    let b = get(&st, "/epics?show=closed").await.body;
+    assert!(
+        b.contains("<td><a href=\"/epics/OPS-4\">") && b.contains("<td><a href=\"/epics/OPS-5\">")
+    );
+    assert!(
+        b.contains("<span class=\"chip\">done 1 Nov</span>")
+            && b.contains("<span class=\"chip\">dropped</span>")
+    );
+    assert!(!b.contains("<td><a href=\"/epics/OPS-1\">"));
+    assert!(!b.contains("Done &amp; dropped <span"));
+    // All: active and closed together.
+    let b = get(&st, "/epics?show=all").await.body;
+    assert!(
+        b.contains("<td><a href=\"/epics/OPS-1\">") && b.contains("<td><a href=\"/epics/OPS-4\">")
+    );
+    assert!(
+        !b.contains("· 5 active")
+            && b.contains("<summary>O2 <span class=\"muted normal\">· 4</span>"),
+        "{b}"
+    );
+    // An unknown value is the default.
+    assert!(
+        get(&st, "/epics?show=zzz")
+            .await
+            .body
+            .contains("Done &amp; dropped <span")
+    );
+}
+
+#[tokio::test]
+async fn assigned_is_filtered_hidden_when_tracked_and_grouped() {
+    let st = state();
+    exec(&st, VIEW_SEED);
+    let rows = |b: &str| -> Vec<String> {
+        b.match_indices("<span class=\"t\" title=\"")
+            .map(|(i, m)| b[i + m.len()..].split('"').next().unwrap().to_string())
+            .collect()
+    };
+    let b = get(&st, "/epics").await.body;
+    // By status, in progress first; the section says "N open".
+    assert_eq!(
+        rows(&b),
+        [
+            "Faster checkout",
+            "Assigned only",
+            "Assigned waiting",
+            "Assigned backlog"
+        ]
+    );
+    assert!(b.contains("In Jira, assigned to you <span class=\"muted normal\">· 4 open</span>"));
+    // Hide tracked drops OPS-1 (an epic here): "3 of 4 open".
+    let b = get(&st, "/epics?hide_tracked=1").await.body;
+    assert_eq!(
+        rows(&b),
+        ["Assigned only", "Assigned waiting", "Assigned backlog"]
+    );
+    assert!(b.contains("· 3 of 4 open</span>"));
+    // The filter reads key + Jira title.
+    let b = get(&st, "/epics?q=ops-71").await.body;
+    assert_eq!(rows(&b), ["Assigned waiting"]);
+    let b = get(&st, "/epics?q=backlog").await.body;
+    assert_eq!(rows(&b), ["Assigned backlog"]);
+    // Group by Parent groups them by Jira parent ("title · key", just the key without a title), "No parent" last.
+    let b = get(&st, "/epics?group=parent").await.body;
+    let heads: Vec<&str> = b
+        .match_indices("<summary class=\"small\">")
+        .map(|(i, m)| b[i + m.len()..].split(" <span").next().unwrap())
+        .collect();
+    assert_eq!(heads, ["OPS-91", "Platform · OPS-90", "No parent"]);
+}

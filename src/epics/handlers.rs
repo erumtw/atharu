@@ -122,6 +122,8 @@ fn list_row(st: &AppState, e: queries::EpicRow, today: NaiveDate) -> view::ListR
         from_jira,
         cat: e.jira_cat.unwrap_or_default(),
         child: false,
+        closed_chip: None,
+        q: String::new(),
         title: if from_jira {
             e.jira_summary.unwrap_or_default()
         } else {
@@ -184,54 +186,201 @@ fn by_parent(
             },
             key,
             cat,
+            q: kids
+                .iter()
+                .map(|k| k.q.as_str())
+                .collect::<Vec<_>>()
+                .join(" "),
         }));
-        items.extend(kids.into_iter().map(view::ListItem::Row));
+        items.extend(kids.into_iter().map(|k| view::ListItem::Row(Box::new(k))));
     }
     for row in top {
         let kids = under.remove(&row.key).unwrap_or_default();
-        items.push(view::ListItem::Row(row));
-        items.extend(kids.into_iter().map(view::ListItem::Row));
+        items.push(view::ListItem::Row(Box::new(row)));
+        items.extend(kids.into_iter().map(|k| view::ListItem::Row(Box::new(k))));
     }
     // A child whose parent row is itself a child elsewhere: keep it, at the end.
-    items.extend(under.into_values().flatten().map(view::ListItem::Row));
+    items.extend(
+        under
+            .into_values()
+            .flatten()
+            .map(|r| view::ListItem::Row(Box::new(r))),
+    );
     Ok(items)
 }
 
-/// D5/D6: open Jira issues assigned to me. An Epic offers "+ Track as epic"; anything else "+ To-do", filled with the
-/// key, Jira's title, its link and due date.
+/// Jira statuses in the order a person reads them: in progress first, then not started, then done; by name inside each.
+/// (The cache has no workflow order, only the status category.) `""` = no status, last.
+fn status_rank(cat: &str, status: &str) -> u8 {
+    match (status.is_empty(), cat) {
+        (true, _) => 9,
+        (_, "indeterminate") => 0,
+        (_, "done") => 2,
+        _ => 1,
+    }
+}
+
+/// D5/D6: open Jira issues assigned to me, filtered by the page's `q` / Hide tracked and grouped by Jira status (by Jira parent
+/// when Group by = Parent). An Epic offers "+ Track as epic"; anything else "+ To-do", filled with the key, Jira's title, its
+/// link and due date. Returns the groups, "N open" / "N of M open", and whether Jira has any assigned work at all.
 fn assigned(
     st: &AppState,
     conn: &Connection,
     today: NaiveDate,
-) -> AppResult<Vec<view::AssignedRow>> {
-    Ok(queries::assigned(conn)?
-        .into_iter()
-        .map(|a| {
-            let jira = jira_link(st, &a.key, Some(&a.status));
-            let due_date = date(a.due.as_deref());
-            let line = format!(
-                "{} > {} {}{}",
-                a.key,
-                a.summary,
-                jira.as_ref().map(|(_, u)| u.as_str()).unwrap_or_default(),
-                a.due
-                    .as_ref()
-                    .map(|d| format!(" by {d}"))
-                    .unwrap_or_default()
-            );
-            view::AssignedRow {
-                epic: a.epic,
-                due: due_date.map(|d| format!("due {}", crate::domain::plan::quiet(d, today))),
-                jira,
-                line,
-                key: a.key,
-                summary: a.summary,
-                issue_type: a.issue_type,
-                cat: a.cat,
-                tracked: a.tracked,
+    p: &view::Params,
+) -> AppResult<(Vec<view::AssignedGroup>, String, bool)> {
+    let all = queries::assigned(conn)?;
+    let total = all.len();
+    let needle = p.needle();
+    // (rank, label) → rows, so BTreeMap order is the display order; parent groups sort by key, "No parent" last.
+    let mut groups: std::collections::BTreeMap<(u8, String), Vec<view::AssignedRow>> =
+        Default::default();
+    let mut shown = 0;
+    for a in all {
+        let q = format!("{} {}", a.key, a.summary).to_lowercase();
+        if (!needle.is_empty() && !q.contains(&needle)) || (p.hide_tracked && a.tracked) {
+            continue;
+        }
+        shown += 1;
+        let slot = if p.group == view::GroupBy::Parent {
+            match &a.parent_key {
+                Some(k) => (
+                    0,
+                    match a.parent_summary.as_deref().filter(|s| !s.is_empty()) {
+                        Some(t) => format!("{t} · {k}"),
+                        None => k.clone(),
+                    },
+                ),
+                None => (9, "No parent".to_string()),
             }
-        })
-        .collect())
+        } else if a.status.is_empty() {
+            (9, "No status".to_string())
+        } else {
+            (status_rank(&a.cat, &a.status), a.status.clone())
+        };
+        let jira = jira_link(st, &a.key, Some(&a.status));
+        let due_date = date(a.due.as_deref());
+        let line = format!(
+            "{} > {} {}{}",
+            a.key,
+            a.summary,
+            jira.as_ref().map(|(_, u)| u.as_str()).unwrap_or_default(),
+            a.due
+                .as_ref()
+                .map(|d| format!(" by {d}"))
+                .unwrap_or_default()
+        );
+        groups.entry(slot).or_default().push(view::AssignedRow {
+            epic: a.epic,
+            due: due_date.map(|d| format!("due {}", crate::domain::plan::quiet(d, today))),
+            jira,
+            line,
+            q,
+            key: a.key,
+            summary: a.summary,
+            issue_type: a.issue_type,
+            cat: a.cat,
+            tracked: a.tracked,
+        });
+    }
+    let count = if shown == total {
+        format!("{total} open")
+    } else {
+        format!("{shown} of {total} open")
+    };
+    Ok((
+        groups
+            .into_iter()
+            .map(|((_, label), rows)| view::AssignedGroup { label, rows })
+            .collect(),
+        count,
+        total > 0,
+    ))
+}
+
+/// One epic of the list on its way to a group: the row plus what grouping and filtering read.
+#[derive(Clone)]
+struct Cand {
+    row: view::ListRow,
+    parent: Option<(String, String)>,
+    okr: String,
+    cat: String,
+    /// Jira status name; empty = not in Jira (or never fetched).
+    status: String,
+    tags: Vec<String>,
+}
+
+/// Candidates → groups by the pick, in display order: (label, members). Pure: the filter ran before.
+fn group_cands(by: view::GroupBy, cands: Vec<Cand>) -> Vec<(String, Vec<Cand>)> {
+    use std::collections::BTreeMap;
+    use view::GroupBy as G;
+    match by {
+        // Today's grouping: the query already sorts by OKR ("No OKR" last), so a new OKR means a new group.
+        G::Okr => {
+            let mut out: Vec<(String, Vec<Cand>)> = Vec::new();
+            for c in cands {
+                match out.last_mut() {
+                    Some((o, v)) if *o == c.okr => v.push(c),
+                    _ => out.push((c.okr.clone(), vec![c])),
+                }
+            }
+            out
+        }
+        G::Status => {
+            let mut m: BTreeMap<(u8, String), Vec<Cand>> = BTreeMap::new();
+            for c in cands {
+                let slot = if c.status.is_empty() {
+                    (9, "Not in Jira".to_string())
+                } else {
+                    (status_rank(&c.cat, &c.status), c.status.clone())
+                };
+                m.entry(slot).or_default().push(c);
+            }
+            m.into_iter().map(|((_, l), v)| (l, v)).collect()
+        }
+        G::Parent => {
+            let mut m: BTreeMap<String, (String, Vec<Cand>)> = BTreeMap::new();
+            let mut none = Vec::new();
+            for c in cands {
+                match c.parent.clone() {
+                    Some((k, t)) => {
+                        let label = if t.is_empty() {
+                            k.clone()
+                        } else {
+                            format!("{t} · {k}")
+                        };
+                        m.entry(k).or_insert((label, Vec::new())).1.push(c);
+                    }
+                    None => none.push(c),
+                }
+            }
+            let mut out: Vec<_> = m.into_values().collect();
+            if !none.is_empty() {
+                out.push(("No parent".to_string(), none));
+            }
+            out
+        }
+        G::Tag => {
+            let mut m: BTreeMap<String, Vec<Cand>> = BTreeMap::new();
+            let mut none = Vec::new();
+            for c in cands {
+                if c.tags.is_empty() {
+                    none.push(c);
+                    continue;
+                }
+                for t in c.tags.clone() {
+                    m.entry(t).or_default().push(c.clone());
+                }
+            }
+            let mut out: Vec<_> = m.into_iter().collect();
+            if !none.is_empty() {
+                out.push(("No tag".to_string(), none));
+            }
+            out
+        }
+        G::None if cands.is_empty() => Vec::new(),
+        G::None => vec![("All epics".to_string(), cands)],
+    }
 }
 
 #[derive(Deserialize)]
@@ -256,24 +405,62 @@ pub async fn track(
 pub struct ListQuery {
     /// `failed` after the Jira Refresh button couldn't reach Jira.
     jira: Option<String>,
+    /// The control row (0.2.7), all in the URL like Today's: a filter, Group by, Show, and Hide tracked.
+    q: Option<String>,
+    group: Option<String>,
+    show: Option<String>,
+    hide_tracked: Option<String>,
 }
 
 pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> AppResult<Response> {
     let today = st.today();
     let conn = st.conn();
-    let mut done_month = 0;
-    let (mut untitled, mut groups, mut closed) =
-        (Vec::new(), Vec::<view::OkrGroup>::new(), Vec::new());
-    let mut okr_rows: Vec<(String, Vec<Parented>)> = Vec::new();
+    let p = view::Params::parse(
+        q.q.as_deref(),
+        q.group.as_deref(),
+        q.show.as_deref(),
+        q.hide_tracked.as_deref(),
+    );
+    let needle = p.needle();
+    let hit = |text: &str| needle.is_empty() || text.contains(&needle);
+    let (mut done_month, mut active_named, mut unnamed_total) = (0, 0, 0);
+    let (mut untitled, mut closed, mut cands) = (Vec::new(), Vec::new(), Vec::<Cand>::new());
     for e in queries::all_epics(&conn)? {
-        if e.status != "active" {
-            let done = e.status == "done";
+        let is_closed = e.status != "active";
+        let done = e.status == "done";
+        let named = !(e.title.is_empty() && e.jira_summary.as_deref().is_none_or(str::is_empty));
+        // The fact line counts everything, whatever the view shows.
+        if is_closed {
             if done
                 && date(e.done_on.as_deref())
                     .is_some_and(|d| dates::month_start(d) == dates::month_start(today))
             {
                 done_month += 1;
             }
+        } else if named {
+            active_named += 1;
+        } else {
+            unnamed_total += 1;
+        }
+        // What the filter reads: key, title, Jira's title, tags.
+        let qtext = format!(
+            "{} {} {} {}",
+            e.key,
+            e.title,
+            e.jira_summary.as_deref().unwrap_or_default(),
+            e.tags
+        )
+        .to_lowercase();
+        let shows = match p.show {
+            view::Show::Active => !is_closed,
+            view::Show::Closed => is_closed,
+            view::Show::All => true,
+        };
+        if !hit(&qtext) {
+            continue;
+        }
+        if is_closed && p.show == view::Show::Active {
+            // The folded "Done & dropped" list: only in the default view.
             closed.push(view::Closed {
                 chip: match date(e.done_on.as_deref()) {
                     Some(d) if done => format!("done {}", view::short(d)),
@@ -284,48 +471,125 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
                 title: e.title,
                 done,
             });
-        } else if e.title.is_empty() && e.jira_summary.as_deref().is_none_or(str::is_empty) {
-            untitled.push(list_row(&st, e, today));
-        } else {
-            let okr = if e.okr.is_empty() {
-                "No OKR".to_string()
-            } else {
-                e.okr.clone()
-            };
-            let parent = e
-                .jira_parent
-                .clone()
-                .map(|p| (p, e.jira_parent_summary.clone().unwrap_or_default()));
-            let row = (parent, list_row(&st, e, today));
-            // Query sorts by OKR, so a new OKR always means a new group.
-            match okr_rows.last_mut() {
-                Some((o, rows)) if *o == okr => rows.push(row),
-                _ => okr_rows.push((okr, vec![row])),
-            }
+            continue;
         }
-    }
-    for (okr, rows) in okr_rows {
-        groups.push(view::OkrGroup {
+        if !shows {
+            continue;
+        }
+        if !is_closed && !named {
+            untitled.push(list_row(&st, e, today));
+            continue;
+        }
+        let okr = if e.okr.is_empty() {
+            "No OKR".to_string()
+        } else {
+            e.okr.clone()
+        };
+        let parent = e
+            .jira_parent
+            .clone()
+            .map(|p| (p, e.jira_parent_summary.clone().unwrap_or_default()));
+        let tags: Vec<String> = e
+            .tags
+            .split(',')
+            .map(|t| t.trim().to_lowercase())
+            .filter(|t| !t.is_empty())
+            .collect();
+        let (cat, status) = (
+            e.jira_cat.clone().unwrap_or_default(),
+            e.jira_status.clone().unwrap_or_default(),
+        );
+        let chip = is_closed.then(|| match date(e.done_on.as_deref()) {
+            Some(d) if done => format!("done {}", view::short(d)),
+            _ => e.status.clone(),
+        });
+        let mut row = list_row(&st, e, today);
+        row.closed_chip = chip;
+        row.q = qtext;
+        cands.push(Cand {
+            row,
+            parent,
             okr,
-            active: rows.len(),
-            items: by_parent(&st, &conn, rows)?,
+            cat,
+            status,
+            tags,
         });
     }
-    let active: usize = groups.iter().map(|g| g.active).sum();
-    let mut fact = vec![format!("{active} active")];
+    for u in &mut untitled {
+        u.q = format!("{} {}", u.key, u.title).to_lowercase();
+    }
+    // "N of M": the same grouping without the filter says how many each group holds.
+    let totals: HashMap<String, usize> = if p.filtering() {
+        let mut all = Vec::new();
+        for e in queries::all_epics(&conn)? {
+            let is_closed = e.status != "active";
+            let named =
+                !(e.title.is_empty() && e.jira_summary.as_deref().is_none_or(str::is_empty));
+            let shows = match p.show {
+                view::Show::Active => !is_closed,
+                view::Show::Closed => is_closed,
+                view::Show::All => true,
+            };
+            if shows && (is_closed || named) {
+                all.push(cand_stub(&e));
+            }
+        }
+        group_cands(p.group, all)
+            .into_iter()
+            .map(|(l, v)| (l, v.len()))
+            .collect()
+    } else {
+        HashMap::new()
+    };
+    let unit = if p.show == view::Show::Active {
+        " active"
+    } else {
+        ""
+    };
+    let mut groups = Vec::new();
+    for (label, members) in group_cands(p.group, cands) {
+        let n = members.len();
+        let count = match totals.get(&label) {
+            Some(m) if *m != n => format!("{n} of {m}{unit}"),
+            _ => format!("{n}{unit}"),
+        };
+        let items = if p.group == view::GroupBy::Okr {
+            // D4: stories under their Jira parent, inside each OKR group.
+            by_parent(
+                &st,
+                &conn,
+                members.into_iter().map(|c| (c.parent, c.row)).collect(),
+            )?
+        } else {
+            members
+                .into_iter()
+                .map(|c| view::ListItem::Row(Box::new(c.row)))
+                .collect()
+        };
+        groups.push(view::Group {
+            label,
+            items,
+            count,
+        });
+    }
+    let mut fact = vec![format!("{active_named} active")];
     if done_month > 0 {
         fact.push(format!("{done_month} done this month"));
     }
-    if !untitled.is_empty() {
-        fact.push(format!("{} unnamed", untitled.len()));
+    if unnamed_total > 0 {
+        fact.push(format!("{unnamed_total} unnamed"));
     }
+    let (assigned, assigned_count, assigned_any) = assigned(&st, &conn, today, &p)?;
     web::html(&view::List {
         layout: Layout::load(&conn, "epics", "Epics", vec![])?,
         fact: fact.join(" · "),
         untitled,
         groups,
         closed,
-        assigned: assigned(&st, &conn, today)?,
+        assigned,
+        assigned_count,
+        assigned_any,
+        p,
         // Only while Jira is set up (a stored failure outlives a removed token).
         dead_token: st.settings.jira().is_some() && queries::jira_auth_failed(&conn)?.is_some(),
         token_url: crate::config::JIRA_TOKEN_URL,
@@ -339,6 +603,44 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
             _ => format!("{} d ago", m / 1440),
         }),
     })
+}
+
+/// A candidate with only what grouping reads: for counting a group's unfiltered size.
+fn cand_stub(e: &queries::EpicRow) -> Cand {
+    Cand {
+        row: view::ListRow {
+            key: e.key.clone(),
+            title: String::new(),
+            open: 0,
+            impact: None,
+            last_log: String::new(),
+            flag: None,
+            jira: None,
+            jira_hint: None,
+            from_jira: false,
+            cat: String::new(),
+            child: false,
+            closed_chip: None,
+            q: String::new(),
+        },
+        parent: e
+            .jira_parent
+            .clone()
+            .map(|p| (p, e.jira_parent_summary.clone().unwrap_or_default())),
+        okr: if e.okr.is_empty() {
+            "No OKR".to_string()
+        } else {
+            e.okr.clone()
+        },
+        cat: e.jira_cat.clone().unwrap_or_default(),
+        status: e.jira_status.clone().unwrap_or_default(),
+        tags: e
+            .tags
+            .split(',')
+            .map(|t| t.trim().to_lowercase())
+            .filter(|t| !t.is_empty())
+            .collect(),
+    }
 }
 
 #[derive(Deserialize)]
