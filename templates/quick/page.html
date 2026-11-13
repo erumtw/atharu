@@ -64,26 +64,38 @@
 </section>
 
 {#- Plain forms: quick.js posts them without HX-Request, so the meetings slice answers its 303 back here (with it, it
-    would answer Today's banner partial) and swaps in the fresh section. #}
+    would answer Today's banner partial) and swaps in the fresh section. 0.2.6: ONE row each, idle (name · mic · Start) and
+    running (the dark row). The mic is an icon toggle: crossed grey = off (every open), white on #ff3b30 = on. #}
 <section class="qsec qmeet" id="qmeet" aria-labelledby="qm">
 {%- if let Some(m) = meeting.running %}
 <h2 class="qlbl vh" id="qm">Meeting</h2>
-<div class="callout dark qrun"><span class="dot{% if meeting.capturing() %} rec{% endif %}" aria-hidden="true"></span><span class="t"><a href="/meetings/{{ m.id }}" title="{{ m.name }}"><b>{{ m.name }}</b></a>{% if let Some(l) = meeting.rec.live %}{% if meeting.rec.blocked %}<span class="small muted">Not recording yet · <a href="/meetings/{{ m.id }}">See the steps</a></span>{% else %}<span class="small muted">Recording · {{ l.elapsed }}</span>{% endif %}{% else if !since.is_empty() %}<span class="small muted">{{ since }}</span>{% endif %}</span>{%- if meeting.rec.mac %}<a class="btn ghost s ib" href="/app/screenshot?meeting={{ m.id }}" aria-label="Screenshot into this meeting" title="Screenshot into this meeting"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.8"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></a>{% endif %}
-{#- Same rules as the banner: Record only in the app with the model ready; while live, Stop keeps the meeting running;
-    blocked (a permission is off) offers only End, its steps are on the meeting page in the main window. #}
-{%- if let Some(l) = meeting.rec.live %}{% if !meeting.rec.blocked %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record/stop"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit" title="Recording {{ l.elapsed }}">Stop</button></form>{% endif %}
-{%- else if meeting.rec.finishing %}<span class="small muted">Transcribing…</span>
-{%- else if meeting.rec.mac && meeting.rec.model_ready %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit" title="Tell people you're recording before you start.">Record</button></form>
-{%- endif %}<form class="inline" method="post" action="/meetings/{{ m.id }}/end"><input type="hidden" name="back" value="/quick"><button class="btn ghost s" type="submit">End meeting</button></form></div>
+<div class="q2run"><span class="dot{% if meeting.capturing() %} rec{% endif %}" aria-hidden="true"></span><a class="nm" href="/meetings/{{ m.id }}" title="{{ m.name }}">{{ m.name }}</a>
+{%- if meeting.rec.live.is_some() && meeting.rec.blocked %}<a class="ask" href="/meetings/{{ m.id }}" title="Open the steps in Atharu">Allow recording</a>
+{%- else if let Some(l) = meeting.rec.live %}<span class="rect" title="Recording">{{ l.elapsed }}</span>
+{%- else if meeting.rec.finishing %}<span class="rect">Transcribing…</span>
+{%- else if !since.is_empty() %}<span class="rect">{{ since }}</span>{% endif %}<span class="sp"></span>
+{%- if meeting.rec.mac %}<a class="q2cam" href="/app/screenshot?meeting={{ m.id }}" aria-label="Screenshot into this meeting" title="Screenshot into this meeting"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0a3.5 3.5 0 1 1 7 0"/></svg></a>{% endif %}
+{#- Same rules as the banner: the toggle only in the app with the model ready; live → it Stops (the meeting keeps running);
+    blocked (a permission is off) → disabled, the steps are on the meeting page in the main window; finishing → none. -#}
+{%- if let Some(l) = meeting.rec.live %}{% if meeting.rec.blocked %}<button class="q2mic dk" type="button" disabled aria-pressed="false" aria-label="Record audio" title="Recording needs macOS permission"><svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/></svg></button>
+{%- else %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record/stop"><input type="hidden" name="back" value="/quick"><button class="q2mic dk" type="submit" aria-pressed="true" aria-label="Record audio" title="Recording on {{ l.elapsed }}: click to stop (the meeting keeps running)"><svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button></form>{% endif %}
+{%- else if meeting.rec.finishing %}
+{%- else if meeting.rec.mac && meeting.rec.model_ready %}<form class="inline" method="post" action="/meetings/{{ m.id }}/record"><input type="hidden" name="back" value="/quick"><button class="q2mic dk" type="submit" aria-pressed="false" aria-label="Record audio" title="Not recording: click to record audio. Tell people you're recording before you start."><svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/></svg></button></form>
+{%- endif %}<form class="inline" method="post" action="/meetings/{{ m.id }}/end"><input type="hidden" name="back" value="/quick"><button class="q2end" type="submit">End meeting</button></form></div>
 {%- else %}
 {%- if let Some((eid, ename)) = ended %}
 <p class="small" role="status" style="margin: 0"><span class="tick" aria-hidden="true">✓</span> Ended <b>{{ ename }}</b> · <a href="/meetings/{{ eid }}">Open meeting</a></p>
 {%- endif %}
-<h2 class="qlbl" id="qm">Start a meeting</h2>
+<h2 class="qlbl vh" id="qm">Start a meeting</h2>
 {#- Existing series come from a menu under the box (the capture bar's `#` menu, T93): it opens on focus with the recent
     ones, filters as you type, ↑↓ + ↵ / Tab or a click picks and starts. Without JS the datalist offers the same names. #}
+<div class="q2start">
 <div class="qfield qser">
-<form method="post" action="/meetings" class="fld m" id="qstart"><input type="hidden" name="back" value="/quick"><input id="qname" name="name" value="" placeholder="{% if meeting.series.is_empty() %}Name it, e.g. oms-sync{% else %}Pick a series or name a new one{% endif %}" aria-label="Meeting name" autocomplete="off" required list="qseries" role="combobox" aria-expanded="false" aria-controls="qsermenu" aria-autocomplete="list"><button class="btn ghost" type="submit">Start</button></form>
+<form method="post" action="/meetings" class="q2f" id="qstart"><input type="hidden" name="back" value="/quick"><input id="qname" name="name" value="" placeholder="Start a meeting…" title="e.g. oms-sync; reuse a name for a series" aria-label="Meeting name" autocomplete="off" required list="qseries" role="combobox" aria-expanded="false" aria-controls="qsermenu" aria-autocomplete="list">
+{%- if meeting.rec.mac %}
+{#- The checkbox still posts `record=1` without JS; the icon swaps by :checked (off every time the popover opens, D31). -#}
+<label class="q2mic" title="Not recording: click to record audio. Tell people you're recording before you start."><input class="vh" type="checkbox" name="record" value="1" form="qstart" aria-label="Record audio" autocomplete="off"{% if !meeting.rec.model_ready %} disabled{% endif %} hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#qrecperm" hx-swap="innerHTML" hx-include="this"><svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/></svg><svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6a3 3 0 0 1 6 0v5a3 3 0 0 1-6 0zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></label>
+{%- endif %}<button class="btn ghost" type="submit">Start</button></form>
 <datalist id="qseries">{% for s in meeting.series %}<option value="{{ s }}"></option>{% endfor %}</datalist>
 {%- if !meeting.series.is_empty() %}
 <div id="qsermenu" class="menu" role="listbox" aria-label="Recent series" hidden><div class="mh" role="presentation">Recent series</div>
@@ -92,11 +104,11 @@
 {%- endif %}
 </div>
 {%- if meeting.rec.mac %}
-{#- Same switch as Today's start (D31): off every time, consent line in ink once on. #}
-<div class="recopt qrec"><label><input class="sw" type="checkbox" role="switch" name="record" value="1" form="qstart" autocomplete="off"{% if !meeting.rec.model_ready %} disabled{% endif %} hx-post="/meetings/permissions" hx-trigger="change[target.checked]" hx-target="#qrecperm" hx-swap="innerHTML" hx-include="this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Record audio</label>
-{%- if meeting.rec.model_ready %}<span class="consent">Tell people you’re recording.</span>{% else %}<span class="muted">Needs the speech model.</span> <a href="/settings#transcription">Settings</a>{% endif %}</div>
+{%- if meeting.rec.model_ready %}<p class="q2cons">Recording on. Tell people you’re recording.</p>
+{%- else %}<p class="q2leg">Recording needs the speech model · <a href="/settings#transcription">Settings</a></p>{% endif %}
 <div id="qrecperm"></div>
 {%- endif %}
+</div>
 {%- endif %}
 </section>
 

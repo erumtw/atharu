@@ -191,8 +191,8 @@ async fn start_and_end_meeting_come_back_to_the_popover() {
     assert_eq!(r.status, 303);
     assert_eq!(r.headers["location"], "/quick");
     let b = get(&st, "/quick").await.body;
-    assert!(b.contains("<a href=\"/meetings/1\" title=\"oms-sync\"><b>oms-sync</b></a>"));
-    assert!(b.contains("since "));
+    assert!(b.contains("<a class=\"nm\" href=\"/meetings/1\" title=\"oms-sync\">oms-sync</a>"));
+    assert!(b.contains("<span class=\"rect\">0 min</span>"));
     assert!(b.contains("action=\"/meetings/1/end\""));
     assert!(!b.contains("Start a meeting"));
     assert_eq!(

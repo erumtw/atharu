@@ -446,11 +446,18 @@ the log scrolls under it.
   **By typing (T87, D55):** `n ` (n + space) at the start of the line box switches to note mode in place, the rest moves into
   the note box with the caret at its end (`nginx fixed` stays a line, like `x `); ⌘N anywhere in the popover does the same. Without
   JS the line form's `n …` POST to `/entries` is re-sent (307) to `/notes/new` and saved as a note. Popover only: on Today `n …` is a line.
-- **Meeting**: not running → "Start a meeting", the three most recent series as `.btn.ghost.s` pills (submit buttons: one click
-  starts) + a `.fld.m` name box with a ghost **Start** (28). Running → the banner's opaque `.callout.dark`: dot · name (link) ·
-  "since 09:17 · 24 min" (minutes, no ticking seconds) · **End meeting**. Recording (started in the app, once T51 ships) shows
-  `.dot.rec` + "Recording · 24 min"; the popover never starts a recording. Capture blocked by a permission → plain dot +
-  "Not recording yet · **See the steps**" (links the meeting page in the main window, where the banner lists them), End only.
+- **Meeting** (0.2.6, board Redesign.Quick): idle = ONE `.q2f` row, 40 tall like the capture field: the name box (placeholder "Start a
+  meeting…", tooltip "e.g. oms-sync; reuse a name for a series"; focus opens the recent-series menu, up to 12, ↑↓ ↵ picks and starts) ·
+  the **mic toggle** · a ghost **Start** (30). The "Start a meeting" heading stays as a visually hidden label. The mic (app only) is a
+  30 icon toggle: crossed grey mic = not recording (off every time the popover opens, D31), white mic on `#ff3b30` = on (white on it
+  3.55:1, non-text 3:1; `--muted` 5.07 on white); it is a label around a hidden checkbox, so `record=1` still posts without JS. On, a
+  12 px `--ink` line "Recording on. Tell people you’re recording." shows under the row (CSS `:has`). No speech model → the toggle is
+  disabled (40%) with one line "Recording needs the speech model · Settings". Running → ONE `.q2run` row in the banner's opaque
+  `--dark` (min 40, 12 radius): dot (`.dot.rec` red only while capturing) · name link (ellipsis) · time (minutes, "24 min", or the
+  recording's elapsed "04:12", tabular 600) · spacer · 📷 screenshot (app) · the dark mic toggle (28; app + model: pressed = live, click
+  stops the recording and the meeting keeps running; not live, click starts one; blocked → disabled and the name row reads **Allow
+  recording**, linking the meeting page in the main window; finishing → time "Transcribing…", no mic) · **End meeting** (text button,
+  `rgba(255,255,255,.14)`). Ended → "✓ Ended **X** · Open meeting" above the idle row.
 - **To-dos**: today + overdue only, overdue first, late ones with the existing `.due.late`; rows 32 (check 20 · text with ellipsis ·
   due right). The list takes what is left of the 480 and scrolls on its own; header, capture and meeting never move. At most 8 rows;
   "+ N more open · Open Atharu" links `/todos`. Ticking posts at once; the struck row stays until the popover closes (untick = reopen).

@@ -107,14 +107,10 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
     })
 }
 
-/// `since 09:17 · 24 min`: minutes, not a ticking clock (the window reloads each time it opens).
+/// `24 min`: minutes, not a ticking clock (the window reloads each time it opens).
 fn since(started: &str, now: NaiveDateTime) -> String {
     match NaiveDateTime::parse_from_str(started, "%Y-%m-%d %H:%M:%S") {
-        Ok(t) => format!(
-            "since {} · {} min",
-            t.format("%H:%M"),
-            (now - t).num_minutes().max(0)
-        ),
+        Ok(t) => format!("{} min", (now - t).num_minutes().max(0)),
         Err(_) => String::new(),
     }
 }
@@ -140,7 +136,7 @@ mod tests {
         assert_eq!(due_label("2026-11-03".parse().unwrap(), t), "3 Nov");
         let now =
             NaiveDateTime::parse_from_str("2026-11-12 09:41:00", "%Y-%m-%d %H:%M:%S").unwrap();
-        assert_eq!(since("2026-11-12 09:17:30", now), "since 09:17 · 23 min");
+        assert_eq!(since("2026-11-12 09:17:30", now), "23 min");
         assert_eq!(since("junk", now), "");
         assert_eq!(back_to_kind("+"), "/quick?kind=%2B");
         assert_eq!(back_to_kind(""), "/quick?kind=");

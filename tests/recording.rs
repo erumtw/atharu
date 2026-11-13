@@ -602,16 +602,86 @@ async fn popover_shows_a_blocked_recording_like_the_banner() {
     );
     *mac.blocked.lock().unwrap() = true;
     let q = get(&st, "/quick").await.body;
-    // Not red, no Stop: the steps are on the meeting page (main window), as in Today's banner.
+    // Not red, no Stop: the mic is disabled and the name row says where the steps are (the meeting page, main window).
     assert!(
-        q.contains(r#"Not recording yet · <a href="/meetings/1">"#),
+        q.contains(r#"<a class="ask" href="/meetings/1" title="Open the steps in Atharu">Allow recording</a>"#),
         "{q}"
     );
+    assert!(q.contains(r#"class="q2mic dk" type="button" disabled"#));
     assert!(!q.contains("dot rec") && !q.contains("/record/stop"));
     assert!(get(&st, "/").await.body.contains("not recording yet"));
     *mac.blocked.lock().unwrap() = false;
     let q = get(&st, "/quick").await.body;
     assert!(
-        q.contains("dot rec") && q.contains("/record/stop") && !q.contains("Not recording yet")
+        q.contains("dot rec") && q.contains("/record/stop") && !q.contains("Allow recording"),
+        "{q}"
+    );
+}
+
+#[tokio::test]
+async fn popover_meeting_row_idle_and_running() {
+    // Browser: a name, Start; no mic, no camera.
+    let st = state();
+    let b = get(&st, "/quick").await.body;
+    assert!(b.contains("placeholder=\"Start a meeting…\"") && !b.contains("name=\"record\""));
+    assert!(!b.contains("q2mic") || !b.contains("<label class=\"q2mic\""));
+
+    // App without the model: the mic is there but disabled, with the one line to Settings.
+    let (st, _) = mac_state("q2nomodel", false);
+    let b = get(&st, "/quick").await.body;
+    assert!(
+        b.contains("<label class=\"q2mic\"")
+            && b.contains("aria-label=\"Record audio\" autocomplete=\"off\" disabled")
+    );
+    assert!(b.contains(
+        "Recording needs the speech model · <a href=\"/settings#transcription\">Settings</a>"
+    ));
+
+    // App with the model: the toggle is a checkbox inside .q2mic (off by default), the consent line is ready (shown by CSS).
+    let (st, _) = mac_state("q2model", true);
+    let b = get(&st, "/quick").await.body;
+    assert!(b.contains("<input class=\"vh\" type=\"checkbox\" name=\"record\" value=\"1\" form=\"qstart\"") && !b.contains("name=\"record\" value=\"1\" form=\"qstart\" aria-label=\"Record audio\" autocomplete=\"off\" disabled"));
+    assert!(b.contains("<p class=\"q2cons\">Recording on. Tell people you’re recording.</p>"));
+    // A plain POST with record=1 starts the recording (no JS).
+    post(
+        &st,
+        "/meetings",
+        &form(&[("name", "oms"), ("record", "1"), ("back", "/quick")]),
+        false,
+    )
+    .await;
+    let b = get(&st, "/quick").await.body;
+    // Live: one dark row, the red mic is pressed and posts to /record/stop; End meeting; the screenshot link (app only).
+    assert!(b.contains("<div class=\"q2run\">") && b.contains("dot rec"));
+    assert!(
+        b.contains("action=\"/meetings/1/record/stop\"")
+            && b.contains("class=\"q2mic dk\" type=\"submit\" aria-pressed=\"true\"")
+    );
+    assert!(
+        b.contains(">End meeting</button>") && b.contains("href=\"/app/screenshot?meeting=1\"")
+    );
+    assert!(b.contains("<span class=\"rect\" title=\"Recording\">00:"));
+    // Stopped: the tail is transcribing: the time says so, no mic, no red dot.
+    post(&st, "/meetings/1/record/stop", "", false).await;
+    let b = get(&st, "/quick").await.body;
+    assert!(
+        b.contains("<span class=\"rect\">Transcribing…</span>")
+            && !b.contains("dot rec")
+            && !b.contains("q2mic dk")
+    );
+    // Running without a recording (app + model): the crossed mic posts /record; the time is the minutes.
+    let (st, _) = mac_state("q2idle", true);
+    post(&st, "/meetings", &form(&[("name", "oms")]), false).await;
+    let b = get(&st, "/quick").await.body;
+    assert!(b.contains("action=\"/meetings/1/record\"") && b.contains("class=\"q2mic dk\" type=\"submit\" aria-pressed=\"false\" aria-label=\"Record audio\""));
+    assert!(b.contains("<span class=\"rect\">0 min</span>") && !b.contains("dot rec"));
+    // Browser, running: End meeting, no camera, no mic.
+    let st = state();
+    post(&st, "/meetings", &form(&[("name", "oms")]), false).await;
+    let b = get(&st, "/quick").await.body;
+    assert!(
+        b.contains(">End meeting</button>")
+            && !b.contains("/app/screenshot")
+            && !b.contains("q2mic")
     );
 }

@@ -51,7 +51,7 @@ pub struct Page {
     /// The meeting card / start box (series capped to the menu's length). Record audio and Stop show in the app
     /// only (`rec.mac`), enabled once the model is on disk.
     pub meeting: crate::recording::MeetingState,
-    /// `since 09:17 · 24 min` of the running meeting; empty when none or its start time is unknown.
+    /// `24 min` of the running meeting; empty when none or its start time is unknown.
     pub since: String,
     /// Just ended from here: (id, name) for "Ended X · Open".
     pub ended: Option<(i64, String)>,
