@@ -7,7 +7,7 @@
 {%- for t in list %}
 {%- if t.done %}
 <div class="callout" style="align-items: center; flex-wrap: wrap">
-<span style="flex: 1; min-width: 280px"><b>Ask Claude for notes:</b> run <span class="mono">/meeting</span> in Claude Code. It reads this transcript and files a summary note plus decisions and plans, marked <span class="chip llm">claude</span>.</span>
+<span style="flex: 1; min-width: 280px"><b>Ask Claude for notes:</b> run <span class="mono">/meeting</span> in Claude Code. It reads this transcript and files a summary note plus decisions and plans, marked <span class="chip tag at">claude</span>.</span>
 <span class="cmd"><code id="cmd-{{ t.id }}">/meeting {{ meeting }}</code><button class="btn ghost s" type="button" data-copy="#cmd-{{ t.id }}" aria-label="Copy command">Copy</button></span>
 </div>
 {%- endif %}

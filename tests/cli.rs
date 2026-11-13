@@ -113,7 +113,7 @@ async fn log_tags_the_agent_and_refuses_bad_callers() {
 
     // Badge on Today, the epic timeline, and `(via claude)` in the report note + markdown.
     let b = get(&st, "/").await.body;
-    assert!(b.contains("<span class=\"chip llm\" title=\"Filed by claude\">claude</span>"));
+    assert!(b.contains("<span class=\"chip tag at\" title=\"Filed by claude\">claude</span>"));
     post(
         &st,
         "/entries",
@@ -122,7 +122,11 @@ async fn log_tags_the_agent_and_refuses_bad_callers() {
     )
     .await;
     let b = get(&st, "/epics/OPS-101").await.body;
-    assert_eq!(b.matches("chip llm").count(), 1, "my own line has no badge");
+    assert_eq!(
+        b.matches("chip tag at").count(),
+        1,
+        "my own line has no badge"
+    );
     let b = get(&st, "/report").await.body;
     assert!(b.contains("p95 1.8s → 0.6s <span class=\"muted\">(via claude)</span>"));
     assert!(b.contains("**Impact** p95 1.8s → 0.6s (via claude)"));

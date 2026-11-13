@@ -31,12 +31,11 @@ select.pin{cursor:pointer}
 .chip{display:inline-block;vertical-align:middle;max-width:100%;overflow:hidden;text-overflow:ellipsis;border-radius:6px;padding:1px 8px;font-size:12px;color:var(--ink-2);background:var(--fill-2);white-space:nowrap;letter-spacing:0;box-sizing:border-box}
 .blk>.chip,.blk>a>.chip{flex:0 1 auto;min-width:0;max-width:60%}
 /* Short fixed labels never clip: the agent badge and epic keys ("cla…" read as nothing). */
-.chip.llm,.chip.key{flex:none;max-width:none}
+.chip.tag.at,.chip.key{flex:none;max-width:none}
 .blk>span:not(.chip){min-width:0}
 /* One-line clip for a long name inside a flex row (sidebar series, crumbs). */
 .ell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip.key{font-family:ui-monospace,'SF Mono',Menlo,monospace}
-.chip.llm{background:#fff;color:var(--ink);border:1px solid var(--ink);padding:0 7px}
 /* Line rows (.blk.ln: a log line, a to-do, a decision; T91). The text takes the room and wraps; chips and actions
    keep their width in one right-hand column, top-aligned to the first text line, so a wrapped row neither squeezes
    the text nor shifts or centres its buttons. --lh = one line of the row: 32 desktop, 44 phone. Chips are pinned to
@@ -241,9 +240,9 @@ html:not([data-glass=all]) .pg .capture :is(.toast,.hint){border-color:var(--lin
 
 /* Segmented: iOS pill track, 36 tall with 30 segments (32/26 in chrome); .mac = 8-radius macOS control for settings. */
 .seg{display:inline-flex;gap:2px;align-items:center;height:36px;box-sizing:border-box;background:rgba(120,120,128,.12);box-shadow:inset 0 1px 1px rgba(0,0,0,.04);border-radius:9999px;padding:3px}
-.seg button{font:inherit;font-size:13px;line-height:1;border:0;background:none;border-radius:9999px;padding:0 12px;height:30px;display:inline-flex;align-items:center;cursor:pointer;color:var(--ink-2);white-space:nowrap}
-.seg button:hover{background:rgba(255,255,255,.5)}
-.seg button:active{background:rgba(255,255,255,.75)}
+.seg :is(button,a){text-decoration:none;font:inherit;font-size:13px;line-height:1;border:0;background:none;border-radius:9999px;padding:0 12px;height:30px;display:inline-flex;align-items:center;cursor:pointer;color:var(--ink-2);white-space:nowrap}
+.seg :is(button,a):hover{background:rgba(255,255,255,.5)}
+.seg :is(button,a):active{background:rgba(255,255,255,.75)}
 .seg :is(.on,[aria-pressed=true]){background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 1px 0 #fff,0 2px 8px rgba(0,0,0,.08)}
 .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .seg button:disabled{opacity:.45;cursor:not-allowed}
@@ -718,7 +717,13 @@ details.tg>summary .small{font-size:13px}
 .side a.sub .t{color:var(--ink-2)}
 .side a.sub .mono{margin-left:auto;color:var(--muted)}
 .side a.sub i{color:var(--muted)}
-/* .lchip: a link out (Jira status ↗). A quiet pill, not a tag: no fill until hover. AA: --muted on white 4.9:1. */
-.lchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;line-height:20px;padding:0 7px;border:1px solid var(--line);border-radius:10px;color:var(--muted);text-decoration:none;white-space:nowrap}
-.lchip:hover{background:var(--fill);color:var(--ink);text-decoration:none}
 .etab{table-layout:fixed;width:100%}
+/* Today (0.2.0): Start meeting pill's field and the View ⋯ menu, both anchored under their crumb / heading button. */
+.startm[popover],.viewm[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:360px;padding:10px;gap:10px}
+@supports (position-anchor:--a){.startm[popover]{position-anchor:--startm;top:calc(anchor(bottom) + 6px);right:anchor(right)}
+  .viewm[popover]{position-anchor:--viewm;top:calc(anchor(bottom) + 6px);right:anchor(right)}}
+.startm #meeting{display:flex;flex-direction:column;gap:8px}
+.startm #meeting>.small,.startm #meeting>.err{padding:0 !important}
+.needs h3{margin:10px 0 6px}
+/* To-do rows: actions show on hover / keyboard focus where there is a pointer; phones keep the ⋯ sheet. */
+@media (hover: hover) and (min-width: 640px){.blk.ln:not(:hover):not(:focus-within) .acts>*{visibility:hidden}}

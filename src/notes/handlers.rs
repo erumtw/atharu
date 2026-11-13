@@ -101,11 +101,16 @@ pub struct ListQuery {
     add: Option<String>,
     /// `1` = only notes linked to lines (D49).
     linked: Option<String>,
+    /// `mine` / `agent`: who wrote it (D1); anything else = all.
+    by: Option<String>,
 }
 
 /// `/notes?…` from the filters that are set (empty ones left out).
-fn list_url(q: &str, tags: &[String], linked: bool) -> String {
+fn list_url(q: &str, tags: &[String], linked: bool, by: &str) -> String {
     let mut parts = Vec::new();
+    if !by.is_empty() {
+        parts.push(format!("by={by}"));
+    }
     if !q.is_empty() {
         parts.push(format!("q={}", encode(q)));
     }
@@ -136,7 +141,12 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
     let all = queries::list(&conn, "", &[], false)?;
     let tags = TagFilter::pick(lq.tag.as_deref(), lq.add.as_deref());
     let linked = lq.linked.as_deref() == Some("1");
-    let (mut mine, mut agents) = (Vec::new(), Vec::new());
+    let by = match lq.by.as_deref() {
+        Some("mine") => "mine",
+        Some("agent") => "agent",
+        _ => "",
+    };
+    let mut rows = Vec::new();
     for n in queries::list(&conn, &q, &tags, linked)? {
         let (before, hit, after) = snippet(&markdown::to_text(&n.body), &q);
         let row = view::ListRow {
@@ -151,10 +161,12 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
             kind_name: n.first_kind.map_or("", kind_name),
             lines: n.lines,
         };
-        if row.agent.is_none() {
-            mine.push(row);
-        } else {
-            agents.push(row);
+        if match by {
+            "mine" => row.agent.is_none(),
+            "agent" => row.agent.is_some(),
+            _ => true,
+        } {
+            rows.push(row);
         }
     }
     let mut keep = Vec::new();
@@ -164,12 +176,19 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
     if linked {
         keep.push(("linked", "1".to_string()));
     }
-    let base = list_url(&q, &[], linked);
+    if !by.is_empty() {
+        keep.push(("by", by.to_string()));
+    }
+    let base = list_url(&q, &[], linked, by);
     web::html(&view::List {
         layout: Layout::load(&conn, "notes", "Notes", vec![])?,
         any: !all.is_empty(),
-        linked_on: list_url(&q, &tags, true),
-        linked_off: list_url(&q, &tags, false),
+        linked_on: list_url(&q, &tags, true, by),
+        linked_off: list_url(&q, &tags, false, by),
+        by_links: [("", "All"), ("mine", "Mine"), ("agent", "Agent")]
+            .into_iter()
+            .map(|(v, label)| (label, list_url(&q, &tags, linked, v), v == by))
+            .collect(),
         linked,
         filter: TagFilter {
             path: if base.contains('?') {
@@ -182,8 +201,7 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
             known: queries::tag_names(&conn)?,
         },
         q,
-        mine,
-        agents,
+        rows,
     })
 }
 

@@ -41,6 +41,19 @@ impl Plan {
         }
     }
 
+    /// The text as a row shows it: the link's URL left out, since the ↗ chip beside it already carries it.
+    pub fn shown_text(&self) -> String {
+        match self.link.as_deref() {
+            Some(l) => self
+                .text
+                .split(' ')
+                .filter(|w| *w != l)
+                .collect::<Vec<_>>()
+                .join(" "),
+            None => self.text.clone(),
+        }
+    }
+
     pub fn due_iso(&self) -> String {
         self.due.map(dates::iso).unwrap_or_default()
     }

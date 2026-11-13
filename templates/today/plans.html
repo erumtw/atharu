@@ -1,26 +1,19 @@
-{#- Body of #plans: the pinned top 3, then every other open plan behind a toggle. Rows swap themselves. -#}
+{#- Body of #plans: Focus (D3) = the pinned top 3 plus every overdue to-do, overdue first, each once. Rows swap themselves. -#}
 {%- let back = "/?day={}"|format(day.iso) %}{% let full = false %}{% let pin_error = false %}
-<h3>This week <span class="small muted normal">· your top 3 plans</span></h3>
-{%- if plans.pinned.is_empty() %}
-{%- if plans.other.is_empty() %}
-<p class="small muted" style="margin: 0">No open plans. Log a line starting with &gt;.</p>
+<h3>Focus <span class="small muted normal">· top 3 + overdue</span></h3>
+{%- if plans.focus.is_empty() %}
+{%- if plans.more == 0 %}
+<p class="small muted" style="margin: 0">No open to-dos. Log a line starting with &gt;.</p>
 {%- else %}
-<span class="small muted">No plans pinned. Pin an open plan to see it here.</span>
+<p class="small muted" style="margin: 0">Nothing pinned or overdue. Pin up to 3 in <a href="/todos">To-dos</a> to keep them here.</p>
 {%- endif %}
 {%- else %}
 <div class="blocks">
-{%- for p in plans.pinned %}
+{%- for p in plans.focus %}
 {% include "partials/plan_row.html" %}
 {%- endfor %}
 </div>
 {%- endif %}
-{%- if !plans.other.is_empty() %}
-<details>
-<summary class="small muted mid">Other open plans · {{ plans.other.len() }} <span class="normal">· Pin one to add it to your top 3</span></summary>
-<div class="blocks">
-{%- for p in plans.other %}
-{% include "partials/plan_row.html" %}
-{%- endfor %}
-</div>
-</details>
+{%- if plans.more > 0 %}
+<a class="small" href="/todos">{{ plans.more }} more open in To-dos →</a>
 {%- endif %}

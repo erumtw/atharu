@@ -414,7 +414,7 @@ async fn every_list_draws_a_todo_with_the_one_plan_row() {
             b.contains(r#"hx-post="/plans/1" hx-trigger="change""#),
             "{page}"
         );
-        assert!(b.contains("Pin to This week"), "{page}");
+        assert!(b.contains("Pin to Focus on Today (top 3)"), "{page}");
     }
     // Other lines draw read-only through entry_row.html everywhere but Today.
     let hub = get(&st, "/tags/infra").await.body;

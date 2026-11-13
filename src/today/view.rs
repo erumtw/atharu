@@ -91,13 +91,16 @@ pub struct Sug {
     pub new: Option<String>,
 }
 
-/// "This week" (pinned) and "Other open plans"; always about the real today, not the backfill day.
+/// Focus (D3): the pinned top 3 plus every overdue to-do, overdue first, each once; always about the real today.
 pub struct Plans {
-    pub pinned: Vec<Plan>,
-    pub other: Vec<Plan>,
+    pub focus: Vec<Plan>,
+    /// Open to-dos not in Focus (the To-dos link says how many).
+    pub more: usize,
+    pub due_today: usize,
+    pub overdue: usize,
 }
 
-/// One "Needs you" line: a flagged epic or an overdue to-do.
+/// One "Needs you" line: a flagged epic (D3: overdue to-dos live in Focus).
 pub struct Need {
     /// `flag over` / `flag risk` / `flag stale`.
     pub class: &'static str,
@@ -132,6 +135,34 @@ pub struct Page {
     /// `epic` or `tag`.
     pub group: &'static str,
     pub filter: TagFilter,
+}
+
+impl Page {
+    /// The head's one line: `1 due today · 1 overdue · 6 lines logged · in checkout-sync` (empty parts left out).
+    pub fn fact(&self) -> String {
+        let mut parts = Vec::new();
+        if self.plans.due_today > 0 {
+            parts.push(format!("{} due today", self.plans.due_today));
+        }
+        if self.plans.overdue > 0 {
+            parts.push(format!("{} overdue", self.plans.overdue));
+        }
+        // A line sits in several groups when grouped by tag: count it once.
+        let lines: std::collections::HashSet<i64> = self
+            .groups
+            .iter()
+            .flat_map(|g| g.rows.iter().map(|r| r.id))
+            .collect();
+        parts.push(match lines.len() {
+            0 => "nothing logged yet".to_string(),
+            1 => "1 line logged".to_string(),
+            n => format!("{n} lines logged"),
+        });
+        if let Some(m) = &self.banner.state.running {
+            parts.push(format!("in {}", m.name));
+        }
+        parts.join(" · ")
+    }
 }
 
 /// Inline edit box of one log line.

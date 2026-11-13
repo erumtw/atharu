@@ -26,13 +26,16 @@ async fn needs_you_lists_flags_and_overdue_todos() {
     seed(&st);
     let b = get(&st, "/").await.body;
     let pos = |s: &str| b.find(s).unwrap_or_else(|| panic!("missing {s}"));
-    assert!(pos("<b>Needs you</b>") < pos("Logged today"));
+    // D3: Needs you = epic flags only; the overdue to-do sits in Focus instead.
+    assert!(pos("<h3>Focus") < pos("send runbook"));
+    assert!(pos("send runbook") < pos("<h3>Needs you"));
+    assert!(pos("<h3>Needs you") < pos("Logged today"));
     assert!(
         pos("Log retention · 6 days past target")
             < pos("Checkout latency · due in 3 days, 1 plan open")
     );
     assert!(pos("due in 3 days") < pos("Reorder from history · nothing logged for 9 days"));
-    assert!(b.contains("send runbook · was due Mon 9 Nov"));
+    assert!(!b.contains("send runbook · was due"));
     assert!(!b.contains("Quiet but fine ·"));
     assert!(!b.contains("Done one"));
 }

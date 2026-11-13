@@ -33,8 +33,10 @@ pub struct List {
     /// The page with the linked filter switched on / off (other filters kept).
     pub linked_on: String,
     pub linked_off: String,
-    pub mine: Vec<ListRow>,
-    pub agents: Vec<ListRow>,
+    /// All · Mine · Agent (D1): (label, url, on), other filters kept.
+    pub by_links: Vec<(&'static str, String, bool)>,
+    /// One list, newest edit first; agent notes carry their @chip.
+    pub rows: Vec<ListRow>,
 }
 
 /// One `[[X]]` in the note: where it goes, or `None` when it resolves to nothing.

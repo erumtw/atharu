@@ -1,6 +1,5 @@
 {#- The day's log; htmx save/delete swap this whole section so new epic groups appear. #}
 <section id="log">{% let editable = true %}
-<h3>{% if day.is_today %}Logged today{% else %}Logged on {{ day.label }}{% endif %}</h3>
 {%- if groups.is_empty() %}
 <p class="muted small" style="margin: 0">Nothing logged yet. Type what you did in the box below, one thing per line. For example:</p>
 <div class="mono small muted" style="line-height: 1.7">OPS-101 shipped index migration<br>OPS-101 ! keep sync path, no queue<br>&gt; write retention runbook<br>? vector-search: HNSW trades recall for speed</div>

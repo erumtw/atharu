@@ -225,3 +225,22 @@ async fn group_by_type_puts_decisions_first_and_keeps_the_epic() {
     assert!(at("<h4>To-dos <span") < at("<h4>Done <span"));
     assert!(b.contains("aria-pressed=\"true\" type=\"submit\" name=\"group\" value=\"type\""));
 }
+
+#[tokio::test]
+async fn start_meeting_is_a_pill_until_one_runs() {
+    let st = state();
+    // Idle: the start field lives in the pill's popover, posting plainly (no htmx) back to this day.
+    let b = get(&st, "/").await.body;
+    assert!(b.contains(r#"popovertarget="startm""#));
+    assert!(b.contains(
+        r#"<div class="menu startm" id="startm" popover aria-label="Start a meeting" hx-disable>"#
+    ));
+    exec(
+        &st,
+        "INSERT INTO meetings(day, name) VALUES ('2026-11-11', 'oms-sync')",
+    );
+    // Running: no pill; the banner heads the page and the fact line names the meeting.
+    let b = get(&st, "/").await.body;
+    assert!(!b.contains(r#"popovertarget="startm""#));
+    assert!(b.contains("· in oms-sync</p>"), "{b}");
+}

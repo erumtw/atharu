@@ -110,8 +110,20 @@ async fn search_groups_and_page_picker() {
     );
     let b = get(&st, "/notes?q=checkout").await.body;
     assert!(b.contains("2 results"));
-    assert!(b.contains("<h3>Mine</h3>") && b.contains("<h3>Written by LLM</h3>"));
-    assert!(b.contains("<span class=\"chip llm\">llm</span><b>Lint · 10 Nov</b>"));
+    // One list (D1): the agent's note carries its @chip; All · Mine · Agent narrows it.
+    assert!(
+        b.contains(
+            r#"<span class="chip tag at" title="Written by llm">llm</span><b>Lint · 10 Nov</b>"#
+        ),
+        "{b}"
+    );
+    let m = get(&st, "/notes?q=checkout&by=mine").await.body;
+    assert!(
+        m.contains("1 result") && !m.contains("Lint · 10 Nov</b>"),
+        "{m}"
+    );
+    let a = get(&st, "/notes?by=agent").await.body;
+    assert!(a.contains("Lint · 10 Nov</b>") && !a.contains("Q4 OKR draft</b>"));
     assert!(b.contains("did you mean <b class=\"ink\">checkout</b>"));
     assert!(
         !b.contains("Q4 OKR draft</b>"),

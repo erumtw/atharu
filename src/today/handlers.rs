@@ -203,18 +203,22 @@ fn by_tag(rows: Vec<queries::LoggedRow>, day: &str) -> Vec<view::Group> {
 }
 
 fn plans(conn: &Connection, today: NaiveDate) -> rusqlite::Result<view::Plans> {
-    let (pinned, other) = queries::plans(conn, &dates::iso(dates::week_start(today)))?
-        .into_iter()
-        .partition(|p| p.pinned);
-    Ok(view::Plans { pinned, other })
+    let all = queries::plans(conn, &dates::iso(dates::week_start(today)))?;
+    let due_today = all.iter().filter(|p| p.due == Some(today)).count();
+    let (mut focus, rest): (Vec<_>, Vec<_>) =
+        all.into_iter().partition(|p| p.pinned || p.is_late(&today));
+    // Stable: overdue first, the pinned order kept inside each half.
+    focus.sort_by_key(|p| !p.is_late(&today));
+    Ok(view::Plans {
+        overdue: focus.iter().filter(|p| p.is_late(&today)).count(),
+        more: rest.len(),
+        due_today,
+        focus,
+    })
 }
 
-/// Flagged epics (worst first), then overdue to-dos.
-fn needs(
-    conn: &Connection,
-    plans: &view::Plans,
-    today: NaiveDate,
-) -> rusqlite::Result<Vec<view::Need>> {
+/// Flagged epics, worst first (D3: epic flags only).
+fn needs(conn: &Connection, today: NaiveDate) -> rusqlite::Result<Vec<view::Need>> {
     let mut out: Vec<(Flag, view::Need)> = Vec::new();
     for e in queries::active_epic_facts(conn)? {
         let facts = flags::EpicFacts {
@@ -242,19 +246,7 @@ fn needs(
         }
     }
     out.sort_by_key(|(f, _)| *f as u8);
-    let mut needs: Vec<view::Need> = out.into_iter().map(|(_, n)| n).collect();
-    for p in plans.pinned.iter().chain(&plans.other) {
-        if p.is_late(&today) {
-            needs.push(view::Need {
-                class: Flag::Overdue.class(),
-                label: "overdue",
-                key: p.epic_key.clone(),
-                text: format!("{} · was due {}", p.text, p.due_label()),
-                href: "/todos".into(),
-            });
-        }
-    }
-    Ok(needs)
+    Ok(out.into_iter().map(|(_, n)| n).collect())
 }
 
 fn render_page(
@@ -279,7 +271,7 @@ fn render_page(
             format!("/?day={}", dates::iso(day)),
         ),
         today: st.today(),
-        needs: needs(&conn, &plans, st.today())?,
+        needs: needs(&conn, st.today())?,
         plans,
         day: view::Day::new(day, st.today()),
         groups: groups(&conn, day, &o)?,

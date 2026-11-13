@@ -40,10 +40,14 @@ async fn open_plans_carry_over_to_today() {
     seed(&st);
     // Logged on 2 Nov, still open: shows on today's page without being copied.
     let b = get(&st, "/").await.body;
-    assert!(b.contains("Other open plans · 5"));
-    assert!(b.contains("renew parking"));
-    assert!(b.contains("8 days old"));
-    assert!(b.contains("No plans pinned. Pin an open plan to see it here."));
+    // Focus = pinned + overdue (D3); the rest is one link away.
+    assert!(
+        b.contains(r#"<p class="fact">1 due today · 1 overdue · nothing logged yet</p>"#),
+        "{b}"
+    );
+    assert!(b.contains("late runbook"));
+    assert!(!b.contains("renew parking"));
+    assert!(b.contains("4 more open in To-dos →"));
     assert_eq!(
         count(&st, "SELECT COUNT(*) FROM entries WHERE kind = 'plan'"),
         5
@@ -55,7 +59,7 @@ async fn open_plans_carry_over_to_today() {
         r.body
             .contains(r#"<section id="plans" hx-swap-oob="true">"#)
     );
-    assert!(r.body.contains("Other open plans · 6"));
+    assert!(r.body.contains("5 more open in To-dos →"));
 }
 
 #[tokio::test]
@@ -291,4 +295,23 @@ async fn ticking_done_asks_for_a_follow_up_carrying_epic_and_tags() {
         ),
         1
     );
+}
+
+#[tokio::test]
+async fn link_shows_once_as_its_chip() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO entries(day, kind, text, link, plan_state) VALUES
+           ('2026-11-12', 'plan', 'reply to vendor https://acme.slack.com/archives/C1/p2 today', 'https://acme.slack.com/archives/C1/p2', 'open');",
+    );
+    let b = get(&st, "/todos").await.body;
+    // The URL rides in the ↗ chip only; the text around it stays.
+    assert_eq!(
+        b.matches("https://acme.slack.com/archives/C1/p2").count(),
+        1,
+        "{b}"
+    );
+    assert!(b.contains("reply to vendor today"));
+    assert!(b.contains("Slack ↗"));
 }
