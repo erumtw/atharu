@@ -183,6 +183,11 @@ pre{max-width:100%;overflow-x:auto}
   /* Fixed layout at the phone's width (not the phone-wide `table{display:block}` scroller), long names wrap. */
   :is(.etab,table.series,.ltab,.ttab){display:table;width:100%;table-layout:fixed}
   :is(.etab,table.series,.ltab,.ttab) td{overflow-wrap:anywhere;white-space:normal}
+  /* Epics view row (0.2.7): the filter on line 1, Group by on line 2, Show on line 3; a long segmented control scrolls inside itself. */
+  .epview{flex-direction:column;align-items:stretch}
+  .epview .fld{width:auto !important}
+  .epview .row.small{margin-left:0 !important;flex-wrap:nowrap}
+  .epview .seg{overflow-x:auto;max-width:100%}
   .etab :is(th,td):first-child{width:92px}.etab :is(th,td):nth-child(6){width:34%}
   table.series :is(th,td):nth-child(3){width:96px}
   .ltab :is(th,td):nth-child(2){width:112px}

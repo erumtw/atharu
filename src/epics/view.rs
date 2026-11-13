@@ -214,6 +214,8 @@ pub struct List {
     /// `4 open` · `2 of 4 open`; and whether Jira has any assigned work at all (else no section).
     pub assigned_count: String,
     pub assigned_any: bool,
+    /// The assigned section starts open: ≤ 10 rows, or the owner is filtering / hiding tracked.
+    pub assigned_open: bool,
     /// The control row's current values.
     pub p: Params,
     /// D9: Jira refused the token on the last call; the page keeps the last copy and says so.

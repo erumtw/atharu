@@ -222,13 +222,14 @@ fn status_rank(cat: &str, status: &str) -> u8 {
 
 /// D5/D6: open Jira issues assigned to me, filtered by the page's `q` / Hide tracked and grouped by Jira status (by Jira parent
 /// when Group by = Parent). An Epic offers "+ Track as epic"; anything else "+ To-do", filled with the key, Jira's title, its
-/// link and due date. Returns the groups, "N open" / "N of M open", and whether Jira has any assigned work at all.
+/// link and due date. Returns the groups, "N open" / "N of M open", whether Jira has any assigned work at all, and whether the
+/// section starts open.
 fn assigned(
     st: &AppState,
     conn: &Connection,
     today: NaiveDate,
     p: &view::Params,
-) -> AppResult<(Vec<view::AssignedGroup>, String, bool)> {
+) -> AppResult<(Vec<view::AssignedGroup>, String, bool, bool)> {
     let all = queries::assigned(conn)?;
     let total = all.len();
     let needle = p.needle();
@@ -295,6 +296,8 @@ fn assigned(
             .collect(),
         count,
         total > 0,
+        // Folded when there are many (the page is about epics), unless the owner is filtering or narrowing.
+        shown <= 10 || p.filtering() || p.hide_tracked,
     ))
 }
 
@@ -579,7 +582,7 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
     if unnamed_total > 0 {
         fact.push(format!("{unnamed_total} unnamed"));
     }
-    let (assigned, assigned_count, assigned_any) = assigned(&st, &conn, today, &p)?;
+    let (assigned, assigned_count, assigned_any, assigned_open) = assigned(&st, &conn, today, &p)?;
     web::html(&view::List {
         layout: Layout::load(&conn, "epics", "Epics", vec![])?,
         fact: fact.join(" · "),
@@ -589,6 +592,7 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
         assigned,
         assigned_count,
         assigned_any,
+        assigned_open,
         p,
         // Only while Jira is set up (a stored failure outlives a removed token).
         dead_token: st.settings.jira().is_some() && queries::jira_auth_failed(&conn)?.is_some(),

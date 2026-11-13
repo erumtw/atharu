@@ -555,3 +555,107 @@ async fn assigned_is_filtered_hidden_when_tracked_and_grouped() {
         .collect();
     assert_eq!(heads, ["OPS-91", "Platform · OPS-90", "No parent"]);
 }
+
+#[tokio::test]
+async fn the_view_row_marks_the_current_pick_and_keeps_the_other_params() {
+    let st = state();
+    exec(&st, VIEW_SEED);
+    // Defaults: OKR and Active are pressed; no hidden params anywhere.
+    let b = get(&st, "/epics").await.body;
+    assert!(b.contains("<form class=\"fld s\" method=\"get\" action=\"/epics\" role=\"search\""));
+    assert!(b.contains("<button class=\"on\" aria-pressed=\"true\" type=\"submit\" name=\"group\" value=\"okr\">OKR</button>"));
+    assert!(b.contains("<button class=\"on\" aria-pressed=\"true\" type=\"submit\" name=\"show\" value=\"active\">Active</button>"));
+    assert!(
+        b.contains("placeholder=\"Filter epics\"") && !b.contains("type=\"hidden\" name=\"group\"")
+    );
+
+    // A pick elsewhere: the current one is pressed, and each form carries the other two params.
+    let b = get(&st, "/epics?q=expens&group=status&show=all&hide_tracked=1")
+        .await
+        .body;
+    assert!(b.contains(
+        "aria-pressed=\"true\" type=\"submit\" name=\"group\" value=\"status\">Status</button>"
+    ));
+    assert!(b.contains(
+        "aria-pressed=\"true\" type=\"submit\" name=\"show\" value=\"all\">All</button>"
+    ));
+    assert!(b.contains("name=\"q\" type=\"search\" value=\"expens\""));
+    // Group by keeps q, show and hide_tracked; Show keeps q, group and hide_tracked; the filter keeps group, show, hide_tracked.
+    let form = |label: &str| {
+        let i = b
+            .find(&format!("aria-label=\"{label}\""))
+            .or_else(|| b.find(&format!("role=\"{label}\"")))
+            .unwrap();
+        let j = b[i..].find("</form>").unwrap();
+        b[i..i + j].to_string()
+    };
+    let g = form("Group by");
+    assert!(
+        g.contains("name=\"q\" value=\"expens\"")
+            && g.contains("name=\"show\" value=\"all\"")
+            && g.contains("name=\"hide_tracked\" value=\"1\"")
+    );
+    assert!(!g.contains("type=\"hidden\" name=\"group\""));
+    let s = form("Show");
+    assert!(
+        s.contains("name=\"q\" value=\"expens\"")
+            && s.contains("name=\"group\" value=\"status\"")
+            && s.contains("name=\"hide_tracked\" value=\"1\"")
+    );
+    assert!(!s.contains("type=\"hidden\" name=\"show\""));
+    let f = form("search");
+    assert!(
+        f.contains("name=\"group\" value=\"status\"")
+            && f.contains("name=\"show\" value=\"all\"")
+            && f.contains("name=\"hide_tracked\" value=\"1\"")
+    );
+    // The Hide tracked box is checked and belongs to its own form (which keeps q, group, show).
+    assert!(b.contains(
+        "type=\"checkbox\" name=\"hide_tracked\" value=\"1\" form=\"hidetracked\" checked"
+    ));
+    let h = b.find("<form id=\"hidetracked\"").unwrap();
+    let h = &b[h..h + b[h..].find("</form>").unwrap()];
+    assert!(
+        h.contains("name=\"q\" value=\"expens\"")
+            && h.contains("name=\"group\" value=\"status\"")
+            && h.contains("name=\"show\" value=\"all\"")
+    );
+}
+
+#[tokio::test]
+async fn many_assigned_rows_start_folded_unless_filtering() {
+    let st = state();
+    let mut sql = String::new();
+    for i in 0..12 {
+        sql += &format!(
+            "INSERT INTO jira_issues(key, summary, status, status_cat, assigned_me) VALUES ('ZZ-{i}', 'Task {i}', 'To do', 'new', 1);"
+        );
+    }
+    exec(&st, &sql);
+    let b = get(&st, "/epics").await.body;
+    assert!(
+        b.contains("<details id=\"assigned\">") && b.contains("· 12 open"),
+        "folded when > 10"
+    );
+    // Filtering (or Hide tracked) opens it.
+    assert!(
+        get(&st, "/epics?q=task")
+            .await
+            .body
+            .contains("<details id=\"assigned\" open>")
+    );
+    assert!(
+        get(&st, "/epics?hide_tracked=1")
+            .await
+            .body
+            .contains("<details id=\"assigned\" open>")
+    );
+    // Few rows: open as before.
+    exec(&st, "DELETE FROM jira_issues WHERE key > 'ZZ-3'");
+    assert!(
+        get(&st, "/epics")
+            .await
+            .body
+            .contains("<details id=\"assigned\" open>")
+    );
+}

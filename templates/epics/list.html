@@ -2,6 +2,12 @@
 {% block content %}
 <main class="doc wide" data-group="{{ p.group.key() }}" data-show="{{ p.show.key() }}">
 <header class="pghead"><h1 class="ptitle">Epics</h1><p class="fact">{{ fact }}</p></header>
+{#- 0.2.7: Today's control row (partials in templates/today/page.html), for both lists below; all in the URL, no JS needed. -#}
+<div class="row epview" style="gap: 8px; flex-wrap: wrap" role="group" aria-label="View">
+<form class="fld s" method="get" action="/epics" role="search" style="width: 200px">{% if p.group != GroupBy::Okr %}<input type="hidden" name="group" value="{{ p.group.key() }}">{% endif %}{% if p.show != Show::Active %}<input type="hidden" name="show" value="{{ p.show.key() }}">{% endif %}{% if p.hide_tracked %}<input type="hidden" name="hide_tracked" value="1">{% endif %}<input name="q" type="search" value="{{ p.q }}" placeholder="Filter epics" aria-label="Filter epics" autocomplete="off"></form>
+<span class="row small epv-g" style="margin-left: auto; gap: 8px"><span class="muted">Group by</span><form class="seg" role="group" aria-label="Group by" method="get" action="/epics">{% if p.filtering() %}<input type="hidden" name="q" value="{{ p.q }}">{% endif %}{% if p.show != Show::Active %}<input type="hidden" name="show" value="{{ p.show.key() }}">{% endif %}{% if p.hide_tracked %}<input type="hidden" name="hide_tracked" value="1">{% endif %}{% for (v, label) in [("okr", "OKR"), ("status", "Status"), ("parent", "Parent"), ("tag", "Tag"), ("none", "None")] %}<button{% if p.group.key() == *v %} class="on" aria-pressed="true"{% endif %} type="submit" name="group" value="{{ v }}">{{ label }}</button>{% endfor %}</form></span>
+<span class="row small epv-s" style="gap: 8px"><span class="muted">Show</span><form class="seg" role="group" aria-label="Show" method="get" action="/epics">{% if p.filtering() %}<input type="hidden" name="q" value="{{ p.q }}">{% endif %}{% if p.group != GroupBy::Okr %}<input type="hidden" name="group" value="{{ p.group.key() }}">{% endif %}{% if p.hide_tracked %}<input type="hidden" name="hide_tracked" value="1">{% endif %}{% for (v, label) in [("active", "Active"), ("closed", "Done & dropped"), ("all", "All")] %}<button{% if p.show.key() == *v %} class="on" aria-pressed="true"{% endif %} type="submit" name="show" value="{{ v }}">{{ label }}</button>{% endfor %}</form></span>
+</div>
 {%- if jira_on %}
 <form class="row small" method="post" action="/jira/refresh" onsubmit="const b=this.querySelector('button');b.disabled=true;b.textContent='Refreshing…'"><input type="hidden" name="back" value="/epics"><span class="muted">Jira{% if let Some(a) = jira_age %} · updated {{ a }}{% endif %}.</span><button class="btn ghost s" type="submit">Refresh</button>{% if jira_done %}<span class="muted">✓ Refreshed from Jira</span>{% endif %}{% if jira_failed && !dead_token %}<span class="err">Couldn't reach Jira. Showing the last copy.</span>{% endif %}</form>
 {%- if dead_token %}<p class="small" role="alert"><span class="err">⚠ Jira token expired or revoked.</span> <a href="{{ token_url }}" target="_blank" rel="noopener noreferrer">Make a new one ↗</a> <span class="muted">· showing the last copy</span></p>{% endif %}
@@ -9,8 +15,10 @@
 {%- if assigned_any %}
 
 {#- D5/D6: open Jira work assigned to me, newest-updated first inside each group (a Jira status, or a parent); tracked ones say so. #}
-<details id="assigned" open>
-<summary>In Jira, assigned to you <span class="muted normal">· {{ assigned_count }}</span></summary>
+{#- The Hide tracked box lives in the summary but belongs to a form beside it (a form inside a summary is invalid HTML). -#}
+<form id="hidetracked" method="get" action="/epics">{% if p.filtering() %}<input type="hidden" name="q" value="{{ p.q }}">{% endif %}{% if p.group != GroupBy::Okr %}<input type="hidden" name="group" value="{{ p.group.key() }}">{% endif %}{% if p.show != Show::Active %}<input type="hidden" name="show" value="{{ p.show.key() }}">{% endif %}</form>
+<details id="assigned"{% if assigned_open %} open{% endif %}>
+<summary>In Jira, assigned to you <span class="muted normal">· {{ assigned_count }}</span><label class="small muted normal" style="float: right"><input class="check" type="checkbox" name="hide_tracked" value="1" form="hidetracked"{% if p.hide_tracked %} checked{% endif %} onchange="this.form.submit()"> Hide tracked</label><noscript><button class="btn ghost s" type="submit" form="hidetracked">Apply</button></noscript></summary>
 {%- for ag in assigned %}
 <details open class="ag"><summary class="small">{{ ag.label }} <span class="muted normal">· {{ ag.rows.len() }}</span></summary>
 <div class="arows">
