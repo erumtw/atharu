@@ -72,9 +72,18 @@ const put = (seg: HTMLElement, to: HTMLElement | null, animate: boolean) => {
   t.style.transform = `translateX(${to.offsetLeft}px)`
   t.style.width = `${to.offsetWidth}px`
 }
+// The picked label turns semibold after the thumb was measured (and fonts or a closed popover can change sizes too):
+// the thumb then stopped short of the label ("Liquid Gl|ass"). Re-measure whenever a switch's buttons change size.
+const resized = new ResizeObserver(entries => {
+  for (const e of entries) {
+    const seg = (e.target as Element).closest<HTMLElement>('.seg.has-thumb')
+    if (seg) put(seg, active(seg), false)
+  }
+})
 const segs = () => {
   for (const seg of document.querySelectorAll<HTMLElement>('.seg')) {
     if (!seg.querySelector(':scope > .thumb')) {
+      for (const b of seg.querySelectorAll<HTMLElement>(':scope > button')) resized.observe(b)
       const t = document.createElement('span')
       t.className = 'thumb still'
       t.setAttribute('aria-hidden', 'true')
