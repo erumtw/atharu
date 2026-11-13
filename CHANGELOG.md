@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.2.5 — 2026-11-14
+
+### Features
+
+- Report lists what Jira resolved this period, under each parent (D3)
+- Epic and story pages follow Jira (Done banner, Tickets, story head, "Also move in Jira?")
+- Epics reads Jira (assigned to you, parent groups, Jira title, status by category, Jira flags, dead token)
+- Move a Jira issue's status from its chip, with Undo (D1, D8)
+- Jira data for 0.2.5 (type, status category, parent, due, resolved, updated, assigned to me, dead token)
+
+### Fixes
+
+- No page-wide scrollbar gutter (an empty grey strip on every page and the menu-bar popover with always-shown scroll bars)
+- Jira gate fixes (live status for menu + Undo, serialised hx-vals, whole-chip swap, 401 vs 403, epic level, mark_done guard)
+- Jira design parity (one-pill status chip, menu header/pills/footer, inline chip, assigned rows, one-line story head, bold banner key; shots)
+- Simplify + verify for 0.2.5 (one Jira chip partial, status menu inside the epic head, ticket keys; screenshots)
+- A Mac sync writes nothing once the switch is off, even if it went off during the access dialog
+- Start meeting is a compact row in the page again; the popover hid the series list under its own text
+- Link chip is the same 20px pill as tag and key chips (was stretched to the row height)
+
+### Under the hood
+
+- Spec entry for Epics × Jira (status moves on press only, D1–D10) and README Jira paragraph
+
 ## v0.2.4 — 2026-11-14
 
 ### Features
