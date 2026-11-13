@@ -92,7 +92,8 @@ atharu help                                                 # this table (also -
 - `edit N "<line>"` rewrites line N (kind, epic, text, due, link, tags) keeping its day, meeting, note and author;
   refused (exit 1) unless that line's author is you. For fixing your own mistakes, e.g. a misheard owner from /meeting.
 - `log --note N` links the line to existing note N (its detail page; refused with exit 1 if there is no such note).
-- `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`.
+- `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`. Names that resolve to nothing are saved anyway (a `[[slug]]` can invite a topic); the JSON lists them in
+  `deadLinks` and stderr warns `Not linked yet: ‘x’`.
   `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
 - A drawing in a note is one body line `![Drawing](data:image/svg+xml;base64,…)` (editable Excalidraw scene inside):
   build it with `scripts/drawing.py` (`Drawing().box/arrow/text`, then `.line()`), put the line in the body, save with
