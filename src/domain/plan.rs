@@ -2,6 +2,7 @@
 use super::dates;
 use super::entry::{Entry, Kind, NoteRef, is_epic_key};
 use super::parse::{ParseError, parse};
+use chrono::Datelike;
 use chrono::{Days, NaiveDate};
 
 /// Pinned open plans allowed at once ("this week top 3").
@@ -69,6 +70,22 @@ impl Plan {
     /// `Fri 13 Nov`.
     pub fn due_label(&self) -> String {
         self.due.map(dates::label).unwrap_or_default()
+    }
+
+    /// The row's quiet due date (owner, 2026-11-14: always shown, like before 0.2.0): `Today` · `Tomorrow` · the weekday
+    /// within the coming week · `Wed 18 Nov` this year · ISO beyond. Late dates keep the day so you see how late.
+    pub fn due_quiet(&self, today: &NaiveDate) -> String {
+        let Some(d) = self.due else {
+            return String::new();
+        };
+        let days = (d - *today).num_days();
+        match days {
+            0 => "Today".into(),
+            1 => "Tomorrow".into(),
+            2..=6 => d.format("%a").to_string(),
+            _ if d.year() == today.year() => d.format("%a %-d %b").to_string(),
+            _ => d.format("%Y-%m-%d").to_string(),
+        }
     }
 
     pub fn is_late(&self, today: &NaiveDate) -> bool {

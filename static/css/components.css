@@ -783,3 +783,8 @@ table.series td:first-child{overflow-wrap:anywhere}
    the next note's (real lists, 0.2.0). */
 .blk.nrow{flex-wrap:wrap;row-gap:2px;padding-block:9px}
 .blk.nrow+.blk.nrow{border-top:1px solid var(--fill-2);border-radius:0}
+
+/* Quiet due date (owner 2026-11-14): always shown as the row's last column, right-aligned so dates line up; muted
+   13px, red when late, accent on today. The date picker stays in the hover toolbar. */
+.qdue{order:99;min-width:72px;text-align:right;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.qdue.late{color:var(--err)}.qdue.today{color:var(--accent)}

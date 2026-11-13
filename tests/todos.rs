@@ -31,7 +31,7 @@ async fn groups_by_due_against_fixed_today() {
     assert!(pos("plan q1") < pos("<h3>No date"));
     assert!(pos("<h3>No date") < pos("renew parking"));
     assert!(b.contains("Slack ↗"));
-    assert!(b.contains(r#"<span class="due late">due Mon 9 Nov</span>"#));
+    assert!(b.contains(r#"<span class="qdue late" title="Due Mon 9 Nov">Mon 9 Nov</span>"#));
 }
 
 #[tokio::test]
