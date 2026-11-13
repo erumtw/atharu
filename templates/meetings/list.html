@@ -3,7 +3,9 @@
 <main class="doc">
 <header class="pghead"><h1 class="ptitle">Meetings</h1>{% if !fact.is_empty() %}<p class="fact">{{ fact }}</p>{% endif %}</header>
 <section id="meeting">{% include "partials/meeting_banner.html" %}</section>
-{%- if series.is_empty() %}
+{%- if series.is_empty() && !archived.is_empty() %}
+<p class="small muted" style="margin: 0">All series are archived. Start a meeting above, or unarchive one below.</p>
+{%- else if series.is_empty() %}
 <p class="small muted" style="margin: 0">No meetings yet. Start one above; reuse a name to add to its series.</p>
 {%- else %}
 {#- One row per series (D14): its page lists the meetings. Archive is a plain POST, so it works without JS. #}

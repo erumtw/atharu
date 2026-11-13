@@ -32,7 +32,8 @@ pub fn looks(conn: &Connection) -> rusqlite::Result<Vec<(String, String)>> {
 
 /// Notes that point at a page, newest edit first, each once (mention beats line beats tag): `[[name]]` in the body,
 /// `#name` on the note (taggings), or the note of one of the page's own lines (`lines_sql` selects entry ids).
-/// `LIKE` and no link table on purpose (spec: backlinks are a body scan; a few hundred notes).
+/// `instr` (exact, case-sensitive: `LIKE` folds case and reads `_` as a wildcard) and no link table on purpose (spec:
+/// backlinks are a body scan; a few hundred notes).
 pub fn refs(
     conn: &Connection,
     name: Option<&str>,
@@ -43,7 +44,7 @@ pub fn refs(
     let lines = lines_sql.unwrap_or("SELECT NULL WHERE ?2 IS NULL AND 0");
     let sql = format!(
         "WITH hit(id, via) AS (
-           SELECT id, 1 FROM notes WHERE ?1 IS NOT NULL AND body LIKE '%[[' || ?1 || ']]%'
+           SELECT id, 1 FROM notes WHERE ?1 IS NOT NULL AND instr(body, '[[' || ?1 || ']]') > 0
            UNION ALL SELECT note_id, 2 FROM entries WHERE note_id IS NOT NULL AND id IN ({lines})
            UNION ALL SELECT CAST(item_id AS INTEGER), 3 FROM taggings
             WHERE ?1 IS NOT NULL AND item_type = 'note' AND tag = lower(?1))

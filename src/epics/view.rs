@@ -137,7 +137,7 @@ pub struct Page {
     pub today: NaiveDate,
     /// Top-bar status after a plain (no-JS) save failed: the reason.
     pub save_error: Option<&'static str>,
-    /// Notes linking here with `[[…]]`: (id, title).
+    /// Linked references: notes with `[[name]]` or `#name`, and notes on this page's lines.
     pub refs: Vec<crate::layout::Ref>,
     /// The `[[…]]` name the empty Linked references line suggests.
     pub ref_name: String,

@@ -99,7 +99,7 @@ pub struct Page {
     pub note: Option<(i64, String, String)>,
     pub today: NaiveDate,
     pub back: String,
-    /// Notes linking here with `[[…]]`: (id, title).
+    /// Linked references: notes with `[[name]]` or `#name`, and notes on this page's lines.
     pub refs: Vec<crate::layout::Ref>,
     /// The `[[…]]` name the empty Linked references line suggests.
     pub ref_name: String,

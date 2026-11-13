@@ -377,3 +377,35 @@ async fn archive_hides_a_series_from_meetings_and_calendar() {
     );
     assert_eq!(count(&st, "SELECT COUNT(*) FROM series_archive"), 0);
 }
+
+#[tokio::test]
+async fn starting_a_meeting_unarchives_its_series() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO meetings(id, day, name, ended_at) VALUES (1, '2026-11-04', 'planning', '2026-11-04 11:00:00');
+         INSERT INTO series_archive(name) VALUES ('planning');",
+    );
+    assert!(
+        get(&st, "/meetings")
+            .await
+            .body
+            .contains("All series are archived.")
+    );
+    // A new meeting in an archived series brings the series back, else it would vanish as it starts.
+    let r = post(&st, "/meetings", &form(&[("name", "planning")]), false).await;
+    assert_eq!(r.status, 303);
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM series_archive"), 0);
+    assert!(
+        get(&st, "/meetings")
+            .await
+            .body
+            .contains(r#"<b>planning</b>"#)
+    );
+    assert!(
+        get(&st, "/calendar")
+            .await
+            .body
+            .contains(r#"href="/meetings/2">planning"#)
+    );
+}

@@ -8,7 +8,6 @@ use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-/// (name, meetings) per series, most recently met first.
 /// The one-running-meeting guard of start / restore, read inside their write; pages read `recording::MeetingState`.
 fn running_name(conn: &Connection) -> rusqlite::Result<Option<String>> {
     conn.query_row(
@@ -25,6 +24,8 @@ pub fn start(conn: &Connection, day: &str, name: &str) -> rusqlite::Result<Resul
     if let Some(running) = running_name(conn)? {
         return Ok(Err(running));
     }
+    // A new meeting means the series is live again (D14): un-archive it, else the meeting would hide on start.
+    conn.execute("DELETE FROM series_archive WHERE name = ?1", [name])?;
     conn.execute(
         "INSERT INTO meetings(day, name, started_at)
          VALUES (?1, ?2, strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))",
@@ -132,7 +133,7 @@ pub fn rename_series(conn: &mut Connection, old: &str, new: &str) -> rusqlite::R
     // `[[old]]` in any note would turn into a dead link: follow the rename (the body's only change).
     tx.execute(
         "UPDATE notes SET body = replace(body, '[[' || ?1 || ']]', '[[' || ?2 || ']]')
-          WHERE body LIKE '%[[' || ?1 || ']]%'",
+          WHERE instr(body, '[[' || ?1 || ']]') > 0",
         params![old, new],
     )?;
     tx.commit()?;
@@ -232,7 +233,6 @@ pub fn lines(conn: &Connection, id: i64) -> rusqlite::Result<Vec<LineRow>> {
     .collect()
 }
 
-/// Action items: plans logged in the meeting, any state.
 /// One row per series for the Meetings list, latest meeting first.
 pub struct SeriesRow {
     pub name: String,
@@ -292,6 +292,7 @@ pub fn series_plans(conn: &Connection, name: &str) -> rusqlite::Result<Vec<Plan>
     stmt.query_map([name], crate::db::plan)?.collect()
 }
 
+/// Action items: plans logged in the meeting, any state.
 pub fn plans(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Plan>> {
     let mut stmt = conn.prepare(&format!(
         "{SELECT_PLAN} WHERE meeting_id = ?1 AND kind = 'plan' ORDER BY id"

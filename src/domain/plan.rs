@@ -43,16 +43,22 @@ impl Plan {
         }
     }
 
-    /// The text as a row shows it: the link's URL left out, since the ↗ chip beside it already carries it.
+    /// The text as a row shows it: the link's URL left out, since the ↗ chip beside it already carries it. A line
+    /// that is only its URL keeps it, so the row still has text to click and edit.
     pub fn shown_text(&self) -> String {
-        match self.link.as_deref() {
-            Some(l) => self
-                .text
-                .split(' ')
-                .filter(|w| *w != l)
-                .collect::<Vec<_>>()
-                .join(" "),
-            None => self.text.clone(),
+        let Some(l) = self.link.as_deref() else {
+            return self.text.clone();
+        };
+        let rest = self
+            .text
+            .split(' ')
+            .filter(|w| *w != l)
+            .collect::<Vec<_>>()
+            .join(" ");
+        if rest.trim().is_empty() {
+            self.text.clone()
+        } else {
+            rest
         }
     }
 

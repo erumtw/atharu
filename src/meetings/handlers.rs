@@ -177,10 +177,7 @@ pub async fn archive(
     Form(f): Form<ArchiveForm>,
 ) -> AppResult<Response> {
     queries::set_archived(&st.conn(), &f.name, f.on.as_deref() == Some("1"))?;
-    let back = f
-        .back
-        .filter(|b| b.starts_with('/') && !b.starts_with("//"));
-    Ok(web::back(back.as_deref().unwrap_or("/meetings")))
+    Ok(web::back(web::safe_back(f.back.as_deref(), "/meetings")))
 }
 
 #[derive(Deserialize)]

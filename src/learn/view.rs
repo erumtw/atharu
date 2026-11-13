@@ -81,7 +81,7 @@ pub struct Page {
     pub resources: String,
     pub rate: Rate,
     pub lines: Vec<crate::domain::entry::LineRow>,
-    /// Notes linking here with `[[…]]`: (id, title).
+    /// Linked references: notes with `[[name]]` or `#name`, and notes on this page's lines.
     pub refs: Vec<crate::layout::Ref>,
     /// The `[[…]]` name the empty Linked references line suggests.
     pub ref_name: String,

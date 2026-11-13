@@ -346,7 +346,9 @@ pub fn rewrite(
     let mut items = items;
     if new.is_some() {
         let linking: Vec<String> = tx
-            .prepare("SELECT CAST(id AS TEXT) FROM notes WHERE body LIKE '%[[' || ?1 || ']]%'")?
+            .prepare(
+                "SELECT CAST(id AS TEXT) FROM notes WHERE instr(body, '[[' || ?1 || ']]') > 0",
+            )?
             .query_map([old], |r| r.get(0))?
             .collect::<Result<_, _>>()?;
         for id in linking {

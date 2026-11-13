@@ -72,10 +72,7 @@ pub fn note(conn: &Connection, id: i64) -> rusqlite::Result<Option<NoteRow>> {
     .optional()
 }
 
-/// The line's note id, making it first if it has none: titled after the line (its text, which the
-/// parser already stripped of prefix and key), author me, linked in the same transaction.
-/// `None` = no such line.
-/// The meeting whose notes this note is (the other half of `meetings.note_id`): (id, `name · YYYY-MM-DD`).
+/// The meeting whose notes this note is (the other half of `meetings.note_id`): (id, series name, `YYYY-MM-DD`).
 pub fn meeting_of(conn: &Connection, note: i64) -> rusqlite::Result<Option<(i64, String, String)>> {
     conn.query_row(
         "SELECT id, name, day FROM meetings WHERE note_id = ?1 ORDER BY day DESC, id DESC LIMIT 1",
@@ -85,6 +82,9 @@ pub fn meeting_of(conn: &Connection, note: i64) -> rusqlite::Result<Option<(i64,
     .optional()
 }
 
+/// The line's note id, making it first if it has none: titled after the line (its text, which the
+/// parser already stripped of prefix and key), author me, linked in the same transaction.
+/// `None` = no such line.
 pub fn note_for_line(conn: &Connection, line: i64) -> rusqlite::Result<Option<i64>> {
     let tx = conn.unchecked_transaction()?;
     let Some((note, text)) = tx
