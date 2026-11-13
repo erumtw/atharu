@@ -25,7 +25,7 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .quick a,.quick .linkbtn{color:var(--accent-2)}
 .quick .check{border-color:var(--muted)}
 /* Fields and pills inside the panel: the solid sheet's --line edge (a white glass edge vanishes on 90% white, and fully under RT). */
-.quick :is(.btn.ghost,.fld):not(:focus-within):not(.bad){border-color:var(--line)}
+.quick .btn.ghost:not(:focus-within){border-color:var(--line)}
 .quick .check:checked{border-color:var(--accent)}
 
 .qh{display:flex;align-items:center;gap:8px;height:40px;flex:none}
@@ -97,13 +97,10 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
    panel would be glass on glass. */
 .quick .qfield .menu{--lg-min:100%;top:calc(100% + 6px);left:0;right:0;width:auto;z-index:5;backdrop-filter:none;-webkit-backdrop-filter:none}
 
-.qpills{display:flex;flex-wrap:wrap;gap:6px}
-.qpills .btn{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;line-height:30px}
 
 /* Meeting (0.2.6): one row each. Idle = the field with the mic toggle + a ghost Start inside it (`.q2f`, shared with the capture
    field); running = the banner's opaque --dark in one 40 px row, so its colours are the banner's (AA from T51, not the glass). */
 .q2start{display:flex;flex-direction:column;gap:6px}
-.q2f .btn.ghost{height:30px}
 /* The mic toggle: crossed grey mic = not recording (the default every time the popover opens), white mic on #ff3b30 = on.
    AA: --muted 5.07 on white, 4.45 on --fill-2 (non-text 3:1); white on #ff3b30 = 3.55:1 (non-text 3:1, the icon is a 2 px stroke).
    Idle it is a label around a hidden checkbox (so `record=1` still posts without JS); running it is a submit button. */
@@ -154,7 +151,7 @@ label.q2mic:has(:checked) .off{display:none}
 .q2empty b{font-family:ui-monospace,'SF Mono',Menlo,monospace;color:var(--ink-2);font-weight:600}
 
 /* Touch (browser /quick on a phone): the 44 floor responsive.css would have given. */
-@media (hover:none){.q2f,.quick .fld{height:48px}.q2k,.q2f .btn,.q2sv .btn{height:38px}.q2menu .mi{height:40px}.q2t{height:44px}.qpills .btn,.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}.q2mic,.q2cam,.q2end{min-height:38px}.q2mic,.q2cam{min-width:38px}}
+@media (hover:none){.q2f{height:48px}.q2k,.q2f .btn,.q2sv .btn{height:38px}.q2menu .mi{height:40px}.q2t{height:44px}.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}.q2mic,.q2cam,.q2end{min-height:38px}.q2mic,.q2cam{min-width:38px}}
 /* Reduce Transparency: looks.css already makes .menu solid + hairline; the panel goes fully opaque too. */
 @media (prefers-reduced-transparency: reduce){.menu.quick{--lg-min:100%}
   html[data-glass=all] .quick .qsec{border-color:var(--line)}}

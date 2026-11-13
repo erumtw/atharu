@@ -39,9 +39,6 @@ pub struct Page {
     pub note_mode: bool,
     /// The checked kind (index into KINDS).
     pub kind: usize,
-    /// Its mark and word, on the kind button.
-    pub kind_mark: &'static str,
-    pub kind_word: &'static str,
     /// Prefill for the box that shows.
     pub text: String,
     /// The note form's `back`: here, on the same kind.

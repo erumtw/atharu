@@ -431,19 +431,23 @@ fn update_part(st: &AppState, conn: &rusqlite::Connection) -> view::Update {
     )
 }
 
-/// The partial, or (a plain form) back to the row: every POST here works without JS.
-fn update_answer(st: &AppState, headers: &HeaderMap) -> AppResult<Response> {
-    if !web::is_htmx(headers) {
-        return Ok(web::back("/settings#update"));
-    }
+fn update_html(st: &AppState) -> AppResult<Response> {
     let part = update_part(st, &st.conn());
     web::html(&part)
 }
 
+/// The partial, or (a plain form) back to the row: every POST here works without JS.
+fn update_answer(st: &AppState, headers: &HeaderMap) -> AppResult<Response> {
+    if web::is_htmx(headers) {
+        update_html(st)
+    } else {
+        Ok(web::back("/settings#update"))
+    }
+}
+
 /// The row alone: its poll while an update runs.
 pub async fn update_get(State(st): State<AppState>) -> AppResult<Response> {
-    let part = update_part(&st, &st.conn());
-    web::html(&part)
+    update_html(&st)
 }
 
 /// "Check for updates": fetch the tags (a blocking git call, off the runtime) and say whether a newer release exists.

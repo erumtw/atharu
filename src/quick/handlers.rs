@@ -89,8 +89,6 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         note_mode: q.mode.as_deref() == Some("note"),
         back_note: back_to_kind(view::KINDS[kind].0),
         kind,
-        kind_mark: view::KINDS[kind].1,
-        kind_word: view::KINDS[kind].2,
         text: q.line.unwrap_or_default(),
         error: q.err.is_some().then_some(markdown::NO_TITLE),
         saved_note: q.note,
