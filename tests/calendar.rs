@@ -496,6 +496,26 @@ fn replace_mac_events_swaps_the_window_only() {
         ev("w", "Standup", "2026-11-19T09:30", Some("2026-11-19T09:45")),
         ev("a", "Offsite", "2026-11-20", Some("2026-11-22")),
     ];
+    // Off (the switch went off while macOS asked for access): nothing is written.
+    replace_mac_events(&mut st.conn(), "2026-10-28", "2027-01-11", &events).unwrap();
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM events WHERE source = 'mac' AND title = 'Standup'"
+        ),
+        0
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM settings WHERE key = 'mac_cal_synced'"
+        ),
+        0
+    );
+    exec(
+        &st,
+        "INSERT INTO settings(key, value) VALUES ('mac_cal', '1')",
+    );
     replace_mac_events(&mut st.conn(), "2026-10-28", "2027-01-11", &events).unwrap();
     replace_mac_events(&mut st.conn(), "2026-10-28", "2027-01-11", &events).unwrap();
     let rows: Vec<String> = st

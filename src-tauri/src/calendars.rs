@@ -53,7 +53,7 @@ pub fn start(st: AppState, mc: Arc<MacCalendars>) {
 }
 
 fn sync(st: &AppState, mc: &MacCalendars, store: &EKEventStore) -> Result<(), String> {
-    let (on, chosen) = mac_settings(&st.conn()).map_err(|e| e.to_string())?;
+    let (on, _) = mac_settings(&st.conn()).map_err(|e| e.to_string())?;
     if !on {
         return Ok(());
     }
@@ -66,6 +66,11 @@ fn sync(st: &AppState, mc: &MacCalendars, store: &EKEventStore) -> Result<(), St
     };
     mc.set_access(access);
     if access != Access::Granted {
+        return Ok(());
+    }
+    // The dialog can stay up for minutes: read the switch and the ticks again before writing anything.
+    let (on, chosen) = mac_settings(&st.conn()).map_err(|e| e.to_string())?;
+    if !on {
         return Ok(());
     }
     let cals = unsafe { store.calendarsForEntityType(EKEntityType::Event) };

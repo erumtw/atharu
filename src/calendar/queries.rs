@@ -232,6 +232,16 @@ pub fn replace_mac_events(
     events: &[MacEvent],
 ) -> rusqlite::Result<()> {
     let tx = conn.transaction()?;
+    // The switch may have gone off while macOS's access dialog was open: an off switch means no mac rows (D7),
+    // so a sync that read it as on before the dialog writes nothing now.
+    let on: bool = tx.query_row(
+        "SELECT EXISTS (SELECT 1 FROM settings WHERE key = 'mac_cal' AND value = '1')",
+        [],
+        |r| r.get(0),
+    )?;
+    if !on {
+        return Ok(());
+    }
     tx.execute(
         "DELETE FROM events WHERE source = 'mac'
            AND starts_at < date(?2, '+1 day') AND COALESCE(ends_at, starts_at) > ?1 || 'T00:00'",
