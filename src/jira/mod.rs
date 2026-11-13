@@ -24,6 +24,7 @@ pub fn routes() -> Router<AppState> {
         .route("/jira/{key}/moves", get(moves::moves))
         .route("/jira/{key}/move", post(moves::move_to))
         .route("/jira/{key}/undo", post(moves::undo))
+        .route("/jira/{key}/suggest", get(moves::suggest))
 }
 
 #[derive(Deserialize)]

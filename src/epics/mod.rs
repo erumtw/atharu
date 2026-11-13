@@ -21,6 +21,7 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/epics/{key}/title", post(handlers::set_title))
         .route("/epics/{key}/track", post(handlers::track))
+        .route("/epics/{key}/jira-done", post(handlers::jira_done))
         .route("/epics/{key}/delete", post(handlers::delete))
         .route("/epics/{key}/restore", post(handlers::restore))
         .route("/epics/{key}/evidence", post(handlers::add_evidence))

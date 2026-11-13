@@ -345,7 +345,19 @@ pub async fn update(
         return Ok(web::back(&back));
     }
     let ticked = state == Some("done") && p.is_open() && f.ask.is_some();
+    let closed = p
+        .is_open()
+        .then_some(state)
+        .flatten()
+        .and_then(|s| match s {
+            "done" => Some("done"),
+            "dropped" => Some("dropped"),
+            _ => None,
+        });
     let p = queries::plan_by_id(&conn, id)?.ok_or(AppError::NotFound)?;
+    let jira_ask = closed
+        .filter(|_| st.settings.jira().is_some())
+        .and_then(|w| p.jira_key().map(|k| (k.to_string(), w)));
     let follow = ticked.then(|| view::Follow {
         id,
         key: p.epic_key.clone(),
@@ -363,6 +375,7 @@ pub async fn update(
         back,
         pin_error: pin_full,
         follow,
+        jira_ask,
     };
     let status = if pin_full {
         StatusCode::UNPROCESSABLE_ENTITY

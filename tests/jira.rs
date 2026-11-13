@@ -103,7 +103,12 @@ async fn off_without_all_three_keys() {
         b.contains(&chip.replace("class=\"lchip\"", "class=\"lchip jc-\"")),
         "{b}"
     );
-    assert!(get(&st, "/epics/OPS-101").await.body.contains(chip));
+    assert!(
+        get(&st, "/epics/OPS-101")
+            .await
+            .body
+            .contains(&chip.replace("class=\"lchip\"", "class=\"lchip jc-\""))
+    );
     assert!(
         get(&st, "/epics?jira=failed")
             .await
@@ -503,5 +508,127 @@ async fn epics_list_reads_jira_assigned_parents_and_flags() {
             .await
             .body
             .contains("action=\"/epics/OPS-160/track\"")
+    );
+}
+
+#[tokio::test]
+async fn epic_page_follows_jira_done_tickets_and_suggests_moves() {
+    use std::sync::{Arc, Mutex, atomic::AtomicU16};
+    let posted = Arc::new(Mutex::new(Vec::new()));
+    let base = fake_workflow(posted.clone(), Arc::new(AtomicU16::new(200))).await;
+    let st = jira_state(&base, "epicpage");
+    exec(
+        &st,
+        "INSERT INTO epics(key, title) VALUES ('OPS-500', 'Checkout platform'), ('OPS-118', '');
+         INSERT INTO entries(day, epic_key, kind, text) VALUES ('2026-11-10', 'OPS-118', 'done', 'spec'), ('2026-11-11', 'OPS-118', 'done', 'review');
+         INSERT INTO jira_issues(key, summary, status, status_cat, issue_type, parent_key, parent_summary, resolved_on) VALUES
+           ('OPS-500', 'Checkout platform', 'Done', 'done', 'Epic', NULL, NULL, '2026-11-12'),
+           ('OPS-118', 'Reorder from history', 'In review', 'indeterminate', 'Story', 'OPS-500', 'Checkout platform', NULL),
+           ('OPS-161', 'Retry price feed', 'To do', 'new', 'Bug', 'OPS-500', 'Checkout platform', NULL);",
+    );
+    // D2 banner, D3 tickets: children from Jira's parent field, logged or not.
+    let b = get(&st, "/epics/OPS-500").await.body;
+    assert!(
+        b.contains("Jira says <span class=\"chip key\">OPS-500</span> is Done on Thu 12 Nov."),
+        "{b}"
+    );
+    assert!(b.contains("form=\"jdone\" name=\"act\" value=\"done\">Mark done</button>"));
+    assert!(
+        b.contains("Tickets <span class=\"small muted normal\">· 2 in Jira · 1 logged here</span>")
+    );
+    assert!(
+        b.contains("<a href=\"/epics/OPS-118\"><span class=\"chip key\">OPS-118</span></a>")
+            && b.contains(">2 lines</span>")
+    );
+    assert!(
+        b.contains("/browse/OPS-161\"><span class=\"chip key\">OPS-161</span></a>")
+            && b.contains(">not logged</span>")
+    );
+    // Story head (D3): its type, and what it sits under (tracked → its page here); named by Jira (D7).
+    let s = get(&st, "/epics/OPS-118").await.body;
+    assert!(s.contains("<div class=\"pgk\"><span>Story</span>"));
+    assert!(s.contains("under <a href=\"/epics/OPS-500\"><span class=\"chip key\">OPS-500</span> Checkout platform</a>"));
+    assert!(
+        s.contains("<title>Atharu · Reorder from history</title>"),
+        "page title from Jira"
+    );
+
+    // Not yet: hidden for this resolution date. Mark done: Jira's date becomes done on.
+    post(
+        &st,
+        "/epics/OPS-500/jira-done",
+        &form(&[("act", "notyet")]),
+        false,
+    )
+    .await;
+    assert!(!get(&st, "/epics/OPS-500").await.body.contains("Jira says"));
+    post(
+        &st,
+        "/epics/OPS-500/jira-done",
+        &form(&[("act", "done")]),
+        false,
+    )
+    .await;
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM epics WHERE key = 'OPS-500' AND status = 'done' AND done_on = '2026-11-12'"
+        ),
+        1
+    );
+
+    // Done in Atharu (D2): the save asks for the suggestion; the fake starts at Ready (no done move) → no prompt.
+    let r = request(
+        &st,
+        "PATCH",
+        "/epics/OPS-118",
+        &form(&[("status", "done"), ("role", "owner")]),
+        true,
+    )
+    .await;
+    assert!(
+        r.body
+            .contains("hx-get=\"/jira/OPS-118/suggest?for=done&back=/epics/OPS-118\""),
+        "{}",
+        r.body
+    );
+    assert_eq!(
+        get(&st, "/jira/OPS-118/suggest?for=done").await.body.trim(),
+        ""
+    );
+    // From In Progress: done → the Done move (not the cancel one); dropped → Won't do only (D10).
+    post(&st, "/jira/OPS-118/move", &form(&[("to", "21")]), true).await;
+    let d = get(&st, "/jira/OPS-118/suggest?for=done").await.body;
+    assert!(
+        d.contains("Also move <span class=\"chip key\">OPS-118</span> in Jira?")
+            && d.contains(">Done</button>")
+            && !d.contains("Won"),
+        "{d}"
+    );
+    let x = get(&st, "/jira/OPS-118/suggest?for=dropped").await.body;
+    assert!(
+        x.contains(">Won&#39;t do</button>") && !x.contains(">Done</button>"),
+        "{x}"
+    );
+
+    // A Jira-linked to-do dropped: the row asks too.
+    exec(
+        &st,
+        &format!(
+            "INSERT INTO entries(id, day, kind, text, plan_state, link) VALUES (90, '2026-11-11', 'plan', 'retry {base}/browse/OPS-161', 'open', '{base}/browse/OPS-161')"
+        ),
+    );
+    let r = post(
+        &st,
+        "/plans/90",
+        &form(&[("state", "dropped"), ("back", "/todos")]),
+        true,
+    )
+    .await;
+    assert!(
+        r.body
+            .contains("hx-get=\"/jira/OPS-161/suggest?for=dropped&back=/todos\""),
+        "{}",
+        r.body
     );
 }

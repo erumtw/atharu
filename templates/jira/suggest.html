@@ -1,0 +1,9 @@
+{#- "Also move KEY in Jira?" (0.2.5 D2, D10): right after Atharu marks it done / dropped, the matching Jira moves, one
+    tap each (the result replaces this in #jtoast, with Undo). No matching move → empty: no prompt. Skip just closes it. -#}
+{%- if !moves.is_empty() %}
+<span class="jtoast-in jsug">Also move <span class="chip key">{{ key }}</span> in Jira?
+{%- for m in moves %}
+<form class="inline" method="post" action="/jira/{{ key }}/move" hx-post="/jira/{{ key }}/move" hx-target="#jtoast" hx-swap="innerHTML"><input type="hidden" name="to" value="{{ m.id }}"><input type="hidden" name="back" value="{{ back }}"><button class="btn s" type="submit">{{ m.to }}</button></form>
+{%- endfor %}
+<button class="linkbtn" type="button" onclick="this.closest('.jsug').remove()">Skip</button></span>
+{%- endif %}

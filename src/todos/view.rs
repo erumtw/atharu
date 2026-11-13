@@ -63,6 +63,9 @@ pub struct Row {
     pub pin_error: bool,
     /// Just ticked done: "what's next?" under the row; the list regroups once it's answered.
     pub follow: Option<Follow>,
+    /// Just made done / dropped and it links a Jira issue: (key, `done` | `dropped`) loads "Also move KEY in Jira?"
+    /// into the page's #jtoast (D2, D10), where a regroup can't sweep it away.
+    pub jira_ask: Option<(String, &'static str)>,
 }
 
 /// The follow-up line under a ticked to-do (htmx only): carries its epic and #tags into the next to-do.

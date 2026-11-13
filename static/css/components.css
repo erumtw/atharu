@@ -79,6 +79,10 @@ a:hover>.chip{background:var(--sep)}
 #jtoast{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:30}
 #jtoast:empty{display:none}
 .jtoast-in{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:var(--fill-3);border:1px solid var(--line);border-radius:9999px;padding:6px 14px;box-shadow:0 6px 20px rgba(0,0,0,.12);animation:jt 5s forwards}
+/* D2: "Jira says KEY is Done on <date>" under the epic head. */
+.callout.jdone{align-items:center;gap:12px}
+/* The "Also move in Jira?" suggestion waits for an answer: no fade. */
+.jtoast-in.jsug{animation:none}
 @keyframes jt{0%,90%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
 @media (prefers-reduced-motion: reduce){.jtoast-in{animation:jt 5s steps(1,end) forwards}}
 .lchip:hover{background:var(--sep);text-decoration:none}

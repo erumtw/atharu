@@ -1,2 +1,3 @@
 {% include "partials/plan_row.html" %}
 {%- if let Some(f) = follow %}{{ f|safe }}{% endif %}
+{%- if let Some((k, w)) = jira_ask %}<div hidden hx-get="/jira/{{ k }}/suggest?for={{ w }}&back={{ back|urlencode }}" hx-trigger="load" hx-target="#jtoast" hx-swap="innerHTML"></div>{% endif %}

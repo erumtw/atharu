@@ -385,6 +385,7 @@ fn live(
         evidence,
         ev_line,
         ev_error,
+        suggest: None,
     })
 }
 
@@ -461,11 +462,53 @@ fn render_page(
     let fact = fact(&e, today);
     let max = weeks.iter().copied().max().unwrap_or(0).max(1);
     let title = if e.title.is_empty() {
-        e.key.clone()
+        e.jira_summary
+            .clone()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| e.key.clone())
     } else {
         e.title.clone()
     };
+    // D2: Jira resolved it while it's still active here, unless "Not yet" was said for this very date.
+    let jira_done = match (&e.jira_cat, &e.jira_resolved) {
+        (Some(c), Some(r)) if c == "done" && e.status == "active" => {
+            let hidden = queries::jira_not_yet(&conn, key)?;
+            (hidden.as_deref() != Some(r.as_str()))
+                .then(|| date(Some(r)).map_or_else(|| r.clone(), dates::label))
+        }
+        _ => None,
+    };
+    let tickets = queries::children(&conn, key)?
+        .into_iter()
+        .map(|c| {
+            let jira = jira_link(st, &c.key, Some(&c.status));
+            view::Ticket {
+                href: if c.tracked {
+                    format!("/epics/{}", c.key)
+                } else {
+                    jira.as_ref().map(|(_, u)| u.clone()).unwrap_or_default()
+                },
+                jira,
+                key: c.key,
+                summary: c.summary,
+                issue_type: c.issue_type,
+                cat: c.cat,
+                lines: c.lines,
+            }
+        })
+        .collect();
+    // D3: a story's head says what it sits under — its page here when tracked, else Jira.
+    let parent = e.jira_parent.clone().map(|p| {
+        let href = if queries::epic(&conn, &p).ok().flatten().is_some() {
+            format!("/epics/{p}")
+        } else {
+            jira_link(st, &p, None).map(|(_, u)| u).unwrap_or_default()
+        };
+        (p, e.jira_parent_summary.clone().unwrap_or_default(), href)
+    });
     Ok(view::Page {
+        jira_done,
+        tickets,
         layout: Layout::load(&conn, "epics", title, vec![crumb("Epics", "/epics")])?,
         flag: flag(&e, today),
         activity: weeks.iter().map(|n| n * 100 / max).collect(),
@@ -480,6 +523,13 @@ fn render_page(
             start: e.start.unwrap_or_default(),
             target: e.target.unwrap_or_default(),
             done_on: e.done_on.unwrap_or_default(),
+            kind: e
+                .jira_type
+                .clone()
+                .filter(|t| !t.is_empty())
+                .unwrap_or_else(|| "Epic".into()),
+            parent,
+            cat: e.jira_cat.clone().unwrap_or_default(),
         },
         field: tag_field(&conn, epic_tags)?,
         refs: crate::layout::refs(&conn, Some(key), Some(crate::layout::Lines::Epic(key)))?,
@@ -586,10 +636,12 @@ pub async fn update(
         form.insert("tags".into(), list.join(","));
     }
     let mut stamped = false;
+    let mut was_active = false;
     let error = match fields(&form) {
         Some(mut f) => {
             let conn = st.conn();
             let cur = load(&conn, &key)?;
+            was_active = cur.status == "active";
             if backwards(&cur, &f) {
                 Some(TARGET_BEFORE_START)
             } else {
@@ -616,16 +668,53 @@ pub async fn update(
     }
     let conn = st.conn();
     let e = load(&conn, &key)?;
+    let mut lv = live(&conn, &e, String::new(), None)?;
+    // D2 / D10: just made done or dropped, and Jira knows the key: offer the matching Jira move.
+    if ok
+        && was_active
+        && matches!(e.status.as_str(), "done" | "dropped")
+        && e.jira_status.is_some()
+        && st.settings.jira().is_some()
+    {
+        lv.suggest = Some(if e.status == "done" {
+            "done"
+        } else {
+            "dropped"
+        });
+    }
     web::html_status(
         status,
         &view::Swap {
-            live: live(&conn, &e, String::new(), None)?,
+            live: lv,
             save_error: error,
             field: Some(tag_field(&conn, tags::parse_list(&e.tags))?),
             // The "done on" input isn't in the swapped block: show the date the save just filled in.
             done_on: stamped.then(|| e.done_on.clone().unwrap_or_default()),
         },
     )
+}
+
+#[derive(Deserialize)]
+pub struct JiraDoneForm {
+    act: String,
+}
+
+/// The D2 banner's buttons: "Mark done" (Jira's resolution date becomes done on) or "Not yet" (hidden until that
+/// date changes). Plain form, 303 back to the page.
+pub async fn jira_done(
+    State(st): State<AppState>,
+    Path(key): Path<String>,
+    Form(f): Form<JiraDoneForm>,
+) -> AppResult<Response> {
+    let conn = st.conn();
+    let e = load(&conn, &key)?;
+    if let Some(r) = e.jira_resolved.as_deref() {
+        match f.act.as_str() {
+            "done" => queries::mark_done(&conn, &key, r)?,
+            _ => queries::set_jira_not_yet(&conn, &key, r)?,
+        }
+    }
+    Ok(web::back(&format!("/epics/{key}")))
 }
 
 #[derive(Deserialize)]

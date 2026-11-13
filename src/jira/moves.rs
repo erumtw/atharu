@@ -231,6 +231,62 @@ pub async fn moves(
     web::html(&page)
 }
 
+/// A cancel-type move (D10): to a done-category status named like Won't do / Cancelled / Rejected.
+pub fn is_cancel(m: &Move) -> bool {
+    const WORDS: [&str; 8] = [
+        "won't",
+        "wont",
+        "cancel",
+        "reject",
+        "abandon",
+        "invalid",
+        "duplicate",
+        "not do",
+    ];
+    let text = format!("{} {}", m.name, m.to).to_lowercase();
+    m.to_cat == "done" && WORDS.iter().any(|w| text.contains(w))
+}
+
+/// "Also move KEY in Jira?" (D2, D10): after Atharu marks it done, the done-category moves that aren't a cancel;
+/// after dropped, the cancel-type ones. None match → nothing (no prompt).
+#[derive(Template)]
+#[template(path = "jira/suggest.html")]
+pub struct Suggest {
+    pub key: String,
+    pub moves: Vec<Move>,
+    pub back: String,
+}
+
+#[derive(Deserialize)]
+pub struct SuggestQ {
+    #[serde(rename = "for")]
+    after: String,
+    back: Option<String>,
+}
+
+pub async fn suggest(
+    State(st): State<AppState>,
+    Path(key): Path<String>,
+    Query(q): Query<SuggestQ>,
+) -> AppResult<Response> {
+    let key = checked(&key)?;
+    let mut s = Suggest {
+        key: key.clone(),
+        moves: Vec::new(),
+        back: web::safe_back(q.back.as_deref(), "/epics").to_string(),
+    };
+    if let Some(j) = st.settings.jira()
+        && let Ok(all) = fetch_moves(&st, &j, &key).await
+    {
+        let dropped = q.after == "dropped";
+        s.moves = all
+            .into_iter()
+            .filter(|m| m.to_cat == "done" && is_cancel(m) == dropped)
+            .collect();
+    }
+    web::html(&s)
+}
+
 /// After a move or an undo: what happened, with Undo while it can still be undone.
 #[derive(Template)]
 #[template(path = "jira/toast.html")]

@@ -36,6 +36,70 @@ pub struct EpicRow {
     pub jira_updated: Option<String>,
     pub jira_parent: Option<String>,
     pub jira_parent_summary: Option<String>,
+    /// Jira's resolution date (`YYYY-MM-DD`) and issue type.
+    pub jira_resolved: Option<String>,
+    pub jira_type: Option<String>,
+}
+
+/// A Jira child of an epic (D3: `parent_key` = the epic): its type, title, status, lines logged on its key, and
+/// whether it has its own page here.
+pub struct Child {
+    pub key: String,
+    pub summary: String,
+    pub status: String,
+    pub cat: String,
+    pub issue_type: String,
+    pub lines: i64,
+    pub tracked: bool,
+}
+
+pub fn children(conn: &Connection, key: &str) -> rusqlite::Result<Vec<Child>> {
+    let mut stmt = conn.prepare(
+        "SELECT j.key, j.summary, j.status, j.status_cat, j.issue_type,
+                (SELECT COUNT(*) FROM entries WHERE epic_key = j.key),
+                EXISTS (SELECT 1 FROM epics WHERE key = j.key)
+           FROM jira_issues j WHERE j.parent_key = ?1 ORDER BY j.status_cat = 'done', j.key",
+    )?;
+    stmt.query_map([key], |r| {
+        Ok(Child {
+            key: r.get(0)?,
+            summary: r.get(1)?,
+            status: r.get(2)?,
+            cat: r.get(3)?,
+            issue_type: r.get(4)?,
+            lines: r.get(5)?,
+            tracked: r.get(6)?,
+        })
+    })?
+    .collect()
+}
+
+/// D2 "Not yet": hidden until Jira's resolution date changes (the date it was hidden for is kept).
+pub fn jira_not_yet(conn: &Connection, key: &str) -> rusqlite::Result<Option<String>> {
+    conn.query_row(
+        "SELECT value FROM settings WHERE key = 'jira_notyet:' || ?1",
+        [key],
+        |r| r.get(0),
+    )
+    .optional()
+}
+
+pub fn set_jira_not_yet(conn: &Connection, key: &str, resolved: &str) -> rusqlite::Result<()> {
+    conn.execute(
+        "INSERT INTO settings(key, value) VALUES ('jira_notyet:' || ?1, ?2)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        params![key, resolved],
+    )?;
+    Ok(())
+}
+
+/// D2 "Mark done": Jira's resolution date becomes "done on".
+pub fn mark_done(conn: &Connection, key: &str, on: &str) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE epics SET status = 'done', done_on = ?2 WHERE key = ?1",
+        params![key, on],
+    )?;
+    Ok(())
 }
 
 /// An open Jira issue assigned to me (D5), and whether Atharu already tracks it (an epic of that key, or an open
@@ -106,7 +170,7 @@ const SELECT_EPIC: &str =
         ep.metric, ep.before, ep.after, (SELECT MAX(e.day) FROM entries e WHERE e.epic_key = ep.key),
         (SELECT COUNT(*) FROM entries e WHERE e.epic_key = ep.key AND e.plan_state = 'open'),
         ep.author, j.summary || ' · ' || j.status, ep.tags, j.status,
-        j.summary, j.status_cat, j.due, j.updated_at, j.parent_key, j.parent_summary
+        j.summary, j.status_cat, j.due, j.updated_at, j.parent_key, j.parent_summary, j.resolved_on, j.issue_type
  FROM epics ep LEFT JOIN jira_issues j ON j.key = ep.key";
 
 fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
@@ -134,6 +198,8 @@ fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
         jira_updated: r.get(20)?,
         jira_parent: r.get(21)?,
         jira_parent_summary: r.get(22)?,
+        jira_resolved: r.get(23)?,
+        jira_type: r.get(24)?,
     })
 }
 

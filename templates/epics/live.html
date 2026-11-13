@@ -1,5 +1,6 @@
 {#- Impact line + evidence; swapped whole by property and evidence actions (the line quotes both). #}
 <div id="live">
+{%- if let Some(f) = live.suggest %}<div hidden hx-get="/jira/{{ live.key }}/suggest?for={{ f }}&back=/epics/{{ live.key }}" hx-trigger="load" hx-target="#jtoast" hx-swap="innerHTML"></div>{% endif %}
 {%- if let Some(line) = live.impact %}
 <div class="callout dark" style="flex-direction: column; gap: 10px">
 <div class="row between" style="width: 100%"><span class="small muted">Impact line</span><button class="btn" type="button" data-copy="#impact-line">Copy</button></div>

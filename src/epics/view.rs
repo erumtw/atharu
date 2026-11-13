@@ -130,6 +130,23 @@ pub struct EpicView {
     pub jira: Option<String>,
     /// The ↗ chip (status or `Jira`, issue URL), when Jira is configured.
     pub jira_link: Option<(String, String)>,
+    /// The head's kind: Jira's issue type (Story, Bug, …) or `Epic`.
+    pub kind: String,
+    /// Story head (D3): "under PARENT title ↗" — (key, title, href: its page when tracked, else Jira).
+    pub parent: Option<(String, String, String)>,
+    pub cat: String,
+}
+
+/// A Jira child row in "Tickets · N in Jira · M logged here" (D3).
+pub struct Ticket {
+    pub key: String,
+    pub summary: String,
+    pub issue_type: String,
+    pub jira: Option<(String, String)>,
+    pub cat: String,
+    pub lines: i64,
+    /// Its own page here when tracked, else Jira.
+    pub href: String,
 }
 
 pub struct Evidence {
@@ -150,6 +167,8 @@ pub struct Live {
     /// Kept in the evidence box after a rejected add.
     pub ev_line: String,
     pub ev_error: Option<String>,
+    /// Right after a save made it done / dropped: ask "Also move KEY in Jira?" (D2, D10).
+    pub suggest: Option<&'static str>,
 }
 
 /// A timeline row: to-dos draw as `plan_row.html` (check, Pin, Drop), every other line as `entry_row.html`.
@@ -188,6 +207,9 @@ pub struct Page {
     pub ref_name: String,
     /// A plain (no-JS) delete was refused.
     pub delete_error: Option<&'static str>,
+    /// D2: "Jira says KEY is Done on <date>" while it's active here.
+    pub jira_done: Option<String>,
+    pub tickets: Vec<Ticket>,
 }
 
 /// htmx answer to a property / evidence change: the live block, plus the top-bar status out-of-band.
@@ -200,4 +222,11 @@ pub struct Swap {
     pub field: Option<crate::layout::TagField>,
     /// The "done on" input, out-of-band, when this save filled the date in.
     pub done_on: Option<String>,
+}
+
+impl Page {
+    /// Tickets with at least one line logged on their key (D3).
+    pub fn logged(&self) -> usize {
+        self.tickets.iter().filter(|t| t.lines > 0).count()
+    }
 }
