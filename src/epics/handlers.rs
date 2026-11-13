@@ -427,7 +427,7 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
     let needle = p.needle();
     let hit = |text: &str| needle.is_empty() || text.contains(&needle);
     let (mut done_month, mut active_named, mut unnamed_total) = (0, 0, 0);
-    let (mut untitled, mut closed, mut cands) = (Vec::new(), Vec::new(), Vec::<Cand>::new());
+    let (mut untitled, mut closed, mut all) = (Vec::new(), Vec::new(), Vec::<Cand>::new());
     for e in queries::all_epics(&conn)? {
         let is_closed = e.status != "active";
         let done = e.status == "done";
@@ -454,62 +454,58 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
             e.tags
         )
         .to_lowercase();
-        let shows = match p.show {
-            view::Show::Active => !is_closed,
-            view::Show::Closed => is_closed,
-            view::Show::All => true,
-        };
-        if !hit(&qtext) {
-            continue;
-        }
+        let chip = is_closed.then(|| match date(e.done_on.as_deref()) {
+            Some(d) if done => format!("done {}", view::short(d)),
+            _ => e.status.clone(),
+        });
         if is_closed && p.show == view::Show::Active {
             // The folded "Done & dropped" list: only in the default view.
-            closed.push(view::Closed {
-                chip: match date(e.done_on.as_deref()) {
-                    Some(d) if done => format!("done {}", view::short(d)),
-                    _ => e.status.clone(),
-                },
-                key: e.key,
-                jira: e.jira.filter(|_| e.title.is_empty()),
-                title: e.title,
-                done,
-            });
+            if hit(&qtext) {
+                closed.push(view::Closed {
+                    chip: chip.unwrap_or_default(),
+                    key: e.key,
+                    jira: e.jira.filter(|_| e.title.is_empty()),
+                    title: e.title,
+                    done,
+                });
+            }
             continue;
         }
-        if !shows {
+        if (p.show == view::Show::Closed) != is_closed && p.show != view::Show::All {
             continue;
         }
         if !is_closed && !named {
-            untitled.push(list_row(&st, e, today));
+            if hit(&qtext) {
+                let mut row = list_row(&st, e, today);
+                row.q = qtext;
+                untitled.push(row);
+            }
             continue;
         }
-        let okr = if e.okr.is_empty() {
-            "No OKR".to_string()
-        } else {
-            e.okr.clone()
-        };
-        let parent = e
-            .jira_parent
-            .clone()
-            .map(|p| (p, e.jira_parent_summary.clone().unwrap_or_default()));
-        let tags: Vec<String> = e
+        let tags = e
             .tags
             .split(',')
             .map(|t| t.trim().to_lowercase())
             .filter(|t| !t.is_empty())
             .collect();
+        let (okr, parent) = (
+            if e.okr.is_empty() {
+                "No OKR".to_string()
+            } else {
+                e.okr.clone()
+            },
+            e.jira_parent
+                .clone()
+                .map(|p| (p, e.jira_parent_summary.clone().unwrap_or_default())),
+        );
         let (cat, status) = (
             e.jira_cat.clone().unwrap_or_default(),
             e.jira_status.clone().unwrap_or_default(),
         );
-        let chip = is_closed.then(|| match date(e.done_on.as_deref()) {
-            Some(d) if done => format!("done {}", view::short(d)),
-            _ => e.status.clone(),
-        });
         let mut row = list_row(&st, e, today);
         row.closed_chip = chip;
         row.q = qtext;
-        cands.push(Cand {
+        all.push(Cand {
             row,
             parent,
             okr,
@@ -518,32 +514,17 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
             tags,
         });
     }
-    for u in &mut untitled {
-        u.q = format!("{} {}", u.key, u.title).to_lowercase();
-    }
     // "N of M": the same grouping without the filter says how many each group holds.
     let totals: HashMap<String, usize> = if p.filtering() {
-        let mut all = Vec::new();
-        for e in queries::all_epics(&conn)? {
-            let is_closed = e.status != "active";
-            let named =
-                !(e.title.is_empty() && e.jira_summary.as_deref().is_none_or(str::is_empty));
-            let shows = match p.show {
-                view::Show::Active => !is_closed,
-                view::Show::Closed => is_closed,
-                view::Show::All => true,
-            };
-            if shows && (is_closed || named) {
-                all.push(cand_stub(&e));
-            }
-        }
-        group_cands(p.group, all)
+        group_cands(p.group, all.clone())
             .into_iter()
             .map(|(l, v)| (l, v.len()))
             .collect()
     } else {
         HashMap::new()
     };
+    all.retain(|c| hit(&c.row.q));
+    let cands = all;
     let unit = if p.show == view::Show::Active {
         " active"
     } else {
@@ -607,44 +588,6 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
             _ => format!("{} d ago", m / 1440),
         }),
     })
-}
-
-/// A candidate with only what grouping reads: for counting a group's unfiltered size.
-fn cand_stub(e: &queries::EpicRow) -> Cand {
-    Cand {
-        row: view::ListRow {
-            key: e.key.clone(),
-            title: String::new(),
-            open: 0,
-            impact: None,
-            last_log: String::new(),
-            flag: None,
-            jira: None,
-            jira_hint: None,
-            from_jira: false,
-            cat: String::new(),
-            child: false,
-            closed_chip: None,
-            q: String::new(),
-        },
-        parent: e
-            .jira_parent
-            .clone()
-            .map(|p| (p, e.jira_parent_summary.clone().unwrap_or_default())),
-        okr: if e.okr.is_empty() {
-            "No OKR".to_string()
-        } else {
-            e.okr.clone()
-        },
-        cat: e.jira_cat.clone().unwrap_or_default(),
-        status: e.jira_status.clone().unwrap_or_default(),
-        tags: e
-            .tags
-            .split(',')
-            .map(|t| t.trim().to_lowercase())
-            .filter(|t| !t.is_empty())
-            .collect(),
-    }
 }
 
 #[derive(Deserialize)]
