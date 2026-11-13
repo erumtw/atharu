@@ -75,13 +75,17 @@ async fn new_note_autosave_and_render() {
     // page (T5), not on each meeting.
     exec(&st, "INSERT INTO epics(key) VALUES ('OPS-101')");
     let e = get(&st, "/epics/OPS-101").await.body;
-    assert!(e.contains("Linked references") && e.contains("href=\"/notes/1\">Checkout retro</a>"), "{e}");
-    assert!(e.contains("mentions it"));
+    assert!(
+        e.contains("Linked references")
+            && e.contains("href=\"/notes/1\"><span>Checkout retro</span></a>"),
+        "{e}"
+    );
+    assert!(e.contains("Mentioned in · 1"));
     assert!(
         get(&st, "/learn/vector-search")
             .await
             .body
-            .contains("href=\"/notes/1\">Checkout retro</a>")
+            .contains("href=\"/notes/1\"><span>Checkout retro</span></a>")
     );
 }
 

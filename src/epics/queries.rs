@@ -186,7 +186,6 @@ pub fn entry_days_since(conn: &Connection, key: &str, from: &str) -> rusqlite::R
     stmt.query_map(params![key, from], |r| r.get(0))?.collect()
 }
 
-
 /// Agent upsert: a new key gets the agent's title/OKR and author; an existing epic only has
 /// empty title/OKR filled, so nothing I typed is ever overwritten. Returns true if it was created.
 pub fn agent_upsert(

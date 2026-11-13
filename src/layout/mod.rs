@@ -159,17 +159,53 @@ pub enum Lines<'a> {
 
 /// Linked references of a page called `name` (`None`: only notes on its lines, e.g. one meeting, whose name is
 /// its series'), shared by every entity page so `[[X]]`, `#X` and line notes always land the same way.
-pub fn refs(conn: &rusqlite::Connection, name: Option<&str>, lines: Option<Lines>) -> rusqlite::Result<Vec<Ref>> {
+pub fn refs(
+    conn: &rusqlite::Connection,
+    name: Option<&str>,
+    lines: Option<Lines>,
+) -> rusqlite::Result<Vec<Ref>> {
     let (sql, arg): (Option<&str>, Box<dyn rusqlite::ToSql>) = match lines {
         None => (None, Box::new(rusqlite::types::Null)),
-        Some(Lines::Epic(k)) => (Some("SELECT id FROM entries WHERE epic_key = ?2"), Box::new(k.to_string())),
-        Some(Lines::Meeting(id)) => (Some("SELECT id FROM entries WHERE meeting_id = ?2"), Box::new(id)),
+        Some(Lines::Epic(k)) => (
+            Some("SELECT id FROM entries WHERE epic_key = ?2"),
+            Box::new(k.to_string()),
+        ),
+        Some(Lines::Meeting(id)) => (
+            Some("SELECT id FROM entries WHERE meeting_id = ?2"),
+            Box::new(id),
+        ),
         Some(Lines::Series(n)) => (
-            Some("SELECT id FROM entries WHERE meeting_id IN (SELECT id FROM meetings WHERE name = ?2)"),
+            Some(
+                "SELECT id FROM entries WHERE meeting_id IN (SELECT id FROM meetings WHERE name = ?2)",
+            ),
             Box::new(n.to_string()),
         ),
-        Some(Lines::Topic(s)) => (Some("SELECT id FROM entries WHERE topic = ?2"), Box::new(s.to_string())),
-        Some(Lines::Tag(t)) => (Some("SELECT entry_id FROM entry_tags WHERE tag = ?2"), Box::new(t.to_string())),
+        Some(Lines::Topic(s)) => (
+            Some("SELECT id FROM entries WHERE topic = ?2"),
+            Box::new(s.to_string()),
+        ),
+        Some(Lines::Tag(t)) => (
+            Some("SELECT entry_id FROM entry_tags WHERE tag = ?2"),
+            Box::new(t.to_string()),
+        ),
     };
     queries::refs(conn, name, sql, arg.as_ref())
+}
+
+/// Linked references grouped for the panel, in reading order; empty groups dropped.
+pub fn ref_groups(refs: &[Ref]) -> Vec<(&'static str, Vec<&Ref>)> {
+    [
+        ("Mentioned in", Via::Mention),
+        ("On its lines", Via::Line),
+        ("Tagged", Via::Tag),
+    ]
+    .into_iter()
+    .map(|(label, via)| {
+        (
+            label,
+            refs.iter().filter(|r| r.via == via).collect::<Vec<_>>(),
+        )
+    })
+    .filter(|(_, g)| !g.is_empty())
+    .collect()
 }

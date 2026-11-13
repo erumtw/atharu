@@ -253,7 +253,6 @@ pub fn plans(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Plan>> {
     stmt.query_map([id], crate::db::plan)?.collect()
 }
 
-
 /// Deletes a meeting; its lines stay (FK sets their meeting_id to NULL). Hands back
 /// (name, JSON snapshot incl. the line ids) so Undo can re-attach them.
 pub fn delete(conn: &mut Connection, id: i64) -> rusqlite::Result<Option<(String, String)>> {

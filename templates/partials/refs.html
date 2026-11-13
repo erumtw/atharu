@@ -1,14 +1,15 @@
-{#- Linked references (`.refs`): every note that points at this page, one row each, newest edit first. Needs `refs`
-    (Vec<layout::Ref>). Empty → one line naming how to link, so the section explains itself. #}
+{#- Linked references (`.refs`): every note that points at this page, grouped by how it gets here, newest edit first.
+    Needs `refs` (Vec<layout::Ref>) and `ref_name`. Empty → one line naming how to link, so the section explains itself. #}
 <section class="refs" aria-labelledby="refs-h">
-<h2 id="refs-h" class="refs-h">Linked references{% if !refs.is_empty() %} <span class="small muted normal">· {{ refs.len() }}</span>{% endif %}</h2>
+<header><h3 id="refs-h">Linked references{% if !refs.is_empty() %} <span class="small muted normal">· {{ refs.len() }}</span>{% endif %}</h3></header>
 {%- if refs.is_empty() %}
-<p class="small muted" style="margin: 0">No note points here yet. Write <span class="mono">[[{{ ref_name }}]]</span> in a note, or give a line on this page a note.</p>
+<p class="small muted" style="margin: 0">No note points here yet. Write <span class="mono">[[{{ ref_name }}]]</span> in a note, or give a line here a note.</p>
 {%- else %}
-<ul class="refs-list">
-{%- for r in refs %}
-<li><a href="/notes/{{ r.id }}">{{ r.title }}</a>{% if r.author != "me" %} <span class="chip tag at" title="Written by {{ r.author }}">@{{ r.author }}</span>{% endif %}<span class="small muted">{{ r.via_label() }}</span></li>
+{%- for (label, group) in crate::layout::ref_groups(refs) %}
+<h4>{{ label }} · {{ group.len() }}</h4>
+{%- for r in group %}
+<a class="ref" href="/notes/{{ r.id }}"><span>{{ r.title }}{% if r.author != "me" %} <span class="chip tag at" title="Written by {{ r.author }}">{{ r.author }}</span>{% endif %}</span></a>
 {%- endfor %}
-</ul>
+{%- endfor %}
 {%- endif %}
 </section>

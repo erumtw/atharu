@@ -167,7 +167,6 @@ pub fn lines(conn: &Connection, slug: &str) -> rusqlite::Result<Vec<LineRow>> {
     .collect()
 }
 
-
 /// Deletes a topic page and its ratings (FK cascade). Its `?` lines stay and, with no topics row,
 /// show in the Learn inbox again. Hands back a JSON snapshot incl. ratings for Undo.
 pub fn delete(conn: &mut Connection, slug: &str) -> rusqlite::Result<Option<String>> {

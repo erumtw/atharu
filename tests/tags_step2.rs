@@ -248,7 +248,10 @@ async fn rename_merge_delete_with_undo() {
     post(&st, "/notes", "", false).await;
     post(&st, "/notes/1", &form(&[("body", "plan #expense")]), false).await;
     // Links the hub without the tag: a rename follows `[[expense]]` too.
-    exec(&st, "INSERT INTO notes(id, title, body) VALUES (2, 'n2', 'see [[expense]]')");
+    exec(
+        &st,
+        "INSERT INTO notes(id, title, body) VALUES (2, 'n2', 'see [[expense]]')",
+    );
     exec(
         &st,
         "INSERT INTO topics(slug, tags) VALUES ('vat', 'expense')",
@@ -295,7 +298,10 @@ async fn rename_merge_delete_with_undo() {
         1
     );
     assert_eq!(
-        count(&st, "SELECT COUNT(*) FROM notes WHERE body = 'see [[spend]]'"),
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE body = 'see [[spend]]'"
+        ),
         1
     );
     assert_eq!(

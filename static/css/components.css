@@ -678,3 +678,38 @@ progress.prog::-moz-progress-bar{background:var(--accent)}
   .seg.has-thumb>.thumb{transition:none}
   ::view-transition-old(root),::view-transition-new(root){animation-duration:100ms}
 }
+
+/* 0.2.0 page template (canvas "Redesign proposal", 2026-11-13): one head, filled-only props, toggled sections, Linked references. */
+
+/* .pghead: the shared entity-page head. Kind glyph or key chip inline, the 40/600 title, one muted fact line. */
+.pghead{display:flex;flex-direction:column;gap:6px}
+.pghead .pgk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);min-height:22px}
+.pghead .pgk .ic{color:var(--muted)}
+.pghead .ptitle{margin:0}
+.pghead .fact{margin:0;font-size:14px;color:var(--muted)}
+.pghead .fact b{color:var(--ink-2);font-weight:500}
+/* .pmenu: the page ⋯ menu under the crumb (the hub's .acts-menu, made the one menu every entity page has). */
+.pmenu{width:230px;position-anchor:--pmenu;top:anchor(bottom);right:anchor(right);margin-top:4px;position:fixed}
+/* .addprop: empty properties are hidden (D6); this row adds one. Sits in the props grid, full width. */
+.addprop{grid-column:1/-1;justify-self:start;display:inline-flex;align-items:center;gap:6px;border:0;background:none;font:inherit;font-size:14px;color:var(--muted);padding:5px 8px;margin:2px 0 0 -8px;border-radius:6px;cursor:pointer;min-height:30px}
+.addprop:hover{background:var(--fill);color:var(--ink)}
+/* .refs: Linked references, grouped by source, snippet around the mention. Content: no glass. */
+.refs{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:12px;margin-top:10px}
+.refs>header{display:flex;align-items:center;gap:8px}
+.refs>header h3{margin:0}
+.refs>header .btn{margin-left:auto}
+.refs h4{margin:10px 0 2px;font-size:12px;font-weight:600;color:var(--muted)}
+.refs .ref{display:flex;flex-direction:column;gap:1px;padding:6px 8px;margin:0 -8px;border-radius:8px;color:var(--ink);text-decoration:none}
+.refs .ref:hover{background:var(--fill)}
+.refs .ref>span:first-child{display:flex;gap:8px;align-items:center;font-weight:500}
+.refs .ref .snip{font-size:13px;color:var(--muted)}
+.refs mark{background:var(--accent-wash);color:var(--ink);border-radius:3px;padding:0 2px}
+/* @mention chip (D5): the #tag chip with an @. Agent authorship reads like a tag, not a badge. */
+.chip.tag.at::before{content:"@"}
+/* Toggled sections: the existing details > summary, at h3 size on entity pages. */
+details.tg>summary{font-size:20px;letter-spacing:-.2px;margin-top:8px}
+details.tg>summary .small{font-size:13px}
+/* Fixed sidebar: titles first, key muted on the right (stubs say "unnamed"). */
+.side a.sub .t{color:var(--ink-2)}
+.side a.sub .mono{margin-left:auto;color:var(--muted)}
+.side a.sub i{color:var(--muted)}

@@ -500,8 +500,8 @@ fn quick(app: &AppHandle, base: &tauri::Url) -> Result<(), Box<dyn std::error::E
                 .build(),
         )
         .initialization_script("document.documentElement.dataset.app = 'mac'")
-                // The pages also check this marker in their own <head> (the init script can miss a page start).
-                .user_agent(MAC_UA)
+        // The pages also check this marker in their own <head> (the init script can miss a page start).
+        .user_agent(MAC_UA)
         .on_navigation(move |url| quick_nav(&h, url))
         .on_new_window(|url, _| {
             if to_browser(&url) {
