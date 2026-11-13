@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.2 — 2026-11-13
+
+### Fixes
+
+- To-do hover toolbar sits above the row's corner, not over its note button
+
 ## v0.2.1 — 2026-11-13
 
 ### Fixes
