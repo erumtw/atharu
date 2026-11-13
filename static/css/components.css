@@ -688,7 +688,9 @@ progress.prog::-moz-progress-bar{background:var(--accent)}
 .startm[popover],.viewm[popover]{width:360px;padding:10px;gap:10px}
 @supports (position-anchor:--a){:is(.pmenu,.startm,.viewm)[popover]{top:calc(anchor(bottom) + 6px);right:anchor(right)}
   .pmenu{position-anchor:--pmenu}.startm{position-anchor:--startm}.viewm{position-anchor:--viewm}}
-.menu form{display:contents}
+/* A menu item that posts is a bare form around its button; a switch (.seg) or a field (.fld) keeps its own box. */
+.menu form:not(.seg,.fld){display:contents}
+.viewm .seg{flex:none}
 .menu button[role=menuitem]{border:0;background:none;font:inherit;width:100%;text-align:left;cursor:pointer}
 /* Crumb's right end: save status + ⋯. */
 .crumb .pend{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:nowrap}

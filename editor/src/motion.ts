@@ -90,6 +90,12 @@ document.addEventListener('click', ev => {
   if (!b || !seg?.classList.contains('has-thumb')) return
   put(seg, b, !reduce())
 })
+// A switch inside a closed popover (Today's View menu) measures 0 wide at load: place its thumb when the popover opens.
+document.addEventListener('toggle', ev => {
+  const pop = ev.target as HTMLElement
+  if ((ev as ToggleEvent).newState !== 'open') return
+  for (const seg of pop.querySelectorAll<HTMLElement>('.seg.has-thumb')) put(seg, active(seg), false)
+}, true)
 // glass.js flips aria-pressed in place: follow it. Not `class`: the thumb's own class flips would loop back here.
 new MutationObserver(ms => {
   for (const m of ms) {
