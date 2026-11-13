@@ -528,7 +528,7 @@ async fn epics_list_reads_jira_assigned_parents_and_flags() {
     // D16: Jira's epic level decides, whatever the type is called.
     assert!(b.contains("action=\"/epics/OPS-170/track\""));
     assert!(b.contains("name=\"line\" value=\"OPS-161 &#62; Retry price feed https://acme.atlassian.net/browse/OPS-161 by 2026-11-13\""));
-    assert!(b.contains("<span class=\"muted small\">due Fri</span>") && b.contains("✓ tracked"));
+    assert!(b.contains("<span class=\"adue muted small\">due Fri</span>") && b.contains("✓ tracked"));
     // D4: OPS-101 and OPS-118 sit under the untracked OPS-500 header.
     let head = b
         .find("<tr class=\"jhead\"><td><span class=\"chip key\">OPS-500</span>")

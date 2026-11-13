@@ -81,10 +81,21 @@ a:hover>.chip{background:var(--sep)}
 /* Its muted note ("from Jira", "Jira epic · not tracked") gives way before the title. */
 .ettl>.small{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* "In Jira, assigned to you" (D5, D6): hairline rows; type · key · title left, status + due right, action last. */
-.arow{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--fill-2);font-size:14px}
+/* Fixed columns (0.2.6): a flex row let "Story" vs "Task", the due and "+ To-do" vs "✓ tracked" push the status chip
+   sideways row by row (owner screenshot). Every row renders all six cells, so the columns line up. */
+.arow{display:grid;grid-template-columns:52px 76px minmax(0,1fr) 172px 64px 132px;align-items:center;column-gap:10px;
+  min-height:44px;padding:2px 0;border-top:1px solid var(--fill-2);font-size:14px}
 .arow:first-child{border-top:0}
-.arow>*{flex:none}
-.arow>.t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arow>.jtype,.arow>.chip.key{justify-self:start}
+.arow>.t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arow>.ast{justify-self:end;display:flex;min-width:0;max-width:100%}
+.arow>.ast .lchip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arow>.adue{white-space:nowrap}
+.arow>.aact{justify-self:end;white-space:nowrap}
+/* Phone: key · status · action on one line, the title under it (two lines at most). */
+@media (max-width:639px){.arow{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"k s a" "t t t";row-gap:2px;padding:6px 0}
+  .arow>:is(.jtype,.adue){display:none}.arow>.chip.key{grid-area:k}.arow>.ast{grid-area:s}.arow>.aact{grid-area:a}
+  .arow>.t{grid-area:t;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
 /* --muted on white 5.07:1. */
 .jtype{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px}
 /* D4: a Jira parent header row and the stories under it. */

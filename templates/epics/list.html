@@ -14,9 +14,9 @@
 <div class="arows">
 {%- for a in assigned %}
 <div class="arow"><span class="jtype">{{ a.issue_type }}</span><span class="chip key">{{ a.key }}</span><span class="t" title="{{ a.summary }}">{{ a.summary }}</span>
-{%- if let Some((s, u)) = a.jira %}{% let (jk, js, jc, jurl, ju, back) = (a.key.as_str(), s.as_str(), a.cat.as_str(), u.as_str(), "a{}"|format(a.key), "/epics") %}{% include "partials/jira_chip.html" %}{% endif %}
-{%- if let Some(d) = a.due %}<span class="muted small">{{ d }}</span>{% endif %}
-{%- if a.tracked %}<span class="muted small">✓ tracked</span>{% else if a.epic %}<form class="inline" method="post" action="/epics/{{ a.key }}/track"><input type="hidden" name="back" value="/epics#assigned"><button class="btn ghost s" type="submit">+ Track as epic</button></form>{% else %}<form class="inline" method="post" action="/todos"><input type="hidden" name="line" value="{{ a.line }}"><button class="btn ghost s" type="submit" title="Adds: {{ a.line }}">+ To-do</button></form>{% endif %}</div>
+<span class="ast">{%- if let Some((s, u)) = a.jira %}{% let (jk, js, jc, jurl, ju, back) = (a.key.as_str(), s.as_str(), a.cat.as_str(), u.as_str(), "a{}"|format(a.key), "/epics") %}{% include "partials/jira_chip.html" %}{% endif %}</span>
+<span class="adue muted small">{%- if let Some(d) = a.due %}{{ d }}{% endif %}</span>
+<span class="aact">{%- if a.tracked %}<span class="muted small">✓ tracked</span>{% else if a.epic %}<form class="inline" method="post" action="/epics/{{ a.key }}/track"><input type="hidden" name="back" value="/epics#assigned"><button class="btn ghost s" type="submit">+ Track as epic</button></form>{% else %}<form class="inline" method="post" action="/todos"><input type="hidden" name="line" value="{{ a.line }}"><button class="btn ghost s" type="submit" title="Adds: {{ a.line }}">+ To-do</button></form>{% endif %}</span></div>
 {%- endfor %}
 </div>
 </details>
