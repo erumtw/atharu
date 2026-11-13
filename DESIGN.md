@@ -419,28 +419,33 @@ the log scrolls under it.
   date in `--muted` · "Open Atharu" `.ib`) · **capture** · **meeting** · **to-dos**. Desktop control heights at every width: the page
   loads tokens/base/components/looks + `quick.css`, never `responsive.css` (360 px must not trip the phone rules); a `(hover:none)`
   rule gives touch its 44.
-- **Capture**: 8 px between the tiles, the field and the hint (the section's gap). Six **kind tiles** in one row (44 tall, key square over an 11/500 word: done · decision · blocker · impact · learned ·
-  to-do), a native radio group posting `kind`. A typed prefix always wins and quick.ts mirrors it onto the tile; a picked tile only
-  prepends its prefix when the line has none. Selected = `--accent-wash` + 1.5 px inset `--accent` ring + 600 (ring and weight, not
-  colour alone). Below: the 44 `.fld` with **Log ↵** (36, the view's one blue) and the live hint (13, `--accent-2`, 18 px reserved so
-  nothing jumps). Enter saves → the hint row reads "✓ Saved as impact on `OPS-140` · Undo", the box clears, focus stays, the popover
-  stays open. **`#` and `by ` menus open down** inside the window over the sections below (the window can't grow up into the menu
-  bar), opaque white (`--lg-min:100%`, no blur: a blurred menu over the glass panel would be glass on glass), same options, footers and
-  keys as the capture bar (T70, T80).
-- **Note tile** (T86, D53; board Quick.Note): a 7th tile **note** after the six (`n` in the key square, a letter like `!` `x`:
-  the `note` icon via `<use>` drew an empty square in WKWebView), not a kind:
-  a submit button (`aria-pressed`) that without JS GETs `/quick?mode=note` with the line form's fields, and quick.ts switches in
-  place. Tile widths are fixed weights by word length (`1 1.25 1.1 1 1.1 1 .9`, gap 3: decision 54, note 39), so "decision" at 600
-  fits and a pick never reflows the row. Picked = the selected recipe; the kind radio keeps its check (not drawn as picked), so after
-  saving the box is back on that kind. The field becomes a 3-line `.fld.note` (14 radius, textarea 15/20, **Save ↵** bottom right),
-  placeholder "Note title, then the body on the next lines"; a half-typed line moves into it. First non-blank line = title, the rest =
-  markdown body (empty ok), saved as the owner via `POST /notes/new` (htmx even in the app: a plain POST would be a navigation);
-  `#tags` anywhere, title line included, tag it (D54). Enter saves, Shift+Enter = new line. Saved → hint "✓ Saved note · **Open**" (opens
-  `/notes/<id>` in the main window). Only whitespace → "Nothing to save. Type the note’s title first." in the hint, the text stays.
+- **Capture** (0.2.6, board Redesign.Quick): ONE field, 8 px between it, the legend and the hint (the section's gap). `.q2f` is 40 tall,
+  12 radius, `--fill` on a `--ctl-edge` ring (3.3:1, the 3:1 control floor), focus-within = `--accent` ring + 3 px `--accent-wash`: the
+  **kind button** `.q2k` inside on the left (mark in mono `--accent-2` + word + chevron; `--accent-2` 6.25:1 on `--fill-2`), the line, and
+  **Log ↵** inside on the right (30, the view's one blue). The kind button opens `.q2menu`, the capture bar's opaque `.menu` (no glass on
+  glass) under the field: six `menuitemradio` rows (mark · word · the typed key at the right: done, `!` decision, `x␣` blocker, `+` impact,
+  `?` learned, `>` to-do) + the **note** row (`n␣`); the picked row = `--accent-wash` + 600. The rows are a hidden radio group posting
+  `kind` (it still works without JS, where the menu stays shut and the line's own prefix picks). Keys: Enter / Space / ↓ on the button open
+  it, ↑↓ move, Enter picks (back to the line), Esc closes the menu only (the next Esc hides the popover), a click outside closes. A typed
+  prefix always wins and quick.ts mirrors it onto the button; a picked kind only prepends its prefix when the line has none. Under the
+  field the **legend** (12, `--muted`, marks in mono `--ink-2`): "or type ! decision · x blocker · + impact · ? learn · > to-do · n note",
+  hidden in note mode; then the live hint (13, `--accent-2`, 18 px reserved so nothing jumps). Enter saves → "✓ Saved as impact on
+  `OPS-140` · Undo", the box clears, focus stays, the popover stays open. A hidden twin of Log ↵ comes first in the page, so Enter in the
+  line is the default submit (the header's note button would otherwise be). **`#` and `by ` menus open down** inside the window over the
+  sections below (the window can't grow up into the menu bar), opaque white (`--lg-min:100%`), same options, footers and keys as the capture
+  bar (T70, T80).
+- **Note** (T86, D53; board Quick.Note): the header's **New note** `.ib` (the `note` icon inlined, `aria-pressed`; `<use>` drew an empty
+  square in WKWebView), and the menu's note row, are not a kind: a submit button that without JS GETs `/quick?mode=note` with the line
+  form's fields, and quick.ts switches in place (⌘N does too). Pressed = `--accent-wash` + an inset `--accent` ring. The field becomes a
+  3-line `.q2note` (12 radius, `--accent` edge + ring like the focused field, 14/20) with **Save note** bottom right, placeholder "Note
+  title, then the body on the next lines"; a half-typed line moves into it. The kind radio keeps its check, so after saving the box is
+  back on that kind. First non-blank line = title, the rest = markdown body (empty ok), saved as the owner via `POST /notes/new` (htmx even
+  in the app: a plain POST would be a navigation); `#tags` anywhere, title line included, tag it (D54). Enter saves, Shift+Enter = new
+  line. Saved → hint "✓ Saved note · **Open**" (opens `/notes/<id>` in the main window). Only whitespace → "Nothing to save. Type the note’s
+  title first." in the hint, the text stays.
   **By typing (T87, D55):** `n ` (n + space) at the start of the line box switches to note mode in place, the rest moves into
   the note box with the caret at its end (`nginx fixed` stays a line, like `x `); ⌘N anywhere in the popover does the same. Without
   JS the line form's `n …` POST to `/entries` is re-sent (307) to `/notes/new` and saved as a note. Popover only: on Today `n …` is a line.
-  AA: same surfaces and tokens as the line field and the tiles, nothing new.
 - **Meeting**: not running → "Start a meeting", the three most recent series as `.btn.ghost.s` pills (submit buttons: one click
   starts) + a `.fld.m` name box with a ghost **Start** (28). Running → the banner's opaque `.callout.dark`: dot · name (link) ·
   "since 09:17 · 24 min" (minutes, no ticking seconds) · **End meeting**. Recording (started in the app, once T51 ships) shows

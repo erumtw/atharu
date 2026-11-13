@@ -1,31 +1,86 @@
 // Menu-bar quick popover (T81, DESIGN.md §6 "Quick popover"). capture.ts already runs the #/by menus; this adds the
-// kind tiles and Esc. Without JS the tiles are a plain radio group and the server applies the picked prefix.
+// kind menu, the note switch and Esc. Without JS the kind rows are a plain radio group (hidden, the menu stays shut) and
+// the server applies the line's own prefix.
 const line = document.getElementById('line') as HTMLInputElement | null
-const tiles = document.querySelector<HTMLFieldSetElement>('.kinds')
+const kindBtn = document.querySelector<HTMLButtonElement>('.q2k')
+const kindMenu = document.getElementById('q2menu')
 
-if (line && tiles) {
-  // A typed prefix wins on the server; mirroring it here keeps the tile from ever disagreeing with the line.
+if (line && kindBtn && kindMenu) {
+  const radios = () => Array.from(kindMenu.querySelectorAll<HTMLInputElement>('input[name=kind]'))
+  const rows = () => Array.from(kindMenu.querySelectorAll<HTMLElement>('.mi'))
+  // The button and the rows say what is checked: mark + word, and aria-checked on the rows.
+  const show = () => {
+    const r = radios().find(x => x.checked)
+    if (!r) return
+    const row = r.closest<HTMLElement>('.mi')
+    const mark = row?.querySelector('b')?.textContent ?? ''
+    const word = row?.dataset.word ?? ''
+    kindBtn.querySelector('b')!.textContent = mark
+    kindBtn.querySelector('.w')!.textContent = word
+    kindBtn.setAttribute('aria-label', `Line kind: ${word}`)
+    for (const x of rows()) x.setAttribute('aria-checked', String(x === row))
+  }
+  const open = (on: boolean, focusRow = false) => {
+    kindMenu.hidden = !on
+    kindBtn.setAttribute('aria-expanded', String(on))
+    if (on && focusRow) (rows().find(x => x.getAttribute('aria-checked') === 'true') ?? rows()[0])?.focus()
+  }
+  // A typed prefix wins on the server; mirroring it here keeps the button from ever disagreeing with the line.
   const PREFIX = /^\s*(?:[A-Z][A-Z0-9]*-\d+\s+)?([!x+?>])(?:\s|$)/
   line.addEventListener('input', () => {
     const p = PREFIX.exec(line.value)?.[1]
     if (!p) return
-    const r = tiles.querySelector<HTMLInputElement>(`input[value="${CSS.escape(p)}"]`)
-    if (r) r.checked = true
+    const r = radios().find(x => x.value === p)
+    if (r) {
+      r.checked = true
+      show()
+    }
   })
-  // The line didn't change, so the preview's `changed` filter wouldn't fire: ask for it by name.
-  tiles.addEventListener('change', () => line.dispatchEvent(new Event('kindpick')))
-  // A pointer pick goes back to typing; arrow keys stay on the tiles (←→ picks). The Note tile focuses its own box.
-  tiles.addEventListener('click', ev => {
-    if (ev.detail > 0 && !(ev.target as Element).closest('.nt')) line.focus()
+  kindBtn.addEventListener('click', () => open(kindMenu.hidden !== false))
+  kindBtn.addEventListener('keydown', ev => {
+    if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return
+    ev.preventDefault()
+    open(true, true)
+  })
+  // A pick (a click on a row checks its radio): back to typing. The line didn't change, so the preview's `changed` filter
+  // wouldn't fire: ask for it by name.
+  kindMenu.addEventListener('change', () => {
+    show()
+    open(false)
+    line.focus()
+    line.dispatchEvent(new Event('kindpick'))
+  })
+  kindMenu.addEventListener('keydown', ev => {
+    const r = rows()
+    const i = r.indexOf(document.activeElement as HTMLElement)
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault()
+      r[(i + (ev.key === 'ArrowDown' ? 1 : r.length - 1)) % r.length]?.focus()
+    } else if ((ev.key === 'Enter' || ev.key === ' ') && i >= 0) {
+      ev.preventDefault()
+      r[i]?.click()
+    }
+  })
+  // Esc closes the menu only (the popover's own Esc, hide, waits for the next press); capture phase like the series menu.
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape' || kindMenu.hidden) return
+    ev.preventDefault()
+    ev.stopImmediatePropagation()
+    open(false)
+    kindBtn.focus()
+  }, true)
+  document.addEventListener('mousedown', ev => {
+    if (!kindMenu.hidden && !(ev.target as Element).closest('.q2k, #q2menu')) open(false)
   })
 }
 
-// Note tile (D53): without JS a GET to /quick?mode=note; here the box switches in place. The kind radio keeps its
-// check, so after saving the box is back on the kind it had.
+// Note (D53): without JS a GET to /quick?mode=note; here the box switches in place. The kind radio keeps its check, so
+// after saving the box is back on the kind it had. The header button and the menu's note row both do it.
 const qcap = document.querySelector<HTMLElement>('.qcap')
-const nt = qcap?.querySelector<HTMLButtonElement>('.kc.nt')
+const nt = qcap?.querySelector<HTMLButtonElement>('.qh .nt') ?? document.querySelector<HTMLButtonElement>('.qh .nt')
+const noteRow = document.querySelector<HTMLButtonElement>('#q2menu button.mi')
 const text = document.getElementById('qtext') as HTMLTextAreaElement | null
-if (qcap && nt && text && line && tiles) {
+if (qcap && nt && text && line) {
   const noteMode = (on: boolean) => {
     qcap.dataset.mode = on ? 'note' : 'line'
     nt.setAttribute('aria-pressed', String(on))
@@ -45,8 +100,11 @@ if (qcap && nt && text && line && tiles) {
     ev.preventDefault()
     noteMode(qcap.dataset.mode !== 'note')
   })
-  tiles.addEventListener('click', ev => {
-    if (qcap.dataset.mode === 'note' && !nt.contains(ev.target as Node)) noteMode(false)
+  noteRow?.addEventListener('click', ev => {
+    ev.preventDefault()
+    if (kindMenu) kindMenu.hidden = true
+    kindBtn?.setAttribute('aria-expanded', 'false')
+    noteMode(true)
   })
   // D55: `n ` at the start of the line = a note, the rest moves over (the server's no-JS path does the same). Stopped
   // here so htmx's preview doesn't paint a "done" hint over note mode (this listener is added before htmx's).

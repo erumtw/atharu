@@ -27,9 +27,9 @@ pub struct PageQuery {
     saved: Option<i64>,
     /// Set by `POST /notes/new`: the note to offer "Open" on (D53).
     note: Option<i64>,
-    /// `note` = the box is a quick note (the Note tile without JS is a GET here, carrying the form's fields).
+    /// `note` = the box is a quick note (the header's note button without JS is a GET here, carrying the form's fields).
     mode: Option<String>,
-    /// The kind tile to check: the one picked before Note, so the box goes back to it.
+    /// The kind to check: the one picked before Note, so the box goes back to it.
     kind: Option<String>,
     /// What was in the line when Note was picked: it moves into the note box.
     line: Option<String>,
@@ -87,6 +87,8 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         note_mode: q.mode.as_deref() == Some("note"),
         back_note: back_to_kind(view::KINDS[kind].0),
         kind,
+        kind_mark: view::KINDS[kind].1,
+        kind_word: view::KINDS[kind].2,
         text: q.line.unwrap_or_default(),
         error: q.err.is_some().then_some(markdown::NO_TITLE),
         saved_note: q.note,

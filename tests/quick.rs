@@ -15,7 +15,7 @@ async fn renders_the_three_sections_without_the_app_chrome() {
         "class=\"menu quick\"",
         "Wed 11 Nov",
         "name=\"kind\" value=\"+\"",
-        "<span class=\"k imp\">+</span>impact",
+        "<b>+</b>impact",
         "Start a meeting",
         "Nothing due today",
         "name=\"back\" value=\"/quick\"",
@@ -38,6 +38,35 @@ async fn renders_the_three_sections_without_the_app_chrome() {
     assert_eq!(&menu[..3], ["1-on-1", "weekly-ops", "hiring"]);
     assert!(!b.contains("class=\"side"));
     assert!(!b.contains("responsive.css"));
+}
+
+#[tokio::test]
+async fn one_field_with_a_kind_menu_and_the_legend() {
+    let st = state();
+    let b = get(&st, "/quick").await.body;
+    // 0.2.6: ONE field: the kind button inside, the line, Log. No tile row.
+    assert!(!b.contains("class=\"kinds\"") && !b.contains("class=\"kc"));
+    assert!(b.contains("class=\"q2k\"") && b.contains("aria-label=\"Line kind: done\""));
+    assert!(b.contains("<button class=\"btn\" type=\"submit\">Log ↵</button>"));
+    // The menu: six kinds (a hidden radio group, so it also posts without JS) + the note row, with their typed keys.
+    assert_eq!(b.matches("role=\"menuitemradio\"").count(), 7);
+    assert_eq!(
+        b.matches("<input class=\"vh\" type=\"radio\" name=\"kind\"")
+            .count(),
+        6
+    );
+    assert!(b.contains("<b>n</b>note<span class=\"kb\">n␣</span>"));
+    assert!(b.contains("<b>x</b>blocker<span class=\"kb\">x␣</span>"));
+    assert!(b.contains("aria-checked=\"true\"><input class=\"vh\" type=\"radio\" name=\"kind\" value=\"\" form=\"qline\" checked"));
+    // The legend under the field; the header carries the note button (not pressed) and Open Atharu.
+    assert!(b.contains("<p class=\"q2leg\">or type <b>!</b> decision · <b>x</b> blocker"));
+    assert!(b.contains("aria-pressed=\"false\" aria-label=\"New note\""));
+    assert!(b.contains("aria-label=\"Open Atharu\""));
+    // The button shows the kind it was opened on.
+    let b = get(&st, "/quick?kind=%21").await.body;
+    assert!(
+        b.contains("aria-label=\"Line kind: decision\"><b>!</b><span class=\"w\">decision</span>")
+    );
 }
 
 #[tokio::test]
@@ -193,7 +222,8 @@ async fn note_tile_saves_a_note_and_comes_back_on_the_kind() {
     .await
     .body;
     assert!(b.contains("data-mode=\"note\""));
-    assert!(b.contains("aria-pressed=\"true\""));
+    // The header's note button is the pressed one; the legend lives with the (hidden) line form.
+    assert!(b.contains("name=\"mode\" value=\"\" aria-pressed=\"true\" aria-label=\"New note\""));
     assert!(b.contains("autofocus>vendor call</textarea>"));
     assert!(b.contains("name=\"back\" value=\"/quick?kind=%21\""));
 

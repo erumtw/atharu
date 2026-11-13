@@ -32,6 +32,7 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .qh .mark{width:18px;height:18px;flex:none}
 .qh b{font-size:15px;font-weight:600}
 .qh .ib{margin-left:auto;color:var(--ink)}
+.qh .ib+.ib{margin-left:0}
 /* .ic's stroke recipe lives in responsive.css, which this page doesn't load. */
 .quick .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
@@ -39,40 +40,47 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .qlbl{margin:0;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0;display:flex;align-items:center;gap:6px;line-height:1}
 .qlbl .n{font-weight:500}
 
-/* Kind chips: one row of six 44-tall tiles (key square over the word) + the Note tile, a radio group posting `kind`. A typed prefix wins;
-   capture.ts mirrors it onto the chip, so the chip never disagrees with the line. */
-/* 8 between tiles, field and hint: the section's own gap (DESIGN §3), else the tiles sit on the field. */
+/* 8 between the field, the legend and the hint: the section's own gap (DESIGN §3). */
 .qcap form{display:flex;flex-direction:column;gap:8px}
-/* Seven equal tiles left 45 px and "decision" is 46 at 600 in Chrome (wider in WebKit's SF): fixed weights by word length,
-   so a pick never reflows the row (decision 54, note 39). */
-.kinds{display:grid;grid-template-columns:1fr 1.25fr 1.1fr 1fr 1.1fr 1fr .9fr;gap:3px;border:0;margin:0;padding:0;min-width:0}
-.kc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:44px;border-radius:10px;
-  background:rgba(0,0,0,.05);font-size:11px;font-weight:500;line-height:1;color:var(--ink);cursor:pointer;letter-spacing:0;position:relative}
-.kc input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
-.kc .k{width:20px;height:20px;font-size:12px}
-.kc:hover{background:rgba(0,0,0,.08)}
-/* Selected = the menus' --accent-wash + an inset accent ring (4.44, ≥ 3) + 600: weight and ring, not colour alone. */
-.kc:has(:checked){background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
-.kc:has(:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+/* ONE field (0.2.6, board Redesign.Quick): the kind button inside on the left, Log ↵ inside on the right. 40 tall, 12 radius,
+   --fill on the --ctl-edge ring (3.3:1 on white, the 3:1 floor for a control edge); focus-within = --accent + a 3 px --accent-wash ring.
+   Flat: it sits inside the panel, no rim. */
+.q2f{display:flex;align-items:center;gap:6px;height:40px;box-sizing:border-box;padding:0 4px;border-radius:12px;background:var(--fill);border:1px solid var(--ctl-edge)}
+.q2f:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+.q2f input:not(.vh){flex:1;min-width:0;height:100%;border:0;outline:0;padding:0;margin:0;background:transparent;font:inherit;font-size:14px;color:var(--ink)}
+.q2f input::placeholder{color:var(--muted-tint)}
+.q2f .btn,.q2sv .btn{height:30px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:600;flex:none}
+.q2f .btn.ghost{font-weight:500}
+/* The kind button: mark in mono accent + word + chevron; a typed prefix is mirrored onto it by quick.ts, so it never disagrees with
+   the line. The menu below it is the capture bar's opaque `.menu` (no glass on glass). AA: --accent-2 mark 6.25 on --fill-2 (7.12 on the
+   menu's white, 6.24 on --accent-wash), --ink-2 word 11.09, --muted typed key 5.07 on white; the chevron is non-text (4.45 ≥ 3). */
+.q2k{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 8px;border:0;border-radius:8px;background:var(--fill-2);font:inherit;font-size:13px;color:var(--ink-2);flex:none;cursor:pointer;letter-spacing:0}
+.q2k:hover,.q2k[aria-expanded=true]{background:var(--sep)}
+.q2k:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.q2k .ic{width:12px;height:12px;color:var(--muted)}
+.q2k b,.q2menu b{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-weight:700;color:var(--accent-2)}
+.quick .qfield .q2menu{right:auto;width:220px;padding:4px;gap:0}
+.q2menu .mi{display:flex;align-items:center;gap:10px;height:30px;box-sizing:border-box;padding:0 8px;border:0;border-radius:7px;background:none;font:inherit;font-size:13px;color:var(--ink);text-align:left;cursor:pointer;letter-spacing:0;position:relative}
+.q2menu .mi b{width:14px;text-align:center}
+.q2menu .mi:hover{background:rgba(0,0,0,.04)}
+/* Picked = the menus' --accent-wash + 600 (weight, not colour alone). The pick is also the radio's check. */
+.q2menu .mi[aria-checked=true]{background:var(--accent-wash);font-weight:600}
+.q2menu .mi:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.q2menu .kb{margin-left:auto;color:var(--muted);font-size:12px;font-weight:400;font-family:ui-monospace,'SF Mono',Menlo,monospace}
+/* Legend: the grammar in one line (12, --muted; the marks mono in --ink-2). Hidden with the line box in note mode. */
+.q2leg{margin:0 2px;font-size:12px;line-height:1.4;color:var(--muted)}
+.q2leg b{font-family:ui-monospace,'SF Mono',Menlo,monospace;color:var(--ink-2);font-weight:600}
 
-/* Note tile (T86, D53): a 7th tile that turns the box into a note (first line = title, the rest = markdown body). Not a
-   line kind: a submit button (GET /quick?mode=note, so it works without JS) that quick.ts toggles in place. */
-.kc.nt{border:0;padding:0;margin:0;font-family:inherit}
-.kc[aria-pressed=true]{background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
-.kc.nt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-/* Note mode: the kind radio keeps its check (the box goes back to that kind after saving) but stops looking picked. */
-.qcap[data-mode=note] .kc:has(:checked){background:rgba(0,0,0,.05);box-shadow:none;font-weight:500}
+/* The header's note button (T86, D53): turns the box into a note (first line = title, the rest = markdown body). Not a line
+   kind: a submit button (GET /quick?mode=note, so it works without JS) that quick.ts toggles in place. */
+.qh .nt[aria-pressed=true]{background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .qcap[data-mode=note] #qline,.qcap[data-mode=line] #qnote{display:none}
-/* AA: the same surfaces and tokens as the line field and the kind tiles (DESIGN §6 Quick popover), nothing new to measure.
-   Three lines: the pill turns into a 14-radius box (a 9999 radius on 76 px reads as a blob), Save stays bottom right. */
-.quick .fld.note{height:auto;align-items:flex-end;border-radius:14px;padding:8px 4px 4px 14px}
-.fld.note textarea{flex:1;min-width:0;height:60px;border:0;outline:0;padding:0;margin:0 0 4px;background:transparent;font:inherit;
-  font-size:15px;line-height:20px;color:inherit;resize:none}
-.fld.note textarea::placeholder{color:var(--muted-tint)}
+/* Note box (board Quick, state 3): three lines, --accent edge + ring like the focused field, Save note bottom right. */
+.q2note{width:100%;box-sizing:border-box;min-height:84px;border-radius:12px;border:1px solid var(--accent);box-shadow:0 0 0 3px var(--accent-wash);background:var(--fill);padding:10px 12px;font:inherit;font-size:14px;line-height:20px;color:var(--ink);resize:none;outline:0}
+.q2note::placeholder{color:var(--muted-tint)}
+.q2sv{display:flex;justify-content:flex-end}
 
 .qfield{position:relative}
-/* The 44 field holds the 36 primary (DESIGN §6). Flat glass: it sits inside the panel, no rim. */
-.quick .fld input{font-size:15px}
 .qhint{min-height:18px;font-size:13px;line-height:1.4;color:var(--accent-2);padding:0 4px}
 .qhint .tick{color:var(--accent-2);font-weight:600}
 .qhint .err{font-size:13px}
@@ -108,14 +116,14 @@ html[data-glass=all] .quick .qsec:last-child{margin-bottom:4px}
 .qempty>*{max-width:100%;text-wrap:balance}
 
 /* Touch (browser /quick on a phone): the 44 floor responsive.css would have given. */
-@media (hover:none){.kc,.quick .fld{height:48px}.qt{min-height:44px}.qpills .btn,.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}}
+@media (hover:none){.q2f,.quick .fld{height:48px}.q2k,.q2f .btn,.q2sv .btn{height:38px}.q2menu .mi{height:40px}.qt{min-height:44px}.qpills .btn,.qh .ib{height:44px;line-height:42px}.qh .ib{width:44px}}
 /* Reduce Transparency: looks.css already makes .menu solid + hairline; the panel goes fully opaque too. */
 @media (prefers-reduced-transparency: reduce){.menu.quick{--lg-min:100%}
   html[data-glass=all] .quick .qsec{border-color:var(--line)}}
-@media (prefers-contrast: more){.qsec,html[data-glass=all] .quick .qsec{border-color:var(--ink)}.kc{box-shadow:inset 0 0 0 1px var(--ink)}.kc:has(:checked){box-shadow:inset 0 0 0 2px var(--accent)}
+@media (prefers-contrast: more){.qsec,html[data-glass=all] .quick .qsec{border-color:var(--ink)}.q2f,.q2note{border-color:var(--ink)}
   .quick .check{border-color:var(--ink)}
-  .kc[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--accent)}
-  .qcap[data-mode=note] .kc:has(:checked){box-shadow:inset 0 0 0 1px var(--ink)}}
+  .qh .nt[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--accent)}
+  .q2menu .mi[aria-checked=true]{box-shadow:inset 0 0 0 1.5px var(--accent)}}
 /* Record audio switch under Start: the shared .recopt, at the popover's inset. */
 .qrec{padding:2px 2px 0;font-size:12px;gap:8px}
 /* Series menu under the start box (T93): same opaque menu as the capture `#` menu; names clip, the full one on hover. */

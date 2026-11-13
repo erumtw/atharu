@@ -1,14 +1,14 @@
 use crate::{domain::entry::NoteRef, layout::Layout};
 use askama::Template;
 
-/// The six kind tiles: (posted prefix, key mark, key class, word). `""` = done, no prefix.
+/// The kind menu's six rows: (posted prefix, mark, word, the key that picks it by typing). `""` = done, no prefix.
 pub const KINDS: [(&str, &str, &str, &str); 6] = [
-    ("", "·", "k", "done"),
-    ("!", "!", "k", "decision"),
-    ("x", "x", "k bl", "blocker"),
-    ("+", "+", "k imp", "impact"),
-    ("?", "?", "k", "learned"),
-    (">", ">", "k", "to-do"),
+    ("", "·", "done", ""),
+    ("!", "!", "decision", "!"),
+    ("x", "x", "blocker", "x␣"),
+    ("+", "+", "impact", "+"),
+    ("?", "?", "learned", "?"),
+    (">", ">", "to-do", ">"),
 ];
 
 pub struct Saved {
@@ -36,11 +36,14 @@ pub struct Page {
     pub saved: Option<Saved>,
     /// The box is a quick note (D53): first line = title, the rest = body.
     pub note_mode: bool,
-    /// The checked kind tile (index into KINDS).
+    /// The checked kind (index into KINDS).
     pub kind: usize,
+    /// Its mark and word, on the kind button.
+    pub kind_mark: &'static str,
+    pub kind_word: &'static str,
     /// Prefill for the box that shows.
     pub text: String,
-    /// The note form's `back`: here, on the same kind tile.
+    /// The note form's `back`: here, on the same kind.
     pub back_note: String,
     pub error: Option<&'static str>,
     /// Just saved: "✓ Saved note · Open".
