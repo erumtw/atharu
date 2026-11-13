@@ -1,6 +1,8 @@
 // Menu-bar quick popover (T81, DESIGN.md §6 "Quick popover"). capture.ts already runs the #/by menus; this adds the
 // kind menu, the note switch and Esc. Without JS the kind rows are a plain radio group (hidden, the menu stays shut) and
 // the server applies the line's own prefix.
+import { wireNoteBox } from './notebox'
+
 const line = document.getElementById('line') as HTMLInputElement | null
 const kindBtn = document.querySelector<HTMLButtonElement>('.q2k')
 const kindMenu = document.getElementById('q2menu')
@@ -74,28 +76,23 @@ if (line && kindBtn && kindMenu) {
   })
 }
 
-// Note (D53): without JS a GET to /quick?mode=note; here the box switches in place. The kind radio keeps its check, so
-// after saving the box is back on the kind it had. The header button and the menu's note row both do it.
+// Note (D53): without JS a GET to /quick?mode=note; here the box switches in place (the shared note box, notebox.ts). The
+// kind radio keeps its check, so after saving the box is back on the kind it had. The header button and the menu's note
+// row both switch it.
 const qcap = document.querySelector<HTMLElement>('.qcap')
-const nt = qcap?.querySelector<HTMLButtonElement>('.qh .nt') ?? document.querySelector<HTMLButtonElement>('.qh .nt')
+const nt = document.querySelector<HTMLButtonElement>('.qh .nt')
 const noteRow = document.querySelector<HTMLButtonElement>('#q2menu button.mi')
 const text = document.getElementById('qtext') as HTMLTextAreaElement | null
 if (qcap && nt && text && line) {
-  const noteMode = (on: boolean) => {
-    qcap.dataset.mode = on ? 'note' : 'line'
-    nt.setAttribute('aria-pressed', String(on))
-    if (on) {
-      // The line's preview says nothing about a note; a half-typed line becomes the note's first line.
-      document.getElementById('hint')?.replaceChildren()
-      if (line.value.trim() && !text.value.trim()) {
-        text.value = line.value
-        line.value = ''
-      }
-    }
-    const box = on ? text : line
-    box.focus()
-    box.setSelectionRange(box.value.length, box.value.length)
-  }
+  const noteMode = wireNoteBox({
+    line,
+    text,
+    hint: document.getElementById('hint'),
+    show: on => {
+      qcap.dataset.mode = on ? 'note' : 'line'
+      nt.setAttribute('aria-pressed', String(on))
+    },
+  })
   nt.addEventListener('click', ev => {
     ev.preventDefault()
     noteMode(qcap.dataset.mode !== 'note')
@@ -105,35 +102,6 @@ if (qcap && nt && text && line) {
     if (kindMenu) kindMenu.hidden = true
     kindBtn?.setAttribute('aria-expanded', 'false')
     noteMode(true)
-  })
-  // D55: `n ` at the start of the line = a note, the rest moves over (the server's no-JS path does the same). Stopped
-  // here so htmx's preview doesn't paint a "done" hint over note mode (this listener is added before htmx's).
-  line.addEventListener('input', ev => {
-    const m = /^\s*n (.*)$/s.exec(line.value)
-    if (!m) return
-    ev.stopImmediatePropagation()
-    line.value = m[1] ?? ''
-    noteMode(true)
-  })
-  // ⌘N anywhere in the popover; a second press keeps note mode rather than toggling it off.
-  document.addEventListener('keydown', ev => {
-    if (!ev.metaKey || ev.key.toLowerCase() !== 'n') return
-    ev.preventDefault()
-    noteMode(true)
-  })
-  // Enter saves, Shift+Enter is a new line (an IME's Enter only commits the word).
-  text.addEventListener('keydown', ev => {
-    if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) return
-    ev.preventDefault()
-    text.form?.requestSubmit()
-  })
-  // Saved: the hint already reads "✓ Saved note · Open" (swapped out of band); the box goes back to the line.
-  text.form?.addEventListener('htmx:afterRequest', ev => {
-    // A 422 counts as `successful` (it swaps into the hint), so check the status, as the line form does.
-    const d = (ev as CustomEvent<{ elt: Element; xhr: XMLHttpRequest }>).detail
-    if (d.elt !== text.form || d.xhr.status >= 300) return
-    text.value = ''
-    noteMode(false)
   })
 }
 

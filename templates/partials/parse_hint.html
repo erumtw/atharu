@@ -1,7 +1,7 @@
 {#- What the line will save as, or why it won't. Body of #hint. -#}
 {%- if let Some(e) = error -%}<span class="err">{{ e }}</span>{%- endif -%}
 {%- if let Some(p) = preview -%}
-→ will save as <b>{{ p.kind }}</b>{% if let Some(k) = p.key %} on {{ k }}{% endif %} · “{{ p.text }}”{% if let Some(d) = p.due %} · due {{ d }}{% endif %}{% if let Some(s) = p.soft %} · <span class="muted">‘{{ s }}’ isn't a date · saved as text</span>{% endif %}
+→ will save as {% if p.kind == "note" %}a {% endif %}<b>{{ p.kind }}</b>{% if let Some(k) = p.key %} on {{ k }}{% endif %} · “{{ p.text }}”{% if let Some(d) = p.due %} · due {{ d }}{% endif %}{% if let Some(s) = p.soft %} · <span class="muted">‘{{ s }}’ isn't a date · saved as text</span>{% endif %}
 {%- endif -%}
 {#- Offer only; capture.js turns the word into the tag on Tab / click, × stops offering it for this line. -#}
 {%- if let Some(a) = ask %}<span class="ask">· <button class="tagask" type="button" data-word="{{ a.word }}" data-tag="{{ a.tag }}">Tag as <span class="chip tag">{{ a.tag }}</span>? <span class="kbd">Tab</span><span class="x" role="button" aria-label="Not a tag, leave the word">×</span></button></span>{%- endif -%}

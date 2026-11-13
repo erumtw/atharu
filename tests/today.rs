@@ -243,3 +243,83 @@ async fn start_meeting_is_a_row_in_the_page_until_one_runs() {
     assert!(!b.contains(r#"<form id="start-meeting""#));
     assert!(b.contains("· in oms-sync</p>"), "{b}");
 }
+
+#[tokio::test]
+async fn n_space_in_todays_bar_is_a_note_not_a_line() {
+    // 0.2.6: `n ` at the start of Today's bar saves a note, like the popover's. The browser re-sends the 307 with the same body,
+    // so the test posts it twice by hand.
+    let st = state();
+    let body = form(&[("line", "n vendor call #ops"), ("day", "2026-11-11")]);
+    let r = post(&st, "/entries", &body, false).await;
+    assert_eq!(r.status, 307);
+    assert_eq!(r.headers["location"], "/notes/new");
+    // No `back` (a plain Today form): the new note's page is where it lands.
+    let r = post(&st, "/notes/new", &body, false).await;
+    assert_eq!(r.headers["location"], "/notes/1");
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE title = 'vendor call #ops' AND author = 'me'"
+        ),
+        1
+    );
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM entries"), 0);
+
+    // The bar's note box (htmx) posts with back=/?day=…: the page it comes back to shows the toast with the link.
+    let r = post(
+        &st,
+        "/notes/new",
+        &form(&[
+            ("text", "Crates\nNow 32 per pallet"),
+            ("back", "/?day=2026-11-11"),
+        ]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 303);
+    assert_eq!(r.headers["location"], "/?day=2026-11-11&note=2");
+    let b = get(&st, "/?day=2026-11-11&note=2").await.body;
+    assert!(b.contains(
+        "<span class=\"tick\">✓</span><span>Saved note · <a href=\"/notes/2\">Open</a></span>"
+    ));
+    // The page carries the (hidden) note box and the hint's note preview.
+    assert!(b.contains("<form class=\"newline note\" id=\"tnote\" hidden"));
+    assert!(b.contains("name=\"back\" value=\"/?day=2026-11-11\""));
+    assert!(!get(&st, "/").await.body.contains("Saved note"));
+
+    // The preview says note, with the title; the bare `n ` says nothing; `nginx` is a line.
+    let r = post(
+        &st,
+        "/parse-preview",
+        &form(&[("line", "n x\nsecond line")]),
+        true,
+    )
+    .await;
+    assert!(
+        r.body.contains("will save as a <b>note</b> · “x”"),
+        "{}",
+        r.body
+    );
+    let r = post(&st, "/parse-preview", &form(&[("line", "n ")]), true).await;
+    assert!(!r.body.contains("will save"));
+    let r = post(
+        &st,
+        "/parse-preview",
+        &form(&[("line", "nginx fixed")]),
+        true,
+    )
+    .await;
+    assert!(r.body.contains("will save as <b>done</b>"));
+    // …and a line starting `nginx` saves as done.
+    post(
+        &st,
+        "/entries",
+        &form(&[("line", "nginx fixed"), ("day", "2026-11-11")]),
+        true,
+    )
+    .await;
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM entries WHERE kind = 'done'"),
+        1
+    );
+}

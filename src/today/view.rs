@@ -131,6 +131,8 @@ pub struct Page {
     pub saved: Option<Saved>,
     pub deleted: Option<Deleted>,
     pub made: Option<Made>,
+    /// Just saved from the bar's note box: "✓ Saved note · Open".
+    pub saved_note: Option<i64>,
     /// The log line open in its edit box (`/?edit=ID` without JS).
     pub edit: Option<Edit>,
     pub ask: Option<Ask>,

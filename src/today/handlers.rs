@@ -33,6 +33,8 @@ pub struct DayQuery {
     /// Tag filter, comma list (any of them); `add` = the filter row's add box.
     tag: Option<String>,
     add: Option<String>,
+    /// Set by `POST /notes/new` with `back=/?day=…` (the bar's note box): "✓ Saved note · Open".
+    note: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -283,6 +285,7 @@ fn render_page(
         saved: None,
         deleted: None,
         made: None,
+        saved_note: None,
         edit: None,
         ask: None,
         group: o.group,
@@ -302,6 +305,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<DayQuery>) -> AppR
     let day = pick_day(q.day.as_deref(), st.today());
     let o = Opts::new(q.group.as_deref(), q.tag.as_deref(), q.add.as_deref());
     let mut page = render_page(&st, day, o, String::new(), None)?;
+    page.saved_note = q.note;
     if let Some(id) = q.edit {
         page.edit = edit_box(&st.conn(), id, None, None, false)?;
     }
@@ -422,11 +426,10 @@ pub async fn create(
     headers: HeaderMap,
     Form(f): Form<LineForm>,
 ) -> AppResult<Response> {
-    // `n …` in the popover's box is a quick note (D55); quick.ts switches in place, so this is the no-JS path. A 307
-    // re-sends the same POST to the notes slice, which owns note saving (features don't import each other).
-    if f.back.as_deref().is_some_and(|b| b.starts_with("/quick"))
-        && markdown::quick_note(&f.line).is_some()
-    {
+    // `n …` in a capture box, Today's or the popover's, is a quick note (D55, 0.2.6); the JS boxes switch in place, so this is
+    // the no-JS path. A 307 re-sends the same POST to the notes slice, which owns note saving (features don't import each
+    // other): it answers on `back` with `note=<id>` (the popover), else on the new note.
+    if markdown::quick_note(&f.line).is_some() {
         return Ok((
             StatusCode::TEMPORARY_REDIRECT,
             [(header::LOCATION, "/notes/new")],
@@ -591,6 +594,19 @@ pub async fn preview(State(st): State<AppState>, Form(f): Form<LineForm>) -> App
         sug: None,
     };
     if f.line.trim().is_empty() {
+        return web::html(&out);
+    }
+    // `n …` is a note (D55): say so, with its title (the first line). The bare `n ` says nothing yet.
+    if let Some(rest) = markdown::quick_note(&f.line) {
+        if let Some((title, _)) = markdown::split_note(rest) {
+            out.preview = Some(view::Preview {
+                soft: None,
+                kind: "note",
+                key: None,
+                text: title.to_string(),
+                due: None,
+            });
+        }
         return web::html(&out);
     }
     match parse(&with_kind(&f.line, f.kind.as_deref()), st.today()) {

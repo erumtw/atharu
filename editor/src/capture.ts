@@ -1,4 +1,5 @@
 import { byMenu } from './bymenu'
+import { wireNoteBox } from './notebox'
 
 // Capture bar tags (D29, DESIGN.md §6 "Tag chip"). The server renders the `#` suggestions (#tagsug, out-of-band
 // with each /parse-preview) and the "Tag as #x?" offer (#hint .tagask); this file only moves the selection and
@@ -7,6 +8,25 @@ import { byMenu } from './bymenu'
 const input = document.getElementById('line') as HTMLInputElement | null
 const box = document.getElementById('tagsug')
 const skip = document.getElementById('notag') as HTMLInputElement | null
+
+// `n ` / ⌘N in Today's bar (0.2.6): the bar turns into a note box (#tnote), same as the popover's. Wired before the menus below
+// and htmx's own input listener, so a note's text never paints a "done" preview.
+const tnote = document.getElementById('tnote') as HTMLFormElement | null
+const ttext = tnote?.querySelector('textarea')
+const lineForm = input?.closest('form')
+if (input && tnote && ttext && lineForm) {
+  wireNoteBox({
+    line: input,
+    text: ttext,
+    hint: document.getElementById('hint'),
+    show: on => {
+      tnote.hidden = !on
+      lineForm.hidden = on
+    },
+    scope: tnote.parentElement ?? undefined,
+    escBack: true,
+  })
+}
 
 if (input && box && skip) {
   const by = byMenu(input, document.getElementById('bysug'), document.getElementById('bydate') as HTMLInputElement | null)

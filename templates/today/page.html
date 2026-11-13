@@ -33,7 +33,7 @@
 <div class="capture">
 {#- Out of flow above the capsule, top → bottom (the hint nearest the bar). The menus live outside the form: its backdrop-filter is a Backdrop Root. #}
 <div class="above">
-<div id="toast" class="toast row small" role="status">{%- include "partials/toast.html" -%}</div>
+<div id="toast" class="toast row small" role="status">{%- include "partials/toast.html" -%}{%- if let Some(n) = saved_note -%}<span class="tick">✓</span><span>Saved note · <a href="/notes/{{ n }}">Open</a></span>{%- endif -%}</div>
 <div id="tagsug"></div>
 {#- `by ` date menu (capture.js, T80); #bydate in the form carries a "Pick a date…" pick through the shared popover. #}
 <div id="bysug"></div>
@@ -48,9 +48,16 @@
 <button class="ib" type="button" popovertarget="legend" aria-label="Show line grammar"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#help"/></svg></button>
 <button class="btn" type="submit">Log ↵</button>
 </form>
+{#- `n ` / ⌘N (0.2.6): capture.js swaps the bar for this note box (first line = title, the rest = body); Enter saves, the result
+    is the toast. Without JS it stays hidden and `n …` in the line goes to /notes/new through POST /entries (307). -#}
+<form class="newline note" id="tnote" hidden method="post" action="/notes/new" hx-post="/notes/new" hx-swap="none" hx-select-oob="#toast">
+<input type="hidden" name="back" value="/?day={{ day.iso }}">
+<textarea id="ttext" name="text" rows="3" required placeholder="Note title, then the body on the next lines" aria-label="Quick note"></textarea>
+<button class="btn" type="submit">Save note ↵</button>
+</form>
 <div class="legend menu row small muted" id="legend" popover>
 <span>Start with an epic key (optional), then:</span>
-<span><span class="k">·</span> nothing = done</span><span><span class="k">!</span> decision</span><span><span class="k bl">x</span> blocker</span><span><span class="k imp">+</span> impact</span><span><span class="k">?</span> learned <span class="mono">topic:</span></span><span><span class="k">&gt;</span> plan</span>
+<span><span class="k">·</span> nothing = done</span><span><span class="k">!</span> decision</span><span><span class="k bl">x</span> blocker</span><span><span class="k imp">+</span> impact</span><span><span class="k">?</span> learned <span class="mono">topic:</span></span><span><span class="k">&gt;</span> plan</span><span><span class="k">n</span> note</span>
 </div>
 </div>
 </main>

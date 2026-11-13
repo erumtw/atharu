@@ -339,6 +339,13 @@ the log scrolls under it.
 - **Contents**: input · `?` · Log ↵. The `?` stays in the capsule at every width; the grammar legend is no longer a row
   under the bar (it would float over content). It opens a `.menu` panel as wide as the capsule, 8px above it (CSS anchor
   positioning on `.newline`, fixed 12px-gutter fallback).
+- **Note mode** (0.2.6, D55): `n ` (n + space) at the start of the line, or ⌘N while focus is in the bar, swaps the capsule for the
+  same glass pill grown to three lines (`.newline.note`, `#tnote`: 22 radius, a 24/16 textarea, **Save note ↵** bottom right, the
+  line's surfaces and tokens, nothing new to measure), placeholder "Note title, then the body on the next lines"; the typed rest
+  moves in with the caret at its end (`nginx fixed` stays a line). Enter saves a note (first line = title, the rest = markdown body),
+  Shift+Enter is a new line, Esc goes back to the line with the text. Saved → the toast "✓ Saved note · **Open**" (`/notes/<id>`),
+  the bar is the line again. The hint for `n …` reads "→ will save as a **note** · “title”". Without JS `n …` in the line posts to
+  `/entries`, which re-sends (307) to `/notes/new`; the note's page opens. Shared with the popover (editor/src/notebox.ts).
 - **Above the bar**, out of flow, bottom-up: hint pill (nearest) · `#` / `by ` menu · toast; 6px apart, 8px clear of the
   capsule, so nothing ever sits on it (**never glass on glass**). The capsule never moves when they appear. The bar
   reserves 40px above itself (pointer-events none) so at scroll end one pill never covers the last line.
@@ -445,7 +452,7 @@ the log scrolls under it.
   title first." in the hint, the text stays.
   **By typing (T87, D55):** `n ` (n + space) at the start of the line box switches to note mode in place, the rest moves into
   the note box with the caret at its end (`nginx fixed` stays a line, like `x `); ⌘N anywhere in the popover does the same. Without
-  JS the line form's `n …` POST to `/entries` is re-sent (307) to `/notes/new` and saved as a note. Popover only: on Today `n …` is a line.
+  JS the line form's `n …` POST to `/entries` is re-sent (307) to `/notes/new` and saved as a note. The same on Today's bar (0.2.6, below): `n ` anywhere a line is captured is a note.
 - **Meeting** (0.2.6, board Redesign.Quick): idle = ONE `.q2f` row, 40 tall like the capture field: the name box (placeholder "Start a
   meeting…", tooltip "e.g. oms-sync; reuse a name for a series"; focus opens the recent-series menu, up to 12, ↑↓ ↵ picks and starts) ·
   the **mic toggle** · a ghost **Start** (30). The "Start a meeting" heading stays as a visually hidden label. The mic (app only) is a

@@ -212,6 +212,12 @@ input[list]::-webkit-calendar-picker-indicator{display:none !important}
 .newline:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent),var(--lg-light),var(--lg-shadow)}
 .newline input{font:inherit;font-size:16px;border:0;outline:0;flex:1;min-width:0;height:100%;padding:0;background:transparent;color:var(--ink)}
 .newline .btn{height:44px}
+.newline[hidden]{display:none}
+/* Note mode of the bar (0.2.6, `n ` / ⌘N): the same glass pill grown to three lines, a 22 radius (9999 on 90 px reads as a blob), Save
+   bottom right. Same surfaces and tokens as the line (ink on the glass, --muted-tint placeholder): nothing new to measure. */
+.newline.note{height:auto;align-items:flex-end;border-radius:22px;padding:12px 4px 4px 20px}
+.newline textarea{font:inherit;font-size:16px;line-height:24px;border:0;outline:0;flex:1;min-width:0;height:72px;padding:0;margin:0 0 6px;background:transparent;color:var(--ink);resize:none}
+.newline textarea::placeholder{color:var(--muted-tint)}
 /* Floating capture bar (T78, D42, DESIGN.md §6). Sticky, not fixed: it stays inside the sheet, centred on the doc column at
    every width with no sidebar maths, and stays in flow, so at scroll end it lands 16px above the sheet's edge and the last line is
    never under it. flex + margin-top:auto pin it to the bottom on a short day (.pg is a flex column ≥ the viewport). */
