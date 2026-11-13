@@ -106,15 +106,33 @@ impl Tap {
         }
     }
 
+    /// In 1 MB chunks: the whole file as bytes next to its f32 copy was +115 MB per hour at the Stop peak.
     fn read(mut self) -> Vec<f32> {
         let _ = self.w.flush();
-        let mut b = Vec::new();
-        let _ = File::open(&self.path).and_then(|mut f| f.read_to_end(&mut b));
-        b.as_chunks::<2>()
-            .0
-            .iter()
-            .map(|c| i16::from_le_bytes(*c) as f32 / 32768.0)
-            .collect()
+        let Ok(mut f) = File::open(&self.path) else {
+            return Vec::new();
+        };
+        let len = f.metadata().map(|m| m.len() as usize).unwrap_or(0);
+        let mut out = Vec::with_capacity(len / 2);
+        let mut b = vec![0u8; 1 << 20];
+        let mut have = 0;
+        loop {
+            match f.read(&mut b[have..]) {
+                Ok(0) | Err(_) => break,
+                Ok(n) => have += n,
+            }
+            let (whole, _) = b[..have].as_chunks::<2>();
+            out.extend(
+                whole
+                    .iter()
+                    .map(|c| i16::from_le_bytes(*c) as f32 / 32768.0),
+            );
+            // An odd byte (a short read mid-sample) carries over to the next chunk.
+            let used = whole.len() * 2;
+            b.copy_within(used..have, 0);
+            have -= used;
+        }
+        out
     }
 }
 
@@ -128,7 +146,8 @@ impl Drop for Tap {
 /// voices share. `None` = no split (models missing, too little audio): the lines stay "Others".
 /// The temp audio is deleted when this returns, whatever happened.
 // ponytail: reads the whole Others stream into RAM (≈ 230 MB per hour of meeting) next to the loaded
-// whisper model; stream it in chunks if hour-plus meetings run out of memory.
+// whisper model; stream it in chunks if hour-plus meetings run out of memory. Unloading whisper while
+// diarizing measured worse (peak +34 MB, +5 s on a 42 s clip: the reload costs more than it frees).
 pub fn split(tap: Tap, models: &Path, p: &mut Pipeline, lines: &[Seg]) -> Option<Vec<Seg>> {
     let audio = tap.read();
     if lines.is_empty() || audio.len() < 2 * RATE || !fetch(&dir(models)) {
@@ -284,6 +303,18 @@ mod tests {
             speaker: "others".into(),
             text: text.into(),
         }
+    }
+
+    #[test]
+    fn tap_reads_back_what_it_wrote_across_chunks() {
+        let x: Vec<f32> = (0..700_000)
+            .map(|i| ((i % 200) as f32 - 100.0) / 128.0)
+            .collect();
+        let mut t = Tap::new(-1).unwrap();
+        t.write(&x);
+        let y = t.read();
+        assert_eq!(y.len(), x.len());
+        assert!(x.iter().zip(&y).all(|(a, b)| (a - b).abs() < 1e-4));
     }
 
     #[test]

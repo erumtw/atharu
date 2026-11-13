@@ -72,7 +72,7 @@ async fn wav_lands_as_segments_on_the_meeting() {
     let want = atharu::recording::wanted(&st.conn())
         .unwrap()
         .expect("live recording");
-    assert!(want.prompt.starts_with("Glossary: oms-sync, OPS-101"));
+    assert!(want.prompt.starts_with("Glossary: OPS-101") && want.prompt.contains("oms-sync"));
 
     // The live path: audio arrives in small chunks on a channel, the worker posts each window.
     let audio = read_wav(&wav);

@@ -281,6 +281,9 @@ fn capture(tx: mpsc::Sender<(usize, Vec<f32>)>, mac: Arc<Mac>) -> Result<SCStrea
     let config = SCStreamConfiguration::new()
         .with_width(2)
         .with_height(2)
+        // Unset, SCK renders the display at its refresh rate (60–120 fps) for frames nobody reads.
+        .with_minimum_frame_interval(&screencapturekit::CMTime::new(10, 1))
+        .with_queue_depth(3)
         .with_captures_audio(true)
         .with_excludes_current_process_audio(true)
         .with_sample_rate(16_000)
