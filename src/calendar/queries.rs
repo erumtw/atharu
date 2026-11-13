@@ -252,3 +252,24 @@ pub fn replace_mac_events(
     )?;
     tx.commit()
 }
+
+/// The Mac app's sync reads these: Settings' switch (`mac_cal` = "1") and the ticked calendar ids (`mac_cals`).
+pub fn mac_settings(conn: &Connection) -> rusqlite::Result<(bool, Vec<String>)> {
+    let get = |k: &str| -> rusqlite::Result<String> {
+        conn.query_row("SELECT value FROM settings WHERE key = ?1", [k], |r| {
+            r.get(0)
+        })
+        .or_else(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => Ok(String::new()),
+            e => Err(e),
+        })
+    };
+    let ids = get("mac_cals")?;
+    Ok((
+        get("mac_cal")? == "1",
+        ids.split(',')
+            .filter(|i| !i.is_empty())
+            .map(str::to_string)
+            .collect(),
+    ))
+}

@@ -11,7 +11,8 @@ atharu = { path = ".." }
 axum = "0.8.9"
 tauri = { version = "2", default-features = false, features = ["wry", "tray-icon", "macos-private-api", "image-png"] }
 tauri-plugin-global-shortcut = "2"
-tokio = { version = "1.54.1", features = ["net"] }
+tokio = { version = "1.54.1", features = ["net", "sync", "time"] }
+chrono = "0.4.45"
 serde_json = { version = "1.0.154", default-features = false, features = ["std"] }
 
 # Meeting recording (T53): Mac app only; the server, CLI and Docker image never build these.
@@ -21,8 +22,11 @@ recording = ["dep:whisper-rs", "dep:screencapturekit", "dep:sherpa-onnx"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSAttributedString", "NSButton", "NSColor", "NSControl", "NSFont", "NSFontDescriptor", "NSImage", "NSResponder", "NSStatusBarButton", "NSStatusItem", "NSView", "NSWorkspace"] }
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSAttributedString", "NSData", "NSDictionary", "NSString"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSAttributedString", "NSButton", "NSColor", "NSControl", "NSFont", "NSFontDescriptor", "NSImage", "NSResponder", "NSStatusBarButton", "NSStatusItem", "NSView", "NSWorkspace", "NSColorSpace"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSAttributedString", "NSData", "NSDictionary", "NSString", "NSArray", "NSDate", "NSError", "NSNotification", "NSOperation", "NSPredicate", "block2"] }
+# 0.2.4: read macOS Calendar (EventKit); pinned like the recording crates.
+objc2-event-kit = { version = "=0.3.2", default-features = false, features = ["std", "block2", "objc2-app-kit", "EKCalendar", "EKCalendarItem", "EKEvent", "EKEventStore", "EKObject", "EKSource", "EKTypes"] }
+block2 = "0.6"
 # D27: whisper.cpp with Metal (+1.75 MB, ggml static); SCK system audio + mic as two streams (+0.30 MB).
 whisper-rs = { version = "=0.16.0", features = ["metal"], optional = true }
 screencapturekit = { version = "=11.1.2", features = ["macos_15_0"], optional = true }

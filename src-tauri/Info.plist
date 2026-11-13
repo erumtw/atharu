@@ -6,5 +6,9 @@
   <string>Atharu records your side of a meeting and turns it into text on this Mac. Audio is deleted once it’s transcribed.</string>
   <key>NSScreenCaptureUsageDescription</key>
   <string>Atharu records the other side of a meeting and turns it into text on this Mac. Audio is deleted once it’s transcribed.</string>
+  <key>NSCalendarsFullAccessUsageDescription</key>
+  <string>Atharu shows the calendars you pick in Settings on its Calendar page, next to your meetings. It only reads them.</string>
+  <key>NSCalendarsUsageDescription</key>
+  <string>Atharu shows the calendars you pick in Settings on its Calendar page, next to your meetings. It only reads them.</string>
 </dict>
 </plist>

@@ -21,6 +21,8 @@ use tauri::{
 };
 use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut, ShortcutState};
 
+#[cfg(target_os = "macos")]
+mod calendars;
 #[cfg(feature = "recording")]
 pub mod recording;
 
@@ -186,6 +188,13 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
     #[cfg(feature = "recording")]
     atharu::recording::interrupt_orphans(&conn)?;
     let mut state = app::AppState::new(conn);
+    // macOS Calendar (0.2.4): Settings reads the calendar list and access state the sync thread fills.
+    #[cfg(target_os = "macos")]
+    let mac_cals = {
+        let m = Arc::new(atharu::recording::MacCalendars::default());
+        state.mac_cals = Some(m.clone());
+        m
+    };
     // The model is the app's, not the DB's: it stays put when ATHARU_DB points elsewhere.
     #[cfg(feature = "recording")]
     let mac = {
@@ -200,6 +209,8 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
     look_icon(current_look(&state));
     // The tray menu reads the running meeting and recent series through it.
     handle.manage(state.clone());
+    #[cfg(target_os = "macos")]
+    calendars::start(state.clone(), mac_cals);
 
     // Bound here (std, blocking) so the port is known before the window opens.
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
