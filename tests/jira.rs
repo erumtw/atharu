@@ -106,3 +106,119 @@ async fn off_without_all_three_keys() {
             .contains("Couldn't reach Jira.")
     );
 }
+
+/// A local fake Jira (never the owner's): `search/jql` answers the tracked-keys search with the full fixture and the
+/// assigned-to-me search with `assigned`; `status` overrides the HTTP status (401 = expired token).
+async fn fake_jira(
+    assigned: &'static str,
+    status: std::sync::Arc<std::sync::atomic::AtomicU16>,
+) -> String {
+    use axum::{extract::Query, http::StatusCode, routing::get};
+    use std::collections::HashMap;
+    let app = axum::Router::new().route(
+        "/rest/api/3/search/jql",
+        get(move |Query(q): Query<HashMap<String, String>>| {
+            let status = status.clone();
+            async move {
+                let code = status.load(std::sync::atomic::Ordering::SeqCst);
+                let body = if q.get("jql").is_some_and(|j| j.starts_with("assignee")) {
+                    assigned
+                } else {
+                    include_str!("fixtures/jira_search_full.json")
+                };
+                (StatusCode::from_u16(code).unwrap(), body)
+            }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{addr}")
+}
+
+/// State whose config points Jira at `base`.
+fn jira_state(base: &str, tag: &str) -> atharu::app::AppState {
+    let dir = std::env::temp_dir().join(format!("atharu-jira-{tag}-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("config.toml");
+    std::fs::write(
+        &path,
+        format!(
+            "jira_base_url = \"{base}\"\njira_email = \"me@example.com\"\njira_token = \"t0k\"\n"
+        ),
+    )
+    .unwrap();
+    let cfg = FileConfig::load(&path);
+    std::fs::remove_dir_all(&dir).unwrap();
+    let mut st = state();
+    st.settings = std::sync::Arc::new(cfg);
+    st
+}
+
+#[tokio::test]
+async fn refresh_reads_hierarchy_flags_assigned_and_names_a_dead_token() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicU16, Ordering},
+    };
+    let status = Arc::new(AtomicU16::new(200));
+    let assigned = r#"{"issues": [{"key": "PAY-9", "fields": {"summary": "Refund flow",
+        "status": {"name": "Ready", "statusCategory": {"key": "new"}}, "issuetype": {"name": "Task"},
+        "duedate": "2026-11-20", "updated": "2026-11-14T08:00:00.000+0700"}}]}"#;
+    let base = fake_jira(assigned, status.clone()).await;
+    let st = jira_state(&base, "fake");
+    exec(
+        &st,
+        "INSERT INTO epics(key) VALUES ('OPS-130'), ('OPS-131');
+         INSERT INTO jira_issues(key, summary, status, assigned_me) VALUES ('OLD-1', 'was mine', 'Ready', 1);",
+    );
+    assert_eq!(atharu::jira::refresh(&st).await, Ok(Some(3)));
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM jira_issues WHERE key = 'OPS-131' AND issue_type = 'Story'
+               AND status_cat = 'done' AND parent_key = 'OPS-130' AND resolved_on = '2026-11-12'"
+        ),
+        1
+    );
+    // Assigned: exactly what the search returned (PAY-9, not tracked yet); OLD-1 lost the flag.
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM jira_issues WHERE assigned_me = 1 AND key = 'PAY-9'"
+        ),
+        1
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM jira_issues WHERE assigned_me = 1"
+        ),
+        1
+    );
+
+    // 401: an error, stored for Settings / Epics (D9); the cached rows stay.
+    status.store(401, Ordering::SeqCst);
+    assert_eq!(
+        atharu::jira::refresh(&st).await,
+        Err("Jira answered 401".into())
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM settings WHERE key = 'jira_auth_failed'"
+        ),
+        1
+    );
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM jira_issues"), 4);
+    // The next good answer clears it.
+    status.store(200, Ordering::SeqCst);
+    assert!(atharu::jira::refresh(&st).await.is_ok());
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM settings WHERE key = 'jira_auth_failed'"
+        ),
+        0
+    );
+}

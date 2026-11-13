@@ -1,6 +1,6 @@
-//! Jira read-only titles (spec P6): summary · status for keys we already have, cached in
-//! `jira_issues`. Never writes to Jira, never creates our rows. No page imports this slice: pages
-//! read the cache table through their own queries. The token never reaches a log line.
+//! Jira (spec P6, 0.2.5 D1–D10): summary, status, type, parent, due, resolved and updated for keys we already have,
+//! plus the open issues assigned to me, cached in `jira_issues`. Never creates our rows. No page imports this slice:
+//! pages read the cache table through their own queries. The token never reaches a log line.
 mod queries;
 
 pub use queries::Issue;
@@ -32,12 +32,47 @@ struct RawFields {
     #[serde(default)]
     summary: String,
     status: Option<RawStatus>,
+    issuetype: Option<Named>,
+    parent: Option<RawParent>,
+    duedate: Option<String>,
+    resolutiondate: Option<String>,
+    updated: Option<String>,
 }
 
 #[derive(Deserialize)]
 struct RawStatus {
     name: String,
+    #[serde(rename = "statusCategory")]
+    category: Option<RawCategory>,
 }
+
+#[derive(Deserialize)]
+struct RawCategory {
+    key: String,
+}
+
+#[derive(Deserialize)]
+struct Named {
+    name: String,
+}
+
+#[derive(Deserialize)]
+struct RawParent {
+    key: String,
+    fields: Option<RawParentFields>,
+}
+
+#[derive(Deserialize)]
+struct RawParentFields {
+    #[serde(default)]
+    summary: String,
+}
+
+/// What every search asks for.
+const FIELDS: &str = "summary,status,issuetype,parent,duedate,resolutiondate,updated";
+/// D5: open work assigned to me, any project, newest first.
+const ASSIGNED_JQL: &str =
+    "assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC";
 
 /// One `search/jql` response body → issues.
 pub fn parse(json: &str) -> Result<Vec<Issue>, String> {
@@ -45,19 +80,45 @@ pub fn parse(json: &str) -> Result<Vec<Issue>, String> {
     Ok(page
         .issues
         .into_iter()
-        .map(|i| Issue {
-            key: i.key,
-            summary: i.fields.summary,
-            status: i.fields.status.map(|s| s.name).unwrap_or_default(),
+        .map(|i| {
+            let f = i.fields;
+            // Jira timestamps: `2026-11-12T10:20:30.000+0700`; the day and minute are enough here.
+            let cut = |s: Option<String>, n: usize| s.and_then(|s| s.get(..n).map(str::to_string));
+            Issue {
+                key: i.key,
+                summary: f.summary,
+                status_cat: f
+                    .status
+                    .as_ref()
+                    .and_then(|s| s.category.as_ref())
+                    .map(|c| c.key.clone())
+                    .unwrap_or_default(),
+                status: f.status.map(|s| s.name).unwrap_or_default(),
+                issue_type: f.issuetype.map(|t| t.name).unwrap_or_default(),
+                parent_summary: f
+                    .parent
+                    .as_ref()
+                    .and_then(|p| p.fields.as_ref())
+                    .map(|pf| pf.summary.clone()),
+                parent_key: f.parent.map(|p| p.key),
+                due: cut(f.duedate, 10),
+                resolved_on: cut(f.resolutiondate, 10),
+                updated_at: cut(f.updated, 16),
+            }
         })
         .collect())
 }
 
 /// Parse + cache one response body; returns how many issues it held. Tests call this with a fixture.
 pub fn import(conn: &mut Connection, json: &str) -> Result<usize, String> {
+    Ok(import_keys(conn, json)?.len())
+}
+
+/// `import`, returning the keys it cached (the assigned search flags exactly those).
+fn import_keys(conn: &mut Connection, json: &str) -> Result<Vec<String>, String> {
     let issues = parse(json)?;
     queries::upsert(conn, &issues).map_err(|e| e.to_string())?;
-    Ok(issues.len())
+    Ok(issues.into_iter().map(|i| i.key).collect())
 }
 
 /// Epic keys + keys in Jira links, deduped and sorted (stable JQL, stable tests).
@@ -86,18 +147,14 @@ const BATCH: usize = 100;
 async fn search(
     client: &reqwest::Client,
     j: &Jira<'_>,
-    keys: &[String],
+    jql: &str,
+    max: &str,
 ) -> Result<(u16, String), String> {
     // reqwest errors can quote the URL; ours holds no secret, but keep the habit from ical.rs.
     let hide = |e: reqwest::Error| e.without_url().to_string();
-    let jql = format!("key in ({})", keys.join(","));
     let url = reqwest::Url::parse_with_params(
         &format!("{}/rest/api/3/search/jql", j.base_url),
-        [
-            ("jql", jql.as_str()),
-            ("fields", "summary,status"),
-            ("maxResults", "100"),
-        ],
+        [("jql", jql), ("fields", FIELDS), ("maxResults", max)],
     )
     .map_err(|e| format!("jira_base_url: {e}"))?;
     let res = client
@@ -122,9 +179,10 @@ pub async fn refresh(st: &AppState) -> Result<Option<usize>, String> {
         .timeout(Duration::from_secs(30))
         .build()
         .map_err(|e| e.to_string())?;
+    let by_keys = |keys: &[String]| format!("key in ({})", keys.join(","));
     let mut n = 0;
     for chunk in keys.chunks(BATCH) {
-        let (mut code, mut body) = search(&client, &j, chunk).await?;
+        let (mut code, mut body) = search(&client, &j, &by_keys(chunk), "100").await?;
         if code == 400 {
             let bad = rejected(&body, chunk);
             let rest: Vec<String> = chunk.iter().filter(|k| !bad.contains(k)).cloned().collect();
@@ -136,15 +194,31 @@ pub async fn refresh(st: &AppState) -> Result<Option<usize>, String> {
                 );
                 continue;
             }
-            (code, body) = search(&client, &j, &rest).await?;
+            (code, body) = search(&client, &j, &by_keys(&rest), "100").await?;
         }
-        if !(200..300).contains(&code) {
-            // Status only: the body may echo the request, never the header, but keep logs short.
-            return Err(format!("Jira answered {code}"));
-        }
+        check(st, code)?;
         n += import(&mut st.conn(), &body)?;
     }
-    Ok(Some(n))
+    // D5: the open issues assigned to me, cached too (they may be keys we don't track yet) and flagged.
+    let (code, body) = search(&client, &j, ASSIGNED_JQL, "50").await?;
+    check(st, code)?;
+    let mine = import_keys(&mut st.conn(), &body)?;
+    queries::mark_assigned(&st.conn(), &mine).map_err(|e| e.to_string())?;
+    Ok(Some(n + mine.len()))
+}
+
+/// A 2xx clears the stored token failure; a 401 / 403 stores it (D9: Settings and Epics name it, the cache stays).
+fn check(st: &AppState, code: u16) -> Result<(), String> {
+    let auth = code == 401 || code == 403;
+    if auth || (200..300).contains(&code) {
+        queries::set_auth_failed(&st.conn(), auth).map_err(|e| e.to_string())?;
+    }
+    if (200..300).contains(&code) {
+        Ok(())
+    } else {
+        // Status only: the body may echo the request, never the header, but keep logs short.
+        Err(format!("Jira answered {code}"))
+    }
 }
 
 #[derive(Deserialize)]
@@ -190,5 +264,33 @@ mod tests {
             r#"{"errorMessages":["An issue with key 'OPS-9' does not exist for field 'key'."]}"#;
         assert_eq!(rejected(body, &keys), ["OPS-9"]);
         assert!(parse("not json").is_err());
+    }
+
+    #[test]
+    fn parses_type_category_parent_and_dates() {
+        let issues = parse(include_str!("../../tests/fixtures/jira_search_full.json")).unwrap();
+        assert_eq!(
+            issues[1],
+            Issue {
+                key: "OPS-131".into(),
+                summary: "Alert at 6°C for 10 min".into(),
+                status: "Done".into(),
+                issue_type: "Story".into(),
+                status_cat: "done".into(),
+                parent_key: Some("OPS-130".into()),
+                parent_summary: Some("Cold-chain delivery alerts".into()),
+                due: None,
+                resolved_on: Some("2026-11-12".into()),
+                updated_at: Some("2026-11-12T10:20".into()),
+            }
+        );
+        assert_eq!(
+            (
+                issues[0].status_cat.as_str(),
+                issues[0].due.as_deref(),
+                issues[0].parent_key.as_deref()
+            ),
+            ("indeterminate", Some("2026-11-30"), None)
+        );
     }
 }

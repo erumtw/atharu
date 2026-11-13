@@ -249,7 +249,12 @@ async fn migration_010_moves_notes_text_into_a_note() {
     {
         let c = atharu::db::open(&path).unwrap();
         c.execute_batch(
-            "ALTER TABLE meetings DROP COLUMN note_id; DROP TABLE series_archive; PRAGMA user_version = 9;
+            "ALTER TABLE meetings DROP COLUMN note_id; DROP TABLE series_archive;
+             ALTER TABLE jira_issues DROP COLUMN issue_type; ALTER TABLE jira_issues DROP COLUMN status_cat;
+             ALTER TABLE jira_issues DROP COLUMN parent_key; ALTER TABLE jira_issues DROP COLUMN parent_summary;
+             ALTER TABLE jira_issues DROP COLUMN due; ALTER TABLE jira_issues DROP COLUMN resolved_on;
+             ALTER TABLE jira_issues DROP COLUMN updated_at; ALTER TABLE jira_issues DROP COLUMN assigned_me;
+             PRAGMA user_version = 9;
              INSERT INTO meetings(id, day, name, notes, ended_at) VALUES
                (1, '2026-11-10', 'oms-sync', 'ship friday #cshub', '2026-11-10 10:00:00'),
                (2, '2026-11-11', 'oms-sync', '', '2026-11-11 10:00:00');",

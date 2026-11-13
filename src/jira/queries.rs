@@ -14,10 +14,22 @@ pub fn epic_keys_and_links(conn: &Connection) -> rusqlite::Result<(Vec<String>, 
     Ok((keys, links))
 }
 
+#[derive(Debug, Default, PartialEq)]
 pub struct Issue {
     pub key: String,
     pub summary: String,
     pub status: String,
+    /// `Epic`, `Story`, `Task`, … (the team's own type names).
+    pub issue_type: String,
+    /// `statusCategory.key`: new · indeterminate · done.
+    pub status_cat: String,
+    pub parent_key: Option<String>,
+    pub parent_summary: Option<String>,
+    /// `YYYY-MM-DD`.
+    pub due: Option<String>,
+    pub resolved_on: Option<String>,
+    /// `YYYY-MM-DDTHH:MM`.
+    pub updated_at: Option<String>,
 }
 
 /// Upsert by key in one transaction. Keys Jira didn't return keep their last copy (a forbidden
@@ -26,13 +38,52 @@ pub fn upsert(conn: &mut Connection, issues: &[Issue]) -> rusqlite::Result<()> {
     let tx = conn.transaction()?;
     {
         let mut up = tx.prepare(
-            "INSERT INTO jira_issues(key, summary, status) VALUES (?1, ?2, ?3)
-             ON CONFLICT(key) DO UPDATE SET summary = excluded.summary,
-               status = excluded.status, fetched_at = datetime('now')",
+            "INSERT INTO jira_issues(key, summary, status, issue_type, status_cat, parent_key, parent_summary,
+                                     due, resolved_on, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+             ON CONFLICT(key) DO UPDATE SET summary = excluded.summary, status = excluded.status,
+               issue_type = excluded.issue_type, status_cat = excluded.status_cat,
+               parent_key = excluded.parent_key, parent_summary = excluded.parent_summary, due = excluded.due,
+               resolved_on = excluded.resolved_on, updated_at = excluded.updated_at, fetched_at = datetime('now')",
         )?;
         for i in issues {
-            up.execute(params![i.key, i.summary, i.status])?;
+            up.execute(params![
+                i.key,
+                i.summary,
+                i.status,
+                i.issue_type,
+                i.status_cat,
+                i.parent_key,
+                i.parent_summary,
+                i.due,
+                i.resolved_on,
+                i.updated_at
+            ])?;
         }
     }
     tx.commit()
+}
+
+/// The assigned-to-me search's answer (D5): exactly these keys carry the flag; everything else loses it.
+pub fn mark_assigned(conn: &Connection, keys: &[String]) -> rusqlite::Result<()> {
+    let keys = serde_json::to_string(keys).unwrap_or_else(|_| "[]".into());
+    conn.execute(
+        "UPDATE jira_issues SET assigned_me = (key IN (SELECT value FROM json_each(?1)))",
+        [keys],
+    )?;
+    Ok(())
+}
+
+/// D9: Jira refused our token (401 / 403). Stamped with the local time; the next good answer clears it.
+pub fn set_auth_failed(conn: &Connection, failed: bool) -> rusqlite::Result<()> {
+    if failed {
+        conn.execute(
+            "INSERT INTO settings(key, value) VALUES ('jira_auth_failed', datetime('now', 'localtime'))
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            [],
+        )?;
+    } else {
+        conn.execute("DELETE FROM settings WHERE key = 'jira_auth_failed'", [])?;
+    }
+    Ok(())
 }
