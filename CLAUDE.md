@@ -16,6 +16,7 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 | `epics` | a Jira key the owner tracks | `key` (FK-123), `title`, `role` (owner · contributor), `okr`, `status` (active · done · dropped), `start`, `target`, `done_on`, `metric`, `before`, `after`, `tags` (`a,b`), `author` |
 | `evidence` | links proving an epic's impact | `epic_key`, `url`, `note`, `author` |
 | `meetings` | meeting mode; `name` is a series slug (oms-sync) | `id`, `day`, `name`, `note_id` (its note, the meeting's notes; `notes` = pre-010 text, unused), `ended_at` (NULL = running) |
+| `series_archive` | a meeting series the owner archived (hidden from Meetings + Calendar; starting a new meeting in it un-archives) | `name`, `archived_at` |
 | `topics` | learn pages, **the owner's own understanding** | `slug`, `summary`, `own_words`, `resources` |
 | `depth_ratings` | append-only self-rating 1 heard of · 2 can explain · 3 can build w/o AI · 4 can teach | `topic`, `day`, `depth` |
 | `notes` | markdown notes; `[[X]]` links a page | `id`, `title`, `body`, `author`, `updated_at` |
@@ -23,7 +24,7 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 | `taggings` | lookup of `#tags`, rebuilt from the text / tags field on every save (never write it) | `tag`, `item_type` (entry · note · epic · …), `item_id` |
 | `entry_tags` (view) | a line's tags incl. inherited from its epic / meeting series | `entry_id`, `tag`, `via` (NULL = in the text) |
 
-`[[X]]` in a note resolves in this order: epic key (`OPS-101`) → `/epics/X`, a tag in use → `/tags/X` (its hub,
+`[[X]]` in a note resolves in this order: an existing epic's key (`OPS-101`) → `/epics/X`, a tag in use → `/tags/X` (its hub,
 which also shows the topic and series of the same name), existing topic slug → `/learn/X`, existing meeting
 name → `/meetings?name=X`, else nothing (a dead link).
 
