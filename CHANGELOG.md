@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.2.0 — 2026-11-13
+
+### Features
+
+- Phone rules for the redesign; DESIGN.md catalogues the 0.2.0 components
+- Today head with Focus and Start pill; to-do rows quieter; @agent chips; Notes as one list
+- Fixed sidebar (titles first, "unnamed" stubs) and the Epics table with Jira ↗ chips
+- Series page and Archive (migration 011); Meetings list is one row per series
+- Relations both ways (meeting chip, note Meeting, Same name, linked via/topic chips, [[ tags, dead [[KEY]])
+- One page template on epic, meeting, topic, tag hub and note pages
+- Page-template components (.pghead, .addprop, .pmenu, .refs, @mention chip); Linked references grouped by source
+- One Linked references panel (mentions, #tags, notes on lines); renames carry [[links]]
+
+### Fixes
+
+- Final-gate findings (archive back path, start un-archives, exact [[X]] match, URL-only to-dos, docs)
+- Agent to-dos carry their @chip; Epics Impact cell no longer runs into Last log
+- Mac app pages mark themselves (UA) so the narrow-window menu button clears the window buttons
+
+### Under the hood
+
+- Series_archive table; [[KEY]] links only an existing epic
+- V0.2.0 release screenshots (demo DB)
+- Simplify pass over 0.2.0 (one [[X]] resolver, one Copy link item, one popover recipe)
+- Note --links reports deadLinks (D13)
+
 ## v0.1.13 — 2026-11-13
 
 ### Fixes
