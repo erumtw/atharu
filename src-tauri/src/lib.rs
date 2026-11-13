@@ -45,6 +45,9 @@ const CAPTURE: (Modifiers, Code) = (Modifiers::CONTROL.union(Modifiers::ALT), Co
 /// `html[data-app=mac]` leaves this room, so move both together.
 const LIGHTS: (f64, f64) = (20.0, 30.0);
 
+/// WebKit's Safari UA plus `AtharuMac`: every page's <head> reads it to set `data-app="mac"` before first paint.
+const MAC_UA: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15 AtharuMac";
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(
@@ -80,6 +83,8 @@ pub fn run() {
                         .build(),
                 )
                 .initialization_script("document.documentElement.dataset.app = 'mac'")
+                // The pages also check this marker in their own <head> (the init script can miss a page start).
+                .user_agent(MAC_UA)
                 // Jira / PR / Slack links belong in the real browser, not inside the app window.
                 // Settings › About's Restart links here after a DB change: the new DB opens only at start.
                 .on_navigation({
@@ -495,6 +500,8 @@ fn quick(app: &AppHandle, base: &tauri::Url) -> Result<(), Box<dyn std::error::E
                 .build(),
         )
         .initialization_script("document.documentElement.dataset.app = 'mac'")
+                // The pages also check this marker in their own <head> (the init script can miss a page start).
+                .user_agent(MAC_UA)
         .on_navigation(move |url| quick_nav(&h, url))
         .on_new_window(|url, _| {
             if to_browser(&url) {

@@ -4,6 +4,8 @@
 <html lang="en" data-look="{{ layout.look }}"{% if layout.glass_all %} data-glass="all"{% endif %}{% if layout.tinted %} data-tint="tinted"{% endif %}{% if layout.text_blur %} data-blur="text"{% endif %} style="--glass-a:{{ layout.glass_a }}%">
 <head>
 <meta charset="utf-8">
+{#- Mac app marker before first paint: the window buttons need the room looks.css leaves (data-app). #}
+<script>/AtharuMac/.test(navigator.userAgent)&&(document.documentElement.dataset.app="mac")</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Atharu</title>
 <link rel="stylesheet" href="/static/css/tokens.css">
