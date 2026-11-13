@@ -148,7 +148,7 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
 | Error | `.err` | 13 px `--err` text under the field it explains |
 | Line kind square | `.k` | 22px mono square: `!` `x` `+` `?` `>`; impact = blue (`.k.imp`), blocker = ink (`.k.bl`) |
 | Chip | `.chip`, `.chip.key` | epic keys, topics; `.chip.tag.at` = the agent @mention (below); `.chip.tag` (`.inh`, `.fl`) = see "Tag chip" below. One line, never wider than its container: a long name ends in "…" with the full name in the link's `title` (also crumbs, sidebar series via `.ell`) |
-| Link chip | `.lchip` | a link out with ↗: a line's source link (its URL then leaves the row text, the chip carries it), an epic's Jira status → `{base}/browse/KEY`; the only blue chip |
+| Link chip | `.lchip` | a link out with ↗: a line's source link (its URL then leaves the row text, the chip carries it), an epic's Jira status → `{base}/browse/KEY`. Same grey pill as `#tag` / `@agent` / key chips (`--fill-2`, no border), blue text + ↗ say "opens outside" (owner 2026-11-14: the white outlined box read as a button) |
 | Flag | `.flag.stale/.risk/.over` | pill; ink weight, no colour |
 | Due | `.due`, `.due.late` | muted / red bold |
 | Callout | `.callout`, `.callout.dark` | grey (info) / `--dark` (meeting banner with `.dot`, impact line with `.num` / `.num.up`) |
@@ -272,7 +272,7 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
   `--accent` is the only colour (4.88:1 on `--fill-2`; Tinted `--accent` #0055b3 = 6.25). The fill is opaque, so the numbers hold on
   every look, over glass and in menus. Hover = `--sep` fill, and the `#` steps to `--accent-2` (`--accent` is 4.35 on `--sep`, fails;
   `--accent-2` 5.57, text 9.88). Focus = 2px accent ring. Increase Contrast: text `--ink` (14.77), `#` `--accent-2`.
-- Not to be confused with its siblings: `.chip.key` = mono epic key, `.lchip` = the blue-outline source link (still the only blue chip),
+- Not to be confused with its siblings: `.chip.key` = mono epic key, `.lchip` = the source link: grey pill, blue text + ↗,
   plain `.chip` = meeting name / Google label.
 - **In the text**: a line's `#expense` renders as the chip where it was typed. The line text is split into `.ltext` segments: plain
   runs stay the `.edit-line` link, each tag is its own `<a class="chip tag">` to the hub (no link inside a link). Phone: `.blk>.ltext`
