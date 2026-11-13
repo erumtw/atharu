@@ -14,6 +14,6 @@ th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:8px
 td{padding:8px 10px;border-bottom:1px solid var(--fill-2);white-space:nowrap}
 tr:hover td{background:var(--fill-3)}
 summary{cursor:pointer;font-weight:600;padding:4px 0}
-/* Classic (always-shown) scrollbars: keep their room on every page, so the centred column does not jump sideways when a
-   list grows past one screen (Notes All ↔ Mine moved the page, 0.2.0). Overlay scrollbars take no room either way. */
-html{scrollbar-gutter:stable}
+/* No `scrollbar-gutter:stable` on html (0.2.2 → removed 0.2.5): with "always show scroll bars" it painted an empty grey
+   strip down the right of every page and the menu-bar popover, cutting the popover's cards. A list growing past one screen
+   may shift the column by one scrollbar width; that is the lesser evil. */
