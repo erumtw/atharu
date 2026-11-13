@@ -1,0 +1,2 @@
+{#- The page menu's first item: copies this page's address (clipboard needs JS; without it the item does nothing). -#}
+<a role="menuitem" href="#" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a>

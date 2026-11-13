@@ -259,16 +259,8 @@ pub async fn create_text(
 }
 
 fn resolver(conn: &Connection) -> rusqlite::Result<impl Fn(&str) -> Option<String>> {
-    let (epics, topics, meetings, tags) = queries::known_pages(conn)?;
-    Ok(move |x: &str| {
-        links::href(
-            x,
-            |s| epics.contains(s),
-            |s| topics.contains(s),
-            |s| meetings.contains(s),
-            |s| tags.contains(s),
-        )
-    })
+    let known = queries::known_pages(conn)?;
+    Ok(move |x: &str| known.href(x))
 }
 
 pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {

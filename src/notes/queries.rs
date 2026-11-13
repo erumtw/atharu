@@ -207,32 +207,37 @@ pub fn update_fields(conn: &Connection, id: i64, f: &[(&str, &str)]) -> rusqlite
     Ok(true)
 }
 
-/// Existing epic keys, topic slugs, meeting series and tags in use, for resolving `[[X]]`.
-type Known = (
-    HashSet<String>,
-    HashSet<String>,
-    HashSet<String>,
-    HashSet<String>,
-);
+/// Existing epic keys, topic slugs, meeting series and tags in use: what a `[[X]]` can land on.
+pub struct Known {
+    epics: HashSet<String>,
+    topics: HashSet<String>,
+    meetings: HashSet<String>,
+    tags: HashSet<String>,
+}
+
+impl Known {
+    /// Where `[[x]]` points, `None` = dead (`links::href` holds the order).
+    pub fn href(&self, x: &str) -> Option<String> {
+        crate::domain::links::href(
+            x,
+            |s| self.epics.contains(s),
+            |s| self.topics.contains(s),
+            |s| self.meetings.contains(s),
+            |s| self.tags.contains(s),
+        )
+    }
+}
 
 pub fn known_pages(conn: &Connection) -> rusqlite::Result<Known> {
-    let epics = conn
-        .prepare("SELECT key FROM epics")?
-        .query_map([], |r| r.get(0))?
-        .collect::<Result<_, _>>()?;
-    let topics = conn
-        .prepare("SELECT slug FROM topics")?
-        .query_map([], |r| r.get(0))?
-        .collect::<Result<_, _>>()?;
-    let meetings = conn
-        .prepare("SELECT DISTINCT name FROM meetings")?
-        .query_map([], |r| r.get(0))?
-        .collect::<Result<_, _>>()?;
-    let tags = conn
-        .prepare("SELECT DISTINCT tag FROM taggings")?
-        .query_map([], |r| r.get(0))?
-        .collect::<Result<_, _>>()?;
-    Ok((epics, topics, meetings, tags))
+    let set = |sql: &str| -> rusqlite::Result<HashSet<String>> {
+        conn.prepare(sql)?.query_map([], |r| r.get(0))?.collect()
+    };
+    Ok(Known {
+        epics: set("SELECT key FROM epics")?,
+        topics: set("SELECT slug FROM topics")?,
+        meetings: set("SELECT DISTINCT name FROM meetings")?,
+        tags: set("SELECT DISTINCT tag FROM taggings")?,
+    })
 }
 
 pub struct PageRow {

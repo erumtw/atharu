@@ -54,14 +54,16 @@ fn fact(e: &queries::EpicRow, today: NaiveDate) -> String {
             d => format!("target {} · {d}d", view::short(t)),
         });
     }
-    parts.push(
-        match date(e.last_log.as_deref()).map(|d| (today - d).num_days()) {
-            None => "nothing logged yet".to_string(),
-            Some(0) => "last log today".to_string(),
-            Some(n) => format!("last log {n}d ago"),
-        },
-    );
+    parts.push(last_log(e, today).map_or("nothing logged yet".into(), |l| format!("last log {l}")));
     parts.join(" · ")
+}
+
+/// `today` / `9d ago`; None = nothing logged on it.
+fn last_log(e: &queries::EpicRow, today: NaiveDate) -> Option<String> {
+    date(e.last_log.as_deref()).map(|d| match (today - d).num_days() {
+        0 => "today".to_string(),
+        n => format!("{n}d ago"),
+    })
 }
 
 /// The ↗ chip: the cached Jira status (or just `Jira`) linking `{base}/browse/KEY`; None while Jira isn't configured.
@@ -77,11 +79,7 @@ fn jira_link(st: &AppState, key: &str, status: Option<&str>) -> Option<(String, 
 
 fn list_row(st: &AppState, e: queries::EpicRow, today: NaiveDate) -> view::ListRow {
     let flag = flag(&e, today);
-    let last_log = match date(e.last_log.as_deref()).map(|d| (today - d).num_days()) {
-        None => "—".to_string(),
-        Some(0) => "today".to_string(),
-        Some(n) => format!("{n}d ago"),
-    };
+    let last_log = last_log(&e, today).unwrap_or_else(|| "—".into());
     let impact = [&e.before, &e.after, &e.metric]
         .iter()
         .all(|v| !v.is_empty())

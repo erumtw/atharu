@@ -684,8 +684,10 @@ progress.prog::-moz-progress-bar{background:var(--accent)}
 .pghead .fact b{color:var(--ink-2);font-weight:500}
 /* .pmenu: the page ⋯ menu under the crumb, one per entity page (partials/pmenu_btn.html). Fixed fallback where anchor
    positioning is missing. Delete is a form button styled as a menu item, so it still works as a plain POST. */
-.pmenu[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:230px}
-@supports (position-anchor:--a){.pmenu[popover]{position-anchor:--pmenu;top:calc(anchor(bottom) + 6px);right:anchor(right)}}
+.pmenu[popover],.startm[popover],.viewm[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:230px}
+.startm[popover],.viewm[popover]{width:360px;padding:10px;gap:10px}
+@supports (position-anchor:--a){:is(.pmenu,.startm,.viewm)[popover]{top:calc(anchor(bottom) + 6px);right:anchor(right)}
+  .pmenu{position-anchor:--pmenu}.startm{position-anchor:--startm}.viewm{position-anchor:--viewm}}
 .menu form{display:contents}
 .menu button[role=menuitem]{border:0;background:none;font:inherit;width:100%;text-align:left;cursor:pointer}
 /* Crumb's right end: save status + ⋯. */
@@ -718,10 +720,7 @@ details.tg>summary .small{font-size:13px}
 .side a.sub .mono{margin-left:auto;color:var(--muted)}
 .side a.sub i{color:var(--muted)}
 .etab{table-layout:fixed;width:100%}
-/* Today (0.2.0): Start meeting pill's field and the View ⋯ menu, both anchored under their crumb / heading button. */
-.startm[popover],.viewm[popover]{position:fixed;inset:auto;top:58px;right:36px;margin:0;width:360px;padding:10px;gap:10px}
-@supports (position-anchor:--a){.startm[popover]{position-anchor:--startm;top:calc(anchor(bottom) + 6px);right:anchor(right)}
-  .viewm[popover]{position-anchor:--viewm;top:calc(anchor(bottom) + 6px);right:anchor(right)}}
+/* Today (0.2.0): Start meeting pill's field and the View menu (positioned with .pmenu above). */
 .startm #meeting{display:flex;flex-direction:column;gap:8px}
 .startm #meeting>.small,.startm #meeting>.err{padding:0 !important}
 .needs h3{margin:10px 0 6px}

@@ -466,14 +466,14 @@ fn note(
         }
     }
     body.truncate(body.trim_end().len());
-    // `--links vector-search,OPS-101` → a closing `[[…]]` line, the same links the editor makes.
-    let extra: Vec<String> = links
+    let names: Vec<&str> = links
         .unwrap_or("")
         .split(',')
         .map(str::trim)
         .filter(|l| !l.is_empty())
-        .map(|l| format!("[[{l}]]"))
         .collect();
+    // `--links vector-search,OPS-101` → a closing `[[…]]` line, the same links the editor makes.
+    let extra: Vec<String> = names.iter().map(|l| format!("[[{l}]]")).collect();
     if !extra.is_empty() {
         if !body.is_empty() {
             body.push_str("\n\n");
@@ -498,22 +498,10 @@ fn note(
         }
     };
     // D13: a `--links` name that resolves to nothing still saves (an /ingest invitation to make that topic), but is named.
-    let (ep, tp, mt, tg) = notes::known_pages(conn).map_err(db)?;
-    let dead: Vec<&str> = links
-        .unwrap_or("")
-        .split(',')
-        .map(str::trim)
-        .filter(|l| !l.is_empty())
-        .filter(|l| {
-            links::href(
-                l,
-                |s| ep.contains(s),
-                |s| tp.contains(s),
-                |s| mt.contains(s),
-                |s| tg.contains(s),
-            )
-            .is_none()
-        })
+    let known = notes::known_pages(conn).map_err(db)?;
+    let dead: Vec<&str> = names
+        .into_iter()
+        .filter(|l| known.href(l).is_none())
         .collect();
     if !dead.is_empty() {
         let names: Vec<String> = dead.iter().map(|d| format!("‘{d}’")).collect();

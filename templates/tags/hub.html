@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {#- ⋯ = the page menu, a native popover of links (Esc / light dismiss, no JS); each opens its confirm step on this page, so it works as plain GET + POST. #}
 {% block crumb_extra %}<span class="pend">{% include "partials/pmenu_btn.html" %}</span>
-<div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/tags/{{ tag }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a>{% if !tagged_by.is_empty() || !used.is_empty() %}<a role="menuitem" href="/tags/{{ tag }}?act=rename">Rename…</a><a role="menuitem" href="/tags/{{ tag }}?act=merge">Merge into another tag…</a><a role="menuitem" class="err" href="/tags/{{ tag }}?act=delete">Delete tag…</a><div class="mf" role="presentation">Rename and merge rewrite the #word in every line and note; delete keeps the word, drops the #.</div>{% endif %}</div>{% endblock %}
+<div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu">{% include "partials/pmenu_copy.html" %}{% if !tagged_by.is_empty() || !used.is_empty() %}<a role="menuitem" href="/tags/{{ tag }}?act=rename">Rename…</a><a role="menuitem" href="/tags/{{ tag }}?act=merge">Merge into another tag…</a><a role="menuitem" class="err" href="/tags/{{ tag }}?act=delete">Delete tag…</a><div class="mf" role="presentation">Rename and merge rewrite the #word in every line and note; delete keeps the word, drops the #.</div>{% endif %}</div>{% endblock %}
 {% block content %}
 <main class="doc">
 {%- if let Some(a) = act %}
