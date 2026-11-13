@@ -130,7 +130,7 @@ alters a token, component, glass surface or pattern updates `DESIGN.md` in the s
   sherpa-onnx static lib for the speaker split (D37); `.cargo/config.toml` points the crate at it.
 - Layout: vertical slices (`src/<feature>/{mod,handlers,queries,view}.rs`) + pure `src/domain/`. `domain/` imports
   no feature; features never import each other; SQL only in a slice's `queries.rs`; HTML only in `templates/`;
-  every htmx action returns one partial and also works as a plain form POST (303 back). `src/cli/` is an entry
+  every htmx action returns one partial and also works as a plain form POST (303 back). `src/db.rs` holds the only shared SQL (migrations, `retag`, `SELECT_PLAN`, `still_resolves` for renames). `src/cli/` is an entry
   point like `app.rs` and may call slices' queries. `src/layout/` is shared page chrome (sidebar, breadcrumb, look), not a
   feature: every slice may import it, like `web.rs`. `src/recording/` is shared meeting-recording state (running
   meeting, recorder status, the Mac app's `Want`), not a feature: slices may import it, like `layout`.
