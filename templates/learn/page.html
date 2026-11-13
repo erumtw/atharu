@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% block side %}{% include "learn/side.html" %}{% endblock %}
 {% block crumb_extra %}<span class="pend"><span id="saved" class="saved">Changes save as you type</span>{% include "partials/pmenu_btn.html" %}</span>
 <div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/learn/{{ slug }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a><form method="post" action="/learn/{{ slug }}/delete" hx-post="/learn/{{ slug }}/delete" hx-target="main.doc" hx-swap="outerHTML" onsubmit="this.closest('[popover]').hidePopover()"><button role="menuitem" class="err" type="submit">Delete topic…</button></form><div class="mf" role="presentation">Ratings go with it; its ? lines go back to the inbox. Delete keeps an Undo.</div></div>{% endblock %}
 {% block content %}

@@ -80,26 +80,6 @@ fn snippet(body: &str, q: &str) -> (String, String, String) {
     }
 }
 
-fn side(rows: &[queries::NoteRow], on: i64) -> view::Side {
-    let mut side = view::Side {
-        mine: Vec::new(),
-        agents: Vec::new(),
-        on,
-    };
-    for n in rows {
-        let item = view::SideNote {
-            id: n.id,
-            title: title_or_untitled(&n.title),
-        };
-        if n.author == "me" {
-            side.mine.push(item);
-        } else {
-            side.agents.push(item);
-        }
-    }
-    side
-}
-
 /// Percent-encodes a query value (the search box) for the filter row's links.
 fn encode(v: &str) -> String {
     v.bytes()
@@ -187,7 +167,7 @@ pub async fn list(State(st): State<AppState>, Query(lq): Query<ListQuery>) -> Ap
     let base = list_url(&q, &[], linked);
     web::html(&view::List {
         layout: Layout::load(&conn, "notes", "Notes", vec![])?,
-        side: side(&all, 0),
+        any: !all.is_empty(),
         linked_on: list_url(&q, &tags, true),
         linked_off: list_url(&q, &tags, false),
         linked,
@@ -287,7 +267,6 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
     let title = title_or_untitled(&n.title);
     web::html(&view::Page {
         layout: Layout::load(&conn, "notes", title, vec![crumb("Notes", "/notes")])?,
-        side: side(&queries::list(&conn, "", &[], false)?, id),
         head: head(&st, &conn, id)?,
         html: markdown::to_html(&links::rewrite(&n.body, &resolve)),
         agent: agent(&n.author),

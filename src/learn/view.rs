@@ -26,7 +26,6 @@ pub struct ListRow {
 #[template(path = "learn/list.html")]
 pub struct List {
     pub layout: Layout,
-    pub side: Vec<String>,
     pub new_topics: Vec<NewTopic>,
     /// Days of learn lines without a topic, newest first (`YYYY-MM-DD`).
     pub untopic: Vec<String>,
@@ -76,7 +75,6 @@ pub struct Page {
     /// Tag hub / series of the same name.
     pub same: crate::layout::SameName,
     pub layout: Layout,
-    pub side: Vec<String>,
     pub slug: String,
     pub summary: String,
     pub own_words: String,

@@ -1,6 +1,0 @@
-{%- if !side.is_empty() %}
-<div class="lbl">Topics</div>
-{%- for s in side %}
-<a class="sub{% if layout.title == *s %} on{% endif %}" href="/learn/{{ s }}" title="{{ s }}"><span class="ell">{{ s }}</span></a>
-{%- endfor %}
-{%- endif %}

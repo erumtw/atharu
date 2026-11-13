@@ -9,14 +9,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 /// (name, meetings) per series, most recently met first.
-pub fn series(conn: &Connection) -> rusqlite::Result<Vec<(String, i64)>> {
-    let mut stmt = conn.prepare(
-        "SELECT name, COUNT(*) FROM meetings GROUP BY name ORDER BY MAX(day) DESC, name",
-    )?;
-    stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
-        .collect()
-}
-
 /// The one-running-meeting guard of start / restore, read inside their write; pages read `recording::MeetingState`.
 fn running_name(conn: &Connection) -> rusqlite::Result<Option<String>> {
     conn.query_row(

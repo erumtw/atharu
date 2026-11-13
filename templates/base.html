@@ -45,11 +45,10 @@
 <div class="lbl nh">Grow</div>
 <a href="/learn" title="Learn"{% if layout.nav == "learn" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#learn"/></svg><span class="lb">Learn</span></a>
 <a href="/notes" title="Notes"{% if layout.nav == "notes" %} class="on"{% endif %}><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#notes"/></svg><span class="lb">Notes</span></a>
-{%- block side %}{% endblock %}
 {%- if !layout.epics.is_empty() %}
 <div class="lbl">Active epics</div>
 {%- for e in layout.epics %}
-<a class="sub" href="/epics/{{ e.key }}"{% if !e.title.is_empty() %} title="{{ e.title }}"{% endif %}><span class="mono">{{ e.key }}</span>{% if !e.title.is_empty() %}<span class="t">{{ e.title }}</span>{% endif %}</a>
+<a class="sub" href="/epics/{{ e.key }}" title="{% if e.title.is_empty() %}{{ e.key }} has no title yet{% else %}{{ e.title }}{% endif %}"><span class="t">{% if e.title.is_empty() %}<i>unnamed</i>{% else %}{{ e.title }}{% endif %}</span><span class="mono">{{ e.key }}</span></a>
 {%- endfor %}
 {%- endif %}
 {#- Spacer: Settings sits at the bottom of the full-height sidebar / rail / drawer. #}

@@ -718,3 +718,7 @@ details.tg>summary .small{font-size:13px}
 .side a.sub .t{color:var(--ink-2)}
 .side a.sub .mono{margin-left:auto;color:var(--muted)}
 .side a.sub i{color:var(--muted)}
+/* .lchip: a link out (Jira status ↗). A quiet pill, not a tag: no fill until hover. AA: --muted on white 4.9:1. */
+.lchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;line-height:20px;padding:0 7px;border:1px solid var(--line);border-radius:10px;color:var(--muted);text-decoration:none;white-space:nowrap}
+.lchip:hover{background:var(--fill);color:var(--ink);text-decoration:none}
+.etab{table-layout:fixed;width:100%}

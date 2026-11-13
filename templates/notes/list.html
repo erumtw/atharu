@@ -1,10 +1,9 @@
 {% extends "base.html" %}
-{% block side %}{% include "notes/side.html" %}{% endblock %}
 {% block crumb_extra %}<form class="row" style="margin-left: auto" method="post" action="/notes"><button class="btn" type="submit">New note</button></form>{% endblock %}
 {% block content %}
 <main class="doc">
 <h1 class="ptitle">Notes</h1>
-{%- if side.mine.is_empty() && side.agents.is_empty() %}
+{%- if !any %}
 <span class="small muted">No notes yet.</span>
 <form method="post" action="/notes"><button class="btn ghost" type="submit">New note</button></form>
 {%- else %}

@@ -20,12 +20,15 @@ async fn list_groups_by_okr_with_stubs_and_closed() {
     seed(&st);
     let b = get(&st, "/epics").await.body;
     let pos = |s: &str| b.find(s).unwrap_or_else(|| panic!("missing {s}"));
-    assert!(pos("No title yet") < pos("O1 · Faster ordering"));
+    assert!(
+        b.contains(r#"<p class="fact">2 active · 1 unnamed</p>"#),
+        "{b}"
+    );
     assert!(pos("O1 · Faster ordering") < pos("No OKR"));
     assert!(pos("No OKR") < pos("Done &amp; dropped"));
+    // Stubs last, named in place.
+    assert!(pos("Done &amp; dropped") < pos("Unnamed <span"));
     assert!(b.contains("Title for OPS-140"));
-    assert!(b.contains("14 Nov <span class=\"muted\">· 3d</span>"));
-    assert!(b.contains("5 Nov <b>· 6d late</b>"));
     assert!(b.contains("9d ago"));
     assert!(b.contains("done 20 Oct"));
 }

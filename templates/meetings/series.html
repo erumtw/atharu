@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% block side %}{% include "meetings/side.html" %}{% endblock %}
 {% block crumb_extra %}<span class="pend">{% include "partials/pmenu_btn.html" %}</span>
 <div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/meetings?name={{ name }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a><a role="menuitem" href="/meetings/{{ id }}">Rename… <span class="small muted">on its latest meeting</span></a><form method="post" action="/meetings/archive"><input type="hidden" name="name" value="{{ name }}"><input type="hidden" name="back" value="{{ back }}">{% if !archived %}<input type="hidden" name="on" value="1">{% endif %}<button role="menuitem" type="submit">{% if archived %}Unarchive{% else %}Archive{% endif %}</button></form><div class="mf" role="presentation">Archive hides it from Meetings and the Calendar. Its pages stay.</div></div>{% endblock %}
 {% block content %}

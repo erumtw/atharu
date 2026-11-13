@@ -66,11 +66,6 @@ pub fn topics(conn: &Connection) -> rusqlite::Result<Vec<TopicRow>> {
     .collect()
 }
 
-pub fn slugs(conn: &Connection) -> rusqlite::Result<Vec<String>> {
-    let mut stmt = conn.prepare("SELECT slug FROM topics ORDER BY slug")?;
-    stmt.query_map([], |r| r.get(0))?.collect()
-}
-
 pub struct Topic {
     pub summary: String,
     pub own_words: String,

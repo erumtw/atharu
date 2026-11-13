@@ -30,13 +30,6 @@ fn banner(
     })
 }
 
-fn side(conn: &Connection) -> rusqlite::Result<Vec<view::SideSeries>> {
-    Ok(queries::series(conn)?
-        .into_iter()
-        .map(|(name, count)| view::SideSeries { name, count })
-        .collect())
-}
-
 fn actions(open: i64, done: i64, dropped: i64) -> String {
     let parts: Vec<String> = [(open, "open"), (done, "done"), (dropped, "dropped")]
         .iter()
@@ -119,7 +112,6 @@ fn render_list(st: &AppState, b: Banner) -> AppResult<view::List> {
     };
     Ok(view::List {
         layout: Layout::load(&conn, "meetings", "Meetings", vec![])?,
-        side: side(&conn)?,
         banner: b,
         series,
         archived,
@@ -147,7 +139,6 @@ fn render_series(st: &AppState, name: &str) -> AppResult<view::Series> {
             name,
             vec![crumb("Meetings", "/meetings")],
         )?,
-        side: side(&conn)?,
         name: name.to_string(),
         fact,
         archived,
@@ -729,7 +720,6 @@ pub async fn page(
                 crumb(m.name.clone(), format!("/meetings?name={}", m.name)),
             ],
         )?,
-        side: side(&conn)?,
         id,
         series_count: siblings.len() + 1,
         siblings: siblings

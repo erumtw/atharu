@@ -20,11 +20,6 @@ pub struct BannerSwap {
     pub banner: Banner,
 }
 
-pub struct SideSeries {
-    pub name: String,
-    pub count: i64,
-}
-
 pub struct ListRow {
     pub id: i64,
     pub day: String,
@@ -51,7 +46,6 @@ pub struct SeriesItem {
 #[template(path = "meetings/list.html")]
 pub struct List {
     pub layout: Layout,
-    pub side: Vec<SideSeries>,
     pub banner: Banner,
     pub series: Vec<SeriesItem>,
     /// Archived series, folded under the list (D4).
@@ -65,7 +59,6 @@ pub struct List {
 #[template(path = "meetings/series.html")]
 pub struct Series {
     pub layout: Layout,
-    pub side: Vec<SideSeries>,
     pub name: String,
     /// `2 meetings · last met today`.
     pub fact: String,
@@ -91,7 +84,6 @@ pub struct KindGroup {
 #[template(path = "meetings/page.html")]
 pub struct Page {
     pub layout: Layout,
-    pub side: Vec<SideSeries>,
     pub id: i64,
     pub name: String,
     /// `Wed 11 Nov 2026`.

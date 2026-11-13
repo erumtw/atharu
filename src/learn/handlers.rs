@@ -60,7 +60,6 @@ pub async fn list(State(st): State<AppState>) -> AppResult<Response> {
         .collect();
     web::html(&view::List {
         layout: Layout::load(&conn, "learn", "Learn", vec![])?,
-        side: queries::slugs(&conn)?,
         new_topics: queries::new_topics(&conn)?
             .into_iter()
             .map(|(slug, lines)| view::NewTopic { slug, lines })
@@ -125,7 +124,6 @@ pub async fn page(State(st): State<AppState>, Path(slug): Path<String>) -> AppRe
         .collect();
     web::html(&view::Page {
         layout: Layout::load(&conn, "learn", slug.clone(), vec![crumb("Learn", "/learn")])?,
-        side: queries::slugs(&conn)?,
         rate: rate_view(&conn, &slug, st.today())?,
         summary: t.summary,
         own_words: t.own_words,

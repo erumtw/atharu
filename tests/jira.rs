@@ -88,8 +88,17 @@ async fn off_without_all_three_keys() {
 
     let mut st = state();
     st.settings = std::sync::Arc::new(cfg);
+    exec(
+        &st,
+        "INSERT INTO epics(key, title) VALUES ('OPS-101', 'Checkout');
+         INSERT INTO jira_issues(key, summary, status) VALUES ('OPS-101', 'Faster checkout', 'In Progress');",
+    );
     let b = get(&st, "/epics").await.body;
     assert!(b.contains("action=\"/jira/refresh\"") && !b.contains("t0k"));
+    // The ↗ chip: cached status, linking the issue on the configured site (trailing / dropped).
+    let chip = r#"<a class="lchip" href="https://acme.atlassian.net/browse/OPS-101" target="_blank" rel="noopener noreferrer" title="Open OPS-101 in Jira">In Progress ↗</a>"#;
+    assert!(b.contains(chip), "{b}");
+    assert!(get(&st, "/epics/OPS-101").await.body.contains(chip));
     assert!(
         get(&st, "/epics?jira=failed")
             .await

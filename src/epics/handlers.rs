@@ -64,32 +64,35 @@ fn fact(e: &queries::EpicRow, today: NaiveDate) -> String {
     parts.join(" · ")
 }
 
-fn list_row(e: queries::EpicRow, today: NaiveDate) -> view::ListRow {
+/// The ↗ chip: the cached Jira status (or just `Jira`) linking `{base}/browse/KEY`; None while Jira isn't configured.
+fn jira_link(st: &AppState, key: &str, status: Option<&str>) -> Option<(String, String)> {
+    let base = st.settings.jira_base_url.as_deref()?.trim_end_matches('/');
+    links::is_http(base).then(|| {
+        (
+            status.unwrap_or("Jira").to_string(),
+            format!("{base}/browse/{key}"),
+        )
+    })
+}
+
+fn list_row(st: &AppState, e: queries::EpicRow, today: NaiveDate) -> view::ListRow {
     let flag = flag(&e, today);
-    let (target, target_note, late) = match date(e.target.as_deref()) {
-        None => (String::new(), String::new(), false),
-        Some(t) => {
-            let days = (t - today).num_days();
-            let note = match days {
-                0 => "· today".to_string(),
-                d if d < 0 => format!("· {}d late", -d),
-                d => format!("· {d}d"),
-            };
-            (view::short(t), note, days < 0)
-        }
-    };
     let last_log = match date(e.last_log.as_deref()).map(|d| (today - d).num_days()) {
         None => "—".to_string(),
         Some(0) => "today".to_string(),
         Some(n) => format!("{n}d ago"),
     };
+    let impact = [&e.before, &e.after, &e.metric]
+        .iter()
+        .all(|v| !v.is_empty())
+        .then(|| (e.before.clone(), e.after.clone(), e.metric.clone()));
     view::ListRow {
+        jira: jira_link(st, &e.key, e.jira_status.as_deref()),
+        jira_hint: e.jira.filter(|_| e.title.is_empty()),
         key: e.key,
         title: e.title,
-        role: e.role,
-        target,
-        target_note,
-        late,
+        open: e.open_plans,
+        impact,
         last_log,
         flag,
     }
@@ -104,11 +107,18 @@ pub struct ListQuery {
 pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> AppResult<Response> {
     let today = st.today();
     let conn = st.conn();
+    let mut done_month = 0;
     let (mut untitled, mut groups, mut closed) =
         (Vec::new(), Vec::<view::OkrGroup>::new(), Vec::new());
     for e in queries::all_epics(&conn)? {
         if e.status != "active" {
             let done = e.status == "done";
+            if done
+                && date(e.done_on.as_deref())
+                    .is_some_and(|d| dates::month_start(d) == dates::month_start(today))
+            {
+                done_month += 1;
+            }
             closed.push(view::Closed {
                 chip: match date(e.done_on.as_deref()) {
                     Some(d) if done => format!("done {}", view::short(d)),
@@ -120,14 +130,14 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
                 done,
             });
         } else if e.title.is_empty() {
-            untitled.push((e.key, e.jira));
+            untitled.push(list_row(&st, e, today));
         } else {
             let okr = if e.okr.is_empty() {
                 "No OKR".to_string()
             } else {
                 e.okr.clone()
             };
-            let row = list_row(e, today);
+            let row = list_row(&st, e, today);
             // Query sorts by OKR, so a new OKR always means a new group.
             match groups.last_mut() {
                 Some(g) if g.okr == okr => g.rows.push(row),
@@ -138,8 +148,17 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
             }
         }
     }
+    let active: usize = groups.iter().map(|g| g.rows.len()).sum();
+    let mut fact = vec![format!("{active} active")];
+    if done_month > 0 {
+        fact.push(format!("{done_month} done this month"));
+    }
+    if !untitled.is_empty() {
+        fact.push(format!("{} unnamed", untitled.len()));
+    }
     web::html(&view::List {
         layout: Layout::load(&conn, "epics", "Epics", vec![])?,
+        fact: fact.join(" · "),
         untitled,
         groups,
         closed,
@@ -283,6 +302,7 @@ fn render_page(
         flag: flag(&e, today),
         activity: weeks.iter().map(|n| n * 100 / max).collect(),
         epic: view::EpicView {
+            jira_link: jira_link(st, &e.key, e.jira_status.as_deref()),
             key: e.key,
             jira: e.jira.filter(|_| e.title.is_empty()),
             title: e.title,

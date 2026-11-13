@@ -2,19 +2,6 @@ use crate::{domain::entry::Kind, layout::Layout};
 use askama::Template;
 use serde::Serialize;
 
-pub struct SideNote {
-    pub id: i64,
-    pub title: String,
-}
-
-/// Sidebar groups: mine apart from agent-written ones (spec: never mixed).
-pub struct Side {
-    pub mine: Vec<SideNote>,
-    pub agents: Vec<SideNote>,
-    /// Note to highlight, 0 = none.
-    pub on: i64,
-}
-
 pub struct ListRow {
     pub id: i64,
     pub title: String,
@@ -37,7 +24,8 @@ pub struct ListRow {
 #[template(path = "notes/list.html")]
 pub struct List {
     pub layout: Layout,
-    pub side: Side,
+    /// Any note at all (else the empty state).
+    pub any: bool,
     pub q: String,
     pub filter: crate::layout::TagFilter,
     /// `?linked=1`: only notes some line links to.
@@ -59,7 +47,6 @@ pub struct Link {
 #[template(path = "notes/page.html")]
 pub struct Page {
     pub layout: Layout,
-    pub side: Side,
     pub id: i64,
     pub title: String,
     /// Markdown as stored; the editor loads it, no-JS edits it in the textarea.

@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {#- The only page that loads the editor bundle (spec: other pages ship no editor JS). #}
 {% block head %}<script src="/static/js/editor.js" defer></script>{% endblock %}
-{% block side %}{% include "notes/side.html" %}{% endblock %}
 {% block crumb_extra %}<span class="pend"><span id="saved" class="saved"><span class="m-hide">Changes save as you type{% if !ago.is_empty() %} · {% endif %}</span>{% if !ago.is_empty() %}✓ saved {{ ago }}{% endif %}</span>{% include "partials/pmenu_btn.html" %}</span>
 <div class="menu pmenu" id="pmenu" popover role="menu" aria-label="Page menu"><a role="menuitem" href="/notes/{{ id }}" onclick="event.preventDefault(); navigator.clipboard.writeText(location.href); this.closest('[popover]').hidePopover()">Copy link</a><form method="post" action="/notes/{{ id }}/delete" hx-post="/notes/{{ id }}/delete" hx-target="main.doc" hx-swap="outerHTML" onsubmit="this.closest('[popover]').hidePopover()"><button role="menuitem" class="err" type="submit">Delete note…</button></form><div class="mf" role="presentation">Delete keeps an Undo.</div></div>{% endblock %}
 {% block content %}

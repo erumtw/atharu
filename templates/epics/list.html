@@ -1,28 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
 <main class="doc wide">
-<h1 class="ptitle">Epics</h1>
-<p class="lead">Your Jira epics, plus what Jira doesn't hold: OKR, target, metric, impact.</p>
+<header class="pghead"><h1 class="ptitle">Epics</h1><p class="fact">{{ fact }}</p></header>
 {%- if jira_on %}
-<form class="row small" method="post" action="/jira/refresh"><input type="hidden" name="back" value="/epics"><span class="muted">Titles from Jira, read-only.</span><button class="btn ghost s" type="submit">Refresh</button>{% if jira_failed %}<span class="err">Couldn't reach Jira. Showing the last copy.</span>{% endif %}</form>
-{%- endif %}
-{%- if !untitled.is_empty() %}
-
-<details open>
-<summary>No title yet <span class="muted normal">· {{ untitled.len() }} · keys you logged that need a name</span></summary>
-{%- for (key, jira) in untitled %}
-<form class="blk" style="gap: 8px" method="post" action="/epics/{{ key }}/title" hx-post="/epics/{{ key }}/title" hx-swap="outerHTML"><span class="chip key">{{ key }}</span>{% if let Some(j) = jira %}<span class="small muted" title="From Jira">{{ j }}</span>{% endif %}<input class="pin dash" name="title" placeholder="Type a title, press Enter" aria-label="Title for {{ key }}"></form>
-{%- endfor %}
-</details>
+<form class="row small" method="post" action="/jira/refresh"><input type="hidden" name="back" value="/epics"><span class="muted">Jira status is read-only.</span><button class="btn ghost s" type="submit">Refresh</button>{% if jira_failed %}<span class="err">Couldn't reach Jira. Showing the last copy.</span>{% endif %}</form>
 {%- endif %}
 {%- for g in groups %}
 
 <details open>
 <summary>{{ g.okr }} <span class="muted normal">· {{ g.rows.len() }} active</span></summary>
-<div class="tw"><table>
-<tr><th>Name</th><th>Role</th><th>Target</th><th>Last log</th><th>Needs you?</th></tr>
+<div class="tw"><table class="etab">{% include "epics/cols.html" %}
 {%- for e in g.rows %}
-<tr><td><a class="ink" href="/epics/{{ e.key }}"><span class="chip key">{{ e.key }}</span> <b>{{ e.title }}</b></a></td><td class="muted">{{ e.role }}</td><td>{% if e.target.is_empty() %}<span class="muted">—</span>{% else %}{{ e.target }} {% if e.late %}<b>{{ e.target_note }}</b>{% else %}<span class="muted">{{ e.target_note }}</span>{% endif %}{% endif %}</td><td class="muted">{{ e.last_log }}</td><td>{% if let Some(f) = e.flag %}<span class="{{ f.class }}">{{ f.label }}</span> <span class="small muted">{{ f.reason }}</span>{% endif %}</td></tr>
+{% include "epics/row.html" %}
 {%- endfor %}
 </table></div>
 </details>
@@ -36,7 +25,18 @@
 </div>
 </details>
 {%- endif %}
+{%- if !untitled.is_empty() %}
 
-<p class="small muted">New epics appear here the first time you log a line starting with their key.</p>
+<details open>
+<summary class="muted">Unnamed <span class="normal">· {{ untitled.len() }} · keys you logged before naming them</span></summary>
+<div class="tw"><table class="etab">{% include "epics/cols.html" %}
+{%- for e in untitled %}
+{% include "epics/row.html" %}
+{%- endfor %}
+</table></div>
+</details>
+{%- endif %}
+
+<p class="small muted">An epic starts the first time a line begins with its key, e.g. <span class="mono">OPS-150 kickoff</span>.</p>
 </main>
 {% endblock %}

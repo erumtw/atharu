@@ -13,15 +13,17 @@ pub fn short(d: NaiveDate) -> String {
 pub struct ListRow {
     pub key: String,
     pub title: String,
-    pub role: String,
-    /// `14 Nov`, empty when no target.
-    pub target: String,
-    /// `· 3d`, `· today`, or `· 6d late` (then `late` is set and the board bolds it).
-    pub target_note: String,
-    pub late: bool,
+    /// Open to-dos on it.
+    pub open: i64,
+    /// (before, after, metric) once all three are filled.
+    pub impact: Option<(String, String, String)>,
     /// `today`, `9d ago`, or `—`.
     pub last_log: String,
     pub flag: Option<Flag>,
+    /// The ↗ chip: (Jira status or `Jira`, `{base}/browse/KEY`), when Jira is configured.
+    pub jira: Option<(String, String)>,
+    /// Jira `summary · status`, shown on an unnamed row as a hint.
+    pub jira_hint: Option<String>,
 }
 
 /// A flag as the epic pages show it.
@@ -50,8 +52,10 @@ pub struct Closed {
 #[template(path = "epics/list.html")]
 pub struct List {
     pub layout: Layout,
-    /// (key, Jira `summary · status` if cached).
-    pub untitled: Vec<(String, Option<String>)>,
+    /// Unnamed stubs, at the bottom (named in place).
+    pub untitled: Vec<ListRow>,
+    /// `2 active · 1 done this month · 1 unnamed`.
+    pub fact: String,
     /// Jira configured: show the Refresh button.
     pub jira_on: bool,
     pub jira_failed: bool,
@@ -79,6 +83,8 @@ pub struct EpicView {
     pub done_on: String,
     /// Jira `summary · status`, shown while `title` is empty.
     pub jira: Option<String>,
+    /// The ↗ chip (status or `Jira`, issue URL), when Jira is configured.
+    pub jira_link: Option<(String, String)>,
 }
 
 pub struct Evidence {

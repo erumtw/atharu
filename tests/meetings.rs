@@ -116,7 +116,6 @@ async fn lines_logged_during_a_meeting_get_its_id() {
         ),
         "{b}"
     );
-    assert!(b.contains("<span class=\"ell\">oms-sync</span><span>· 1</span>"));
     assert!(
         get(&st, "/")
             .await

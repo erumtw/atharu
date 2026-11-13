@@ -27,13 +27,15 @@ pub struct EpicRow {
     pub jira: Option<String>,
     /// Comma list of tags its lines inherit (D29).
     pub tags: String,
+    /// Jira status alone, for the ↗ chip (cached; None = not in Jira or never fetched).
+    pub jira_status: Option<String>,
 }
 
 const SELECT_EPIC: &str =
     "SELECT ep.key, ep.title, ep.role, ep.okr, ep.status, ep.start, ep.target, ep.done_on,
         ep.metric, ep.before, ep.after, (SELECT MAX(e.day) FROM entries e WHERE e.epic_key = ep.key),
         (SELECT COUNT(*) FROM entries e WHERE e.epic_key = ep.key AND e.plan_state = 'open'),
-        ep.author, j.summary || ' · ' || j.status, ep.tags
+        ep.author, j.summary || ' · ' || j.status, ep.tags, j.status
  FROM epics ep LEFT JOIN jira_issues j ON j.key = ep.key";
 
 fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
@@ -54,6 +56,7 @@ fn epic_row(r: &rusqlite::Row) -> rusqlite::Result<EpicRow> {
         author: r.get(13)?,
         jira: r.get(14)?,
         tags: r.get(15)?,
+        jira_status: r.get(16)?,
     })
 }
 
