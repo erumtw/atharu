@@ -116,11 +116,21 @@ pub struct Page {
     pub next: String,
     /// `week`, `month`, `day` or `5 days`: the ‹ › labels.
     pub unit: String,
+    /// The current view around today.
+    pub today: String,
+    pub views: Vec<ViewLink>,
     pub cal: Cal,
     pub has_ical: bool,
     pub filter: crate::layout::TagFilter,
     /// "+ Event" form, kept after a rejected add (no-JS path).
     pub form: EventForm,
+}
+
+/// One button of the Day · N days · Week · Month switch.
+pub struct ViewLink {
+    pub label: &'static str,
+    pub href: String,
+    pub on: bool,
 }
 
 #[derive(Default)]

@@ -272,25 +272,56 @@ form.inline{display:inline}
 @media (prefers-reduced-transparency: reduce){:is(.side,.crumb,.newline,.menu,.btn.ghost,.fld,.dnav,.ta,.note-md){backdrop-filter:none;-webkit-backdrop-filter:none}}
 @media (prefers-contrast: more){:is(.side,.crumb,.newline,.card,.pg,.btn.ghost,.fld,.dnav,.ta,.note-md){border-color:var(--ink)}.muted{color:var(--muted-hc)}}
 
-/* Calendar. */
-.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.cal .dh{font-size:12px;font-weight:600;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);background:var(--fill-3)}
-.cal .dh.now{color:var(--accent)}
-.cal .dc{min-height:300px;padding:8px;border-right:1px solid var(--fill-2);display:flex;flex-direction:column;gap:6px}
-.cal .dc.now{background:var(--now)}
+/* Calendar (0.2.1, boards Redesign.Calendar + .Views): Google-Calendar layout. --px = one hour of the grid.
+   Text: --muted on --fill-3 (all-day label) 4.9:1; white on --accent (today's number) 5.6:1; the now line is
+   --err, non-text. Out-of-month numbers take --faint (its one text use, as before). */
+.cgbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cgbar .ptitle{font-size:28px;letter-spacing:-.4px;margin:0 6px 0 4px}
+.cgbar .sp{flex:1}
+.cg{--px:46px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+.cg :is(.hd,.ad,.bd){display:grid;grid-template-columns:52px repeat(var(--n),minmax(0,1fr))}
+.cg .hd>div{padding:8px 8px 6px;font-size:12px;color:var(--muted);font-weight:600;border-left:1px solid var(--fill-2);display:flex;align-items:baseline;gap:6px;min-width:0}
+.cg .hd>div:first-child{border-left:0}
+.cg .hd a{color:inherit}
+.cg .hd b{font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.3px}
+.cg .hd .now{color:var(--accent)}
+.cg .hd .now b{background:var(--accent);color:#fff;border-radius:9999px;min-width:30px;height:30px;display:inline-grid;place-items:center;font-size:16px}
+.cg .hd .lines{margin-left:auto;font-weight:400;font-size:11px;white-space:nowrap}
+.cg .ad{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--fill-3)}
+.cg .ad>div{border-left:1px solid var(--fill-2);padding:4px;display:flex;flex-direction:column;gap:3px;min-height:26px;min-width:0}
+.cg .ad>.lab{font-size:10px;color:var(--muted);padding:8px 4px 0;text-align:right;border:0}
+.cg :is(.ad,.mo) .ev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 6px;font-size:11px}
+.cg :is(.ad,.mo) :is(.ev small,.evbtn){overflow:hidden;text-overflow:ellipsis}
+.cg :is(.ad,.mo) .ev small{display:none}
+.cg .more{font-size:11px;color:var(--muted);padding:0 6px}
+.cg .bs{max-height:max(360px,calc(100vh - 240px));overflow-y:auto}
+.cg .bd{position:relative}
+.cg .hrs{position:relative}
+.cg .hrs span{position:absolute;right:8px;font-size:10px;color:var(--muted);transform:translateY(-50%)}
+.cg .col{position:relative;min-width:0;border-left:1px solid var(--fill-2);background-image:linear-gradient(var(--fill-2) 1px,transparent 1px);background-size:100% var(--px)}
+.cg .col.today{background-color:var(--now)}
+.cg .tev{position:absolute;display:flex}
+.cg .tev>.ev{flex:1;min-width:0;overflow:hidden;font-size:11px;line-height:1.25;align-items:flex-start}
+.cg .bd .ev .t{display:none}
+.cg .bd .ev b{font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cg .bd .ev small{color:var(--muted)}
+.cg .nowl{position:absolute;left:0;right:0;border-top:2px solid var(--err);z-index:2;pointer-events:none}
+.cg .nowl::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--err)}
+.cg .mh{grid-template-columns:repeat(7,minmax(0,1fr))}
+.mo{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.mo .mc{border-left:1px solid var(--fill-2);border-top:1px solid var(--fill-2);min-height:96px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.mo .mc:nth-child(7n+1){border-left:0}
+.mo .dn{font-size:12px;font-weight:600;color:var(--muted);padding:2px 4px;align-self:flex-start}
+.mo .out{background:var(--fill-3)}
+.mo .out .dn{color:var(--faint)}
+.mo .now .dn{color:#fff;background:var(--accent);border-radius:9999px;padding:2px 7px}
 .ev{font-size:12px;border-radius:6px;padding:4px 6px;line-height:1.3;display:block;color:var(--ink)}
 .ev.meet{background:var(--accent-wash);border-left:3px solid var(--accent)}
 .ev.todo{background:#fff;border:1px solid var(--line)}
 .ev.tgt{background:var(--fill-2)}
 .ev.own{background:#fff;border:1px dashed var(--faint)}
 .ev.late{color:var(--err)}
-.logdot{font-size:11px;color:var(--muted)}
-/* Calendar extras not on the board: month grid, linked headers, events as start-meeting buttons, "+ Event" popover. */
-.cal .dh a,.cal .dn{color:inherit}
-.cal .dn{font-size:12px;font-weight:600;color:var(--muted)}
-.cal .dn.now{color:var(--accent)}
-.cal.month .dc{min-height:110px}
-.cal .dc.out{background:var(--fill-3)}
+/* Calendar events as start-meeting buttons, "+ Event" popover. */
 .evrow{display:flex;align-items:flex-start;gap:4px}
 .evrow form:first-child{flex:1;min-width:0}
 .evbtn{font:inherit;border:0;background:none;padding:0;text-align:left;cursor:pointer;color:inherit;width:100%}

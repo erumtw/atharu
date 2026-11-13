@@ -8,8 +8,6 @@
 .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 /* Desktop sidebar: 16 px icon + label (Components.Navigation board); rail and drawer keep the 20 px icon. */
 @media (min-width:1024px){.side a .ic{width:16px;height:16px}}
-.tw>.cal{min-width:760px}
-.cal:not(.month) .dc>.dn{display:none}
 pre{max-width:100%;overflow-x:auto}
 
 @media (min-width:640px){.m-only{display:none !important}}
@@ -118,24 +116,22 @@ pre{max-width:100%;overflow-x:auto}
   table{display:block;overflow-x:auto}
   .sgrid{grid-template-columns:minmax(0,1fr)}
 
-  /* Calendar: week = agenda list, month = 7 columns of day numbers with a dot. */
-  .tw>.cal{min-width:0}
-  .cal:not(.month){display:flex;flex-direction:column;gap:6px;border:0;border-radius:0}
-  .cal:not(.month) .dh{display:none}
-  .cal:not(.month) .dc{min-height:0;border:1px solid var(--fill-2);border-radius:12px;padding:10px 12px}
-  .cal:not(.month) .dc>.dn{display:block;font-size:14px;color:var(--ink)}
-  .cal:not(.month) .dc:not(:has(.ev,.logdot)){padding:8px 12px}
-  .cal .ev{font-size:14px;padding:8px 10px}
-  .cal.month{gap:2px;border:0}
-  .cal.month .dh{padding:4px 0;text-align:center;border:0;background:none;font-size:11px}
-  .cal.month .dc{min-height:44px;padding:0;border:0;align-items:center;justify-content:center;gap:2px;border-radius:10px}
-  .cal.month .dc>:not(.dn){display:none}
-  .cal.month .dn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:44px;font-size:13px;color:var(--ink)}
-  .cal.month .dc:has(.ev,.logdot) .dn::after{content:"";width:5px;height:5px;border-radius:9999px;background:var(--accent)}
-  .cal.month .dc.now{background:var(--accent)}
-  .cal.month .dc.now .dn{color:#fff}
-  .cal.month .dc.now .dn::after{background:#fff}
-  .cal.month .dc.out .dn{color:var(--muted)}
+  /* Calendar: the bar wraps, the month is 7 columns of day numbers with a dot (the Day view lists the items). */
+  .cgbar .ptitle{font-size:22px}
+  .cg .hd>div{padding:6px 4px;gap:4px}
+  .cg .hd .lines{display:none}
+  .cg :is(.hd:not(.mh),.ad,.bd){grid-template-columns:40px repeat(var(--n),minmax(0,1fr))}
+  .cg .mh>div{justify-content:center;border:0;padding:4px 0;font-size:11px}
+  .cg:has(.mo){border:0;border-radius:0}
+  .mo{gap:2px}
+  .mo .mc{min-height:44px;padding:0;border:0;align-items:center;justify-content:center;border-radius:10px}
+  .mo .mc>:not(.dn){display:none}
+  .mo .dn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:44px;font-size:13px;color:var(--ink);align-self:stretch;padding:0}
+  .mo .mc:has(.ev) .dn::after{content:"";width:5px;height:5px;border-radius:9999px;background:var(--accent)}
+  .mo .now{background:var(--accent)}
+  .mo .now .dn{color:#fff;background:none}
+  .mo .now .dn::after{background:#fff}
+  .mo .out .dn{color:var(--muted)}
 }
 
 @media (prefers-reduced-transparency: reduce){.side:popover-open,.acts:popover-open{backdrop-filter:none;-webkit-backdrop-filter:none}}

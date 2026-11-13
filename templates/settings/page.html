@@ -57,7 +57,7 @@
 
 <h2 class="sec">Connections</h2>
 <div class="grp">
-<div class="gi"><div class="t"><b>Google Calendar</b><span>Read-only. Add <span class="mono">ical_url</span> to data/config.toml.</span></div>{% if google %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
+<div class="gi"><div class="t"><b>Google Calendar</b><span>Read-only, refreshed every 15 min. Add <span class="mono">ical_url = "…"</span> to data/config.toml and restart{% if !google %}: in Google Calendar, Settings › your calendar › Integrate calendar › Secret address in iCal format{% endif %}.</span></div>{% if google %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
 <div class="gi"><div class="t"><b>Jira titles</b><span>Read-only. Base URL, email and API token in data/config.toml.</span></div>{% if jira %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
 </div>
 

@@ -58,8 +58,17 @@ async fn week_assembles_what_we_have() {
     );
     assert!(b.contains("/calendar/events/1/delete"));
     assert!(!b.contains(">far<"));
-    // No ical_url: the callout explains how to add one; no Refresh button.
-    assert!(b.contains("Secret address in iCal format"));
+    // Header: Today · ‹ › · range · view switch (no view in the URL = N days) · + Event.
+    assert!(b.contains("<a class=\"btn ghost s\" href=\"/calendar\">Today</a>"));
+    assert!(b.contains("<nav class=\"seg\" aria-label=\"View\"><a href=\"/calendar?view=day\">Day</a><a href=\"/calendar\" class=\"on\" aria-current=\"page\">N days</a><a href=\"/calendar?view=week\">Week</a><a href=\"/calendar?view=month\">Month</a></nav>"), "{b}");
+    // No legend, no setup paragraph (it lives in Settings), no Refresh without ical_url.
+    assert!(!b.contains("Secret address in iCal format") && !b.contains("lines logged that day"));
+    assert!(
+        get(&st, "/settings")
+            .await
+            .body
+            .contains("Secret address in iCal format")
+    );
     assert!(!b.contains("/calendar/refresh"));
 
     // `?week=` (pre-0.2.1 links) still points the range.
@@ -277,6 +286,7 @@ async fn day_and_n_day_views() {
     // Pointed: `d` is the first day.
     let b = get(&st, "/calendar?n=3&d=2026-11-29").await.body;
     assert!(b.contains("29 Nov – 1 Dec") && b.contains("--n: 3"));
+    assert!(b.contains("<a href=\"/calendar?d=2026-11-29&#38;n=3\" class=\"on\" aria-current=\"page\">N days</a><a href=\"/calendar?d=2026-11-29&#38;view=week\">Week</a>"));
     // Out-of-range n falls back into 1–7.
     assert!(get(&st, "/calendar?n=40").await.body.contains("8 – 14 Nov"));
 }

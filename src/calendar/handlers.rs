@@ -37,6 +37,7 @@ enum View {
     Month,
 }
 
+#[derive(Clone)]
 struct Range {
     view: View,
     n: u32,
@@ -140,22 +141,65 @@ impl Range {
         }
     }
 
-    /// `/calendar?d=…[&view=…][&n=…]`, no tag: the tag filter appends its own.
-    fn base(&self, d: NaiveDate) -> String {
-        let view = match self.view {
-            View::Days if self.n == 7 => String::new(),
-            View::Days => format!("&n={}", self.n),
-            _ => format!("&view={}", self.view_name()),
-        };
-        format!("/calendar?d={}{view}", dates::iso(d))
+    /// `/calendar?d=…[&view=…][&n=…]`, no tag: the tag filter appends its own. No `d` = around today.
+    fn base(&self, d: Option<NaiveDate>) -> String {
+        let mut q: Vec<String> = d
+            .map(|d| format!("d={}", dates::iso(d)))
+            .into_iter()
+            .collect();
+        match self.view {
+            View::Days if self.n == 7 => {}
+            View::Days => q.push(format!("n={}", self.n)),
+            _ => q.push(format!("view={}", self.view_name())),
+        }
+        if q.is_empty() {
+            "/calendar".into()
+        } else {
+            format!("/calendar?{}", q.join("&"))
+        }
+    }
+
+    fn link(&self, d: Option<NaiveDate>) -> String {
+        let base = self.base(d);
+        if self.tags.is_empty() {
+            base
+        } else {
+            let sep = if base.contains('?') { '&' } else { '?' };
+            format!("{base}{sep}tag={}", self.tags.join(","))
+        }
     }
 
     fn href(&self, d: NaiveDate) -> String {
-        if self.tags.is_empty() {
-            self.base(d)
-        } else {
-            format!("{}&tag={}", self.base(d), self.tags.join(","))
-        }
+        self.link(Some(d))
+    }
+
+    /// The view switch: the same day in another view (N days keeps its N, else 7 until the page picks one).
+    fn views(&self) -> Vec<view::ViewLink> {
+        [
+            ("Day", View::Day),
+            ("N days", View::Days),
+            ("Week", View::Week),
+            ("Month", View::Month),
+        ]
+        .into_iter()
+        .map(|(label, v)| {
+            let n = match v {
+                View::Day => 1,
+                View::Days if self.view == View::Days => self.n,
+                _ => 7,
+            };
+            let to = Range {
+                view: v,
+                n,
+                ..self.clone()
+            };
+            view::ViewLink {
+                label,
+                href: to.link(self.given.then_some(self.anchor)),
+                on: v == self.view,
+            }
+        })
+        .collect()
     }
 
     /// `9 – 15 Nov`, `30 Nov – 6 Dec`, `Fri 13 Nov`, or `November 2026`.
@@ -410,11 +454,13 @@ fn render_page(
         prev: r.href(r.step(false)),
         next: r.href(r.step(true)),
         unit: r.unit(),
+        today: r.link(None),
+        views: r.views(),
         cal: cal(&conn, r, st.today(), notice)?,
         has_ical: st.settings.ical_url.is_some(),
         filter: TagFilter {
             tags: r.tags.clone(),
-            path: format!("{}&", r.base(r.d())),
+            path: format!("{}&", r.base(Some(r.d()))),
             keep: vec![
                 ("d", dates::iso(r.d())),
                 ("view", r.view_name().into()),
