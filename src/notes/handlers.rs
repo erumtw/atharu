@@ -261,10 +261,11 @@ pub async fn create_text(
 }
 
 fn resolver(conn: &Connection) -> rusqlite::Result<impl Fn(&str) -> Option<String>> {
-    let (topics, meetings, tags) = queries::known_pages(conn)?;
+    let (epics, topics, meetings, tags) = queries::known_pages(conn)?;
     Ok(move |x: &str| {
         links::href(
             x,
+            |s| epics.contains(s),
             |s| topics.contains(s),
             |s| meetings.contains(s),
             |s| tags.contains(s),
@@ -290,6 +291,12 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
         head: head(&st, &conn, id)?,
         html: markdown::to_html(&links::rewrite(&n.body, &resolve)),
         agent: agent(&n.author),
+        meeting: queries::meeting_of(&conn, id)?.map(|(mid, name, day)| {
+            let day = chrono::NaiveDate::parse_from_str(&day, "%Y-%m-%d")
+                .map(crate::domain::dates::label)
+                .unwrap_or(day);
+            (mid, format!("{name} · {day}"))
+        }),
         ago: ago(&n.updated_at),
         id,
         title: n.title,

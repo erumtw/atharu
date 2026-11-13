@@ -40,17 +40,18 @@ fn targets(body: &str) -> impl Iterator<Item = (usize, &str, usize)> {
     })
 }
 
-/// Where `[[X]]` points: epic key → epic, else a tag in use → its hub (D45: one name, one hub, which also
+/// Where `[[X]]` points: epic key → epic (only one that exists: `[[OPS-999]]` with no such epic is dead), else a tag in use → its hub (D45: one name, one hub, which also
 /// shows the topic + series of that name), else an existing topic, else an existing meeting series.
 /// `None` = renders as plain text (a dead link the page can point out).
 pub fn href(
     x: &str,
+    is_epic: impl Fn(&str) -> bool,
     is_topic: impl Fn(&str) -> bool,
     is_meeting: impl Fn(&str) -> bool,
     is_tag: impl Fn(&str) -> bool,
 ) -> Option<String> {
     if is_epic_key(x) {
-        Some(format!("/epics/{x}"))
+        is_epic(x).then(|| format!("/epics/{x}"))
     } else if is_tag(x) {
         Some(format!("/tags/{x}"))
     } else if is_topic(x) {
@@ -84,9 +85,10 @@ mod tests {
 
     fn resolve(x: &str) -> Option<String> {
         // `oms-sync` is a topic and a meeting (topic wins); `infra` is a topic, series and tag (the hub wins);
-        // `OPS-101` is also a tag, but an epic key always wins.
+        // `OPS-101` is also a tag, but an epic key always wins; `OPS-999` has no epic, so it is dead.
         href(
             x,
+            |s| s == "OPS-101",
             |s| ["vector-search", "oms-sync", "infra"].contains(&s),
             |s| ["oms-sync", "standup", "infra"].contains(&s),
             |s| ["expense", "infra", "OPS-101"].contains(&s),
@@ -104,6 +106,7 @@ mod tests {
             ("infra", Some("/tags/infra")),
             ("chekout", None),
             ("ops-101", None),
+            ("OPS-999", None),
         ] {
             assert_eq!(resolve(x).as_deref(), want, "{x}");
         }

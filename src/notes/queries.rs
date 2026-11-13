@@ -75,6 +75,16 @@ pub fn note(conn: &Connection, id: i64) -> rusqlite::Result<Option<NoteRow>> {
 /// The line's note id, making it first if it has none: titled after the line (its text, which the
 /// parser already stripped of prefix and key), author me, linked in the same transaction.
 /// `None` = no such line.
+/// The meeting whose notes this note is (the other half of `meetings.note_id`): (id, `name · YYYY-MM-DD`).
+pub fn meeting_of(conn: &Connection, note: i64) -> rusqlite::Result<Option<(i64, String, String)>> {
+    conn.query_row(
+        "SELECT id, name, day FROM meetings WHERE note_id = ?1 ORDER BY day DESC, id DESC LIMIT 1",
+        [note],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+    )
+    .optional()
+}
+
 pub fn note_for_line(conn: &Connection, line: i64) -> rusqlite::Result<Option<i64>> {
     let tx = conn.unchecked_transaction()?;
     let Some((note, text)) = tx
@@ -197,10 +207,19 @@ pub fn update_fields(conn: &Connection, id: i64, f: &[(&str, &str)]) -> rusqlite
     Ok(true)
 }
 
-/// Existing topic slugs, meeting series and tags in use, for resolving `[[X]]`.
-type Known = (HashSet<String>, HashSet<String>, HashSet<String>);
+/// Existing epic keys, topic slugs, meeting series and tags in use, for resolving `[[X]]`.
+type Known = (
+    HashSet<String>,
+    HashSet<String>,
+    HashSet<String>,
+    HashSet<String>,
+);
 
 pub fn known_pages(conn: &Connection) -> rusqlite::Result<Known> {
+    let epics = conn
+        .prepare("SELECT key FROM epics")?
+        .query_map([], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
     let topics = conn
         .prepare("SELECT slug FROM topics")?
         .query_map([], |r| r.get(0))?
@@ -213,17 +232,17 @@ pub fn known_pages(conn: &Connection) -> rusqlite::Result<Known> {
         .prepare("SELECT DISTINCT tag FROM taggings")?
         .query_map([], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
-    Ok((topics, meetings, tags))
+    Ok((epics, topics, meetings, tags))
 }
 
 pub struct PageRow {
-    /// `epic` / `topic` / `meeting`.
+    /// `epic` / `tag` / `topic` / `meeting`, in `[[X]]` resolution order.
     pub kind: &'static str,
     pub id: String,
     pub name: String,
 }
 
-/// `[[` picker: epics (key or title), topics, meeting series matching `q`; a handful of each.
+/// `[[` picker: epics (key or title), tags in use, topics, meeting series matching `q`; a handful of each.
 pub fn pages(conn: &Connection, q: &str) -> rusqlite::Result<Vec<PageRow>> {
     let pat = format!("%{}%", q.replace(['%', '_', '\\'], ""));
     let mut out = Vec::new();
@@ -232,6 +251,11 @@ pub fn pages(conn: &Connection, q: &str) -> rusqlite::Result<Vec<PageRow>> {
             "epic",
             "SELECT key, title FROM epics WHERE key LIKE ?1 OR title LIKE ?1
              ORDER BY status != 'active', key LIMIT 8",
+        ),
+        (
+            "tag",
+            "SELECT tag, '' FROM taggings WHERE tag LIKE ?1
+             GROUP BY tag ORDER BY COUNT(*) DESC, tag LIMIT 8",
         ),
         (
             "topic",

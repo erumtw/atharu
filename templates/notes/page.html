@@ -13,6 +13,9 @@
 <form id="note" method="post" action="/notes/{{ id }}" hx-post="/notes/{{ id }}" hx-trigger="input delay:1s, change, submit, input delay:1s from:#note-title, change from:#note-title" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
 <dl class="props">
 <dt>Written by</dt><dd>{% if let Some(a) = agent %}<span class="chip tag at" title="Written by {{ a }} from Claude Code: summaries of links you gave it, and lint reports. It never changes your topics or depth ratings.">{{ a }}</span>{% else %}you{% endif %}</dd>
+{%- if let Some((mid, label)) = meeting %}
+<dt>Meeting</dt><dd><a href="/meetings/{{ mid }}">{{ label }}</a><span class="small muted">· this note is its notes</span></dd>
+{%- endif %}
 {%- if !links.is_empty() %}
 <dt>Links</dt><dd class="small">{% for l in links %}{% if !loop.first %}·{% endif %}{% if let Some(h) = l.href %}<a href="{{ h }}">{{ l.label }}</a>{% else %}<span class="muted" title="Links to nothing yet: a typo, or a topic you haven't made">{{ l.label }}</span>{% endif %}{% endfor %}</dd>
 {%- endif %}

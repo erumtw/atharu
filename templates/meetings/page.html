@@ -23,6 +23,7 @@
 <dt>Day</dt><dd>{{ day }}</dd>
 <dt>State</dt><dd>{% if let Some(t) = ended %}<span class="chip">ended {{ t }}</span>{% else %}<span class="chip">running</span><form class="inline" method="post" action="/meetings/{{ id }}/end"><input type="hidden" name="back" value="{{ back }}"><button class="btn ghost s" type="submit">End meeting</button></form>{% endif %}</dd>
 <dt>Series</dt><dd class="small">{% for (i, l) in siblings %}<a href="/meetings/{{ i }}">{{ l }}</a>·{% endfor %}<a href="/meetings?name={{ name }}">all {{ series_count }}</a></dd>
+{% include "partials/same_name.html" %}
 </dl>
 {%- if field.tags.is_empty() %}
 <details class="addp"><summary class="addprop">+ Add property <span class="small">· series tags</span></summary>{% include "meetings/tags.html" %}</details>

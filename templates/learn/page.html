@@ -13,6 +13,7 @@
 <form method="post" action="/learn/{{ slug }}" hx-post="/learn/{{ slug }}" hx-trigger="input changed delay:1s, change, submit" hx-target="#saved" hx-swap="innerHTML" style="display: flex; flex-direction: column; gap: 12px">
 <dl class="props">
 <div id="depth" style="display: contents">{% include "learn/depth.html" %}</div>
+{% include "partials/same_name.html" %}
 <dt><label for="sum">One-line summary</label></dt><dd><input id="sum" name="summary" class="pin" value="{{ summary }}" placeholder="What it is, in one line"></dd>
 </dl>
 </form>

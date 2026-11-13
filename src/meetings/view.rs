@@ -88,6 +88,8 @@ pub struct Page {
     pub ref_name: String,
     /// The series' Tags prop.
     pub field: crate::layout::TagField,
+    /// Tag hub / topic of the series' name.
+    pub same: crate::layout::SameName,
     /// Shown on top while this meeting is recording (D31), so Stop is where you are.
     pub banner: Option<Banner>,
     pub tx: TxSection,

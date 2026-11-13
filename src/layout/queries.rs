@@ -66,3 +66,14 @@ pub fn refs(
     })?
     .collect()
 }
+
+/// Which pages share `name`: (a tag in use, a topic, a meeting series).
+pub fn same_name(conn: &Connection, name: &str) -> rusqlite::Result<(bool, bool, bool)> {
+    conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM taggings WHERE tag = ?1),
+                EXISTS (SELECT 1 FROM topics WHERE slug = ?1),
+                EXISTS (SELECT 1 FROM meetings WHERE name = ?1)",
+        [name],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+    )
+}

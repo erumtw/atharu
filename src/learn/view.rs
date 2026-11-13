@@ -73,6 +73,8 @@ pub struct RateSwap {
 #[template(path = "learn/page.html")]
 pub struct Page {
     pub field: crate::layout::TagField,
+    /// Tag hub / series of the same name.
+    pub same: crate::layout::SameName,
     pub layout: Layout,
     pub side: Vec<String>,
     pub slug: String,

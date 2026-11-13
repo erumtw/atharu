@@ -67,6 +67,8 @@ pub struct Page {
     /// Server-rendered body: the read-only view until the editor takes over.
     pub html: String,
     pub agent: Option<String>,
+    /// The meeting this note is the notes of: (id, `checkout-sync · Fri 13 Nov`).
+    pub meeting: Option<(i64, String)>,
     pub links: Vec<Link>,
     pub ago: String,
     pub head: Lines,

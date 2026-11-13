@@ -127,7 +127,7 @@ async fn series_topic_and_event_tags() {
 
     let hub = get(&st, "/tags/expense").await.body;
     assert!(
-        hub.contains(r#"via <span class="chip" title="expense-sync">expense-sync</span>"#),
+        hub.contains(r#"via <a href="/meetings?name=expense-sync" title="expense-sync: the series"><span class="chip">expense-sync</span></a>"#),
         "{hub}"
     );
     assert!(hub.contains("approve claims over 5k by hand"));

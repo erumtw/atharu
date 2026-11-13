@@ -1,0 +1,4 @@
+{#- The "Same name" prop: links to the tag hub, topic and series called like this page. Needs `same` (layout::SameName). -#}
+{%- if !same.is_empty() %}
+<dt>Same name</dt><dd>{% if same.tag %}<a class="chip tag" href="/tags/{{ same.name }}">{{ same.name }}</a>{% endif %}{% if same.topic %}<a class="mono" href="/learn/{{ same.name }}">topic {{ same.name }}</a>{% endif %}{% if same.series %}<a href="/meetings?name={{ same.name }}" title="{{ same.name }}: the series"><span class="chip">{{ same.name }}</span></a>{% endif %}</dd>
+{%- endif %}

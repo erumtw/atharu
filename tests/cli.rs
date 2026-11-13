@@ -247,6 +247,8 @@ async fn note_and_evidence_write_only_as_the_agent() {
     );
     assert_eq!(code, 0);
     let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    // `vector-search` is no topic yet: saved anyway, named as not linked (D13); OPS-101 exists.
+    assert_eq!(v["deadLinks"], serde_json::json!(["vector-search"]));
     let id = v["id"].as_i64().unwrap();
     let (author, body): (String, String) = st
         .conn()

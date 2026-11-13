@@ -132,6 +132,7 @@ pub async fn page(State(st): State<AppState>, Path(slug): Path<String>) -> AppRe
         resources: t.resources,
         refs: crate::layout::refs(&conn, Some(&slug), Some(crate::layout::Lines::Topic(&slug)))?,
         ref_name: slug.clone(),
+        same: crate::layout::same_name(&conn, &slug, "topic")?,
         lines,
         field: tag_field(&conn, &slug)?,
         slug,

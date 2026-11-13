@@ -677,6 +677,7 @@ pub async fn page(
             .filter(|r| m.note.as_ref().is_none_or(|own| own.0 != r.id))
             .collect(),
         ref_name: m.name.clone(),
+        same: crate::layout::same_name(&conn, &m.name, "series")?,
         field: tag_field(&conn, &m.name)?,
         banner: recording_here.then_some(b),
         tx: tx_section(&conn, st.mac.is_some(), id, q.q)?,

@@ -209,3 +209,33 @@ pub fn ref_groups(refs: &[Ref]) -> Vec<(&'static str, Vec<&Ref>)> {
     .filter(|(_, g)| !g.is_empty())
     .collect()
 }
+
+/// The other pages called the same as this one (one name, one hub): the "Same name" prop, so a topic finds its
+/// tag and series and back. `here` is this page's own kind, left out.
+pub struct SameName {
+    pub name: String,
+    pub tag: bool,
+    pub topic: bool,
+    pub series: bool,
+}
+
+impl SameName {
+    pub fn is_empty(&self) -> bool {
+        !(self.tag || self.topic || self.series)
+    }
+}
+
+/// `here`: `tag` · `topic` · `series`, the kind of the page asking.
+pub fn same_name(
+    conn: &rusqlite::Connection,
+    name: &str,
+    here: &str,
+) -> rusqlite::Result<SameName> {
+    let (tag, topic, series) = queries::same_name(conn, name)?;
+    Ok(SameName {
+        name: name.to_string(),
+        tag: tag && here != "tag",
+        topic: topic && here != "topic",
+        series: series && here != "series",
+    })
+}

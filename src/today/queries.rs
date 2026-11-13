@@ -15,8 +15,8 @@ pub struct LoggedRow {
     pub kind: Kind,
     pub topic: Option<String>,
     pub text: String,
-    /// Meeting the line was logged in.
-    pub meeting: Option<String>,
+    /// Meeting the line was logged in: (id, series name).
+    pub meeting: Option<(i64, String)>,
     /// `me`, or the agent that filed it via the CLI.
     pub author: String,
     /// Its tags by name: `None` = typed in the text, `Some(source)` = inherited from that epic / series.
@@ -36,7 +36,7 @@ pub fn day_entries(
                 (SELECT json_group_object(tag, via) FROM
                    (SELECT tag, CASE WHEN MIN(via IS NOT NULL) = 1 THEN MAX(via) END AS via
                       FROM entry_tags WHERE entry_id = e.id GROUP BY tag)),
-                n.id, n.title
+                n.id, n.title, m.id
          FROM entries e LEFT JOIN epics ep ON ep.key = e.epic_key
          LEFT JOIN meetings m ON m.id = e.meeting_id LEFT JOIN notes n ON n.id = e.note_id
          WHERE e.day = ?1
@@ -56,7 +56,9 @@ pub fn day_entries(
             kind: crate::db::kind(r, 3)?,
             topic: r.get(4)?,
             text: r.get(5)?,
-            meeting: r.get(6)?,
+            meeting: r
+                .get::<_, Option<i64>>(11)?
+                .zip(r.get::<_, Option<String>>(6)?),
             author: r.get(7)?,
             tags: serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&tags)
                 .unwrap_or_default()

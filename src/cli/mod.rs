@@ -497,8 +497,33 @@ fn note(
             (id, true)
         }
     };
+    // D13: a `--links` name that resolves to nothing still saves (an /ingest invitation to make that topic), but is named.
+    let (ep, tp, mt, tg) = notes::known_pages(conn).map_err(db)?;
+    let dead: Vec<&str> = links
+        .unwrap_or("")
+        .split(',')
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .filter(|l| {
+            links::href(
+                l,
+                |s| ep.contains(s),
+                |s| tp.contains(s),
+                |s| mt.contains(s),
+                |s| tg.contains(s),
+            )
+            .is_none()
+        })
+        .collect();
+    if !dead.is_empty() {
+        let names: Vec<String> = dead.iter().map(|d| format!("‘{d}’")).collect();
+        eprintln!(
+            "Not linked yet: {} (no epic, tag, topic or series)",
+            names.join(", ")
+        );
+    }
     Ok(
-        json!({"id": id, "title": title, "author": author, "updated": updated, "tags": tags_in(&body), "path": format!("/notes/{id}")}),
+        json!({"id": id, "title": title, "author": author, "updated": updated, "tags": tags_in(&body), "deadLinks": dead, "path": format!("/notes/{id}")}),
     )
 }
 
@@ -535,7 +560,7 @@ fn day(
                 "topic": r.topic,
                 "text": r.text,
                 "epic": r.epic_key.map(|k| json!({"key": k, "title": r.epic_title})),
-                "meeting": r.meeting,
+                "meeting": r.meeting.map(|(_, name)| name),
                 "tags": r.tags.iter().map(|(t, _)| t).collect::<Vec<_>>(),
                 "note": note_json(r.note),
                 "author": r.author,

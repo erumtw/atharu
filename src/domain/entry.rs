@@ -164,8 +164,8 @@ pub struct LineRow {
     pub via: Option<String>,
     /// Epic chip, where no epic heading already says it.
     pub epic: Option<String>,
-    /// Meeting series chip.
-    pub meeting: Option<String>,
+    /// The meeting it was logged in: (id, series name). The chip names the series, links the meeting.
+    pub meeting: Option<(i64, String)>,
     pub note: Option<NoteRef>,
     /// Lists spanning days: `today`, `Wed 11` (a tag hub adds why a merged line is there).
     pub when: String,

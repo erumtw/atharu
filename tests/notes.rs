@@ -59,6 +59,14 @@ async fn new_note_autosave_and_render() {
         404
     );
 
+    // `[[OPS-101]]` links only once the epic exists (a dead key stays plain).
+    assert!(
+        !get(&st, "/notes/1")
+            .await
+            .body
+            .contains("href=\"/epics/OPS-101\"")
+    );
+    exec(&st, "INSERT INTO epics(key) VALUES ('OPS-101')");
     let b = get(&st, "/notes/1").await.body;
     assert!(b.contains("<h3>What happened</h3>"));
     assert!(b.contains("<a href=\"/epics/OPS-101\">OPS-101</a>"));
@@ -73,7 +81,6 @@ async fn new_note_autosave_and_render() {
 
     // Linked references on the linked pages (`[[X]]` lands the same everywhere). A series' mentions live on the series
     // page (T5), not on each meeting.
-    exec(&st, "INSERT INTO epics(key) VALUES ('OPS-101')");
     let e = get(&st, "/epics/OPS-101").await.body;
     assert!(
         e.contains("Linked references")

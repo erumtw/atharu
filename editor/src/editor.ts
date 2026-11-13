@@ -331,7 +331,7 @@ const BLOCKS: Block[] = [
   { title: 'Drawing', k: '✎', hint: 'opens the canvas', group, run: c => { openNew = true; return c.insertContent({ type: 'drawing' }) } },
   { title: 'Link a page', k: '[[', group, run: c => c.insertContent('[[') },
 ]
-const PAGE_GROUP: Record<string, string> = { epic: 'Epics', topic: 'Topics', meeting: 'Meetings' }
+const PAGE_GROUP: Record<string, string> = { epic: 'Epics', tag: 'Tags', topic: 'Topics', meeting: 'Meetings' }
 
 const Menus = Extension.create({
   name: 'menus',
