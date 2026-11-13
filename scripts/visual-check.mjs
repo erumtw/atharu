@@ -9,7 +9,7 @@
 // (`.blk.ln .ltext`) narrower than 200 px on desktop / 120 px on phone, the `.doc` left edge moving between
 // pages at one width (compared per `.doc` variant: `.doc.wide`, `.doc.set` are meant to differ), any console error or uncaught exception.
 import { spawn } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -60,8 +60,9 @@ const CHECK = `(() => {
 
 async function chrome() {
   const port = 9400 + Math.floor(Math.random() * 400)
+  const profile = mkdtempSync(join(tmpdir(), 'atharu-vc-chrome-'))
   const proc = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}`,
-    `--user-data-dir=${mkdtempSync(join(tmpdir(), 'atharu-vc-chrome-'))}`, '--hide-scrollbars', 'about:blank'])
+    `--user-data-dir=${profile}`, '--hide-scrollbars', 'about:blank'])
   const sleep = ms => new Promise(r => setTimeout(r, ms))
   let tabs
   for (let i = 0; i < 60 && !tabs; i++) {
@@ -96,7 +97,14 @@ async function chrome() {
       const r = await cdp('Runtime.evaluate', { expression: CHECK, returnByValue: true })
       return r.result.result.value
     },
-    close() { proc.kill() },
+    // The profile caches the pages it loaded (work data): kill Chrome, wait for it, then remove the profile.
+    async close() {
+      ws.close()
+      const gone = new Promise(r => proc.once('exit', r))
+      proc.kill()
+      await Promise.race([gone, sleep(3000)])
+      rmSync(profile, { recursive: true, force: true })
+    },
   }
 }
 
@@ -105,7 +113,7 @@ async function selfTest() {
   const page = body => 'data:text/html,' + encodeURIComponent(`<!doctype html><meta name=viewport content="width=device-width"><body style="margin:0">${body}`)
   const bad = await c.load(page('<main class="doc"><div style="width:2000px">wide</div></main>'), 900, 600)
   const ok = await c.load(page('<main class="doc"><div style="overflow:hidden"><div style="width:2000px">clipped on purpose</div></div></main>'), 900, 600)
-  c.close()
+  await c.close()
   const fail = []
   if (!bad.problems.some(p => p.startsWith('overflow: div'))) fail.push('missed an overflowing div: ' + JSON.stringify(bad.problems))
   if (ok.problems.length) fail.push('flagged a clipped div: ' + JSON.stringify(ok.problems))
@@ -122,23 +130,26 @@ if (!base || !shots || !paths.length) {
 }
 const c = await chrome()
 const problems = []
-for (const [w, h] of WIDTHS) {
-  const left = {}
-  for (const path of paths) {
-    const r = await c.load(base + path, w, h)
-    const at = `${w}px ${path}`
-    for (const p of r.problems) problems.push(`${at}: ${p}`)
-    for (const e of c.errors) problems.push(`${at}: console error: ${e}`)
-    if (r.doc) {
-      const k = r.doc.kind
-      left[k] ??= [r.doc.left, path]
-      if (Math.abs(left[k][0] - r.doc.left) > 1) problems.push(`${at}: .doc left edge ${r.doc.left} px, ${left[k][0]} px on ${left[k][1]}`)
+try {
+  for (const [w, h] of WIDTHS) {
+    const left = {}
+    for (const path of paths) {
+      const r = await c.load(base + path, w, h)
+      const at = `${w}px ${path}`
+      for (const p of r.problems) problems.push(`${at}: ${p}`)
+      for (const e of c.errors) problems.push(`${at}: console error: ${e}`)
+      if (r.doc) {
+        const k = r.doc.kind
+        left[k] ??= [r.doc.left, path]
+        if (Math.abs(left[k][0] - r.doc.left) > 1) problems.push(`${at}: .doc left edge ${r.doc.left} px, ${left[k][0]} px on ${left[k][1]}`)
+      }
+      const shot = await c.cdp('Page.captureScreenshot', { format: 'png' })
+      writeFileSync(join(shots, `${w}-${path.replace(/[^a-z0-9]+/gi, '_')}.png`), Buffer.from(shot.result.data, 'base64'))
     }
-    const shot = await c.cdp('Page.captureScreenshot', { format: 'png' })
-    writeFileSync(join(shots, `${w}-${path.replace(/[^a-z0-9]+/gi, '_')}.png`), Buffer.from(shot.result.data, 'base64'))
   }
+} finally {
+  await c.close()
 }
-c.close()
 for (const p of problems) console.log(p)
 console.log(`${problems.length} problem${problems.length === 1 ? '' : 's'} · ${paths.length} pages × ${WIDTHS.length} widths · screenshots: ${shots}`)
 process.exit(problems.length ? 1 : 0)

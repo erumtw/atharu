@@ -65,6 +65,11 @@ mod tests {
             columns(&[(600, 660), (630, 720), (690, 750)]),
             vec![(0, 2), (1, 2), (0, 2)]
         );
+        // c starts exactly when a ends: it takes a's column back, the cluster stays two wide.
+        assert_eq!(
+            columns(&[(600, 660), (610, 720), (660, 700)]),
+            vec![(0, 2), (1, 2), (0, 2)]
+        );
         // Input order is kept; the longer of two same-start items goes left.
         assert_eq!(columns(&[(600, 630), (600, 700)]), vec![(1, 2), (0, 2)]);
         // Three at once.

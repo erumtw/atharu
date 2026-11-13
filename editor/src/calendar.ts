@@ -13,6 +13,8 @@ if (url.pathname === '/calendar' && !url.searchParams.has('view') && String(n) !
     vt?.ready.catch(() => {})
     vt?.skipTransition()
   })
+  // Nothing of the 7-day page shows while the right N loads.
+  document.documentElement.style.visibility = 'hidden'
   location.replace(url)
 } else {
   // The hour grid opens scrolled to 08:00.

@@ -114,8 +114,9 @@ pub struct EventRow {
     pub tagged: bool,
 }
 
-/// Events starting in [from, to]. Text compare works for both stored forms: `2026-11-11` and
-/// `2026-11-11T10:00` both sort before `2026-11-12`, so `< to + 1 day` keeps the index usable.
+/// Events overlapping [from, to]: starting before the day after `to`, ending (or, with no end, starting) on or
+/// after `from`. Text compare works for both stored forms: `2026-11-11` and `2026-11-11T10:00` both sort before
+/// `2026-11-12`; an event that ended before `from` but still matches here (all-day end on `from`) gets no chip.
 pub fn events(
     conn: &Connection,
     from: &str,
@@ -125,7 +126,7 @@ pub fn events(
     let mut stmt = conn.prepare(&format!(
         "SELECT id, source, title, starts_at, ends_at, EXISTS (SELECT 1 FROM taggings t
                   WHERE t.item_type = 'event' AND t.item_id = CAST(events.id AS TEXT) AND t.tag IN {ANY})
-         FROM events WHERE starts_at >= ?1 AND starts_at < ?2 ORDER BY starts_at, id"
+         FROM events WHERE starts_at < ?2 AND COALESCE(ends_at, starts_at) >= ?1 ORDER BY starts_at, id"
     ))?;
     stmt.query_map(params![from, to_excl, json(tags)], |r| {
         Ok(EventRow {

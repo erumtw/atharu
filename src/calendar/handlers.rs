@@ -9,7 +9,7 @@ use crate::{
 use axum::{
     extract::{Form, Path, Query, State},
     http::{HeaderMap, StatusCode},
-    response::Response,
+    response::{IntoResponse, Response},
 };
 use chrono::{Days, Months, NaiveDate, NaiveTime, Timelike};
 use rusqlite::Connection;
@@ -346,27 +346,63 @@ fn cal(
         if !tags.is_empty() && !(if own { e.tagged } else { by_word() }) {
             continue;
         }
-        // Own events have no end: an hour, as Google's default.
-        let at =
-            mins(&e.starts_at).map(|s| (s, end_of(&e.starts_at, e.ends_at.as_deref(), s + 60)));
-        put(
-            &e.starts_at,
-            at,
-            view::Item {
-                class: if own { "own" } else { "meet" },
-                time: at.map(|(s, _)| hm(s)),
-                sub: at.map(|(s, end)| match e.ends_at {
-                    Some(_) => format!("{} – {}", hm(s), hm(end)),
-                    None => hm(s),
-                }),
-                text: e.title,
-                href: None,
-                meeting: None,
-                uid: 0,
-                late: false,
-                own_id: own.then_some(e.id),
-            },
-        );
+        let Some(day0) = e
+            .starts_at
+            .get(..10)
+            .and_then(|d| d.parse::<NaiveDate>().ok())
+        else {
+            continue;
+        };
+        let end_day: Option<NaiveDate> =
+            e.ends_at.as_deref().and_then(|x| x.get(..10)?.parse().ok());
+        let (start, end) = (mins(&e.starts_at), e.ends_at.as_deref().and_then(mins));
+        let sub = start.map(|s| match end {
+            Some(end) => format!("{} – {}", hm(s), hm(end)),
+            None => hm(s),
+        });
+        // One chip per covered day in range: an all-day event runs to the day before its (exclusive) end;
+        // a timed one is clipped to [00:00, 24:00) on each day; an own event has no end: an hour, as Google's default.
+        let last = match (start, end_day) {
+            (None, Some(d)) if d > day0 => d.pred_opt().unwrap_or(d),
+            (Some(_), Some(d)) if d > day0 => d,
+            _ => day0,
+        };
+        for d in day0.iter_days().take_while(|d| *d <= last.min(to)) {
+            if d < from {
+                continue;
+            }
+            let at = match start {
+                None => None,
+                Some(s) => {
+                    let a = if d == day0 { s } else { 0 };
+                    let b = match end {
+                        _ if d < last => 24 * 60,
+                        Some(end) if last > day0 || end_day == Some(day0) => end,
+                        _ => s + 60,
+                    };
+                    // Ends at midnight: nothing on that last day.
+                    if b <= a && d > day0 {
+                        continue;
+                    }
+                    Some((a, b))
+                }
+            };
+            put(
+                &dates::iso(d),
+                at,
+                view::Item {
+                    class: if own { "own" } else { "meet" },
+                    time: start.filter(|_| d == day0).map(hm),
+                    sub: sub.clone(),
+                    text: e.title.clone(),
+                    href: None,
+                    meeting: None,
+                    uid: 0,
+                    late: false,
+                    own_id: own.then_some(e.id),
+                },
+            );
+        }
     }
     for (due, text) in queries::due_plans(conn, &f, &t, tags)? {
         let late = due < dates::iso(today);
@@ -467,10 +503,14 @@ fn render_page(
         filter: TagFilter {
             tags: r.tags.clone(),
             path: format!("{}&", r.base(Some(r.d()))),
+            // Days carries `n`, never `view`: a `view` in the URL would stop the page picking N by width.
             keep: vec![
                 ("d", dates::iso(r.d())),
-                ("view", r.view_name().into()),
-                ("n", r.n.to_string()),
+                if r.view == View::Days {
+                    ("n", r.n.to_string())
+                } else {
+                    ("view", r.view_name().into())
+                },
             ],
             known: queries::tag_names(&conn)?,
         },
@@ -576,15 +616,18 @@ pub async fn add(
     queries::add_own(&st.conn(), title, &starts_at)?;
     // Land on a range holding the new event, so it's visible; keep the shown one when it already does.
     let (from, to) = r.span();
-    let r = if (from..=to).contains(&date) {
-        r
-    } else {
-        Range {
-            anchor: date,
-            given: true,
-            ..r
-        }
+    if (from..=to).contains(&date) {
+        return answer(&st, &headers, &r, None);
+    }
+    let r = Range {
+        anchor: date,
+        given: true,
+        ..r
     };
+    // Another range: htmx loads that whole page (its title and ‹ › change too), a plain form gets the 303.
+    if web::is_htmx(&headers) {
+        return Ok(([("HX-Location", r.href(r.d()))], StatusCode::OK).into_response());
+    }
     answer(&st, &headers, &r, None)
 }
 

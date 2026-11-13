@@ -18,7 +18,8 @@ cargo build -q
 PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
 ATHARU_HOST=127.0.0.1 ATHARU_PORT=$PORT target/debug/atharu --db "$DB" >"$TMP/server.log" 2>&1 &
 SERVER=$!
-trap 'kill $SERVER 2>/dev/null || true' EXIT
+# The copy holds work data: it goes with the server; shots/ stays for the person reading the report.
+trap 'kill $SERVER 2>/dev/null || true; wait $SERVER 2>/dev/null || true; rm -f "$DB" "$DB"-wal "$DB"-shm' EXIT
 for _ in $(seq 40); do curl -sf "http://127.0.0.1:$PORT/settings" >/dev/null && break; sleep 0.25; done
 
 # One of each entity page, read from the copy; a kind with no rows is skipped.

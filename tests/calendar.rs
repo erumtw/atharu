@@ -338,3 +338,64 @@ async fn crowded_cells_show_three_then_more() {
     let b = get(&st, "/calendar?view=month").await.body;
     assert!(b.contains(">+2 more</a>"));
 }
+
+#[tokio::test]
+async fn events_across_midnight_and_several_days() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO events(source, ext_id, title, starts_at, ends_at) VALUES
+           ('google', 'a', 'Offsite', '2026-11-09', '2026-11-12'),
+           ('google', 'b', 'Night deploy', '2026-11-12T22:00', '2026-11-13T02:00'),
+           ('google', 'c', 'Late call', '2026-11-13T23:00', '2026-11-14T00:00'),
+           ('google', 'd', 'Long before', '2026-10-01', '2026-11-08');",
+    );
+    let b = get(&st, "/calendar").await.body;
+    // All-day 9–12 Nov (iCal end is exclusive): Mon 9, Tue 10, Wed 11; not on Thu 12.
+    assert_eq!(b.matches("<h4>Offsite</h4>").count(), 3, "{b}");
+    assert!(b.contains("<h4>Offsite</h4>\n<span class=\"small muted\">Wed 11"));
+    assert!(!b.contains("<h4>Offsite</h4>\n<span class=\"small muted\">Thu 12"));
+    // Ends (exclusively) on Sun 8: its last day is Sat 7, so not in this week at all.
+    assert!(!b.contains("Long before"));
+    // 22:00 Thu → 02:00 Fri: clipped to 22:00–24:00 on Thu and 00:00–02:00 on Fri; the grid widens to 0–24.
+    assert_eq!(b.matches("<h4>Night deploy</h4>").count(), 2);
+    assert!(
+        b.contains("top: calc(var(--px) * 1320 / 60); height: calc(var(--px) * 120 / 60 - 2px)")
+    );
+    assert!(b.contains("top: calc(var(--px) * 0 / 60); height: calc(var(--px) * 120 / 60 - 2px)"));
+    assert!(b.contains("<small>22:00 – 02:00</small>"));
+    // Ends exactly at midnight: nothing on the next day.
+    assert_eq!(b.matches("<h4>Late call</h4>").count(), 1);
+    // A week that starts mid-event still shows it.
+    let b = get(&st, "/calendar?d=2026-11-13&view=day").await.body;
+    assert!(b.contains("<h4>Night deploy</h4>"));
+}
+
+#[tokio::test]
+async fn tag_filter_keeps_days_auto_and_out_of_range_add_moves() {
+    let st = state();
+    // N days: the filter form carries n, never view (a view would stop the width pick).
+    let b = get(&st, "/calendar?n=5").await.body;
+    assert!(b.contains("<input type=\"hidden\" name=\"n\" value=\"5\">"));
+    assert!(!b.contains("<input type=\"hidden\" name=\"view\" value=\"days\"><input name=\"add\""));
+    let b = get(&st, "/calendar?view=month").await.body;
+    assert!(
+        b.contains("<input type=\"hidden\" name=\"view\" value=\"month\"><input name=\"add\""),
+        "{b}"
+    );
+    // htmx add outside the shown range: the whole page moves there (title and ‹ › too).
+    let r = post(
+        &st,
+        "/calendar/events",
+        &form(&[
+            ("title", "offsite"),
+            ("date", "2026-12-02"),
+            ("view", "week"),
+            ("d", "2026-11-11"),
+        ]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert_eq!(r.headers["hx-location"], "/calendar?d=2026-12-02&view=week");
+}
