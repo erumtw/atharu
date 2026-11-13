@@ -137,6 +137,9 @@ alters a token, component, glass surface or pattern updates `DESIGN.md` in the s
 - Releases (D40, D41): `scripts/release.sh X.Y.Z` on main (`--hotfix` on `release/X.Y`) bumps, writes CHANGELOG.md,
   tags `vX.Y.Z`; install/update follow tags. Cutting or pushing a release is the owner's call; an agent asked to run it
   sets `ATHARU_COAUTHOR` and answers N to the push prompt.
+- Before every `release.sh`: `scripts/visual-check.sh` (every page × 1180 / 900 / 390 px on a `.backup` copy of the real DB;
+  fails on overflow, squeezed line text, a jumping page edge, console errors). Zero problems, or no release. Its screenshots
+  hold work data: never commit them; release-page shots come from a seeded demo DB.
 - Release page: release.sh's draft (`.git/release-notes-vX.Y.Z.md`) goes to CHANGELOG.md as is; for the GitHub release, rewrite it
   as `## Highlights` (one `###` per user-visible change, two plain sentences on what the owner can now do) + Fixes / Performance
   bullets in plain words + `## Upgrade` (`atharu update --app`; data stays) + `**Full changelog:** vPREV...vX.Y.Z`. A UI change
