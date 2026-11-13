@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.2.3 — 2026-11-13
+
+### Features
+
+- Scripts/visual-check.sh, a real-data layout check before every release
+- Calendar interactions (N days by width, event cards, empty slot → + Event)
+- Google-Calendar-style calendar page (bar, hour grid, all-day row, month cells)
+- Calendar model for day / N days / week / month with an hour grid and overlap columns
+
+### Fixes
+
+- Final-gate findings (multi-day events, visual-check cleanup, auto-N flash, tag filter view, out-of-range add)
+- List tables fit a phone; simplify pass; v0.2.3 calendar screenshots
+- Jira Refresh shows that it ran (updated N min ago, Refreshing…, ✓ Refreshed from Jira)
+- A tag or series rename leaves [[old]] alone while it still resolves (P4)
+- To-do hover toolbar sits above the row's corner, not over its note button
+- View menu's Group by switch keeps its track and highlight; its tag field keeps its box
+- Notes tag-filter test follows the row markup (no inline style since v0.2.0)
+- Real-data layout bugs in 0.2.0 (to-do text squeezed, Meetings table overflow, page jump on Notes filter, note rows run together)
+
+### Under the hood
+
+- Name db.rs as the shared-SQL exception
+- Run scripts/visual-check.sh before every release
+- Agents never read data/config.toml (credentials)
+
+### Other
+
+- merge: release/0.2 hotfixes v0.2.1, v0.2.2 back into main
+
 ## v0.2.2 — 2026-11-13
 
 ### Fixes
