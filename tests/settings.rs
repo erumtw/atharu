@@ -552,3 +552,50 @@ async fn update_row_says_each_state_in_plain_words() {
     .await;
     assert!(b.contains("Couldn’t check for updates") && !b.contains("Log:"));
 }
+
+#[tokio::test]
+async fn a_timed_out_row_hides_try_again_while_the_install_still_runs() {
+    // A fake install.sh that outlives a 200 ms deadline: the row gives up, the process (and the slot) does not.
+    let st = state();
+    let dir = std::env::temp_dir().join(format!("atharu-settings-slow-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("scripts")).unwrap();
+    std::fs::write(dir.join("scripts/install.sh"), "sleep 2\n").unwrap();
+    assert!(updater::start_with(
+        &st.update,
+        dir.clone(),
+        "v0.2.7".into(),
+        dir.join("update.log"),
+        std::time::Duration::from_millis(200)
+    ));
+    for _ in 0..100 {
+        if !matches!(updater::snapshot(&st.update), UpdateState::Running { .. }) {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert!(updater::busy(&st.update));
+    let b = get(&st, "/settings/update").await.body;
+    assert!(b.contains("still running in the background"), "{b}");
+    assert!(!b.contains("Try again"));
+    assert!(b.contains("hx-get=\"/settings/update\" hx-trigger=\"every 2s\""));
+
+    // When it ends the row says how it went, and a Failed row (not busy) offers Try again again.
+    for _ in 0..100 {
+        if !updater::busy(&st.update) {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert_eq!(
+        updater::snapshot(&st.update),
+        UpdateState::Done("v0.2.7".into())
+    );
+    *updater::lock(&st.update) = UpdateState::Failed {
+        to: "v0.2.7".into(),
+        why: "install.sh exited 3; v0.2.6 is still installed".into(),
+    };
+    let b = get(&st, "/settings/update").await.body;
+    assert!(b.contains("Try again") && !b.contains("hx-trigger=\"every 2s\""));
+    let _ = std::fs::remove_dir_all(&dir);
+}

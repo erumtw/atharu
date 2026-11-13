@@ -129,13 +129,15 @@ pub struct Update {
     pub why: String,
     /// The failure was the check itself, not an install.
     pub check_failed: bool,
+    /// An install is still running (even if this row gave up on it): no Try again, and keep polling.
+    pub busy: bool,
     /// Where the full output of the last run is.
     pub log: String,
 }
 
 impl Update {
     /// `last` = the install's last log line (only read while it runs).
-    pub fn new(s: &crate::updater::UpdateState, log: String, last: String) -> Update {
+    pub fn new(s: &crate::updater::UpdateState, log: String, last: String, busy: bool) -> Update {
         use crate::updater::UpdateState as S;
         let mut u = Update {
             phase: Phase::Idle,
@@ -144,6 +146,7 @@ impl Update {
             last: String::new(),
             why: String::new(),
             check_failed: false,
+            busy,
             log,
         };
         match s {

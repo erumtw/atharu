@@ -531,3 +531,43 @@ fn release_bumps_tags_branches_and_hotfixes() {
     let _ = std::fs::remove_dir_all(&tools);
     let _ = std::fs::remove_dir_all(repo);
 }
+
+#[test]
+fn install_runs_one_at_a_time_and_reclaims_a_stale_lock() {
+    // 0.2.6: the in-app Update, `atharu update --app` and a retry share target/install-src, CARGO_TARGET_DIR and the app bundle.
+    let repo = temp_repo("lock");
+    add_script(&repo, "install.sh");
+    let tools = fake_cargo(&repo);
+    let lock = repo.join("target/install.lock");
+
+    // Held by a live process (this test): refused, the message names its pid, nothing is touched.
+    std::fs::create_dir_all(&lock).unwrap();
+    let me = std::process::id();
+    std::fs::write(lock.join("pid"), me.to_string()).unwrap();
+    let (code, _, err) = script(&repo, "install.sh", &["--dev"], &tools);
+    assert_eq!(code, 1, "{err}");
+    assert!(
+        err.contains(&format!("another install is running (pid {me})")),
+        "{err}"
+    );
+    assert!(lock.join("pid").exists(), "the holder's lock is left alone");
+    assert!(!repo.join("target/install-src").exists());
+    assert!(!tools.join("root/bin/atharu").exists(), "nothing was built");
+
+    // Stale (its owner is gone): reclaimed, the install runs, and the lock is released at the end.
+    let mut gone = Command::new("true").spawn().unwrap();
+    let dead = gone.id();
+    gone.wait().unwrap();
+    std::fs::write(lock.join("pid"), dead.to_string()).unwrap();
+    let (code, _, err) = script(&repo, "install.sh", &["--dev"], &tools);
+    assert_eq!(code, 0, "{err}");
+    assert!(tools.join("root/bin/atharu").exists());
+    assert!(!lock.exists(), "the lock is gone after a run");
+
+    // A failing install lets go of it too (the EXIT trap), so a retry is not locked out.
+    let (code, _, err) = script(&repo, "install.sh", &["--version", "v9.9.9"], &tools);
+    assert_eq!(code, 1, "{err}");
+    assert!(!lock.exists());
+    let _ = std::fs::remove_dir_all(&tools);
+    let _ = std::fs::remove_dir_all(repo);
+}

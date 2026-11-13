@@ -11,7 +11,11 @@ use std::{
     io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::{Arc, Mutex, MutexGuard, mpsc},
+    sync::{
+        Arc, Mutex, MutexGuard,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    },
     time::{Duration, Instant},
 };
 
@@ -106,10 +110,23 @@ pub enum UpdateState {
     },
 }
 
-pub type Shared = Arc<Mutex<UpdateState>>;
+/// The button's state plus `busy`: an install process is alive. It outlives a timed-out row (the page stops waiting, the install
+/// does not), and no second install starts while it is set.
+#[derive(Default)]
+pub struct Updater {
+    state: Mutex<UpdateState>,
+    busy: AtomicBool,
+}
+
+pub type Shared = Arc<Updater>;
 
 pub fn lock(s: &Shared) -> MutexGuard<'_, UpdateState> {
-    s.lock().unwrap_or_else(|e| e.into_inner())
+    s.state.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// An install is still running, even if the row already gave up on it.
+pub fn busy(s: &Shared) -> bool {
+    s.busy.load(Ordering::SeqCst)
 }
 
 /// How long an install may take before the page gives up waiting for it.
@@ -133,35 +150,55 @@ pub fn start_with(
     if !tag.starts_with('v') || semver(&tag).is_none_or(|(_, release)| !release) {
         return false;
     }
-    {
-        let mut s = lock(state);
-        if matches!(*s, UpdateState::Running { .. }) {
-            return false;
-        }
-        *s = UpdateState::Running {
-            to: tag.clone(),
-            started: Instant::now(),
-        };
+    // One install at a time, across retries after a timeout too: `busy` is held until the process itself is gone.
+    if state.busy.swap(true, Ordering::SeqCst) {
+        return false;
     }
-    let state = state.clone();
+    *lock(state) = UpdateState::Running {
+        to: tag.clone(),
+        started: Instant::now(),
+    };
+    let (done, waiting) = mpsc::channel::<()>();
+    let (worker, t) = (state.clone(), tag.clone());
     std::thread::spawn(move || {
-        let res = run(&repo, &tag, &log, deadline);
-        *lock(&state) = match res {
-            Ok(()) => UpdateState::Done(tag),
-            Err(why) => UpdateState::Failed { to: tag, why },
+        let res = run(&repo, &t, &log);
+        // The final state first, `busy` after it: a start that slips in once `busy` is clear can't be overwritten.
+        *lock(&worker) = match res {
+            Ok(()) => UpdateState::Done(t),
+            Err(why) => UpdateState::Failed { to: t, why },
         };
+        worker.busy.store(false, Ordering::SeqCst);
+        let _ = done.send(());
+    });
+    // The deadline: past it the row stops waiting. The install itself is left alone (killing a half-done build or bundle
+    // swap would be worse than waiting) and, when it ends, the worker above still writes how it went.
+    let timer = state.clone();
+    std::thread::spawn(move || {
+        if waiting.recv_timeout(deadline) == Err(mpsc::RecvTimeoutError::Timeout) {
+            let mut s = lock(&timer);
+            if matches!(*s, UpdateState::Running { .. }) {
+                *s = UpdateState::Failed {
+                    to: tag,
+                    why: format!(
+                        "Took longer than {} min; still running in the background, see the log",
+                        deadline.as_secs().div_ceil(60).max(1)
+                    ),
+                };
+            }
+        }
     });
     true
 }
 
-fn run(repo: &Path, tag: &str, log: &Path, deadline: Duration) -> Result<(), String> {
+/// Runs the script to its end (no deadline here) and says how it went.
+fn run(repo: &Path, tag: &str, log: &Path) -> Result<(), String> {
     let from = installed().map_or("dev".to_string(), |v| format!("v{v}"));
     let out =
         std::fs::File::create(log).map_err(|e| format!("can't write {}: {e}", log.display()))?;
     let err = out
         .try_clone()
         .map_err(|e| format!("can't write {}: {e}", log.display()))?;
-    let mut child = Command::new("bash")
+    let status = Command::new("bash")
         .arg(repo.join("scripts/install.sh"))
         .args(["--version", tag, "--app"])
         // This server runs inside the app install.sh replaces: it must not quit it (see install.sh).
@@ -169,30 +206,23 @@ fn run(repo: &Path, tag: &str, log: &Path, deadline: Duration) -> Result<(), Str
         .stdin(Stdio::null())
         .stdout(Stdio::from(out))
         .stderr(Stdio::from(err))
-        .spawn()
+        .status()
         .map_err(|e| format!("can't run scripts/install.sh: {e}"))?;
-    // Waited for on its own thread so the deadline can fire. Past it the child is left alone (killing a half-done
-    // build or bundle swap would be worse than waiting); the page just stops waiting and says where the log is.
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let _ = tx.send(child.wait());
-    });
-    match rx.recv_timeout(deadline) {
-        Ok(Ok(status)) if status.success() => Ok(()),
-        Ok(Ok(status)) => {
-            let code = status
-                .code()
-                .map_or("a signal".to_string(), |c| c.to_string());
-            Err(format!(
-                "install.sh exited {code}; {from} is still installed"
-            ))
-        }
-        Ok(Err(e)) => Err(format!("can't wait for scripts/install.sh: {e}")),
-        Err(_) => Err(format!(
-            "Took longer than {} min; see the log",
-            deadline.as_secs().div_ceil(60).max(1)
-        )),
+    if status.success() {
+        return Ok(());
     }
+    // install.sh refuses to run beside another install (its lock): say that, not a bare exit code.
+    if let Some(rest) = tail(log).strip_prefix("another install is running") {
+        return Err(format!(
+            "Another install is running{rest}. Nothing was changed."
+        ));
+    }
+    let code = status
+        .code()
+        .map_or("a signal".to_string(), |c| c.to_string());
+    Err(format!(
+        "install.sh exited {code}; {from} is still installed"
+    ))
 }
 
 /// The last readable line of the install's log, for the page's progress line (the file's tail, not all of it).
@@ -291,6 +321,7 @@ mod tests {
     #[test]
     fn a_second_start_while_running_is_refused() {
         let state: Shared = Arc::default();
+        state.busy.store(true, Ordering::SeqCst);
         *lock(&state) = UpdateState::Running {
             to: "v0.2.7".into(),
             started: Instant::now(),
@@ -304,6 +335,7 @@ mod tests {
         // The running one is untouched.
         assert!(matches!(snapshot(&state), UpdateState::Running { to, .. } if to == "v0.2.7"));
         // Nor does a tag that isn't a release tag start anything.
+        state.busy.store(false, Ordering::SeqCst);
         *lock(&state) = UpdateState::Idle;
         for bad in ["v0.2.8 --evil", "main", "v1.2", "v0.3.0-rc1", "$(x)"] {
             assert!(
@@ -319,8 +351,8 @@ mod tests {
         assert_eq!(snapshot(&state), UpdateState::Idle);
     }
 
-    /// A temp repo whose `scripts/install.sh` is `body`; waits (up to ~5 s) for the run to leave Running.
-    fn run_fake(name: &str, body: &str, deadline: Duration) -> (UpdateState, PathBuf) {
+    /// A temp repo whose `scripts/install.sh` is `body`; `settle` waits (up to ~8 s) until the run is over for the page.
+    fn run_fake(name: &str, body: &str, deadline: Duration) -> (Shared, PathBuf) {
         let dir =
             std::env::temp_dir().join(format!("atharu-updater-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
@@ -335,24 +367,33 @@ mod tests {
             log.clone(),
             deadline
         ));
-        for _ in 0..100 {
-            if !matches!(snapshot(&state), UpdateState::Running { .. }) {
-                break;
+        (state, log)
+    }
+
+    fn wait_until(what: &str, mut f: impl FnMut() -> bool) {
+        for _ in 0..160 {
+            if f() {
+                return;
             }
             std::thread::sleep(Duration::from_millis(50));
         }
-        (snapshot(&state), log)
+        panic!("timed out waiting for {what}");
+    }
+
+    fn settled(state: &Shared) -> bool {
+        !matches!(snapshot(state), UpdateState::Running { .. })
     }
 
     #[test]
     fn a_script_run_from_the_app_gets_the_flag_and_logs_to_a_file() {
         // Asserts the fixed env (install.sh must not quit the app) and the fixed args; three lines, the last one is the tail.
-        let (end, log) = run_fake(
+        let (state, log) = run_fake(
             "ok",
             "[ \"$ATHARU_UPDATE_FROM_APP\" = 1 ] || exit 9\necho \"args: $*\"\necho 'step two' >&2\necho '   Finished release   '\n",
             Duration::from_secs(30),
         );
-        assert_eq!(end, UpdateState::Done("v0.2.7".into()));
+        wait_until("done", || settled(&state) && !busy(&state));
+        assert_eq!(snapshot(&state), UpdateState::Done("v0.2.7".into()));
         let text = std::fs::read_to_string(&log).unwrap();
         assert!(text.contains("args: --version v0.2.7 --app"), "{text}");
         assert!(text.contains("step two"), "{text}");
@@ -362,8 +403,9 @@ mod tests {
 
     #[test]
     fn a_failing_script_ends_failed_with_its_code() {
-        let (end, log) = run_fake("fail", "echo boom\nexit 3\n", Duration::from_secs(30));
-        match end {
+        let (state, log) = run_fake("fail", "echo boom\nexit 3\n", Duration::from_secs(30));
+        wait_until("failed", || settled(&state) && !busy(&state));
+        match snapshot(&state) {
             UpdateState::Failed { to, why } => {
                 assert_eq!(to, "v0.2.7");
                 assert!(why.starts_with("install.sh exited 3; "), "{why}");
@@ -376,19 +418,51 @@ mod tests {
     }
 
     #[test]
-    fn a_script_past_the_deadline_is_failed_and_left_alone() {
-        let (end, log) = run_fake(
+    fn install_sh_refusing_to_run_beside_another_is_said_in_words() {
+        let (state, log) = run_fake(
+            "locked",
+            "echo 'another install is running (pid 4242)'\nexit 1\n",
+            Duration::from_secs(30),
+        );
+        wait_until("failed", || settled(&state) && !busy(&state));
+        match snapshot(&state) {
+            UpdateState::Failed { why, .. } => assert_eq!(
+                why,
+                "Another install is running (pid 4242). Nothing was changed."
+            ),
+            other => panic!("{other:?}"),
+        }
+        let _ = std::fs::remove_dir_all(log.parent().unwrap());
+    }
+
+    #[test]
+    fn past_the_deadline_the_row_gives_up_but_the_install_still_holds_the_slot() {
+        let (state, log) = run_fake(
             "slow",
-            "echo started\nsleep 3\n",
+            "echo started\nsleep 2\necho finished\n",
             Duration::from_millis(300),
         );
-        match end {
+        wait_until("the timeout row", || settled(&state));
+        match snapshot(&state) {
             UpdateState::Failed { why, .. } => {
-                assert!(why.starts_with("Took longer than "), "{why}")
+                assert!(why.starts_with("Took longer than "), "{why}");
+                assert!(why.contains("still running in the background"), "{why}");
             }
             other => panic!("{other:?}"),
         }
-        assert_eq!(tail(&log), "started");
+        // The process is alive: still busy, and a retry is refused (it would fight over the same worktree and app bundle).
+        assert!(busy(&state));
+        assert!(!start_with(
+            &state,
+            PathBuf::from("/nonexistent"),
+            "v0.2.8".into(),
+            std::env::temp_dir().join("atharu-update-busy.log"),
+            Duration::from_secs(1)
+        ));
+        // When it ends, the row says how it went and the slot is free again.
+        wait_until("the end", || !busy(&state));
+        assert_eq!(snapshot(&state), UpdateState::Done("v0.2.7".into()));
+        assert_eq!(tail(&log), "finished");
         let _ = std::fs::remove_dir_all(log.parent().unwrap());
     }
 }

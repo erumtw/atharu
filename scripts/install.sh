@@ -70,13 +70,33 @@ else
   label=$ref
 fi
 
+# One install at a time: Settings › Update, `atharu update --app` and a retry can all start one, and they share target/install-src,
+# CARGO_TARGET_DIR and /Applications/Atharu.app.new. The lock is a directory (mkdir is atomic) holding the owner's pid; a dead
+# owner (crash, reboot) leaves a stale lock, which the next run reclaims.
+lock=$repo/target/install.lock
+mkdir -p "$repo/target"
+if ! mkdir "$lock" 2>/dev/null; then
+  holder=$(cat "$lock/pid" 2>/dev/null || true)
+  # The owner may be between its mkdir and writing the pid: give it a moment before calling that stale.
+  if [ -z "$holder" ]; then sleep 1; holder=$(cat "$lock/pid" 2>/dev/null || true); fi
+  if [ -n "$holder" ] && kill -0 "$holder" 2>/dev/null; then
+    echo "another install is running (pid $holder)"
+    exit 1
+  fi
+  rm -rf "$lock"
+  mkdir "$lock" 2>/dev/null || { echo "another install is running"; exit 1; }
+fi
+echo $$ >"$lock/pid"
+# Only the owner reaches here; every EXIT trap below also lets the lock go (a second `trap … EXIT` replaces the first).
+trap 'rm -rf "$lock"' EXIT
+
 # A detached worktree, not `git archive`: build.rs reads the sha and tag from git.
 # Same path every run (inside target/, gitignored and kept out of Spotlight): cargo keys a local crate's
 # cache by its path, so a fresh temp dir each time rebuilt atharu + the app from scratch.
 src=$repo/target/install-src
 git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || rm -rf "$src"
 git -C "$repo" worktree prune
-trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; git -C "$repo" worktree prune' EXIT
+trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; git -C "$repo" worktree prune; rm -rf "$lock"' EXIT
 git worktree add --quiet --detach "$src" "$ref"
 # The repo's own target/ keeps the build incremental across runs.
 export CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$repo/target}
@@ -96,7 +116,7 @@ t0=$SECONDS t_step=$SECONDS
 mins() { printf '%dm%02ds' $(($1 / 60)) $(($1 % 60)); }
 step() { echo "⏱ $1: $(mins $((SECONDS - t_step)))"; t_step=$SECONDS; }
 # One EXIT trap (a second `trap … EXIT` replaces the first): clean the worktree, then the total.
-trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; git -C "$repo" worktree prune; echo "⏱ total: $(mins $((SECONDS - t0)))"' EXIT
+trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; git -C "$repo" worktree prune; rm -rf "$lock"; echo "⏱ total: $(mins $((SECONDS - t0)))"' EXIT
 echo "building atharu $label from $repo …"
 cargo install --path "$src" --locked --quiet
 new=$("$bin/atharu" version)

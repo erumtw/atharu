@@ -432,7 +432,12 @@ fn update_part(st: &AppState, conn: &rusqlite::Connection) -> view::Update {
         UpdateState::Running { .. } => updater::tail(&log),
         _ => String::new(),
     };
-    view::Update::new(&state, log.display().to_string(), last)
+    view::Update::new(
+        &state,
+        log.display().to_string(),
+        last,
+        updater::busy(&st.update),
+    )
 }
 
 fn update_html(st: &AppState) -> AppResult<Response> {
@@ -456,7 +461,8 @@ pub async fn update_get(State(st): State<AppState>) -> AppResult<Response> {
 
 /// "Check for updates": fetch the tags (a blocking git call, off the runtime) and say whether a newer release exists.
 pub async fn update_check(State(st): State<AppState>, headers: HeaderMap) -> AppResult<Response> {
-    if !matches!(updater::snapshot(&st.update), UpdateState::Running { .. }) {
+    // Nothing to check while an install runs (even one the row gave up on): it would only hide what the row says.
+    if !updater::busy(&st.update) {
         let repo = updater::repo();
         let found = tokio::task::spawn_blocking(move || updater::newest(Path::new(&repo))).await;
         let next = match found {

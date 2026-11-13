@@ -1,7 +1,7 @@
 {#- Settings › About › Update, the Mac app's part (0.2.6; browsers keep the Terminal row above and never see this): check → Update →
     progress → Restart Atharu. One row, swapped whole by htmx; it polls itself every 2 s only while an update runs. Every button is a
     plain form too (303 back to #update). The install is `scripts/install.sh --version <tag> --app`, the same as `atharu update --app`. -#}
-<div id="update" class="mac-only"{% if phase == Phase::Running %} hx-get="/settings/update" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+<div id="update" class="mac-only"{% if phase == Phase::Running || busy %} hx-get="/settings/update" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
 <div class="gi">
 {%- match phase %}
 {%- when Phase::Idle %}
@@ -20,7 +20,7 @@
 <a class="btn" href="/app/restart">Restart Atharu</a>
 {%- when Phase::Failed %}
 <div class="t"><b class="err">{% if check_failed %}Couldn’t check for updates{% else %}Couldn’t install {{ tag }}{% endif %}</b><span>{{ why }}</span>{% if !check_failed %}<span>Log: <span class="mono">{{ log }}</span></span>{% endif %}</div>
-<form class="inline" method="post" action="/settings/update/check" hx-post="/settings/update/check" hx-target="#update" hx-swap="outerHTML"><button class="btn ghost" type="submit">Try again</button></form>
+{% if !busy %}<form class="inline" method="post" action="/settings/update/check" hx-post="/settings/update/check" hx-target="#update" hx-swap="outerHTML"><button class="btn ghost" type="submit">Try again</button></form>{% endif %}
 {%- endmatch %}
 </div>
 </div>

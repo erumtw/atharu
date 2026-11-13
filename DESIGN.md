@@ -277,8 +277,11 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
   from `git tag --list` that passed semver; no request value reaches the command line), one at a time, output written straight to `update.log` next to the
   database (a file, not a pipe: the progress line is that file's tail, read when the row polls). The app runs it with
   `ATHARU_UPDATE_FROM_APP=1`, so install.sh does not quit the app it runs inside (the page and its Restart button live there); a
-  Terminal `atharu update --app` still quits it first. Past 20 minutes the row says "Took longer than 20 min; see the log" (the
-  install is left running). Update from a browser answers 403 "Update from Terminal: atharu update". Plain sentences, no exclamation marks, no new token.
+  Terminal `atharu update --app` still quits it first. Past 20 minutes the row says "Took longer than 20 min; still running in the
+  background, see the log": the install is left running, no Try again is offered and the row keeps polling until it ends (then it
+  says how it went). One install at a time: `updater::start` is refused while one is alive, and install.sh itself holds
+  `target/install.lock` (a directory with its pid; a dead owner's lock is reclaimed), so a second one from the Terminal or after an
+  app restart exits "another install is running (pid N)", which the row shows as "Another install is running (pid N). Nothing was changed." Update from a browser answers 403 "Update from Terminal: atharu update". Plain sentences, no exclamation marks, no new token.
 - **Settings › Transcription** (between Connections and Accessibility): Speech model (Download 574 MB = primary · downloading:
   `progress.prog` + "212 of 574 MB · about 1 min left" + Cancel · "Checking the file…" · Ready `.pill.ok` + Delete `.dng` · checksum
   failed `.err` + Try again) · Language `.seg.mac` Auto | Thai | English (Thai default; help says Auto can translate) · Vocabulary
