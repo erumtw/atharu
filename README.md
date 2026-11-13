@@ -36,7 +36,7 @@ the week into a report you can paste.
 |---|---|
 | **Today** | A capture bar with live parsing, your top 3 plans for the week, and today's lines grouped by epic, tag or type. |
 | **To-dos** | `> reply to vendor by fri` becomes a to-do with a due date. Typing `by` opens a date menu, and ticking a to-do asks for the follow-up. |
-| **Epics** | Jira-keyed projects with OKR, dates, a before → after metric, evidence links, and an impact line ready to copy; Jira status, parents, your assigned issues and status moves on press. |
+| **Epics** | Jira-keyed projects with OKR, dates, a before → after metric, evidence links, and an impact line ready to copy; Jira status, parents, your assigned issues and status moves on press. A filter box, Group by (OKR, Jira status, parent, tag) and Show (active, done & dropped, all) narrow both lists, and Hide tracked trims the assigned one; it all lives in the URL. |
 | **Report** | Week, month or quarter: what shipped, decisions, blockers and learning, copied as Markdown in one click. |
 | **Learn** | `? topic: what clicked`. Topic pages hold your own words and a 1–4 depth rating over time, and are deliberately AI-free. |
 | **Notes** | A block editor with `[[links]]`, `#tags`, toggles, callouts and hand-drawn Excalidraw diagrams. |
