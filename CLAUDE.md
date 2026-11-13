@@ -124,6 +124,15 @@ Save buttons (autosave), and the self-explanatory goal (empty states name the ne
 alters a token, component, glass surface or pattern updates `DESIGN.md` in the same commit; when the CSS and
 `DESIGN.md` disagree, fix whichever is wrong and say so.
 
+**Long real data (owner, 2026-11-14: five overflow bugs in one day, all long text in a fixed slot).** The demo data is
+short; the owner's is not (60-char series names, long Jira titles, 30+ assigned tickets, Thai). So:
+- Any text in a fixed-width slot (table cell, grid column, chip, row) ends in `…` with the full text in `title`; nothing
+  may print over a neighbour or past its card. A new table or grid states its column widths and which column gives way.
+- Check UI changes with the long-data seed (`scripts/long-seed.sh`: 60+-char names, long Jira titles, 30 assigned, Thai
+  text), not only the short demo DB; a board or a parity match on short text proves nothing about long text.
+- Before a release, the master looks at every page (not only the changed ones) on a `.backup` copy of the real DB at
+  1180 and 390 px, besides `scripts/visual-check.sh`.
+
 ## Working on the code
 
 - `export PATH=/opt/homebrew/opt/rustup/bin:$PATH` (rustup is keg-only here).
@@ -141,7 +150,8 @@ alters a token, component, glass surface or pattern updates `DESIGN.md` in the s
   tags `vX.Y.Z`; install/update follow tags. Cutting or pushing a release is the owner's call; an agent asked to run it
   sets `ATHARU_COAUTHOR` and answers N to the push prompt.
 - Before every `release.sh`: `scripts/visual-check.sh` (every page × 1180 / 900 / 390 px on a `.backup` copy of the real DB;
-  fails on overflow, squeezed line text, a jumping page edge, console errors). Zero problems, or no release. Its screenshots
+  fails on overflow — of the page, out of its card, out of its table cell —, squeezed line text, a jumping page edge,
+  console errors; also run it on the long-data seed). Zero problems, or no release. Its screenshots
   hold work data: never commit them; release-page shots come from a seeded demo DB.
 - Release page: release.sh's draft (`.git/release-notes-vX.Y.Z.md`) goes to CHANGELOG.md as is; for the GitHub release, rewrite it
   as `## Highlights` (one `###` per user-visible change, two plain sentences on what the owner can now do) + Fixes / Performance
