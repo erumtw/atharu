@@ -118,3 +118,58 @@ impl TagField {
         self.tags.join(",")
     }
 }
+
+/// How a note reaches a page in its Linked references (`partials/refs.html`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Via {
+    /// `[[page]]` in the note's body.
+    Mention,
+    /// The note of one of the page's own lines.
+    Line,
+    /// `#page` on the note.
+    Tag,
+}
+
+/// A note in a page's Linked references.
+pub struct Ref {
+    pub id: i64,
+    pub title: String,
+    pub author: String,
+    pub via: Via,
+}
+
+impl Ref {
+    pub fn via_label(&self) -> &'static str {
+        match self.via {
+            Via::Mention => "mentions it",
+            Via::Line => "on a line",
+            Via::Tag => "tagged",
+        }
+    }
+}
+
+/// Where a page's own lines are, for "notes on its lines" (entry-id SQL, `?2` = the argument).
+pub enum Lines<'a> {
+    Epic(&'a str),
+    Meeting(i64),
+    Series(&'a str),
+    Topic(&'a str),
+    Tag(&'a str),
+}
+
+/// Linked references of a page called `name` (`None`: only notes on its lines, e.g. one meeting, whose name is
+/// its series'), shared by every entity page so `[[X]]`, `#X` and line notes always land the same way.
+pub fn refs(conn: &rusqlite::Connection, name: Option<&str>, lines: Option<Lines>) -> rusqlite::Result<Vec<Ref>> {
+    let (sql, arg): (Option<&str>, Box<dyn rusqlite::ToSql>) = match lines {
+        None => (None, Box::new(rusqlite::types::Null)),
+        Some(Lines::Epic(k)) => (Some("SELECT id FROM entries WHERE epic_key = ?2"), Box::new(k.to_string())),
+        Some(Lines::Meeting(id)) => (Some("SELECT id FROM entries WHERE meeting_id = ?2"), Box::new(id)),
+        Some(Lines::Series(n)) => (
+            Some("SELECT id FROM entries WHERE meeting_id IN (SELECT id FROM meetings WHERE name = ?2)"),
+            Box::new(n.to_string()),
+        ),
+        Some(Lines::Topic(s)) => (Some("SELECT id FROM entries WHERE topic = ?2"), Box::new(s.to_string())),
+        Some(Lines::Tag(t)) => (Some("SELECT entry_id FROM entry_tags WHERE tag = ?2"), Box::new(t.to_string())),
+    };
+    queries::refs(conn, name, sql, arg.as_ref())
+}

@@ -71,25 +71,17 @@ async fn new_note_autosave_and_render() {
     );
     assert!(b.contains("<span class=\"chip\">you</span>"));
 
-    // Backlinks on the linked pages.
+    // Linked references on the linked pages (`[[X]]` lands the same everywhere). A series' mentions live on the series
+    // page (T5), not on each meeting.
     exec(&st, "INSERT INTO epics(key) VALUES ('OPS-101')");
-    assert!(
-        get(&st, "/epics/OPS-101")
-            .await
-            .body
-            .contains("Mentioned in 1 note · <a href=\"/notes/1\">")
-    );
+    let e = get(&st, "/epics/OPS-101").await.body;
+    assert!(e.contains("Linked references") && e.contains("href=\"/notes/1\">Checkout retro</a>"), "{e}");
+    assert!(e.contains("mentions it"));
     assert!(
         get(&st, "/learn/vector-search")
             .await
             .body
             .contains("href=\"/notes/1\">Checkout retro</a>")
-    );
-    assert!(
-        get(&st, "/meetings/1")
-            .await
-            .body
-            .contains("Mentioned in 1 note · <a href=\"/notes/1\">")
     );
 }
 

@@ -83,7 +83,9 @@ pub struct Page {
     pub today: NaiveDate,
     pub back: String,
     /// Notes linking here with `[[…]]`: (id, title).
-    pub mentions: Vec<(i64, String)>,
+    pub refs: Vec<crate::layout::Ref>,
+    /// The `[[…]]` name the empty Linked references line suggests.
+    pub ref_name: String,
     /// The series' Tags prop.
     pub field: crate::layout::TagField,
     /// Shown on top while this meeting is recording (D31), so Stop is where you are.

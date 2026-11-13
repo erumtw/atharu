@@ -186,15 +186,6 @@ pub fn entry_days_since(conn: &Connection, key: &str, from: &str) -> rusqlite::R
     stmt.query_map(params![key, from], |r| r.get(0))?.collect()
 }
 
-/// Notes whose body has `[[KEY]]`, newest first: (id, title) for "Mentioned in N notes".
-pub fn mentions(conn: &Connection, x: &str) -> rusqlite::Result<Vec<(i64, String)>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, CASE WHEN title = '' THEN 'Untitled' ELSE title END FROM notes
-         WHERE body LIKE '%[[' || ?1 || ']]%' ORDER BY updated_at DESC, id DESC",
-    )?;
-    stmt.query_map([x], |r| Ok((r.get(0)?, r.get(1)?)))?
-        .collect()
-}
 
 /// Agent upsert: a new key gets the agent's title/OKR and author; an existing epic only has
 /// empty title/OKR filled, so nothing I typed is ever overwritten. Returns true if it was created.

@@ -247,6 +247,8 @@ async fn rename_merge_delete_with_undo() {
     log(&st, "#hiring loop done").await;
     post(&st, "/notes", "", false).await;
     post(&st, "/notes/1", &form(&[("body", "plan #expense")]), false).await;
+    // Links the hub without the tag: a rename follows `[[expense]]` too.
+    exec(&st, "INSERT INTO notes(id, title, body) VALUES (2, 'n2', 'see [[expense]]')");
     exec(
         &st,
         "INSERT INTO topics(slug, tags) VALUES ('vat', 'expense')",
@@ -283,13 +285,17 @@ async fn rename_merge_delete_with_undo() {
     assert_eq!(r.status, 200);
     assert!(
         r.body
-            .contains("Renamed #expense to #spend · 5 places rewritten"),
+            .contains("Renamed #expense to #spend · 6 places rewritten"),
         "{}",
         r.body
     );
     assert_eq!(text(&st, 1), "booked #spend review");
     assert_eq!(
         count(&st, "SELECT COUNT(*) FROM notes WHERE body = 'plan #spend'"),
+        1
+    );
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM notes WHERE body = 'see [[spend]]'"),
         1
     );
     assert_eq!(

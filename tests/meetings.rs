@@ -174,6 +174,10 @@ async fn rename_moves_the_whole_series_and_its_tags() {
         &st,
         "INSERT INTO taggings(tag, item_type, item_id) VALUES ('cshub', 'series', 'comps-add-on-cs-hub-from-comops')",
     );
+    exec(
+        &st,
+        "INSERT INTO notes(id, title, body) VALUES (7, 'n', 'see [[comps-add-on-cs-hub-from-comops]] and [[oms-sync]]')",
+    );
 
     let r = post(
         &st,
@@ -194,6 +198,14 @@ async fn rename_moves_the_whole_series_and_its_tags() {
         count(
             &st,
             "SELECT COUNT(*) FROM taggings WHERE item_type = 'series' AND item_id = 'cs-hub-sync'"
+        ),
+        1
+    );
+    // `[[old]]` follows the rename; other links stay.
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM notes WHERE body = 'see [[cs-hub-sync]] and [[oms-sync]]'"
         ),
         1
     );

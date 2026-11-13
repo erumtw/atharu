@@ -342,13 +342,33 @@ pub fn rewrite(
         .prepare("SELECT item_type, item_id FROM taggings WHERE tag = ?1")?
         .query_map([old], |r| Ok((r.get(0)?, r.get(1)?)))?
         .collect::<Result<_, _>>()?;
+    // A rename also follows `[[old]]` (it lands on this hub), so notes that only link it change too; Undo covers them.
+    let mut items = items;
+    if new.is_some() {
+        let linking: Vec<String> = tx
+            .prepare("SELECT CAST(id AS TEXT) FROM notes WHERE body LIKE '%[[' || ?1 || ']]%'")?
+            .query_map([old], |r| r.get(0))?
+            .collect::<Result<_, _>>()?;
+        for id in linking {
+            if !items.iter().any(|(t, i)| t == "note" && *i == id) {
+                items.push(("note".into(), id));
+            }
+        }
+    }
     let mut snap: Snap = Vec::new();
     for (ty, id) in items {
         let Some(before) = load(&tx, &ty, &id)? else {
             continue;
         };
         let after = match ty.as_str() {
-            "entry" | "note" | "event" => tags::rewrite(&before, old, new),
+            "note" => {
+                let t = tags::rewrite(&before, old, new);
+                match new {
+                    Some(n) => t.replace(&format!("[[{old}]]"), &format!("[[{n}]]")),
+                    None => t,
+                }
+            }
+            "entry" | "event" => tags::rewrite(&before, old, new),
             _ => {
                 let list = tags::parse_list(&before)
                     .into_iter()

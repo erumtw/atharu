@@ -60,7 +60,7 @@
 </section>
 {{ shots|safe }}
 {{ tx|safe }}
-{% include "partials/backlinks.html" %}
+{% include "partials/refs.html" %}
 <form method="post" action="/meetings/{{ id }}/delete" hx-post="/meetings/{{ id }}/delete" hx-target="closest main" hx-swap="outerHTML"><button class="btn ghost s dng" type="submit" title="Its lines stay on their days">Delete meeting</button></form>
 </main>
 {% endblock %}

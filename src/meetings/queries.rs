@@ -142,6 +142,12 @@ pub fn rename_series(conn: &mut Connection, old: &str, new: &str) -> rusqlite::R
         "UPDATE taggings SET item_id = ?2 WHERE item_type = 'series' AND item_id = ?1",
         params![old, new],
     )?;
+    // `[[old]]` in any note would turn into a dead link: follow the rename (the body's only change).
+    tx.execute(
+        "UPDATE notes SET body = replace(body, '[[' || ?1 || ']]', '[[' || ?2 || ']]')
+          WHERE body LIKE '%[[' || ?1 || ']]%'",
+        params![old, new],
+    )?;
     tx.commit()?;
     Ok(true)
 }
@@ -247,15 +253,6 @@ pub fn plans(conn: &Connection, id: i64) -> rusqlite::Result<Vec<Plan>> {
     stmt.query_map([id], crate::db::plan)?.collect()
 }
 
-/// Notes whose body has `[[name]]`, newest first: (id, title) for "Mentioned in N notes".
-pub fn mentions(conn: &Connection, x: &str) -> rusqlite::Result<Vec<(i64, String)>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, CASE WHEN title = '' THEN 'Untitled' ELSE title END FROM notes
-         WHERE body LIKE '%[[' || ?1 || ']]%' ORDER BY updated_at DESC, id DESC",
-    )?;
-    stmt.query_map([x], |r| Ok((r.get(0)?, r.get(1)?)))?
-        .collect()
-}
 
 /// Deletes a meeting; its lines stay (FK sets their meeting_id to NULL). Hands back
 /// (name, JSON snapshot incl. the line ids) so Undo can re-attach them.

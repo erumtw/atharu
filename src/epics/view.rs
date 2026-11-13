@@ -128,7 +128,9 @@ pub struct Page {
     /// Top-bar status after a plain (no-JS) save failed: the reason.
     pub save_error: Option<&'static str>,
     /// Notes linking here with `[[…]]`: (id, title).
-    pub mentions: Vec<(i64, String)>,
+    pub refs: Vec<crate::layout::Ref>,
+    /// The `[[…]]` name the empty Linked references line suggests.
+    pub ref_name: String,
     /// A plain (no-JS) delete was refused.
     pub delete_error: Option<&'static str>,
 }

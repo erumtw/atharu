@@ -670,11 +670,13 @@ pub async fn page(
             .ended_at
             .clone()
             .map(|t| t.get(11..16).unwrap_or(&t).to_string()),
-        // Its own note links `[[series]]` too; listing it as a mention would be noise.
-        mentions: queries::mentions(&conn, &m.name)?
+        // Only notes on this meeting's own lines: `[[series]]` mentions belong to the series page. Its own note is
+        // the page body, so it isn't listed again.
+        refs: crate::layout::refs(&conn, None, Some(crate::layout::Lines::Meeting(id)))?
             .into_iter()
-            .filter(|(n, _)| m.note.as_ref().is_none_or(|own| own.0 != *n))
+            .filter(|r| m.note.as_ref().is_none_or(|own| own.0 != r.id))
             .collect(),
+        ref_name: m.name.clone(),
         field: tag_field(&conn, &m.name)?,
         banner: recording_here.then_some(b),
         tx: tx_section(&conn, st.mac.is_some(), id, q.q)?,
