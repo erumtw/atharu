@@ -130,12 +130,15 @@ pub fn rename_series(conn: &mut Connection, old: &str, new: &str) -> rusqlite::R
         "UPDATE series_archive SET name = ?2 WHERE name = ?1",
         params![old, new],
     )?;
-    // `[[old]]` in any note would turn into a dead link: follow the rename (the body's only change).
-    tx.execute(
-        "UPDATE notes SET body = replace(body, '[[' || ?1 || ']]', '[[' || ?2 || ']]')
-          WHERE instr(body, '[[' || ?1 || ']]') > 0",
-        params![old, new],
-    )?;
+    // `[[old]]` in any note would turn into a dead link: follow the rename (the body's only change),
+    // unless it still lands on a tag / topic / epic of that name.
+    if !crate::db::still_resolves(&tx, old, "series") {
+        tx.execute(
+            "UPDATE notes SET body = replace(body, '[[' || ?1 || ']]', '[[' || ?2 || ']]')
+              WHERE instr(body, '[[' || ?1 || ']]') > 0",
+            params![old, new],
+        )?;
+    }
     tx.commit()?;
     Ok(true)
 }

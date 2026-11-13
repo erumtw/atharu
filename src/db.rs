@@ -108,6 +108,25 @@ fn backfill_tags(conn: &Connection) -> rusqlite::Result<()> {
     Ok(())
 }
 
+/// Whether `[[x]]` still points somewhere once the `renamed` kind (`"tag"` / `"series"`) no longer has `x`
+/// (`links::href` order). A rename rewrites `[[old]]` only when this is false, so a link that now lands on a
+/// topic, epic, tag or series of the same name keeps its target (0.2.0 gate P4). A failed read counts as
+/// "no", which falls back to following the rename.
+pub fn still_resolves(conn: &Connection, x: &str, renamed: &str) -> bool {
+    let has = |sql: &str, s: &str| {
+        conn.query_row(sql, [s], |r| r.get::<_, bool>(0))
+            .unwrap_or(false)
+    };
+    crate::domain::links::href(
+        x,
+        |s| has("SELECT EXISTS (SELECT 1 FROM epics WHERE key = ?1)", s),
+        |s| has("SELECT EXISTS (SELECT 1 FROM topics WHERE slug = ?1)", s),
+        |s| renamed != "series" && has("SELECT EXISTS (SELECT 1 FROM meetings WHERE name = ?1)", s),
+        |s| renamed != "tag" && has("SELECT EXISTS (SELECT 1 FROM taggings WHERE tag = ?1)", s),
+    )
+    .is_some()
+}
+
 /// Rebuild one item's rows in `taggings`. Every save of a line, note or tags field calls it inside
 /// the save's own transaction, so the lookup can never disagree with the text. Lives here, not in
 /// a slice: it maintains a derived index every slice writes through, like the migrations do.

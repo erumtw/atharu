@@ -509,3 +509,44 @@ async fn report_by_tag_filters_and_chip_field() {
         r#"class="on" aria-pressed="true" type="submit" name="group" value="tag">Tag</button>"#
     ));
 }
+
+#[tokio::test]
+async fn rename_leaves_links_that_still_resolve() {
+    // P4: `[[vat]]` lands on the tag hub now, and on the topic `vat` once the tag is renamed: keep it.
+    let st = state();
+    log(&st, "booked #vat review").await;
+    exec(
+        &st,
+        "INSERT INTO topics(slug) VALUES ('vat');
+         INSERT INTO notes(id, title, body) VALUES (5, 'n', 'see [[vat]]');",
+    );
+    let r = post(&st, "/tags/vat/rename", &form(&[("to", "tax")]), false).await;
+    assert_eq!(r.status, 303);
+    assert_eq!(text(&st, 1), "booked #tax review");
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM notes WHERE body = 'see [[vat]]'"),
+        1
+    );
+
+    // A series renamed away from a name a tag still uses: `[[tax]]` stays on the tag hub.
+    exec(
+        &st,
+        "INSERT INTO meetings(id, day, name, ended_at) VALUES (1, '2026-11-10', 'tax', '2026-11-10 10:00:00');
+         INSERT INTO notes(id, title, body) VALUES (6, 'n', 'see [[tax]]');",
+    );
+    post(
+        &st,
+        "/meetings/1/rename",
+        &form(&[("name", "tax-sync")]),
+        false,
+    )
+    .await;
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM meetings WHERE name = 'tax-sync'"),
+        1
+    );
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM notes WHERE body = 'see [[tax]]'"),
+        1
+    );
+}

@@ -343,8 +343,10 @@ pub fn rewrite(
         .query_map([old], |r| Ok((r.get(0)?, r.get(1)?)))?
         .collect::<Result<_, _>>()?;
     // A rename also follows `[[old]]` (it lands on this hub), so notes that only link it change too; Undo covers them.
+    // Not when `[[old]]` still lands on a topic / series / epic of that name: then it keeps pointing there.
+    let follow = new.is_some() && !crate::db::still_resolves(&tx, old, "tag");
     let mut items = items;
-    if new.is_some() {
+    if follow {
         let linking: Vec<String> = tx
             .prepare(
                 "SELECT CAST(id AS TEXT) FROM notes WHERE instr(body, '[[' || ?1 || ']]') > 0",
@@ -366,8 +368,8 @@ pub fn rewrite(
             "note" => {
                 let t = tags::rewrite(&before, old, new);
                 match new {
-                    Some(n) => t.replace(&format!("[[{old}]]"), &format!("[[{n}]]")),
-                    None => t,
+                    Some(n) if follow => t.replace(&format!("[[{old}]]"), &format!("[[{n}]]")),
+                    _ => t,
                 }
             }
             "entry" | "event" => tags::rewrite(&before, old, new),
