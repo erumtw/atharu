@@ -272,7 +272,7 @@ form.inline{display:inline}
 @media (prefers-reduced-transparency: reduce){:is(.side,.crumb,.newline,.menu,.btn.ghost,.fld,.dnav,.ta,.note-md){backdrop-filter:none;-webkit-backdrop-filter:none}}
 @media (prefers-contrast: more){:is(.side,.crumb,.newline,.card,.pg,.btn.ghost,.fld,.dnav,.ta,.note-md){border-color:var(--ink)}.muted{color:var(--muted-hc)}}
 
-/* Calendar (0.2.1, boards Redesign.Calendar + .Views): Google-Calendar layout. --px = one hour of the grid.
+/* Calendar (0.2.3, boards Redesign.Calendar + .Views): Google-Calendar layout. --px = one hour of the grid.
    Text: --muted on --fill-3 (all-day label) 4.9:1; white on --accent (today's number) 5.6:1; the now line is
    --err, non-text. Out-of-month numbers take --faint (its one text use, as before). */
 .cgbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -291,7 +291,6 @@ form.inline{display:inline}
 .cg .ad>div{border-left:1px solid var(--fill-2);padding:4px;display:flex;flex-direction:column;gap:3px;min-height:26px;min-width:0}
 .cg .ad>.lab{font-size:10px;color:var(--muted);padding:8px 4px 0;text-align:right;border:0}
 .cg :is(.ad,.mo) .ev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 6px;font-size:11px}
-.cg :is(.ad,.mo) :is(.ev small,.evbtn){overflow:hidden;text-overflow:ellipsis}
 .cg :is(.ad,.mo) .ev small{display:none}
 .cg .more{font-size:11px;color:var(--muted);padding:0 6px}
 .cg .bs{max-height:max(360px,calc(100vh - 240px));overflow-y:auto}

@@ -2,7 +2,7 @@
 {% block head %}<script src="/static/js/calendar.js"></script>{% endblock %}
 {% block content %}
 <main class="doc wide">
-{#- Google-Calendar-style bar: Today · ‹ › · range · view switch · + Event (0.2.1 boards Redesign.Calendar*). #}
+{#- Google-Calendar-style bar: Today · ‹ › · range · view switch · + Event (0.2.3 boards Redesign.Calendar*). #}
 <div class="cgbar">
 <a class="btn ghost s" href="{{ today }}">Today</a>
 <span class="dnav" role="group" aria-label="Calendar range"><a class="i" href="{{ prev }}" aria-label="Previous {{ unit }}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#prev"/></svg></a><a class="i" href="{{ next }}" aria-label="Next {{ unit }}"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#next"/></svg></a></span>

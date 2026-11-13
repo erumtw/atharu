@@ -1,4 +1,4 @@
-// Calendar (0.2.1 D3): with no view in the URL, N days follow the window (≥1200 → 7 · ≥900 → 5 · ≥640 → 3 · phone → 1).
+// Calendar (0.2.3 D3): with no view in the URL, N days follow the window (≥1200 → 7 · ≥900 → 5 · ≥640 → 3 · phone → 1).
 // The server renders the N in the URL (7 by default), so this swaps only on first load and only when the width wants
 // another N. It runs from <head> without defer, before the first paint; location.replace keeps Back working.
 const url = new URL(location.href)

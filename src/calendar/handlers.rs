@@ -20,7 +20,7 @@ use serde::Deserialize;
 #[derive(Deserialize, Default)]
 pub struct RangeQuery {
     d: Option<String>,
-    /// Pre-0.2.1 name of `d`, so old links still land.
+    /// Pre-0.2.3 name of `d`, so old links still land.
     week: Option<String>,
     view: Option<String>,
     n: Option<String>,
@@ -418,18 +418,10 @@ fn cal(
         .max(21);
     timed.sort_by_key(|t| (t.0, t.1));
     // Overlap columns per day: `timed` is sorted by day, so each day is one run.
-    let mut cols_of: Vec<(usize, usize)> = Vec::with_capacity(timed.len());
-    let mut i = 0;
-    while i < timed.len() {
-        let day = timed[i].0;
-        let j = timed[i..]
-            .iter()
-            .position(|t| t.0 != day)
-            .map_or(timed.len(), |k| i + k);
-        let spans: Vec<(u32, u32)> = timed[i..j].iter().map(|t| (t.1, t.2)).collect();
-        cols_of.extend(timegrid::columns(&spans));
-        i = j;
-    }
+    let cols_of: Vec<(usize, usize)> = timed
+        .chunk_by(|a, b| a.0 == b.0)
+        .flat_map(|run| timegrid::columns(&run.iter().map(|t| (t.1, t.2)).collect::<Vec<_>>()))
+        .collect();
     for ((day, s, e, item), (col, cols)) in timed.into_iter().zip(cols_of) {
         days[day].timed.push(view::Timed {
             item,

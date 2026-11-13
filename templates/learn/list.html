@@ -24,7 +24,7 @@
 {%- if rows.is_empty() %}
 <p class="small muted" style="margin: 0">No topics yet. Log a line like <span class="mono">? vector-search: HNSW trades recall for speed</span> on <a href="/">Today</a>, then make it a topic here.</p>
 {%- else %}
-<div class="tw"><table>
+<div class="tw"><table class="ltab">
 <tr><th>Topic</th><th>Depth</th><th></th><th>Last rated</th><th>Lines logged</th></tr>
 {%- for r in rows %}
 {%- let d = r.depth %}

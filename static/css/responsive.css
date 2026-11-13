@@ -174,9 +174,19 @@ pre{max-width:100%;overflow-x:auto}
   .pmore:checked~.props>.pmore-l{display:none}
   /* Dates: start / target / done on, one row each instead of a three-date strip. */
   .props dd.dates{flex-direction:column;align-items:flex-start;gap:4px}
-  /* Epics table: Key · Title · Open · Flag; impact and last log live on the epic's page. */
-  .etab{table-layout:auto}
-  .etab col,.etab :is(th,td):nth-child(4),.etab :is(th,td):nth-child(5){display:none}
+  /* List tables fit the phone (0.2.3 D6): the identifying column + the one fact that matters, the rest lives
+     on the row's own page. Epics Key · Title · Flag; Meetings Series · Last met; Learn Topic · Depth; Tags Tag · Lines. */
+  .etab col,.etab :is(th,td):is(:nth-child(3),:nth-child(4),:nth-child(5)),
+  table.series :is(th,td):not(:nth-child(1),:nth-child(3)),
+  .ltab :is(th,td):nth-child(n+3),
+  .ttab :is(th,td):nth-child(n+3){display:none}
+  /* Fixed layout at the phone's width (not the phone-wide `table{display:block}` scroller), long names wrap. */
+  :is(.etab,table.series,.ltab,.ttab){display:table;width:100%;table-layout:fixed}
+  :is(.etab,table.series,.ltab,.ttab) td{overflow-wrap:anywhere;white-space:normal}
+  .etab :is(th,td):first-child{width:92px}.etab :is(th,td):nth-child(6){width:34%}
+  table.series :is(th,td):nth-child(3){width:96px}
+  .ltab :is(th,td):nth-child(2){width:112px}
+  .ttab :is(th,td):nth-child(2){width:64px}
   /* Linked references: full-width rows, snippet wraps. */
   .refs .ref{margin:0}
 }

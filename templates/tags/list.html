@@ -8,7 +8,7 @@
 {%- else %}
 <div class="row between"><form class="fld m" role="search" method="get" action="/tags" style="flex: 0 1 320px"><svg class="ic" aria-hidden="true"><use href="/static/icon/ui.svg#search"/></svg><input name="q" value="{{ q }}" placeholder="Find a tag" aria-label="Find a tag"><input type="hidden" name="sort" value="{{ sort }}"></form>
 <form class="seg" role="group" aria-label="Sort" method="get" action="/tags">{% if !q.is_empty() %}<input type="hidden" name="q" value="{{ q }}">{% endif %}{% for (v, label) in [("used", "Most used"), ("recent", "Recent"), ("name", "A–Z")] %}<button{% if sort == *v %} class="on" aria-pressed="true"{% endif %} type="submit" name="sort" value="{{ v }}">{{ label }}</button>{% endfor %}</form></div>
-<div class="tw"><table><tr><th>Tag</th><th>Lines</th><th>Open to-dos</th><th>Last used</th><th>Tagged by</th></tr>
+<div class="tw"><table class="ttab"><tr><th>Tag</th><th>Lines</th><th>Open to-dos</th><th>Last used</th><th>Tagged by</th></tr>
 {%- for r in rows %}
 <tr><td><a class="chip tag" href="/tags/{{ r.tag }}">{{ r.tag }}</a></td><td>{% if r.lines == 0 %}<span class="muted">0</span>{% else %}{{ r.lines }}{% endif %}</td><td>{% if r.open_todos == 0 %}<span class="muted">0</span>{% else %}{{ r.open_todos }}{% endif %}</td><td class="muted">{{ last(r) }}</td><td class="small muted">{{ r.tagged_by.join(", ") }}</td></tr>
 {%- endfor %}
