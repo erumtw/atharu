@@ -407,6 +407,8 @@ button.ev.own{border:1px dashed var(--faint)}
 .grp>.gi:first-child::before{content:none}
 .gi .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .gi .t b{font-weight:500}
+/* Mac calendars: the calendar's own colour as a dot before its name (decorative; the name carries it). */
+.gi .cdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:baseline}
 .gi .t>span,.gi .help{font-size:13px;color:var(--muted);line-height:1.35}
 .gi .t.between{flex-direction:row;align-items:center}
 .gi.col{flex-direction:column;align-items:stretch;gap:12px}

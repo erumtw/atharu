@@ -465,3 +465,57 @@ async fn mac_events_look_like_google_ones() {
     assert!(b.contains("value=\"Standup\"><input type=\"hidden\" name=\"back\" value=\"/\"><button class=\"btn s\" type=\"submit\">Start meeting</button>"));
     assert!(!b.contains("/calendar/events/1/delete"));
 }
+
+#[test]
+fn replace_mac_events_swaps_the_window_only() {
+    use atharu::calendar::{MacEvent, replace_mac_events};
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO events(source, ext_id, title, starts_at) VALUES
+           ('mac', 'old@2026-09-01T10:00', 'Kept history', '2026-09-01T10:00'),
+           ('mac', 'gone@2026-11-12T10:00', 'Deleted in Calendar', '2026-11-12T10:00'),
+           ('google', 'g', 'Google stays', '2026-11-12T11:00'),
+           ('own', NULL, 'Own stays', '2026-11-12T12:00');",
+    );
+    let ev = |id: &str, t: &str, s: &str, e: Option<&str>| MacEvent {
+        ext_id: format!("{id}@{s}"),
+        title: t.into(),
+        starts_at: s.into(),
+        ends_at: e.map(str::to_string),
+    };
+    // A weekly series: two rows, one per start.
+    let events = [
+        ev("w", "Standup", "2026-11-12T09:30", Some("2026-11-12T09:45")),
+        ev("w", "Standup", "2026-11-19T09:30", Some("2026-11-19T09:45")),
+        ev("a", "Offsite", "2026-11-20", Some("2026-11-22")),
+    ];
+    replace_mac_events(&mut st.conn(), "2026-10-28", "2027-01-11", &events).unwrap();
+    replace_mac_events(&mut st.conn(), "2026-10-28", "2027-01-11", &events).unwrap();
+    let rows: Vec<String> = st
+        .conn()
+        .prepare("SELECT source || ':' || title || ':' || starts_at FROM events ORDER BY starts_at")
+        .unwrap()
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(
+        rows,
+        [
+            "mac:Kept history:2026-09-01T10:00",
+            "mac:Standup:2026-11-12T09:30",
+            "google:Google stays:2026-11-12T11:00",
+            "own:Own stays:2026-11-12T12:00",
+            "mac:Standup:2026-11-19T09:30",
+            "mac:Offsite:2026-11-20",
+        ]
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM settings WHERE key = 'mac_cal_synced'"
+        ),
+        1
+    );
+}

@@ -210,3 +210,45 @@ pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
         conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
     stmt.query_map([], |r| r.get(0))?.collect()
 }
+
+/// One event read from macOS Calendar, in `events`' stored forms (all-day = dates, end exclusive as in iCal).
+pub struct MacEvent {
+    /// EventKit `calendarItemExternalIdentifier` + `@` + start: repeats of one series stay distinct rows.
+    pub ext_id: String,
+    pub title: String,
+    pub starts_at: String,
+    pub ends_at: Option<String>,
+}
+
+/// The Mac app's sync: in one transaction, drop the `mac` events overlapping [from, to] (dates) and insert what
+/// Calendar has there now, so moved, deleted and unchecked-calendar events go; history outside the window stays.
+/// Stamps `mac_cal_synced` (local time) for Settings.
+pub fn replace_mac_events(
+    conn: &mut Connection,
+    from: &str,
+    to: &str,
+    events: &[MacEvent],
+) -> rusqlite::Result<()> {
+    let tx = conn.transaction()?;
+    tx.execute(
+        "DELETE FROM events WHERE source = 'mac'
+           AND starts_at < date(?2, '+1 day') AND COALESCE(ends_at, starts_at) >= ?1",
+        params![from, to],
+    )?;
+    {
+        // OR REPLACE: an event that starts before the window and was kept outside it is still the same row.
+        let mut ins = tx.prepare(
+            "INSERT OR REPLACE INTO events(source, ext_id, title, starts_at, ends_at)
+             VALUES ('mac', ?1, ?2, ?3, ?4)",
+        )?;
+        for e in events {
+            ins.execute(params![e.ext_id, e.title, e.starts_at, e.ends_at])?;
+        }
+    }
+    tx.execute(
+        "INSERT INTO settings(key, value) VALUES ('mac_cal_synced', datetime('now', 'localtime'))
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        [],
+    )?;
+    tx.commit()
+}

@@ -38,8 +38,69 @@ fn full(st: &AppState, conn: &rusqlite::Connection, db: view::Db) -> AppResult<v
         built: build_info::BUILT,
         db,
         tr: transcription(st, conn)?,
+        mc: mac_cal(st, conn)?,
         launch: look::launch(queries::get(conn, "launch")?.as_deref()),
     })
+}
+
+fn mac_cal(st: &AppState, conn: &rusqlite::Connection) -> AppResult<view::MacCal> {
+    let chosen = queries::get(conn, "mac_cals")?.unwrap_or_default();
+    let chosen: Vec<&str> = chosen.split(',').filter(|c| !c.is_empty()).collect();
+    let mc = st.mac_cals.as_deref();
+    Ok(view::MacCal {
+        app: mc.is_some(),
+        on: queries::get(conn, "mac_cal")?.as_deref() == Some("1"),
+        access: mc.map_or(recording::Access::Unknown, |m| m.access()),
+        cals: mc
+            .map_or_else(Vec::new, |m| m.list())
+            .into_iter()
+            .map(|mut c| {
+                // It lands in a style attribute: only `#rrggbb` gets there.
+                let hex = c.color.len() == 7
+                    && c.color.starts_with('#')
+                    && c.color[1..].chars().all(|h| h.is_ascii_hexdigit());
+                if !hex {
+                    c.color = "#8e8e93".into();
+                }
+                let on = chosen.contains(&c.id.as_str());
+                (c, on)
+            })
+            .collect(),
+        synced: queries::get(conn, "mac_cal_synced")?
+            .map(|t| t.get(..16).unwrap_or(&t).to_string()),
+    })
+}
+
+/// The Mac calendars form autosaves on every change: `on` = the switch, one `cal` per checked calendar.
+/// The app then asks macOS for access if it hasn't, and syncs at once.
+pub async fn save_mac_cal(
+    State(st): State<AppState>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> AppResult<Response> {
+    let pairs: Vec<(String, String)> = serde_urlencoded::from_bytes(&body).unwrap_or_default();
+    let on = pairs.iter().any(|(k, v)| k == "on" && v == "1");
+    let cals: Vec<&str> = pairs
+        .iter()
+        .filter(|(k, v)| k == "cal" && !v.contains(',') && !v.is_empty())
+        .map(|(_, v)| v.as_str())
+        .collect();
+    {
+        let conn = st.conn();
+        queries::set(&conn, "mac_cal", if on { "1" } else { "0" })?;
+        // Only the app knows the calendars: a browser post (no list shown) leaves the choice alone.
+        if st.mac_cals.is_some() {
+            queries::set(&conn, "mac_cals", &cals.join(","))?;
+        }
+    }
+    if let Some(m) = &st.mac_cals {
+        m.kick.notify_one();
+    }
+    if !web::is_htmx(&headers) {
+        return Ok(web::back("/settings#maccal"));
+    }
+    let mc = mac_cal(&st, &st.conn())?;
+    web::html(&view::MacCalRow { mc })
 }
 
 fn transcription(st: &AppState, conn: &rusqlite::Connection) -> AppResult<view::Transcription> {

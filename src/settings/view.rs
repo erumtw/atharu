@@ -18,6 +18,7 @@ pub struct Page {
     pub built: &'static str,
     pub db: Db,
     pub tr: Transcription,
+    pub mc: MacCal,
     /// The stored launch animation (`domain::look::LAUNCH`).
     pub launch: &'static str,
 }
@@ -62,4 +63,33 @@ pub struct Db {
     pub note: bool,
     pub input: String,
     pub error: Option<String>,
+}
+
+/// Settings › Connections › Mac calendars (0.2.4). In the Mac app: a switch + one checkbox per calendar;
+/// in a browser: status only (only the app can read macOS Calendar).
+pub struct MacCal {
+    pub app: bool,
+    pub on: bool,
+    pub access: crate::recording::Access,
+    /// Calendar.app's calendars, each with whether it is synced.
+    pub cals: Vec<(crate::recording::MacCalendar, bool)>,
+    /// Last sync, local `YYYY-MM-DD HH:MM`.
+    pub synced: Option<String>,
+}
+
+impl MacCal {
+    pub fn denied(&self) -> bool {
+        self.access == crate::recording::Access::Denied
+    }
+
+    pub fn granted(&self) -> bool {
+        self.access == crate::recording::Access::Granted
+    }
+}
+
+/// htmx answer to the Mac calendars form: the row alone.
+#[derive(Template)]
+#[template(path = "settings/maccal.html")]
+pub struct MacCalRow {
+    pub mc: MacCal,
 }

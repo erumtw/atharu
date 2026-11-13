@@ -1,0 +1,22 @@
+{#- Settings › Connections › Mac calendars (0.2.4): the app reads macOS Calendar (EventKit) into the Calendar page.
+    The switch and the boxes autosave the whole form (htmx on change; no JS posts it with Save, 303 back). -#}
+<form id="maccal" class="gform" method="post" action="/settings/maccal" hx-post="/settings/maccal" hx-trigger="change" hx-target="this" hx-swap="outerHTML">
+{%- if !mc.app %}
+<div class="gi"><div class="t"><b>Mac calendars</b><span>Calendars from macOS Calendar, e.g. a work Google account that blocks the iCal address. Set up in the Mac app{% if let Some(t) = mc.synced %} · last synced {{ t }}{% endif %}.</span></div>{% if mc.on %}<span class="pill ok">On</span>{% else %}<span class="pill">Not set up</span>{% endif %}</div>
+{%- else %}
+<label class="gi"><span class="t"><b>Mac calendars</b><span>Read-only from macOS Calendar, synced every 15 min and on every change{% if let Some(t) = mc.synced %} · last synced {{ t }}{% endif %}.</span></span><input class="sw" type="checkbox" role="switch" name="on" value="1"{% if mc.on %} checked{% endif %} aria-label="Mac calendars"></label>
+{%- if mc.on %}
+{%- if mc.denied() %}
+<div class="gi"><div class="t"><span class="err">Calendar access is off. Open System Settings › Privacy &amp; Security › Calendars.</span></div></div>
+{%- else if mc.granted() && mc.cals.is_empty() %}
+<div class="gi"><div class="t"><span>No calendars in macOS Calendar yet. Add an account there (Calendar › Settings › Accounts).</span></div></div>
+{%- else if !mc.granted() %}
+<div class="gi"><div class="t"><span>Waiting for macOS to allow Calendar access…</span></div></div>
+{%- endif %}
+{%- for (c, on) in mc.cals %}
+<label class="gi"><span class="t"><b><span class="cdot" style="background: {{ c.color }}" aria-hidden="true"></span>{{ c.title }}</b><span>{{ c.account }}</span></span><input type="checkbox" name="cal" value="{{ c.id }}"{% if *on %} checked{% endif %}></label>
+{%- endfor %}
+{%- endif %}
+<noscript><div class="gi"><button class="btn" type="submit">Save</button></div></noscript>
+{%- endif %}
+</form>

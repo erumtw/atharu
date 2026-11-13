@@ -31,6 +31,8 @@ pub struct AppState {
     gone: Arc<Mutex<Vec<GoneLine>>>,
     /// Set only inside Atharu.app (feature `recording`): it can record meetings. `None` = a browser view.
     pub mac: Option<Arc<crate::recording::Mac>>,
+    /// Set only inside Atharu.app: its macOS calendars (EventKit, 0.2.4). `None` = a browser view.
+    pub mac_cals: Option<Arc<crate::recording::MacCalendars>>,
 }
 
 /// A deleted line as its note's header shows it: the text, and the snapshot Undo posts back.
@@ -56,6 +58,7 @@ impl AppState {
             bind_host: "127.0.0.1".into(),
             gone: Arc::default(),
             mac: None,
+            mac_cals: None,
         }
     }
 

@@ -6,6 +6,7 @@ mod queries;
 mod view;
 
 pub use ical::{import, refresh};
+pub use queries::{MacEvent, replace_mac_events};
 
 use crate::app::AppState;
 use axum::{

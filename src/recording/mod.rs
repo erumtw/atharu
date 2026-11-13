@@ -1,8 +1,11 @@
 //! Meeting recording (T53, DESIGN.md §6) as the server sees it. The server never records: `AppState.mac`
 //! is `Some` only inside Atharu.app, which captures + transcribes on the Mac and posts segments back
 //! over HTTP. Shared like `layout`: Today, the meeting pages, the popover and the tray read it through `state`.
+mod calendars;
 mod queries;
 mod state;
+
+pub use calendars::{Access, MacCalendar, MacCalendars};
 
 pub use state::{Banner, MeetingState, Running};
 

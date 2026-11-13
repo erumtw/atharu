@@ -202,10 +202,11 @@ async fn connections_show_status_from_config_never_secrets() {
 
     let mut st = state();
     let off = get(&st, "/settings").await.body;
+    // Google Calendar, Mac calendars (browser view), Jira.
     assert_eq!(
         off.matches("<span class=\"pill\">Not set up</span>")
             .count(),
-        2
+        3
     );
 
     // Jira half-filled = off; iCal set = on.
@@ -218,10 +219,11 @@ async fn connections_show_status_from_config_never_secrets() {
     let half = get(&st, "/settings").await.body;
     assert!(half.contains("Google Calendar</b>"));
     assert_eq!(half.matches("<span class=\"pill ok\">On</span>").count(), 1);
+    // Jira and Mac calendars.
     assert_eq!(
         half.matches("<span class=\"pill\">Not set up</span>")
             .count(),
-        1
+        2
     );
 
     std::fs::write(
@@ -354,4 +356,74 @@ async fn launch_setting_saves_validates_and_shows_in_settings() {
         ),
         1
     );
+}
+
+#[tokio::test]
+async fn mac_calendars_row() {
+    use atharu::recording::{Access, MacCalendar, MacCalendars};
+    // A browser: status only, the choice of calendars is the app's.
+    let st = state();
+    let b = get(&st, "/settings").await.body;
+    assert!(
+        b.contains("<b>Mac calendars</b>")
+            && b.contains("Set up in the Mac app.")
+            && b.contains("Not set up")
+    );
+    let r = post(&st, "/settings/maccal", "on=1&cal=x", false).await;
+    assert_eq!(r.status, 303);
+    assert_eq!(r.headers["location"], "/settings#maccal");
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM settings WHERE key = 'mac_cals'"),
+        0
+    );
+
+    // The Mac app: switch + one box per calendar; a save stores the checked ids and kicks a sync.
+    let mut st = state();
+    let mc = std::sync::Arc::new(MacCalendars::default());
+    mc.set_access(Access::Granted);
+    mc.set_list(vec![
+        MacCalendar {
+            id: "W1".into(),
+            title: "Work".into(),
+            account: "me@work.example".into(),
+            color: "#1a73e8".into(),
+        },
+        MacCalendar {
+            id: "H2".into(),
+            title: "Home".into(),
+            account: "iCloud".into(),
+            color: "red;x:y".into(),
+        },
+    ]);
+    st.mac_cals = Some(mc.clone());
+    let r = post(&st, "/settings/maccal", "on=1&cal=W1", true).await;
+    assert_eq!(r.status, 200);
+    assert!(r.body.starts_with("<form id=\"maccal\""));
+    assert!(r.body.contains("name=\"on\" value=\"1\" checked"));
+    assert!(
+        r.body.contains("name=\"cal\" value=\"W1\" checked>")
+            && r.body.contains("name=\"cal\" value=\"H2\">")
+    );
+    assert!(
+        r.body.contains("background: #1a73e8") && r.body.contains("background: #8e8e93"),
+        "{}",
+        r.body
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM settings WHERE key = 'mac_cals' AND value = 'W1'"
+        ),
+        1
+    );
+    // The kick is waiting for the app's sync loop.
+    tokio::time::timeout(std::time::Duration::from_millis(100), mc.kick.notified())
+        .await
+        .unwrap();
+
+    mc.set_access(Access::Denied);
+    let b = get(&st, "/settings").await.body;
+    assert!(b.contains(
+        "Calendar access is off. Open System Settings › Privacy &amp; Security › Calendars."
+    ));
 }
