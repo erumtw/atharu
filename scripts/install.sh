@@ -121,12 +121,18 @@ if [ "$app" = 1 ]; then
   step "app build"
   built=$CARGO_TARGET_DIR/release/bundle/macos/Atharu.app
   dest=/Applications/Atharu.app
-  # "if running" first: a bare `quit app` launches the app just to quit it.
-  osascript -e 'if application "Atharu" is running then tell application "Atharu" to quit'
-  for _ in $(seq 20); do
-    [ "$(osascript -e 'application "Atharu" is running')" = true ] || break
-    sleep 0.5
-  done
+  # Settings › Update (the app's own button) sets ATHARU_UPDATE_FROM_APP: this script runs as a child of the very app it is about
+  # to replace, and the server inside it is what shows the progress and the Restart button, so quitting it here would kill the
+  # install and its page. The running app is left alone: moving a running .app's bundle aside (mv) is safe on macOS, and the
+  # owner restarts into the new copy from the page. From a Terminal (`atharu update --app`) the old app is quit first, as before.
+  if [ -z "${ATHARU_UPDATE_FROM_APP:-}" ]; then
+    # "if running" first: a bare `quit app` launches the app just to quit it.
+    osascript -e 'if application "Atharu" is running then tell application "Atharu" to quit'
+    for _ in $(seq 20); do
+      [ "$(osascript -e 'application "Atharu" is running')" = true ] || break
+      sleep 0.5
+    done
+  fi
   # Copy beside the old app, swap only once the copy is whole: a failed copy leaves the old one working.
   rm -rf "$dest.new"
   ditto "$built" "$dest.new"

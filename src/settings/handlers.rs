@@ -425,10 +425,14 @@ fn update_log(conn: &rusqlite::Connection) -> PathBuf {
 }
 
 fn update_part(st: &AppState, conn: &rusqlite::Connection) -> view::Update {
-    view::Update::new(
-        &updater::snapshot(&st.update),
-        update_log(conn).display().to_string(),
-    )
+    let state = updater::snapshot(&st.update);
+    let log = update_log(conn);
+    // The progress line is the log's tail, read when the row polls (the build writes the file itself, no pipe).
+    let last = match state {
+        UpdateState::Running { .. } => updater::tail(&log),
+        _ => String::new(),
+    };
+    view::Update::new(&state, log.display().to_string(), last)
 }
 
 fn update_html(st: &AppState) -> AppResult<Response> {

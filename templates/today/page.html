@@ -41,7 +41,7 @@
 </div>
 {#- Reset only after this form's own 2xx: the input's preview requests bubble here too. #}
 <form class="newline{% if error.is_some() %} bad{% endif %}" method="post" action="/entries" hx-post="/entries" hx-target="#log" hx-swap="outerHTML" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) { this.reset(); document.getElementById('hint').textContent = ''; }">
-<input type="hidden" name="day" value="{{ day.iso }}"><input type="hidden" name="notag" id="notag" value="">
+<input type="hidden" name="day" value="{{ day.iso }}"><input type="hidden" name="note_back" value="/?day={{ day.iso }}"><input type="hidden" name="notag" id="notag" value="">
 <input id="line" name="line" list="keys" value="{{ line }}" aria-label="Log a line" placeholder="What did you do? e.g.  OPS-101 + checkout p95 1.8s → 0.6s" autocomplete="off" autofocus role="combobox" aria-expanded="false" aria-controls="tagsug" aria-autocomplete="list" hx-post="/parse-preview" hx-trigger="input changed delay:150ms" hx-target="#hint" hx-swap="innerHTML">
 <input type="date" id="bydate" data-for="line" hidden tabindex="-1" aria-label="Due date">
 <datalist id="keys">{% for k in keys %}<option value="{{ k }}"></option>{% endfor %}</datalist>

@@ -274,8 +274,11 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
   install's last line under it (12 px mono `--muted`, one line, ellipsis; the row polls itself every 2 s only in this state) → "✓ v0.2.7
   is installed" + primary **Restart Atharu** (the app's `/app/restart`). A failure is an `.err` title + the reason + "Log: …/update.log" +
   Try again; a failed check says "Couldn’t check for updates". It runs `scripts/install.sh --version <tag> --app` (fixed arguments, the tag
-  from `git tag --list` that passed semver; no request value reaches the command line), one at a time, output to `update.log` next to the
-  database; Update from a browser answers 403 "Update from Terminal: atharu update". Plain sentences, no exclamation marks, no new token.
+  from `git tag --list` that passed semver; no request value reaches the command line), one at a time, output written straight to `update.log` next to the
+  database (a file, not a pipe: the progress line is that file's tail, read when the row polls). The app runs it with
+  `ATHARU_UPDATE_FROM_APP=1`, so install.sh does not quit the app it runs inside (the page and its Restart button live there); a
+  Terminal `atharu update --app` still quits it first. Past 20 minutes the row says "Took longer than 20 min; see the log" (the
+  install is left running). Update from a browser answers 403 "Update from Terminal: atharu update". Plain sentences, no exclamation marks, no new token.
 - **Settings › Transcription** (between Connections and Accessibility): Speech model (Download 574 MB = primary · downloading:
   `progress.prog` + "212 of 574 MB · about 1 min left" + Cancel · "Checking the file…" · Ready `.pill.ok` + Delete `.dng` · checksum
   failed `.err` + Try again) · Language `.seg.mac` Auto | Thai | English (Thai default; help says Auto can translate) · Vocabulary
@@ -477,8 +480,10 @@ the log scrolls under it.
   when > 0). Rows are 32: check 20 · text on one line with ellipsis · the note button · the **quiet due date** on the right (the To-dos
   list's words: `Today` in `--accent-2` 6.2:1, a late one `--err` 600 with its day, `Fri 6 Nov`, else `--muted`). **No inner scroll**: at most
   **5** rows, the window's height comes from the content, and five rows fit the 480 at rest (idle, recording, and the no-speech-model
-  line; measured at 360 × 480). With Glass everywhere the section cards cost ~17 px, so when the idle meeting section also has an extra line
-  (no speech model, or "Ended X") the list shows **4** rows (the server caps it; the "+ N more" stays true). "+ N more · Open Atharu" links
+  line; measured at 360 × 480). Three things cost room: Glass everywhere's section cards (~17 px), "✓ Ended X" above the idle meeting row (~27) and, in the
+  app, the line under it (~23: "Recording on…" once the mic is ticked, or "needs the speech model"; the cap counts it always, so
+  ticking never pushes the last link off). The server shows one row less per 32 px over the 29 spare (`todo_cap`), so the window never
+  scrolls and "+ N more" stays true; measured at 360 × 480 with the mic on: flat 468, Glass everywhere 453 (4 rows), + Ended 448 (3). "+ N more · Open Atharu" links
   `/todos`. Ticking posts at once; the struck row stays until the popover closes (untick = reopen). Empty: "Nothing due. Start a line with
   `>` to add one." + "N open · Open Atharu". Sections are flat: a `--line` hairline between them, 10 padding (the capture sits under the
   header with no rule); Glass everywhere keeps its cards (8/12 padding, 6 apart).

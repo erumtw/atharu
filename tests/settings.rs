@@ -514,11 +514,15 @@ async fn update_row_says_each_state_in_plain_words() {
     assert!(b.contains("v0.2.7 is available") && b.contains(">Update</button>"));
     assert!(b.contains("action=\"/settings/update/start\""));
 
-    // Running: the title, the last line, and the poll (only here).
+    // Running: the title, the log's last line, and the poll (only here). In-memory DB → the log is `<temp>/update.log`.
+    std::fs::write(
+        std::env::temp_dir().join("update.log"),
+        "Compiling a\nCompiling atharu v0.2.7 <x>\n\n",
+    )
+    .unwrap();
     let b = row(UpdateState::Running {
         to: "v0.2.7".into(),
         started: Instant::now(),
-        last: "Compiling atharu v0.2.7 <x>".into(),
     })
     .await;
     assert!(b.contains("Updating to v0.2.7 · 0 s"), "{b}");

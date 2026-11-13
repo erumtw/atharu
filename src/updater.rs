@@ -8,11 +8,11 @@
 //! [`semver`].
 use crate::build_info;
 use std::{
-    io::{BufRead, BufReader, Read, Write},
+    io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::{Arc, Mutex, MutexGuard},
-    time::Instant,
+    sync::{Arc, Mutex, MutexGuard, mpsc},
+    time::{Duration, Instant},
 };
 
 /// The checkout to read tags from: `ATHARU_REPO` at run time (e.g. the clone moved), else the one baked in
@@ -93,11 +93,10 @@ pub enum UpdateState {
     UpToDate(String),
     /// Checked: a newer tag exists.
     Available(String),
-    /// `install.sh` is running; `last` is the last line it printed.
+    /// `install.sh` is running; its last line is tailed from the log when the page asks ([`tail`]).
     Running {
         to: String,
         started: Instant,
-        last: String,
     },
     Done(String),
     Failed {
@@ -113,9 +112,23 @@ pub fn lock(s: &Shared) -> MutexGuard<'_, UpdateState> {
     s.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// Start `scripts/install.sh --version <tag> --app` in the background; `false` = one is already running. The output goes to
-/// `log` (overwritten each run) and its last line to the state; nowhere else.
+/// How long an install may take before the page gives up waiting for it.
+const DEADLINE: Duration = Duration::from_secs(20 * 60);
+
+/// Start `scripts/install.sh --version <tag> --app` in the background; `false` = one is already running. Its output goes to
+/// `log` (overwritten each run), a file, never a pipe: when the app restarts mid-install nothing is left to SIGPIPE the build.
 pub fn start(state: &Shared, repo: PathBuf, tag: String, log: PathBuf) -> bool {
+    start_with(state, repo, tag, log, DEADLINE)
+}
+
+/// [`start`] with the deadline as a parameter (tests use a short one).
+pub fn start_with(
+    state: &Shared,
+    repo: PathBuf,
+    tag: String,
+    log: PathBuf,
+    deadline: Duration,
+) -> bool {
     // Belt and braces: the tag reaches the command line, so it must look like one (`newest` only ever returns such).
     if !tag.starts_with('v') || semver(&tag).is_none_or(|(_, release)| !release) {
         return false;
@@ -128,12 +141,11 @@ pub fn start(state: &Shared, repo: PathBuf, tag: String, log: PathBuf) -> bool {
         *s = UpdateState::Running {
             to: tag.clone(),
             started: Instant::now(),
-            last: String::new(),
         };
     }
     let state = state.clone();
     std::thread::spawn(move || {
-        let res = run(&state, &repo, &tag, &log);
+        let res = run(&repo, &tag, &log, deadline);
         *lock(&state) = match res {
             Ok(()) => UpdateState::Done(tag),
             Err(why) => UpdateState::Failed { to: tag, why },
@@ -142,68 +154,62 @@ pub fn start(state: &Shared, repo: PathBuf, tag: String, log: PathBuf) -> bool {
     true
 }
 
-fn run(state: &Shared, repo: &Path, tag: &str, log: &Path) -> Result<(), String> {
+fn run(repo: &Path, tag: &str, log: &Path, deadline: Duration) -> Result<(), String> {
     let from = installed().map_or("dev".to_string(), |v| format!("v{v}"));
-    // The log is for reading a failure afterwards; not being able to write it must not stop the update.
-    let log = std::fs::File::create(log)
-        .ok()
-        .map(|f| Arc::new(Mutex::new(f)));
+    let out =
+        std::fs::File::create(log).map_err(|e| format!("can't write {}: {e}", log.display()))?;
+    let err = out
+        .try_clone()
+        .map_err(|e| format!("can't write {}: {e}", log.display()))?;
     let mut child = Command::new("bash")
         .arg(repo.join("scripts/install.sh"))
         .args(["--version", tag, "--app"])
+        // This server runs inside the app install.sh replaces: it must not quit it (see install.sh).
+        .env("ATHARU_UPDATE_FROM_APP", "1")
         .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stdout(Stdio::from(out))
+        .stderr(Stdio::from(err))
         .spawn()
         .map_err(|e| format!("can't run scripts/install.sh: {e}"))?;
-    let pumps: Vec<_> = [
-        child.stdout.take().map(|r| pump(r, state, &log)),
-        child.stderr.take().map(|r| pump(r, state, &log)),
-    ]
-    .into_iter()
-    .flatten()
-    .collect();
-    let status = child
-        .wait()
-        .map_err(|e| format!("can't wait for scripts/install.sh: {e}"))?;
-    for p in pumps {
-        let _ = p.join();
+    // Waited for on its own thread so the deadline can fire. Past it the child is left alone (killing a half-done
+    // build or bundle swap would be worse than waiting); the page just stops waiting and says where the log is.
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(child.wait());
+    });
+    match rx.recv_timeout(deadline) {
+        Ok(Ok(status)) if status.success() => Ok(()),
+        Ok(Ok(status)) => {
+            let code = status
+                .code()
+                .map_or("a signal".to_string(), |c| c.to_string());
+            Err(format!(
+                "install.sh exited {code}; {from} is still installed"
+            ))
+        }
+        Ok(Err(e)) => Err(format!("can't wait for scripts/install.sh: {e}")),
+        Err(_) => Err(format!(
+            "Took longer than {} min; see the log",
+            deadline.as_secs().div_ceil(60).max(1)
+        )),
     }
-    if status.success() {
-        return Ok(());
-    }
-    let code = status
-        .code()
-        .map_or("a signal".to_string(), |c| c.to_string());
-    Err(format!(
-        "install.sh exited {code}; {from} is still installed"
-    ))
 }
 
-/// One output stream: every line to the log file, and the last readable one to the state.
-fn pump<R: Read + Send + 'static>(
-    r: R,
-    state: &Shared,
-    log: &Option<Arc<Mutex<std::fs::File>>>,
-) -> std::thread::JoinHandle<()> {
-    let (state, log) = (state.clone(), log.clone());
-    std::thread::spawn(move || {
-        let mut r = BufReader::new(r);
-        let mut buf = Vec::new();
-        while r.read_until(b'\n', &mut buf).is_ok_and(|n| n > 0) {
-            if let Some(f) = &log {
-                let _ = f.lock().unwrap_or_else(|e| e.into_inner()).write_all(&buf);
-            }
-            let line = clean(&String::from_utf8_lossy(&buf));
-            buf.clear();
-            if line.is_empty() {
-                continue;
-            }
-            if let UpdateState::Running { last, .. } = &mut *lock(&state) {
-                *last = line;
-            }
-        }
-    })
+/// The last readable line of the install's log, for the page's progress line (the file's tail, not all of it).
+pub fn tail(log: &Path) -> String {
+    let Ok(mut f) = std::fs::File::open(log) else {
+        return String::new();
+    };
+    let len = f.metadata().map_or(0, |m| m.len());
+    let _ = f.seek(SeekFrom::Start(len.saturating_sub(4096)));
+    let mut buf = Vec::new();
+    let _ = f.read_to_end(&mut buf);
+    String::from_utf8_lossy(&buf)
+        .lines()
+        .rev()
+        .map(clean)
+        .find(|l| !l.is_empty())
+        .unwrap_or_default()
 }
 
 /// A progress line as the page shows it: the part after the last carriage return, escape sequences and control characters
@@ -288,7 +294,6 @@ mod tests {
         *lock(&state) = UpdateState::Running {
             to: "v0.2.7".into(),
             started: Instant::now(),
-            last: String::new(),
         };
         assert!(!start(
             &state,
@@ -298,28 +303,67 @@ mod tests {
         ));
         // The running one is untouched.
         assert!(matches!(snapshot(&state), UpdateState::Running { to, .. } if to == "v0.2.7"));
+        // Nor does a tag that isn't a release tag start anything.
+        *lock(&state) = UpdateState::Idle;
+        for bad in ["v0.2.8 --evil", "main", "v1.2", "v0.3.0-rc1", "$(x)"] {
+            assert!(
+                !start(
+                    &state,
+                    PathBuf::from("/nonexistent"),
+                    bad.into(),
+                    PathBuf::from("/nonexistent/x")
+                ),
+                "{bad}"
+            );
+        }
+        assert_eq!(snapshot(&state), UpdateState::Idle);
     }
 
-    #[test]
-    fn a_failing_script_ends_failed_with_the_log_and_the_last_line() {
-        let dir = std::env::temp_dir().join(format!("atharu-updater-{}", std::process::id()));
+    /// A temp repo whose `scripts/install.sh` is `body`; waits (up to ~5 s) for the run to leave Running.
+    fn run_fake(name: &str, body: &str, deadline: Duration) -> (UpdateState, PathBuf) {
+        let dir =
+            std::env::temp_dir().join(format!("atharu-updater-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("scripts")).unwrap();
-        std::fs::write(
-            dir.join("scripts/install.sh"),
-            "echo \"args: $*\"; echo 'step two' >&2; exit 3\n",
-        )
-        .unwrap();
+        std::fs::write(dir.join("scripts/install.sh"), body).unwrap();
         let state: Shared = Arc::default();
         let log = dir.join("update.log");
-        assert!(start(&state, dir.clone(), "v0.2.7".into(), log.clone()));
+        assert!(start_with(
+            &state,
+            dir.clone(),
+            "v0.2.7".into(),
+            log.clone(),
+            deadline
+        ));
         for _ in 0..100 {
             if !matches!(snapshot(&state), UpdateState::Running { .. }) {
                 break;
             }
-            std::thread::sleep(std::time::Duration::from_millis(50));
+            std::thread::sleep(Duration::from_millis(50));
         }
-        match snapshot(&state) {
+        (snapshot(&state), log)
+    }
+
+    #[test]
+    fn a_script_run_from_the_app_gets_the_flag_and_logs_to_a_file() {
+        // Asserts the fixed env (install.sh must not quit the app) and the fixed args; three lines, the last one is the tail.
+        let (end, log) = run_fake(
+            "ok",
+            "[ \"$ATHARU_UPDATE_FROM_APP\" = 1 ] || exit 9\necho \"args: $*\"\necho 'step two' >&2\necho '   Finished release   '\n",
+            Duration::from_secs(30),
+        );
+        assert_eq!(end, UpdateState::Done("v0.2.7".into()));
+        let text = std::fs::read_to_string(&log).unwrap();
+        assert!(text.contains("args: --version v0.2.7 --app"), "{text}");
+        assert!(text.contains("step two"), "{text}");
+        assert_eq!(tail(&log), "Finished release");
+        let _ = std::fs::remove_dir_all(log.parent().unwrap());
+    }
+
+    #[test]
+    fn a_failing_script_ends_failed_with_its_code() {
+        let (end, log) = run_fake("fail", "echo boom\nexit 3\n", Duration::from_secs(30));
+        match end {
             UpdateState::Failed { to, why } => {
                 assert_eq!(to, "v0.2.7");
                 assert!(why.starts_with("install.sh exited 3; "), "{why}");
@@ -327,10 +371,24 @@ mod tests {
             }
             other => panic!("{other:?}"),
         }
-        // The fixed arguments, and both streams, are in the log.
-        let text = std::fs::read_to_string(&log).unwrap();
-        assert!(text.contains("args: --version v0.2.7 --app"), "{text}");
-        assert!(text.contains("step two"), "{text}");
-        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(tail(&log), "boom");
+        let _ = std::fs::remove_dir_all(log.parent().unwrap());
+    }
+
+    #[test]
+    fn a_script_past_the_deadline_is_failed_and_left_alone() {
+        let (end, log) = run_fake(
+            "slow",
+            "echo started\nsleep 3\n",
+            Duration::from_millis(300),
+        );
+        match end {
+            UpdateState::Failed { why, .. } => {
+                assert!(why.starts_with("Took longer than "), "{why}")
+            }
+            other => panic!("{other:?}"),
+        }
+        assert_eq!(tail(&log), "started");
+        let _ = std::fs::remove_dir_all(log.parent().unwrap());
     }
 }

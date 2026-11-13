@@ -253,7 +253,7 @@ async fn n_space_in_todays_bar_is_a_note_not_a_line() {
     let r = post(&st, "/entries", &body, false).await;
     assert_eq!(r.status, 307);
     assert_eq!(r.headers["location"], "/notes/new");
-    // No `back` (a plain Today form): the new note's page is where it lands.
+    // No `back` and no `note_back` (a plain form): the new note's page is where it lands.
     let r = post(&st, "/notes/new", &body, false).await;
     assert_eq!(r.headers["location"], "/notes/1");
     assert_eq!(
@@ -321,5 +321,45 @@ async fn n_space_in_todays_bar_is_a_note_not_a_line() {
     assert_eq!(
         count(&st, "SELECT COUNT(*) FROM entries WHERE kind = 'done'"),
         1
+    );
+}
+
+#[tokio::test]
+async fn todays_form_without_js_lands_back_on_the_day_with_the_toast() {
+    let st = state();
+    // Today's own form (no JS): the hidden `note_back` brings it back to the day with the toast.
+    let body = form(&[
+        ("line", "n second thought"),
+        ("day", "2026-11-11"),
+        ("note_back", "/?day=2026-11-11"),
+    ]);
+    assert_eq!(post(&st, "/entries", &body, false).await.status, 307);
+    let r = post(&st, "/notes/new", &body, false).await;
+    assert_eq!(r.headers["location"], "/?day=2026-11-11&note=1");
+    assert!(
+        get(&st, "/")
+            .await
+            .body
+            .contains("name=\"note_back\" value=\"/?day=2026-11-11\"")
+    );
+    // An offsite `note_back` is refused (safe_back).
+    let r = post(
+        &st,
+        "/notes/new",
+        &form(&[("line", "n x"), ("note_back", "//evil.example")]),
+        false,
+    )
+    .await;
+    assert!(
+        r.headers["location"]
+            .to_str()
+            .unwrap()
+            .starts_with("/notes")
+    );
+    assert!(
+        get(&st, "/?day=2026-11-11&note=1")
+            .await
+            .body
+            .contains("Saved note · <a href=\"/notes/1\">Open</a>")
     );
 }

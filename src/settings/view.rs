@@ -134,7 +134,8 @@ pub struct Update {
 }
 
 impl Update {
-    pub fn new(s: &crate::updater::UpdateState, log: String) -> Update {
+    /// `last` = the install's last log line (only read while it runs).
+    pub fn new(s: &crate::updater::UpdateState, log: String, last: String) -> Update {
         use crate::updater::UpdateState as S;
         let mut u = Update {
             phase: Phase::Idle,
@@ -149,11 +150,11 @@ impl Update {
             S::Idle => {}
             S::UpToDate(t) => (u.phase, u.tag) = (Phase::UpToDate, t.clone()),
             S::Available(t) => (u.phase, u.tag) = (Phase::Available, t.clone()),
-            S::Running { to, started, last } => {
+            S::Running { to, started } => {
                 let secs = started.elapsed().as_secs();
                 u.phase = Phase::Running;
                 u.tag = to.clone();
-                u.last = last.clone();
+                u.last = last;
                 u.elapsed = if secs < 60 {
                     format!("{secs} s")
                 } else {

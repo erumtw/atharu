@@ -21,14 +21,21 @@ const MENU_SERIES: usize = 12;
 /// To-do rows before "+ N more": five rows fit the 480 px window with no inner scroll (0.2.6); past that it's /todos' list.
 const TODOS: usize = 5;
 
-/// Glass everywhere's section cards cost ~17 px, and one more line in the idle meeting section (no speech model, or "Ended X")
-/// another ~25: one row less then keeps the window unscrolled (measured at 360 × 480), with the true "+ N more".
-fn todo_cap(glass_all: bool, extra_meeting_line: bool) -> usize {
-    if glass_all && extra_meeting_line {
-        TODOS - 1
-    } else {
-        TODOS
-    }
+/// Pixels the window can lose before five to-do rows no longer fit the 480 (measured at 360 × 480: the flat idle panel ends at 445 of
+/// 474), and what costs them: Glass everywhere's section cards, "✓ Ended X" above the meeting row, and, in the app, the line under
+/// it (the consent line when the mic toggle is on, or "needs the speech model"). The consent line only shows once the mic is
+/// ticked, but the cap counts it always, so ticking it never pushes the last link off the window.
+const SPARE: u32 = 29;
+const GLASS: u32 = 17;
+const ENDED: u32 = 27;
+const MAC_LINE: u32 = 23;
+const ROW: u32 = 32;
+
+/// How many to-do rows the window can hold in this state (never scroll: one row less per started `ROW` of overflow).
+fn todo_cap(glass_all: bool, ended: bool, mac_line: bool) -> usize {
+    let cost =
+        u32::from(glass_all) * GLASS + u32::from(ended) * ENDED + u32::from(mac_line) * MAC_LINE;
+    TODOS - cost.saturating_sub(SPARE).div_ceil(ROW) as usize
 }
 
 #[derive(Deserialize)]
@@ -80,7 +87,8 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
     let idle = meeting.running.is_none();
     let cap = todo_cap(
         layout.glass_all,
-        idle && (ended.is_some() || (meeting.rec.mac && !meeting.rec.model_ready)),
+        idle && ended.is_some(),
+        idle && meeting.rec.mac,
     );
     let todos: Vec<view::Todo> = all
         .iter()
@@ -141,9 +149,16 @@ mod tests {
             NaiveDateTime::parse_from_str("2026-11-12 09:41:00", "%Y-%m-%d %H:%M:%S").unwrap();
         assert_eq!(since("2026-11-12 09:17:30", now), "23 min");
         assert_eq!(since("junk", now), "");
-        assert_eq!(todo_cap(false, true), 5);
-        assert_eq!(todo_cap(true, false), 5);
-        assert_eq!(todo_cap(true, true), 4);
+        // Flat: the ended line or the app's line alone fit; both together cost a row.
+        assert_eq!(todo_cap(false, false, false), 5);
+        assert_eq!(todo_cap(false, true, false), 5);
+        assert_eq!(todo_cap(false, false, true), 5);
+        assert_eq!(todo_cap(false, true, true), 4);
+        // Glass everywhere: alone fits; with a meeting line one row less; with both two.
+        assert_eq!(todo_cap(true, false, false), 5);
+        assert_eq!(todo_cap(true, true, false), 4);
+        assert_eq!(todo_cap(true, false, true), 4);
+        assert_eq!(todo_cap(true, true, true), 3);
         assert_eq!(back_to_kind("+"), "/quick?kind=%2B");
         assert_eq!(back_to_kind(""), "/quick?kind=");
     }

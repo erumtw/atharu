@@ -218,6 +218,9 @@ pub struct TextForm {
     /// The popover's line box forwarded by `POST /entries` (307) when it starts `n ` (D55): the rest is the text.
     line: Option<String>,
     back: Option<String>,
+    /// Today's line form carries where a forwarded `n …` should land (the day's page, with the toast). Not `back`: a `back`
+    /// on that form would turn every ordinary save into a redirect instead of the log partial.
+    note_back: Option<String>,
 }
 
 /// One text box → the owner's note (the quick popover, D53). With `back` it answers there with `note=<id>` (the
@@ -227,7 +230,11 @@ pub async fn create_text(
     headers: HeaderMap,
     Form(f): Form<TextForm>,
 ) -> AppResult<Response> {
-    let back = f.back.as_deref().map(|b| web::safe_back(Some(b), "/notes"));
+    let back = f
+        .back
+        .as_deref()
+        .or(f.note_back.as_deref())
+        .map(|b| web::safe_back(Some(b), "/notes"));
     let sep = |to: &str| if to.contains('?') { '&' } else { '?' };
     let text = f
         .line
