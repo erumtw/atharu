@@ -235,8 +235,8 @@ async fn one_name_one_hub_and_links() {
     )
     .await;
     let l = get(&st, "/notes?tag=expense").await.body;
-    assert!(l.contains(r#"href="/notes/1" style"#), "{l}");
-    assert!(!l.contains(r#"href="/notes/2" style"#));
+    assert!(l.contains(r#"nrow" href="/notes/1""#), "{l}");
+    assert!(!l.contains(r#"nrow" href="/notes/2""#));
     assert!(l.contains(r#"class="chip tag fl">expense"#));
 }
 
