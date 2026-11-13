@@ -14,6 +14,7 @@ const entries = {
   glass: '/* atharu glass preview on /settings, built by editor/build.mjs from editor/src/glass.ts. */',
   capture: '/* atharu capture-bar tag suggestions, built by editor/build.mjs from editor/src/capture.ts. */',
   tags: '/* atharu Make tag + Tags prop keys, built by editor/build.mjs from editor/src/tags.ts. */',
+  byfield: '/* atharu `by ` date menu on to-do fields (data-by), built by editor/build.mjs from editor/src/byfield.ts. */',
   datepicker: '/* atharu date popover, built by editor/build.mjs from editor/src/datepicker.ts. */',
   quick: '/* atharu menu-bar quick popover, built by editor/build.mjs from editor/src/quick.ts. */',
   suggest: '/* atharu suggestion menu for list= inputs, built by editor/build.mjs from editor/src/suggest.ts. */',

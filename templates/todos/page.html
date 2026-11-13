@@ -6,7 +6,7 @@
 <p class="lead">Anything you plan to do. A line that starts with <span class="mono">&gt;</span> becomes a to-do. An epic, a link to the source task and a due date are all optional.</p>
 {#- Reset only after this form's own 2xx: the input's preview requests bubble here too. #}
 <form class="newline{% if error.is_some() %} bad{% endif %}" method="post" action="/todos" hx-post="/todos" hx-target="#todos" hx-swap="outerHTML" hx-on::after-request="if (event.detail.elt === this && event.detail.xhr.status < 300) { this.reset(); document.getElementById('hint').textContent = ''; }">
-<input name="line" list="keys" value="{{ line }}" aria-label="Add a to-do" placeholder="> reply to vendor https://…slack.com/… by fri" autocomplete="off" hx-post="/todos/preview" hx-trigger="input changed delay:150ms" hx-target="#hint" hx-swap="innerHTML">
+<input name="line" list="keys" value="{{ line }}" aria-label="Add a to-do" data-by role="combobox" aria-expanded="false" aria-autocomplete="list" placeholder="> reply to vendor https://…slack.com/… by fri" autocomplete="off" hx-post="/todos/preview" hx-trigger="input changed delay:150ms" hx-target="#hint" hx-swap="innerHTML">
 <datalist id="keys">{% for k in keys %}<option value="{{ k }}"></option>{% endfor %}</datalist>
 <button class="btn" type="submit">Add ↵</button>
 </form>
