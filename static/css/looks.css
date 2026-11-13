@@ -23,8 +23,8 @@ html[data-look=glass]{--base:#2466ea;--wall:var(--veil),
   html[data-look=sumi] body::before{background:var(--base)}
 }
 
-/* Glass (D17, T24): one alpha, --glass-a (inline on <html>, already clamped to the look's AA floor by
-   domain::look::glass_alpha), drives every glass surface; --s is each surface's fixed step from it.
+/* Glass (D17, T24): one alpha, --glass-a (inline on <html>, from domain::look::glass_alpha; the owner may
+   set it below the look's AA floor, the settings slider marks that range), drives every glass surface; --s is each surface's fixed step from it.
    Floors were measured against the weakest surface (the glass sheet, a - 5%), so every other step only adds contrast. */
 :root{--glass-a:60%;--glass-c:#fff;--glass-edge:rgba(255,255,255,.7)}
 .side{--s:5%}.crumb{--s:0%}.newline{--s:10%}.menu,.acts{--s:25%}

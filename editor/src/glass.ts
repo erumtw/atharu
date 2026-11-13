@@ -8,10 +8,9 @@ const textBlur = form?.querySelector<HTMLInputElement>('input[name=text_blur]')
 const out = form?.querySelector<HTMLOutputElement>('output')
 
 if (form && range && all && textBlur && out) {
-  // The slider shows the true 0–100 scale; below this look's AA floor is hatched and unreachable.
+  // The slider shows the true 0–100 scale; below this look's AA floor is hatched (a warning, still reachable).
   const floor = Number(range.dataset.floor ?? 0)
   const alpha = () => {
-    if (+range.value < floor) range.value = String(floor)
     root.style.setProperty('--glass-a', `${range.value}%`)
     range.style.setProperty('--v', range.value)
     out.value = `${range.value}%`

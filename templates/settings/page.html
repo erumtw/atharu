@@ -18,7 +18,7 @@
 </form>
 {#- htmx saves on change / preset click (204); glass.js previews while dragging; without JS the Save button posts it all.
     .gform is display:contents, so these rows sit in the same group as the look row. #}
-{#- `input delay` too: glass.js resets the slider to the AA floor mid-drag, and WebKit (the Mac app) then sends no `change` on release, so a drag to the far left was never saved. #}
+{#- `input delay` too: WebKit (the Mac app) can miss `change` on a drag's release, so a drag alone still saves. #}
 <form id="glass" class="gform" method="post" action="/settings/glass" hx-post="/settings/glass" hx-trigger="change, submit, input delay:400ms" hx-swap="none">
 <label class="gi"><span class="t"><b>Glass everywhere</b><span>The page and its cards turn to glass too. Off keeps content on a solid page, easier to read.</span></span><input class="sw" type="checkbox" role="switch" name="glass_all" value="1"{% if layout.glass_all %} checked{% endif %}></label>
 <label class="gi"><span class="t"><b>Blur text boxes</b><span>Text boxes blur what is behind them, like the sidebar. Off keeps them a plain tint.</span></span><input class="sw" type="checkbox" role="switch" name="text_blur" value="1"{% if layout.text_blur %} checked{% endif %}></label>
@@ -29,12 +29,12 @@
 </div></div>
 <div class="gi col">
 <div class="t between"><label for="glass-a"><b>Opacity</b></label><output id="glass-out" class="val" for="glass-a">{{ layout.glass_a }}%</output></div>
-{#- The true 0–100 scale, so 60% sits at 60%. Below this look's AA floor is hatched: glass.js stops the thumb there
-    and the server clamps on read (no-JS). --v / --f place the fill and the hatch under the thumb. #}
+{#- The true 0–100 scale, so 60% sits at 60%. Below this look's AA floor is hatched as a warning, not a stop:
+    the owner may go clearer (2026-11-13). --v / --f place the fill and the hatch under the thumb. #}
 <div class="sl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>
 <input id="glass-a" class="rng" type="range" name="glass_opacity" min="0" max="100" value="{{ layout.glass_a }}" data-floor="{{ cur.glass_floor }}" style="--v:{{ layout.glass_a }};--f:{{ cur.glass_floor }}" aria-describedby="glass-help">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg></div>
-<span id="glass-help" class="help">Hatched part is too clear to read on {{ cur.name }}. The slider stops at {{ cur.glass_floor }}%.</span>
+<span id="glass-help" class="help">Below {{ cur.glass_floor }}% (hatched), text can get hard to read on {{ cur.name }}.</span>
 {#- Live preview: painted from the same --wall / --glass-a / data-* as the real chrome, so it can't drift. #}
 <div class="prev" aria-hidden="true"><div class="pane"><b>Atharu</b><i></i><i></i><i></i></div><div class="sheet"><i></i><i></i><i></i></div></div>
 </div>

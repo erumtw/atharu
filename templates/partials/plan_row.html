@@ -4,7 +4,7 @@
     a log line's (D51): the edit box stands in for the row, a delete leaves "Line deleted · Undo" in its place. -#}
 <div class="blk ln" id="plan-{{ p.id }}">
 <form class="inline" method="post" action="/plans/{{ p.id }}" hx-post="/plans/{{ p.id }}" hx-trigger="change" hx-target="#plan-{{ p.id }}" hx-swap="outerHTML">
-<input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="state" value="{% if p.is_open() %}done{% else %}open{% endif %}">
+<input type="hidden" name="back" value="{{ back }}"><input type="hidden" name="state" value="{% if p.is_open() %}done{% else %}open{% endif %}">{% if p.is_open() %}<input type="hidden" name="ask" value="1">{% endif %}
 <input class="check" type="checkbox"{% if p.state == "done" %} checked{% endif %} aria-label="{% if p.is_open() %}Mark done{% else %}Reopen{% endif %}">
 <noscript><button class="btn ghost s" type="submit">{% if p.is_open() %}Done{% else %}Reopen{% endif %}</button></noscript>
 </form>

@@ -78,12 +78,12 @@ async fn glass_settings_persist_and_render_on_html() {
     }
     let s = get(&st, "/settings").await.body;
     assert!(s.contains("name=\"glass_all\" value=\"1\" checked"));
-    // True 0–100 scale; the floor rides along for the hatch + clamp, not as `min`.
+    // True 0–100 scale; the floor rides along for the hatch only (owner may go below it).
     assert!(
         s.contains("min=\"0\" max=\"100\" value=\"40\" data-floor=\"18\" style=\"--v:40;--f:18\"")
     );
 
-    // htmx save: 204, unchecked box = off. The Glass look's floor (83) lifts the stored 40 on read.
+    // htmx save: 204, unchecked box = off. Below the Glass look's floor (83) is allowed: 40 renders as 40.
     post(&st, "/settings", &form(&[("look", "glass")]), false).await;
     let r = post(
         &st,
@@ -95,7 +95,7 @@ async fn glass_settings_persist_and_render_on_html() {
     assert_eq!(r.status, 204);
     let b = get(&st, "/").await.body;
     assert!(
-        b.contains("data-look=\"glass\" style=\"--glass-a:83%\""),
+        b.contains("data-look=\"glass\" style=\"--glass-a:40%\""),
         "{b:.200}"
     );
 
@@ -185,7 +185,7 @@ async fn slider_sits_on_the_true_scale() {
     assert!(s.contains(
         "type=\"range\" name=\"glass_opacity\" min=\"0\" max=\"100\" value=\"60\" data-floor=\"18\" style=\"--v:60;--f:18\""
     ));
-    assert!(s.contains("The slider stops at 18%."));
+    assert!(s.contains("Below 18% (hatched), text can get hard to read on Sumi."));
     assert!(
         s.contains("role=\"switch\" name=\"glass_all\" value=\"1\">"),
         "switch off, still a form field"

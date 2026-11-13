@@ -7,7 +7,7 @@ use askama::Template;
 pub struct Page {
     pub layout: Layout,
     pub looks: &'static [Look],
-    /// The picked look: its AA floor is where the slider stops (and the hatched part ends).
+    /// The picked look: its AA floor is where the hatched part ends (a baseline; the slider goes below it).
     pub cur: &'static Look,
     /// Connections rows: on/off only, from data/config.toml; never the URL or token.
     pub google: bool,

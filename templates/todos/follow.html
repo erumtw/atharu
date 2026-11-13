@@ -1,0 +1,14 @@
+{#- Under a to-do just ticked done (htmx only): the row keeps its place while this asks for the next step, carrying the
+    row's epic and #tags. Enter adds it (`by fri` works), Esc / Skip / an empty Enter leaves it; either way the answer is
+    `plans-changed`, so the list regroups once, after the question. Focused on a mouse/trackpad only (no phone keyboard). -#}
+<form class="blk ln follow" id="plan-{{ id }}-next" method="post" action="/todos" hx-post="/todos" hx-target="this" hx-swap="outerHTML" hx-on::load="if (matchMedia('(pointer: fine)').matches) this.elements.line.focus()">
+<input type="hidden" name="follow" value="1"><input type="hidden" name="after" value="{{ id }}">
+{%- if let Some(k) = key %}<input type="hidden" name="key" value="{{ k }}">{% endif %}
+{%- if !tags.is_empty() %}<input type="hidden" name="tags" value="{{ tags.join(",") }}">{% endif %}
+<span class="nx" aria-hidden="true">↳</span>
+{%- if let Some(k) = key %}<span class="chip key">{{ k }}</span>{% endif %}
+{%- for t in tags %}<span class="chip tag">{{ t }}</span>{% endfor %}
+<input class="pin dash{% if error.is_some() %} bad{% endif %}" name="line" value="{{ line }}" placeholder="Next step? Enter adds it · Esc skips" aria-label="Follow-up to-do" autocomplete="off" style="flex: 1" hx-on:keydown="if (event.key === 'Escape') { event.preventDefault(); this.form.remove(); htmx.trigger(document.body, 'plans-changed') }">
+<button class="btn ghost s" type="submit">Add</button><button class="linkbtn small" type="button" hx-on:click="this.form.remove(); htmx.trigger(document.body, 'plans-changed')">Skip</button>
+{%- if let Some(e) = error %}<span class="err" style="flex-basis: 100%">{{ e }}</span>{% endif %}
+</form>

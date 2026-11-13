@@ -1,1 +1,2 @@
 {% include "partials/plan_row.html" %}
+{%- if let Some(f) = follow %}{{ f|safe }}{% endif %}

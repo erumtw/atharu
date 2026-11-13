@@ -54,29 +54,25 @@ pub fn pick(slug: Option<&str>) -> &'static Look {
         .unwrap_or(&LOOKS[0])
 }
 
-/// The alpha (%) every page renders: the stored slider value, never below the look's AA floor (a look switch can
-/// raise the floor after the value was saved, so this clamps on read, not on save).
-pub fn glass_alpha(look: &Look, stored: Option<&str>) -> u8 {
+/// The alpha (%) every page renders: the stored slider value as set (owner decision 2026-11-13: the look's AA floor
+/// is a marked baseline, not a stop; going clearer is allowed). Junk → the default.
+pub fn glass_alpha(stored: Option<&str>) -> u8 {
     stored
         .and_then(|v| v.parse::<u8>().ok())
         .unwrap_or(GLASS_DEFAULT)
-        .clamp(look.glass_floor, 100)
+        .min(100)
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn glass_alpha_clamps_to_the_looks_floor() {
-        let glass = super::pick(Some("glass"));
-        assert_eq!(super::glass_alpha(glass, Some("20")), glass.glass_floor);
-        assert_eq!(super::glass_alpha(super::pick(None), Some("20")), 20);
-        assert_eq!(super::glass_alpha(super::pick(None), Some("250")), 100);
-        assert_eq!(
-            super::glass_alpha(super::pick(None), Some("300")),
-            60,
-            "junk → default"
-        );
-        assert_eq!(super::glass_alpha(super::pick(None), None), 60);
+    fn glass_alpha_goes_below_the_looks_floor() {
+        assert_eq!(super::glass_alpha(Some("20")), 20);
+        assert_eq!(super::glass_alpha(Some("0")), 0);
+        assert_eq!(super::glass_alpha(Some("100")), 100);
+        assert_eq!(super::glass_alpha(Some("250")), 100);
+        assert_eq!(super::glass_alpha(Some("x")), 60, "junk → default");
+        assert_eq!(super::glass_alpha(None), 60);
     }
 
     #[test]

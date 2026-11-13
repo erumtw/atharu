@@ -23,7 +23,7 @@ Approved wireframes: canvas https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ, H
 | `--fill` / `--fill-2` | `#f5f5f7` / `#f0f0f0` | sidebar, callouts / chips, key squares |
 | `--err` | `#b3261e` | errors, late due dates only |
 | `--sep` / `--off` | `#e3e3e8` / `#d1d1d6` | grouped-list hairlines + grey pills / switch and slider track off |
-| `--hatch-a` / `--hatch-b` | `#c7c7cc` / `#e5e5ea` | hatched slider range that can't be reached; `--hatch-a` = switch hover |
+| `--hatch-a` / `--hatch-b` | `#c7c7cc` / `#e5e5ea` | hatched slider range below the look's AA floor; `--hatch-a` = switch hover |
 | `--accent-2` | `#0055b3` | primary hover/pressed, switch-on hover, the tinted `--accent` (white on it 7.1:1) |
 | `--accent-wash` | `#e8f1fb` | meeting events, selected menu option |
 | `--accent-soft` | `#4d8fd1` | bars, "done" OKR segment (never under text) |
@@ -93,7 +93,7 @@ wallpaper: ink ≥ 13.61, placeholder ≥ 7.35 (Glass Tinted; T33). Reduce Trans
   `backdrop-filter` and then drops the **whole** filter, blur included (measured T30), so it must never see it; `-webkit-app-region` parses
   only in Chromium. Off under Reduce Transparency.
 - AA at each look's floor (T30): worst 4.70 (Wakaba Tinted, error text over content); sidebar labels ≥ 5.61 Clear, ≥ 6.78 Tinted.
-- One alpha drives all of them: `--glass-a` (inline on `<html>`, clamped per look by `domain::look::glass_alpha` to keep AA). Each surface adds a fixed step `--s`: crumb 0, sidebar +5%, capture bar +10% (floor 70%), its hint/toast pills +25% (floor 85%), glass pills +10% (hover +25%, pressed +35%), fields and text boxes +12%, menus +25%.
+- One alpha drives all of them: `--glass-a` (inline on `<html>`, the slider value as set: each look's AA floor is a marked baseline the owner may go below, 2026-11-13). Each surface adds a fixed step `--s`: crumb 0, sidebar +5%, capture bar +10% (floor 70%), its hint/toast pills +25% (floor 85%), glass pills +10% (hover +25%, pressed +35%), fields and text boxes +12%, menus +25%.
 - The page sheet `.pg` is opaque white. Opt-in `data-glass=all` makes it glass too (−5%), with cards/callouts +10% on top.
 - `data-tint=tinted`: the look's colour mixed into the glass, darker edges, full-ink chrome text, darker muted/links (measured AA).
 - **Reduced transparency → every glass surface opaque, mesh becomes one flat colour, no rim or lens, hairline border back.** Not optional.
@@ -140,6 +140,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Day nav | `.dnav` (`.i` = icon segment) | see rules |
 | Text box | `.ta`, `.note-md` | multi-line glass box, 12 radius; autosaves (Save only in `<noscript>`) |
 | Inline input | `.pin`, `.pin.dash`, `.pin.bad` | borderless props input/select; `.dash` = dashed "type here" rule (inline edit); `.bad` = red ring; a page title (note, epic) is a one-row `textarea.pin` that grows, so a long title wraps instead of clipping; Enter leaves it (T91) |
+| Follow-up | `.blk.follow` (`todos/follow.html`) | under a to-do just ticked done: `↳` in the check's column · the carried epic key + #tag chips · a `.pin.dash` "Next step? Enter adds it · Esc skips" · Add (`.btn.ghost.s`) · Skip (`.linkbtn`). Asks, never blocks (no dialog): the row keeps its place until it's answered, then the list regroups once. Focused on a fine pointer only (no phone keyboard popping on a tick); a refused line stays with `.bad` + `.err` |
 | Line edit | `.edit-line` | log text as a link; dotted underline on hover; opens `entry_edit` in place |
 | Save status | `.saved` | 12 px muted in the crumb: "Changes save as you type · ✓ saved"; `.err` on failure |
 | Error | `.err` | 13 px `--err` text under the field it explains |
@@ -158,7 +159,7 @@ Coloured meshes sit under a 45% white veil; sidebar text over the worst spot sta
 | Segmented | `.seg`, `.seg.mac` | pill track 36 / 30 segments (32/26 in chrome), `rgba(120,120,128,.12)` (iOS); `.mac` = 8-radius macOS control for settings |
 | Grouped list | `.sec` + `.grp` > `.gi` | Apple System Settings inset group (`--fill`, hairline inset 16px); Notion bold label + one-line help left, one control right; `.gi.col` stacks |
 | Switch | `.sw` | native checkbox `role=switch` (posts without JS), 38×22, 51×31 on phone; pressed stretches the knob |
-| Slider | `.sl` > `.rng` + `.val` | native range on the true 0–100 scale; below `--f` hatched and clamped, `--v` = value |
+| Slider | `.sl` > `.rng` + `.val` | native range on the true 0–100 scale; below `--f` hatched (the look's AA floor: a warning, still reachable), `--v` = value |
 | Look tile / status | `.lk`, `.pill`, `.pill.ok` | app-icon tile, accent ring when picked (dashed on focus); status pill grey / solid ink (On) |
 | Preview tile | `.prev` | the look's wallpaper behind a mini glass sidebar + sheet, same alpha math as the real chrome |
 | Disclosure | `.chev`, `details > summary` | settings row value in muted / toggles that fold secondary things (count + hint inline, 400 weight) |
@@ -536,7 +537,7 @@ skips FLIP and height morphs entirely. Polling never animates (the banner every 
 
 - Glass on chrome, never on content (unless the user opts into `data-glass=all`).
 - One blue. A new colour needs a reason written here.
-- Every text/surface pair passes WCAG AA, measured over the worst wallpaper spot (and, for glass over content, a half-covered ink pixel behind); record the number in a CSS comment.
+- Every text/surface pair passes WCAG AA, measured over the worst wallpaper spot (and, for glass over content, a half-covered ink pixel behind); record the number in a CSS comment. Measured at each look's glass floor; an opacity the owner sets below it (hatched on the slider) is their call.
 - No `url()` filter reaches WebKit: anything Chromium-only goes behind `@supports (-webkit-app-region:drag)`.
 - Honour `prefers-reduced-transparency` and `prefers-contrast`.
 - New tokens go in `tokens.css`; components in `components.css`. Inline `style=` in templates only for one-off layout (gap, margin), never colour or type.

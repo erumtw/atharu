@@ -61,6 +61,19 @@ pub struct Row {
     pub back: String,
     pub full: bool,
     pub pin_error: bool,
+    /// Just ticked done: "what's next?" under the row; the list regroups once it's answered.
+    pub follow: Option<Follow>,
+}
+
+/// The follow-up line under a ticked to-do (htmx only): carries its epic and #tags into the next to-do.
+#[derive(Template)]
+#[template(path = "todos/follow.html")]
+pub struct Follow {
+    pub id: i64,
+    pub key: Option<String>,
+    pub tags: Vec<String>,
+    pub line: String,
+    pub error: Option<String>,
 }
 
 pub struct Preview {

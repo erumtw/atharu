@@ -159,6 +159,11 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
 #[derive(Deserialize)]
 pub struct LineForm {
     line: String,
+    /// Set by the follow-up line under a ticked to-do (`todos/follow.html`), with the epic and #tags it carries.
+    follow: Option<String>,
+    after: Option<i64>,
+    key: Option<String>,
+    tags: Option<String>,
 }
 
 pub async fn create(
@@ -167,6 +172,9 @@ pub async fn create(
     Form(f): Form<LineForm>,
 ) -> AppResult<Response> {
     let today = st.today();
+    if f.follow.is_some() {
+        return follow_up(&st, f);
+    }
     let entry = match parse_plan(&f.line, today) {
         Ok(e) => e,
         Err(e) if web::is_htmx(&headers) => {
@@ -197,6 +205,49 @@ pub async fn create(
         today,
         lists: lists(&st.conn(), today, &tags, by_tag)?,
     })
+}
+
+/// The follow-up answer: an empty line is "no next step"; either way the page regroups (`plans-changed`) and the
+/// prompt goes (empty swap). A line the grammar refuses comes back in the prompt with its error.
+fn follow_up(st: &AppState, f: LineForm) -> AppResult<Response> {
+    let regroup = [("HX-Trigger", "plans-changed")];
+    let text = f.line.trim();
+    if text.is_empty() {
+        return Ok((regroup, "").into_response());
+    }
+    let tags: Vec<String> = f
+        .tags
+        .as_deref()
+        .unwrap_or("")
+        .split(',')
+        .filter(|t| !t.is_empty())
+        .map(String::from)
+        .collect();
+    // Key first (the grammar wants it as the first token), then the carried tags not already typed.
+    let mut line: Vec<String> = f.key.iter().cloned().collect();
+    let typed = crate::domain::tags::tags(text);
+    line.extend(
+        tags.iter()
+            .filter(|t| !typed.contains(t))
+            .map(|t| format!("#{t}")),
+    );
+    line.push(text.to_string());
+    match parse_plan(&line.join(" "), st.today()) {
+        Ok(e) => {
+            queries::insert_plan(&mut st.conn(), &dates::iso(st.today()), &e)?;
+            Ok((regroup, "").into_response())
+        }
+        Err(e) => web::html_status(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            &view::Follow {
+                id: f.after.unwrap_or(0),
+                key: f.key,
+                tags,
+                line: f.line,
+                error: Some(e.to_string()),
+            },
+        ),
+    }
 }
 
 pub async fn preview(State(st): State<AppState>, Form(f): Form<LineForm>) -> AppResult<Response> {
@@ -232,6 +283,9 @@ pub struct PlanForm {
     pinned: Option<String>,
     due: Option<String>,
     back: Option<String>,
+    /// Sent by plan_row.html's check only: a tick there asks for the follow-up. Other ticks (a note's header, the
+    /// quick popover) swap nothing and need the regroup right away.
+    ask: Option<String>,
 }
 
 pub async fn update(
@@ -290,15 +344,26 @@ pub async fn update(
         }
         return Ok(web::back(&back));
     }
+    let ticked = state == Some("done") && p.is_open() && f.ask.is_some();
     let p = queries::plan_by_id(&conn, id)?.ok_or(AppError::NotFound)?;
+    let follow = ticked.then(|| view::Follow {
+        id,
+        key: p.epic_key.clone(),
+        tags: crate::domain::tags::tags(&p.text),
+        line: String::new(),
+        error: None,
+    });
+    // Ticked done: the row stays put under its follow-up question; the answer asks for the regroup instead.
+    let regroup =
+        !pin_full && follow.is_none() && (due.is_some() || pin.is_some() || state.is_some());
     let row = view::Row {
         today,
         p,
         full: back == "/todos",
         back,
         pin_error: pin_full,
+        follow,
     };
-    let regroup = !pin_full && (due.is_some() || pin.is_some() || state.is_some());
     let status = if pin_full {
         StatusCode::UNPROCESSABLE_ENTITY
     } else {

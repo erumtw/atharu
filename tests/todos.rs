@@ -224,3 +224,71 @@ async fn due_or_pin_change_asks_the_page_to_regroup() {
     let b = get(&st, "/todos").await.body;
     assert!(b.contains(r#"hx-trigger="plans-changed from:body, atharu-sync from:body""#));
 }
+
+#[tokio::test]
+async fn ticking_done_asks_for_a_follow_up_carrying_epic_and_tags() {
+    let st = state();
+    seed(&st);
+    exec(
+        &st,
+        "UPDATE entries SET text = 'ship index #release' WHERE id = 2",
+    );
+    // The row stays put under its question: no regroup until it's answered.
+    assert!(
+        get(&st, "/todos")
+            .await
+            .body
+            .contains(r#"name="ask" value="1""#)
+    );
+    let r = post(
+        &st,
+        "/plans/2",
+        &form(&[("state", "done"), ("ask", "1")]),
+        true,
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert!(r.body.contains(r#"id="plan-2-next""#));
+    assert!(r.headers.get("hx-trigger").is_none());
+    // Reopening or dropping never asks.
+    let r = post(
+        &st,
+        "/plans/3",
+        &form(&[("state", "dropped"), ("ask", "1")]),
+        true,
+    )
+    .await;
+    assert!(!r.body.contains("-next"));
+    // A tick that doesn't ask (a note's header) regroups at once.
+    let r = post(&st, "/plans/1", &form(&[("state", "done")]), true).await;
+    assert_eq!(r.headers["hx-trigger"], "plans-changed");
+
+    let follow = |line: &'static str| {
+        form(&[
+            ("follow", "1"),
+            ("after", "2"),
+            ("key", "OPS-101"),
+            ("tags", "release"),
+            ("line", line),
+        ])
+    };
+    // Empty = no next step: regroup, nothing saved.
+    let r = post(&st, "/todos", &follow("  "), true).await;
+    assert_eq!(r.headers["hx-trigger"], "plans-changed");
+    let n = count(&st, "SELECT COUNT(*) FROM entries");
+    // A refused date keeps the prompt with its error.
+    let r = post(&st, "/todos", &follow("deploy by 32 Nov"), true).await;
+    assert_eq!(r.status, 422);
+    assert!(r.body.contains(r#"id="plan-2-next""#) && r.body.contains("pin dash bad"));
+    let r = post(&st, "/todos", &follow("deploy it by fri"), true).await;
+    assert_eq!(r.headers["hx-trigger"], "plans-changed");
+    assert_eq!(count(&st, "SELECT COUNT(*) FROM entries"), n + 1);
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM entries WHERE epic_key = 'OPS-101' AND kind = 'plan' AND plan_state = 'open'
+               AND text = '#release deploy it' AND due = '2026-11-13'"
+        ),
+        1
+    );
+}

@@ -42,6 +42,9 @@ select.pin{cursor:pointer}
    the text nor shifts or centres its buttons. --lh = one line of the row: 32 desktop, 44 phone. Chips are pinned to
    20 px (line-height 18 + 2) so one margin centres them on that line. */
 .blk.ln{--lh:32px;align-items:flex-start}
+/* Follow-up under a ticked to-do (todos/follow.html): ↳ sits in the check's 20px column, the rest on one line. */
+.blk.follow{align-items:center}
+.follow .nx{width:20px;flex:none;text-align:center;color:var(--muted)}
 .blk.ln>*{flex:none}
 .blk.ln>:is(.ltext,.edit-line,span:not([class])){flex:1 1 0;min-width:0;padding-block:calc((var(--lh) - 22px) / 2);overflow-wrap:anywhere}
 .blk.ln>:not(.ltext,.edit-line,span:not([class]),.chip,.k){min-height:var(--lh);display:inline-flex;align-items:center}
