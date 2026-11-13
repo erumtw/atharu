@@ -1,0 +1,3 @@
+{#- A Jira status chip + its ▾ (0.2.5): needs `jk` (key), `js` (status), `jc` (status category), `jurl`, `ju` (unique on
+    the page), `back`. The status text is `.jst-KEY`, so a move updates every chip of that key out-of-band. -#}
+<span class="jchip"><a class="lchip jc-{{ jc }}" href="{{ jurl }}" target="_blank" rel="noopener noreferrer" title="Open {{ jk }} in Jira"><span class="jst-{{ jk }}">{{ js }}</span> ↗</a>{% include "partials/jira_menu.html" %}</span>

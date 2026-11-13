@@ -69,7 +69,10 @@ a:hover>.chip{background:var(--sep)}
 .lchip.jc-done>span::before{content:"✓ "}
 /* D4: a Jira parent header row and the stories under it. */
 .etab tr.jhead td{background:var(--fill-3)}
-.etab tr.child td:first-child{padding-left:28px}
+.etab tr.child td:first-child{padding-left:16px;overflow:visible}
+/* Ticket rows (epic page): keys and type chips keep their width; the title takes what's left. */
+.tix .blk>:not(.ltext){flex:none}
+.tix .blk>a>.chip{max-width:none}
 .jchip .lchip{border-top-right-radius:0;border-bottom-right-radius:0}
 .jmv{font:inherit;font-size:11px;line-height:1;height:20px;padding:0 6px;border:0;border-left:1px solid var(--line);border-radius:0 6px 6px 0;background:var(--fill-2);color:var(--accent);cursor:pointer}
 .jmv:hover{background:var(--sep)}

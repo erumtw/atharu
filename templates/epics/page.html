@@ -9,7 +9,7 @@
 <form id="jdone" method="post" action="/epics/{{ epic.key }}/jira-done" hidden></form>
 <form method="post" action="/epics/{{ epic.key }}" hx-patch="/epics/{{ epic.key }}" hx-trigger="change, submit" hx-target="#live" hx-swap="outerHTML" novalidate style="display: flex; flex-direction: column; gap: 12px">
 <header class="pghead">
-<div class="pgk"><span>{{ epic.kind }}</span><span class="chip key">{{ epic.key }}</span>{% if let Some(f) = flag %}<span class="{{ f.class }}">{{ f.label }}</span><span>{{ f.reason }}</span>{% endif %}{% if let Some((st, u)) = epic.jira_link %}<span class="jchip"><a class="lchip jc-{{ epic.cat }}" href="{{ u }}" target="_blank" rel="noopener noreferrer" title="Open {{ epic.key }} in Jira"><span class="jst-{{ epic.key }}">{{ st }}</span> ↗</a>{% let back = "/epics/{}"|format(epic.key) %}{% let (jk, ju, jurl) = (epic.key.as_str(), "pg", u.as_str()) %}{% include "partials/jira_menu.html" %}</span>{% endif %}{% if let Some(j) = epic.jira %}<span class="jt" title="From Jira, read-only: {{ j }}">Jira: {{ j }}</span>{% endif %}</div>
+<div class="pgk"><span>{{ epic.kind }}</span><span class="chip key">{{ epic.key }}</span>{% if let Some(f) = flag %}<span class="{{ f.class }}">{{ f.label }}</span><span>{{ f.reason }}</span>{% endif %}{% if let Some((st, u)) = epic.jira_link %}{% let back = "/epics/{}"|format(epic.key) %}{% let (jk, js, jc, jurl, ju) = (epic.key.as_str(), st.as_str(), epic.cat.as_str(), u.as_str(), "pg") %}{% include "partials/jira_chip.html" %}{% endif %}{% if let Some(j) = epic.jira %}<span class="jt" title="From Jira, read-only: {{ j }}">Jira: {{ j }}</span>{% endif %}</div>
 <h1 class="ptitle"><textarea class="pin" name="title" rows="1" placeholder="Untitled" aria-label="Title" onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }" oninput="if (this.value.includes('\n')) this.value = this.value.replace(/\n/g, ' '); this.style.height = ''; this.style.height = this.scrollHeight + 'px'">{{ epic.title }}</textarea></h1>
 <p class="fact">{{ fact }}</p>
 <p id="epic-del" class="err small" role="alert" style="margin: 0">{% if let Some(e) = delete_error %}{{ e }}{% endif %}</p>
@@ -64,10 +64,10 @@
 {%- endif %}
 {%- if !tickets.is_empty() %}
 <details class="tg" open><summary>Tickets <span class="small muted normal">· {{ tickets.len() }} in Jira · {{ logged() }} logged here</span></summary>
-<div class="blocks small">
+<div class="blocks small tix">
 {%- for t in tickets %}
 <div class="blk"><span class="chip">{{ t.issue_type }}</span><a href="{{ t.href }}"><span class="chip key">{{ t.key }}</span></a><span class="ltext">{{ t.summary }}</span>
-{%- if let Some((s, u)) = t.jira %}<span class="jchip"><a class="lchip jc-{{ t.cat }}" href="{{ u }}" target="_blank" rel="noopener noreferrer" title="Open {{ t.key }} in Jira"><span class="jst-{{ t.key }}">{{ s }}</span> ↗</a>{% let (jk, ju, jurl) = (t.key.as_str(), "t{}"|format(t.key), u.as_str()) %}{% include "partials/jira_menu.html" %}</span>{% endif %}
+{%- if let Some((s, u)) = t.jira %}{% let (jk, js, jc, jurl, ju) = (t.key.as_str(), s.as_str(), t.cat.as_str(), u.as_str(), "t{}"|format(t.key)) %}{% include "partials/jira_chip.html" %}{% endif %}
 <span class="muted" style="margin-left: auto">{% if t.lines > 0 %}{{ t.lines }} line{% if t.lines != 1 %}s{% endif %}{% else %}not logged{% endif %}</span></div>
 {%- endfor %}
 </div>

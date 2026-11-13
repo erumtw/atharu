@@ -14,7 +14,7 @@
 <div class="blocks small">
 {%- for a in assigned %}
 <div class="blk"><span class="chip">{{ a.issue_type }}</span><span class="chip key">{{ a.key }}</span><span class="ltext">{{ a.summary }}</span>
-{%- if let Some((s, u)) = a.jira %}<span class="jchip"><a class="lchip jc-{{ a.cat }}" href="{{ u }}" target="_blank" rel="noopener noreferrer" title="Open {{ a.key }} in Jira"><span class="jst-{{ a.key }}">{{ s }}</span> ↗</a>{% let (jk, ju, jurl, back) = (a.key.as_str(), "a{}"|format(a.key), u.as_str(), "/epics") %}{% include "partials/jira_menu.html" %}</span>{% endif %}
+{%- if let Some((s, u)) = a.jira %}{% let (jk, js, jc, jurl, ju, back) = (a.key.as_str(), s.as_str(), a.cat.as_str(), u.as_str(), "a{}"|format(a.key), "/epics") %}{% include "partials/jira_chip.html" %}{% endif %}
 {%- if let Some(d) = a.due %}<span class="muted">{{ d }}</span>{% endif %}
 <span style="margin-left: auto">{% if a.tracked %}<span class="muted">✓ tracked</span>{% else if a.epic %}<form class="inline" method="post" action="/epics/{{ a.key }}/track"><input type="hidden" name="back" value="/epics#assigned"><button class="btn ghost s" type="submit">+ Track as epic</button></form>{% else %}<form class="inline" method="post" action="/todos"><input type="hidden" name="line" value="{{ a.line }}"><button class="btn ghost s" type="submit" title="Adds: {{ a.line }}">+ To-do</button></form>{% endif %}</span></div>
 {%- endfor %}
@@ -32,7 +32,7 @@
 {% include "epics/row.html" %}
 {%- when ListItem::Head(h) %}
 {#- D4: a Jira parent that isn't tracked: its stories sit under it; "+ Track as epic" makes it one. #}
-<tr class="jhead"><td><span class="chip key">{{ h.key }}</span></td><td colspan="4"><span class="row" style="gap: 4px 8px"><b>{{ h.title }}</b><span class="small muted">Jira epic · not tracked</span>{% if let Some((s, u)) = h.jira %}<span class="jchip"><a class="lchip jc-{{ h.cat }}" href="{{ u }}" target="_blank" rel="noopener noreferrer" title="Open {{ h.key }} in Jira"><span class="jst-{{ h.key }}">{{ s }}</span> ↗</a>{% let (jk, ju, jurl, back) = (h.key.as_str(), "h{}"|format(h.key), u.as_str(), "/epics") %}{% include "partials/jira_menu.html" %}</span>{% endif %}</span></td><td><form class="inline" method="post" action="/epics/{{ h.key }}/track"><input type="hidden" name="back" value="/epics"><button class="btn ghost s" type="submit">+ Track as epic</button></form></td></tr>
+<tr class="jhead"><td><span class="chip key">{{ h.key }}</span></td><td colspan="4"><span class="row" style="gap: 4px 8px"><b>{{ h.title }}</b><span class="small muted">Jira epic · not tracked</span>{% if let Some((s, u)) = h.jira %}{% let (jk, js, jc, jurl, ju, back) = (h.key.as_str(), s.as_str(), h.cat.as_str(), u.as_str(), "h{}"|format(h.key), "/epics") %}{% include "partials/jira_chip.html" %}{% endif %}</span></td><td><form class="inline" method="post" action="/epics/{{ h.key }}/track"><input type="hidden" name="back" value="/epics"><button class="btn ghost s" type="submit">+ Track as epic</button></form></td></tr>
 {%- endmatch %}
 {%- endfor %}
 </table></div>

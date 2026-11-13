@@ -221,16 +221,8 @@ pub async fn refresh(st: &AppState) -> Result<Option<usize>, String> {
 
 /// A 2xx clears the stored token failure; a 401 / 403 stores it (D9: Settings and Epics name it, the cache stays).
 fn check(st: &AppState, code: u16) -> Result<(), String> {
-    let auth = code == 401 || code == 403;
-    if auth || (200..300).contains(&code) {
-        queries::set_auth_failed(&st.conn(), auth).map_err(|e| e.to_string())?;
-    }
-    if (200..300).contains(&code) {
-        Ok(())
-    } else {
-        // Status only: the body may echo the request, never the header, but keep logs short.
-        Err(format!("Jira answered {code}"))
-    }
+    // Status only: the body may echo the request, never the header, but keep logs short.
+    moves::auth(st, code).map_err(|_| format!("Jira answered {code}"))
 }
 
 #[derive(Deserialize)]

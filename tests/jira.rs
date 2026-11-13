@@ -315,7 +315,7 @@ async fn status_moves_on_press_with_undo() {
     // The menu: Jira's allowed moves, read live, + Open in Jira.
     let menu = get(&st, "/jira/OPS-130/moves?back=/epics").await.body;
     assert!(
-        menu.contains("<input type=\"hidden\" name=\"to\" value=\"21\">")
+        menu.contains(r##"hx-vals='{"to": "21", "back": "/epics"}' hx-target="#jtoast""##)
             && menu.contains(">In Progress <span class=\"small muted\">· Start</span>"),
         "{menu}"
     );

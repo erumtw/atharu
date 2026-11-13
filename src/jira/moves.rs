@@ -94,7 +94,7 @@ pub fn parse_moves(json: &str) -> Result<Vec<Move>, String> {
 }
 
 /// What Jira answered, in the words the page shows.
-enum Fail {
+pub(super) enum Fail {
     /// 401 / 403 (D9).
     Token,
     /// Network or any other status.
@@ -127,8 +127,8 @@ async fn fetch_moves(st: &AppState, j: &Jira<'_>, key: &str) -> Result<Vec<Move>
     parse_moves(&body).map_err(|_| Fail::Unreachable)
 }
 
-/// 401 / 403 stores the dead token (D9); a 2xx clears it.
-fn auth(st: &AppState, code: u16) -> Result<(), Fail> {
+/// 401 / 403 stores the dead token (D9); a 2xx clears it. The refresh uses it too.
+pub(super) fn auth(st: &AppState, code: u16) -> Result<(), Fail> {
     let dead = code == 401 || code == 403;
     if dead || (200..300).contains(&code) {
         let _ = queries::set_auth_failed(&st.conn(), dead);
