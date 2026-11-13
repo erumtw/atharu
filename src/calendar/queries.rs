@@ -52,6 +52,8 @@ pub struct MeetingRow {
     pub id: i64,
     pub day: String,
     pub name: String,
+    /// Local `YYYY-MM-DD HH:MM:SS`; NULL on meetings from before 007.
+    pub started_at: Option<String>,
     pub ended_at: Option<String>,
 }
 
@@ -63,7 +65,7 @@ pub fn meetings(
     tags: &[String],
 ) -> rusqlite::Result<Vec<MeetingRow>> {
     let mut stmt = conn.prepare(&format!(
-        "SELECT id, day, name, ended_at FROM meetings WHERE day BETWEEN ?1 AND ?2
+        "SELECT id, day, name, started_at, ended_at FROM meetings WHERE day BETWEEN ?1 AND ?2
            AND name NOT IN (SELECT name FROM series_archive)
            AND (json_array_length(?3) = 0 OR name IN {ANY} OR EXISTS (SELECT 1 FROM taggings t
                  WHERE t.item_type = 'series' AND t.item_id = meetings.name AND t.tag IN {ANY}))
@@ -74,7 +76,8 @@ pub fn meetings(
             id: r.get(0)?,
             day: r.get(1)?,
             name: r.get(2)?,
-            ended_at: r.get(3)?,
+            started_at: r.get(3)?,
+            ended_at: r.get(4)?,
         })
     })?
     .collect()
@@ -105,6 +108,8 @@ pub struct EventRow {
     pub title: String,
     /// `YYYY-MM-DD` (all day) or `YYYY-MM-DDTHH:MM`.
     pub starts_at: String,
+    /// Same forms as `starts_at`; own events have none.
+    pub ends_at: Option<String>,
     /// Own event whose title has one of the filter's tags (Google events are matched by word instead).
     pub tagged: bool,
 }
@@ -118,7 +123,7 @@ pub fn events(
     tags: &[String],
 ) -> rusqlite::Result<Vec<EventRow>> {
     let mut stmt = conn.prepare(&format!(
-        "SELECT id, source, title, starts_at, EXISTS (SELECT 1 FROM taggings t
+        "SELECT id, source, title, starts_at, ends_at, EXISTS (SELECT 1 FROM taggings t
                   WHERE t.item_type = 'event' AND t.item_id = CAST(events.id AS TEXT) AND t.tag IN {ANY})
          FROM events WHERE starts_at >= ?1 AND starts_at < ?2 ORDER BY starts_at, id"
     ))?;
@@ -128,7 +133,8 @@ pub fn events(
             source: r.get(1)?,
             title: r.get(2)?,
             starts_at: r.get(3)?,
-            tagged: r.get(4)?,
+            ends_at: r.get(4)?,
+            tagged: r.get(5)?,
         })
     })?
     .collect()

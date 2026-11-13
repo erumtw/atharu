@@ -3,25 +3,35 @@
 {%- if let Some(n) = cal.notice %}
 <p class="small {% if n.error %}err{% else %}muted{% endif %}" role="status">{{ n.text }}</p>
 {%- endif %}
-<div class="tw"><div class="cal{% if cal.month %} month{% endif %}">
-{%- if cal.month %}
-<div class="dh">Sun</div><div class="dh">Mon</div><div class="dh">Tue</div><div class="dh">Wed</div><div class="dh">Thu</div><div class="dh">Fri</div><div class="dh">Sat</div>
-{%- else %}
-{%- for d in cal.days %}<div class="dh{% if d.now %} now{% endif %}"><a href="/?day={{ d.iso }}">{{ d.head }}{% if d.now %} · today{% endif %}</a></div>{% endfor %}
-{%- endif %}
-{% for d in cal.days %}
-<div class="dc{% if d.now %} now{% endif %}{% if d.outside %} out{% endif %}">
-<a class="dn{% if d.now %} now{% endif %}" href="/?day={{ d.iso }}">{{ d.head }}{% if d.now && !cal.month %} · today{% endif %}</a>
-{%- if d.logged > 0 %}<a class="logdot" href="/?day={{ d.iso }}">● {{ d.logged }} line{% if d.logged != 1 %}s{% endif %}</a>{% endif %}
-{%- for i in d.items %}
-{%- if let Some(h) = i.href %}
-<a class="ev {{ i.class }}{% if i.late %} late{% endif %}" href="{{ h }}">{{ i.text }}{% if let Some(s) = i.sub %}<br><span class="muted">{{ s }}</span>{% endif %}</a>
-{%- else %}
-<div class="ev {{ i.class }} evrow"><form class="inline" method="post" action="/meetings"><input type="hidden" name="name" value="{{ i.text }}"><input type="hidden" name="back" value="/"><button class="evbtn" type="submit" title="Start meeting mode">{% if let Some(t) = i.time %}{{ t }} {% endif %}{{ i.text }}</button></form>
-{%- if let Some(id) = i.own_id %}<form class="inline" method="post" action="/calendar/events/{{ id }}/delete" hx-post="/calendar/events/{{ id }}/delete" hx-target="#cal" hx-swap="outerHTML"><input type="hidden" name="week" value="{{ cal.week }}"><input type="hidden" name="view" value="{{ cal.view() }}"><input type="hidden" name="tag" value="{{ cal.tag }}"><button class="x" type="submit" title="Delete event" aria-label="Delete event">×</button></form>{% endif %}</div>
-{%- endif %}
-{%- endfor %}
+{%- if cal.month() %}
+<div class="cg"><div class="hd mh">{% for d in cal.days.iter().take(7) %}<div>{{ d.wd }}</div>{% endfor %}</div>
+<div class="mo">
+{%- for d in cal.days %}
+{%- let items = d.items() %}
+<div class="mc{% if d.now %} now{% endif %}{% if d.outside %} out{% endif %}"><a class="dn" href="{{ cal.day_href(d) }}" aria-label="{{ d.wd }} {{ d.num }}: open the day">{{ d.num }}</a>
+{%- for i in items.iter().take(cal.cap(items.len())) %}{% include "calendar/ev.html" %}{% endfor %}
+{%- if items.len() > cal.cap(items.len()) %}<a class="more" href="{{ cal.day_href(d) }}">+{{ items.len() - cal.cap(items.len()) }} more</a>{% endif %}
 </div>
 {%- endfor %}
 </div></div>
+{%- else %}
+{#- Hour grid: --px per hour; items placed by minutes from the first hour, overlaps side by side. #}
+<div class="cg" style="--n: {{ cal.days.len() }}">
+<div class="hd"><div></div>
+{%- for d in cal.days %}<div{% if d.now %} class="now"{% endif %}><a href="{{ cal.day_href(d) }}">{{ d.wd }} <b>{{ d.num }}</b></a>{% if d.logged > 0 %}<a class="lines" href="/?day={{ d.iso }}">{{ d.logged }} line{% if d.logged != 1 %}s{% endif %}</a>{% endif %}</div>{% endfor %}</div>
+<div class="ad"><div class="lab">all day</div>
+{%- for d in cal.days %}<div>{% for i in d.all_day.iter().take(cal.cap(d.all_day.len())) %}{% include "calendar/ev.html" %}{% endfor %}{% if d.all_day.len() > cal.cap(d.all_day.len()) %}<a class="more" href="{{ cal.day_href(d) }}">+{{ d.all_day.len() - cal.cap(d.all_day.len()) }} more</a>{% endif %}</div>{% endfor %}</div>
+<div class="bs"><div class="bd" style="height: calc(var(--px) * {{ cal.h1 - cal.h0 }})">
+<div class="hrs" aria-hidden="true">{% for h in cal.hours() %}{% if h > cal.h0 %}<span style="top: calc(var(--px) * {{ h - cal.h0 }})">{{ "{:02}"|format(h) }}:00</span>{% endif %}{% endfor %}</div>
+{%- for d in cal.days %}
+<div class="col{% if d.now %} today{% endif %}">
+{%- for t in d.timed %}{% let i = t.i() %}
+<div class="tev" style="top: calc(var(--px) * {{ t.top }} / 60); height: calc(var(--px) * {{ t.len }} / 60 - 2px); left: calc({{ t.col }} * 100% / {{ t.cols }} + 2px); width: calc(100% / {{ t.cols }} - 4px)">{% include "calendar/ev.html" %}</div>
+{%- endfor %}
+{%- if d.now %}{% if let Some(m) = cal.now_min %}<div class="nowl" style="top: calc(var(--px) * {{ m }} / 60)" aria-hidden="true"></div>{% endif %}{% endif %}
+</div>
+{%- endfor %}
+</div></div>
+</div>
+{%- endif %}
 </section>

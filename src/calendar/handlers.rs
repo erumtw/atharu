@@ -1,7 +1,7 @@
 use super::{ical, queries, view};
 use crate::{
     app::AppState,
-    domain::dates,
+    domain::{dates, timegrid},
     error::{AppError, AppResult},
     layout::{Layout, TagFilter},
     web,
@@ -11,83 +11,175 @@ use axum::{
     http::{HeaderMap, StatusCode},
     response::Response,
 };
-use chrono::{Days, Months, NaiveDate, NaiveTime};
+use chrono::{Days, Months, NaiveDate, NaiveTime, Timelike};
 use rusqlite::Connection;
 use serde::Deserialize;
 
-/// Where the calendar is pointed: `?week=` (any day in the range) + `&view=month`.
+/// Where the calendar is pointed: `?d=` (a day in the range; for N days its first day) +
+/// `view=day|week|month` (none = N days: `n` 1–7 picked by the page's width, 7 by default, D3).
 #[derive(Deserialize, Default)]
 pub struct RangeQuery {
+    d: Option<String>,
+    /// Pre-0.2.1 name of `d`, so old links still land.
     week: Option<String>,
     view: Option<String>,
+    n: Option<String>,
     /// Tag filter, comma list (any of them); `add` = the filter row's add box.
     tag: Option<String>,
     add: Option<String>,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum View {
+    Day,
+    Days,
+    Week,
+    Month,
+}
+
 struct Range {
+    view: View,
+    n: u32,
     anchor: NaiveDate,
-    month: bool,
+    /// `d` was in the URL; without it N days pick their own window around today.
+    given: bool,
     tags: Vec<String>,
 }
 
 impl Range {
     fn of(q: &RangeQuery, today: NaiveDate) -> Range {
+        let d: Option<NaiveDate> =
+            q.d.as_deref()
+                .or(q.week.as_deref())
+                .and_then(|w| w.parse().ok());
+        let view = match q.view.as_deref() {
+            Some("day") => View::Day,
+            Some("week") => View::Week,
+            Some("month") => View::Month,
+            _ => View::Days,
+        };
+        let n = match view {
+            View::Day => 1,
+            View::Days => {
+                q.n.as_deref()
+                    .and_then(|n| n.parse::<u32>().ok())
+                    .map_or(7, |n| n.clamp(1, 7))
+            }
+            View::Week | View::Month => 7,
+        };
         Range {
-            anchor: q
-                .week
-                .as_deref()
-                .and_then(|w| w.parse().ok())
-                .unwrap_or(today),
-            month: q.view.as_deref() == Some("month"),
+            view,
+            n,
+            anchor: d.unwrap_or(today),
+            given: d.is_some(),
             tags: TagFilter::pick(q.tag.as_deref(), q.add.as_deref()),
         }
     }
 
-    /// First and last day of the grid: Sun–Sat of the week (D48), or whole weeks covering the month.
+    /// First and last day: Sun–Sat of the week (D48), whole weeks covering the month, the day, or N days.
     fn span(&self) -> (NaiveDate, NaiveDate) {
-        if self.month {
-            let ms = dates::month_start(self.anchor);
-            let last = dates::end_of(ms, 1);
-            (
-                dates::calendar_week_start(ms),
-                dates::calendar_week_start(last) + Days::new(6),
-            )
-        } else {
-            let ws = dates::calendar_week_start(self.anchor);
-            (ws, ws + Days::new(6))
+        match self.view {
+            View::Month => {
+                let ms = dates::month_start(self.anchor);
+                let last = dates::end_of(ms, 1);
+                (
+                    dates::calendar_week_start(ms),
+                    dates::calendar_week_start(last) + Days::new(6),
+                )
+            }
+            // 7 days is the week, so the default view and old `?week=` links stay Sun–Sat.
+            View::Week | View::Days if self.n == 7 => {
+                let ws = dates::calendar_week_start(self.anchor);
+                (ws, ws + Days::new(6))
+            }
+            View::Day => (self.anchor, self.anchor),
+            View::Days | View::Week => {
+                // Unpointed: the N days of this week that hold today, as late in the week as fits
+                // (Fri 13 with 5 → Tue 10 – Sat 14), so the past days stay in view.
+                let start = if self.given {
+                    self.anchor
+                } else {
+                    let latest =
+                        dates::calendar_week_start(self.anchor) + Days::new(7 - u64::from(self.n));
+                    self.anchor.min(latest)
+                };
+                (start, start + Days::new(u64::from(self.n) - 1))
+            }
+        }
+    }
+
+    /// The day forms and links carry: N days are pointed by their first day, the rest by any day in them.
+    fn d(&self) -> NaiveDate {
+        match self.view {
+            View::Days if self.n < 7 => self.span().0,
+            _ => self.anchor,
         }
     }
 
     fn step(&self, forward: bool) -> NaiveDate {
-        match (self.month, forward) {
-            (true, true) => dates::month_start(self.anchor) + Months::new(1),
-            (true, false) => dates::month_start(self.anchor) - Months::new(1),
-            (false, true) => self.anchor + Days::new(7),
-            (false, false) => self.anchor - Days::new(7),
+        let days = match self.view {
+            View::Month if forward => return dates::month_start(self.anchor) + Months::new(1),
+            View::Month => return dates::month_start(self.anchor) - Months::new(1),
+            View::Week => 7,
+            View::Day | View::Days => self.n,
+        };
+        let from = self.d();
+        if forward {
+            from + Days::new(u64::from(days))
+        } else {
+            from - Days::new(u64::from(days))
         }
     }
 
-    fn href(&self, anchor: NaiveDate) -> String {
-        let view = if self.month { "&view=month" } else { "" };
-        let tag = if self.tags.is_empty() {
-            String::new()
-        } else {
-            format!("&tag={}", self.tags.join(","))
-        };
-        format!("/calendar?week={}{view}{tag}", dates::iso(anchor))
+    fn view_name(&self) -> &'static str {
+        match self.view {
+            View::Day => "day",
+            View::Days => "days",
+            View::Week => "week",
+            View::Month => "month",
+        }
     }
 
-    /// `9 – 15 Nov`, `30 Nov – 6 Dec`, or `November 2026`.
+    /// `/calendar?d=…[&view=…][&n=…]`, no tag: the tag filter appends its own.
+    fn base(&self, d: NaiveDate) -> String {
+        let view = match self.view {
+            View::Days if self.n == 7 => String::new(),
+            View::Days => format!("&n={}", self.n),
+            _ => format!("&view={}", self.view_name()),
+        };
+        format!("/calendar?d={}{view}", dates::iso(d))
+    }
+
+    fn href(&self, d: NaiveDate) -> String {
+        if self.tags.is_empty() {
+            self.base(d)
+        } else {
+            format!("{}&tag={}", self.base(d), self.tags.join(","))
+        }
+    }
+
+    /// `9 – 15 Nov`, `30 Nov – 6 Dec`, `Fri 13 Nov`, or `November 2026`.
     fn title(&self) -> String {
-        if self.month {
+        if self.view == View::Month {
             return self.anchor.format("%B %Y").to_string();
         }
         let (a, b) = self.span();
-        if a.format("%m").to_string() == b.format("%m").to_string() {
+        if a == b {
+            a.format("%a %-d %b").to_string()
+        } else if a.format("%m").to_string() == b.format("%m").to_string() {
             format!("{} – {}", a.format("%-d"), b.format("%-d %b"))
         } else {
             format!("{} – {}", a.format("%-d %b"), b.format("%-d %b"))
+        }
+    }
+
+    /// What ‹ › move by: `week`, `month`, `day` or `5 days`.
+    fn unit(&self) -> String {
+        match self.view {
+            View::Month => "month".into(),
+            _ if self.n == 7 => "week".into(),
+            _ if self.n == 1 => "day".into(),
+            _ => format!("{} days", self.n),
         }
     }
 }
@@ -97,6 +189,28 @@ fn ix(from: NaiveDate, day: &str) -> Option<usize> {
     usize::try_from((d - from).num_days()).ok()
 }
 
+/// `HH:MM` minutes of a stored `YYYY-MM-DD?HH:MM…` (meetings use a space, events a `T`).
+fn mins(at: &str) -> Option<u32> {
+    let t = NaiveTime::parse_from_str(at.get(11..16)?, "%H:%M").ok()?;
+    Some(t.hour() * 60 + t.minute())
+}
+
+fn hm(m: u32) -> String {
+    format!("{:02}:{:02}", m / 60, m % 60)
+}
+
+/// Where a timed item ends: `end` on the same day, midnight when it runs past it, else `fallback`.
+fn end_of(start_at: &str, end_at: Option<&str>, fallback: u32) -> u32 {
+    match end_at {
+        Some(e) if e.get(..10) == start_at.get(..10) => mins(e).unwrap_or(fallback),
+        Some(_) => 24 * 60,
+        None => fallback,
+    }
+}
+
+/// A short item still needs room for its title: what the grid draws and lays out.
+const MIN_LEN: u32 = 20;
+
 fn cal(
     conn: &Connection,
     r: &Range,
@@ -105,40 +219,63 @@ fn cal(
 ) -> AppResult<view::Cal> {
     let (from, to) = r.span();
     let (f, t) = (dates::iso(from), dates::iso(to));
+    let month = r.view == View::Month;
     let mut days: Vec<view::Day> = from
         .iter_days()
         .take_while(|d| *d <= to)
         .map(|d| view::Day {
             iso: dates::iso(d),
-            head: if r.month {
-                d.format("%-d").to_string()
-            } else {
-                d.format("%a %-d").to_string()
-            },
+            wd: d.format("%a").to_string(),
+            num: d.format("%-d").to_string(),
             now: d == today,
-            outside: r.month && dates::month_start(d) != dates::month_start(r.anchor),
+            outside: month && dates::month_start(d) != dates::month_start(r.anchor),
             logged: 0,
-            items: Vec::new(),
+            all_day: Vec::new(),
+            timed: Vec::new(),
         })
         .collect();
-    let mut put = |day: &str, item: view::Item| {
-        if let Some(d) = ix(from, day).and_then(|i| days.get_mut(i)) {
-            d.items.push(item);
+    // ponytail: the real clock even under a fixed test day; tests never assert the now line's place.
+    let now = chrono::Local::now().time();
+    let now = now.hour() * 60 + now.minute();
+    // (day index, start, end, item): placed once every day's hours are known.
+    let mut timed: Vec<(usize, u32, u32, view::Item)> = Vec::new();
+    let mut put = |day: &str, at: Option<(u32, u32)>, item: view::Item| {
+        let Some(i) = ix(from, day).filter(|i| *i < days.len()) else {
+            return;
+        };
+        match at {
+            Some((s, e)) => timed.push((i, s, e.max(s + MIN_LEN).min(24 * 60), item)),
+            None => days[i].all_day.push(item),
         }
     };
     let tags = &r.tags;
     for m in queries::meetings(conn, &f, &t, tags)? {
+        let start = m.started_at.as_deref().and_then(mins);
+        let at = start.map(|s| {
+            let started = m.started_at.as_deref().unwrap_or_default();
+            // Running: up to now on its own day.
+            let fallback = if m.day == dates::iso(today) {
+                now
+            } else {
+                s + 30
+            };
+            (s, end_of(started, m.ended_at.as_deref(), fallback))
+        });
+        let sub = match (at, &m.ended_at) {
+            (Some((s, e)), Some(_)) => format!("{} – {}", hm(s), hm(e)),
+            (Some((s, _)), None) => format!("{} · running", hm(s)),
+            // Stored as local `YYYY-MM-DD HH:MM:SS`; the cell only needs the time.
+            (None, Some(e)) => format!("ended {}", e.get(11..16).unwrap_or(e)),
+            (None, None) => "running".into(),
+        };
         put(
             &m.day,
+            at,
             view::Item {
                 class: "meet",
-                time: None,
-                // Stored as local `YYYY-MM-DD HH:MM:SS`; the cell only needs the time.
-                sub: Some(match m.ended_at {
-                    Some(e) => format!("ended {}", e.get(11..16).unwrap_or(&e)),
-                    None => "running".into(),
-                }),
+                time: start.map(hm),
                 text: m.name,
+                sub: Some(sub),
                 href: Some(format!("/meetings/{}", m.id)),
                 late: false,
                 own_id: None,
@@ -158,13 +295,20 @@ fn cal(
         if !tags.is_empty() && !(if own { e.tagged } else { by_word() }) {
             continue;
         }
+        // Own events have no end: an hour, as Google's default.
+        let at =
+            mins(&e.starts_at).map(|s| (s, end_of(&e.starts_at, e.ends_at.as_deref(), s + 60)));
         put(
             &e.starts_at,
+            at,
             view::Item {
                 class: if own { "own" } else { "meet" },
-                time: e.starts_at.get(11..16).map(str::to_string),
+                time: at.map(|(s, _)| hm(s)),
+                sub: at.map(|(s, end)| match e.ends_at {
+                    Some(_) => format!("{} – {}", hm(s), hm(end)),
+                    None => hm(s),
+                }),
                 text: e.title,
-                sub: None,
                 href: None,
                 late: false,
                 own_id: own.then_some(e.id),
@@ -175,6 +319,7 @@ fn cal(
         let late = due < dates::iso(today);
         put(
             &due,
+            None,
             view::Item {
                 class: "todo",
                 time: None,
@@ -189,6 +334,7 @@ fn cal(
     for (day, key) in queries::targets(conn, &f, &t, tags)? {
         put(
             &day,
+            None,
             view::Item {
                 class: "tgt",
                 time: None,
@@ -205,10 +351,47 @@ fn cal(
             d.logged = n;
         }
     }
+    // 07–21, widened to the earliest start and latest end in range.
+    let h0 = timed.iter().map(|t| t.1 / 60).min().unwrap_or(7).min(7);
+    let h1 = timed
+        .iter()
+        .map(|t| t.2.div_ceil(60))
+        .max()
+        .unwrap_or(21)
+        .max(21);
+    timed.sort_by_key(|t| (t.0, t.1));
+    // Overlap columns per day: `timed` is sorted by day, so each day is one run.
+    let mut cols_of: Vec<(usize, usize)> = Vec::with_capacity(timed.len());
+    let mut i = 0;
+    while i < timed.len() {
+        let day = timed[i].0;
+        let j = timed[i..]
+            .iter()
+            .position(|t| t.0 != day)
+            .map_or(timed.len(), |k| i + k);
+        let spans: Vec<(u32, u32)> = timed[i..j].iter().map(|t| (t.1, t.2)).collect();
+        cols_of.extend(timegrid::columns(&spans));
+        i = j;
+    }
+    for ((day, s, e, item), (col, cols)) in timed.into_iter().zip(cols_of) {
+        days[day].timed.push(view::Timed {
+            item,
+            top: s - h0 * 60,
+            len: e - s,
+            col,
+            cols,
+        });
+    }
+    let now_min = (!month && (from..=to).contains(&today) && (h0 * 60..h1 * 60).contains(&now))
+        .then(|| now - h0 * 60);
     Ok(view::Cal {
-        month: r.month,
-        week: dates::iso(r.anchor),
+        view: r.view_name(),
+        n: r.n,
+        d: dates::iso(r.d()),
         tag: r.tags.join(","),
+        h0,
+        h1,
+        now_min,
         days,
         notice,
     })
@@ -226,19 +409,17 @@ fn render_page(
         title: r.title(),
         prev: r.href(r.step(false)),
         next: r.href(r.step(true)),
+        unit: r.unit(),
         cal: cal(&conn, r, st.today(), notice)?,
         has_ical: st.settings.ical_url.is_some(),
         filter: TagFilter {
             tags: r.tags.clone(),
-            path: format!(
-                "/calendar?week={}{}&",
-                dates::iso(r.anchor),
-                if r.month { "&view=month" } else { "" }
-            ),
-            keep: [("week", dates::iso(r.anchor))]
-                .into_iter()
-                .chain(r.month.then(|| ("view", "month".to_string())))
-                .collect(),
+            path: format!("{}&", r.base(r.d())),
+            keep: vec![
+                ("d", dates::iso(r.d())),
+                ("view", r.view_name().into()),
+                ("n", r.n.to_string()),
+            ],
             known: queries::tag_names(&conn)?,
         },
         form,
@@ -258,7 +439,7 @@ fn answer(
     notice: Option<view::Notice>,
 ) -> AppResult<Response> {
     if !web::is_htmx(headers) {
-        return Ok(web::back(&r.href(r.anchor)));
+        return Ok(web::back(&r.href(r.d())));
     }
     let cal = cal(&st.conn(), r, st.today(), notice)?;
     web::html(&view::Swap { cal })
@@ -270,8 +451,9 @@ pub struct AddForm {
     date: String,
     #[serde(default)]
     time: String,
-    week: Option<String>,
+    d: Option<String>,
     view: Option<String>,
+    n: Option<String>,
     tag: Option<String>,
 }
 
@@ -282,10 +464,11 @@ pub async fn add(
 ) -> AppResult<Response> {
     let r = Range::of(
         &RangeQuery {
-            week: f.week.clone(),
+            d: f.d.clone(),
             view: f.view.clone(),
+            n: f.n.clone(),
             tag: f.tag.clone(),
-            add: None,
+            ..Default::default()
         },
         st.today(),
     );
@@ -326,25 +509,36 @@ pub async fn add(
         format!("{}T{time}", dates::iso(date))
     };
     queries::add_own(&st.conn(), title, &starts_at)?;
-    // Land on the range holding the new event, so it's visible.
-    let r = Range { anchor: date, ..r };
+    // Land on a range holding the new event, so it's visible; keep the shown one when it already does.
+    let (from, to) = r.span();
+    let r = if (from..=to).contains(&date) {
+        r
+    } else {
+        Range {
+            anchor: date,
+            given: true,
+            ..r
+        }
+    };
     answer(&st, &headers, &r, None)
 }
 
 #[derive(Deserialize)]
 pub struct RangeForm {
-    week: Option<String>,
+    d: Option<String>,
     view: Option<String>,
+    n: Option<String>,
     tag: Option<String>,
 }
 
 fn range_of(st: &AppState, f: RangeForm) -> Range {
     Range::of(
         &RangeQuery {
-            week: f.week,
+            d: f.d,
             view: f.view,
+            n: f.n,
             tag: f.tag,
-            add: None,
+            ..Default::default()
         },
         st.today(),
     )

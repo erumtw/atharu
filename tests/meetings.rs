@@ -315,7 +315,7 @@ async fn archive_hides_a_series_from_meetings_and_calendar() {
            (2, '2026-11-10', 'planning', '2026-11-10 11:00:00');",
     );
     let row = r#"href="/meetings?name=oms-sync"><b>oms-sync</b>"#;
-    let cal = r#"href="/meetings/1">oms-sync"#;
+    let cal = r#"href="/meetings/1"><b>oms-sync"#;
     assert!(get(&st, "/meetings").await.body.contains(row));
 
     let r = post(
@@ -373,7 +373,7 @@ async fn archive_hides_a_series_from_meetings_and_calendar() {
         get(&st, "/calendar")
             .await
             .body
-            .contains(r#"href="/meetings/1">oms-weekly"#)
+            .contains(r#"href="/meetings/1"><b>oms-weekly</b>"#)
     );
     assert_eq!(count(&st, "SELECT COUNT(*) FROM series_archive"), 0);
 }
@@ -402,10 +402,7 @@ async fn starting_a_meeting_unarchives_its_series() {
             .body
             .contains(r#"<b>planning</b>"#)
     );
-    assert!(
-        get(&st, "/calendar")
-            .await
-            .body
-            .contains(r#"href="/meetings/2">planning"#)
-    );
+    // Started just now, so it sits on the hour grid at the real clock's time.
+    let cal = get(&st, "/calendar").await.body;
+    assert!(cal.contains(r#"href="/meetings/2""#) && cal.contains("<b>planning</b>"));
 }

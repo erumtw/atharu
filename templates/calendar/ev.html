@@ -1,0 +1,7 @@
+{#- One calendar item (`i`: view::Item) as a chip; needs `cal` for the delete form's range fields. -#}
+{%- if let Some(h) = i.href -%}
+<a class="ev {{ i.class }}{% if i.late %} late{% endif %}" href="{{ h }}">{% if let Some(t) = i.time %}<span class="t">{{ t }}</span> {% endif %}<b>{{ i.text }}</b>{% if let Some(s) = i.sub %} <small>{{ s }}</small>{% endif %}</a>
+{%- else -%}
+<div class="ev {{ i.class }} evrow"><form class="inline" method="post" action="/meetings"><input type="hidden" name="name" value="{{ i.text }}"><input type="hidden" name="back" value="/"><button class="evbtn" type="submit" title="Start meeting mode">{% if let Some(t) = i.time %}<span class="t">{{ t }}</span> {% endif %}<b>{{ i.text }}</b>{% if let Some(s) = i.sub %} <small>{{ s }}</small>{% endif %}</button></form>
+{%- if let Some(id) = i.own_id %}<form class="inline" method="post" action="/calendar/events/{{ id }}/delete" hx-post="/calendar/events/{{ id }}/delete" hx-target="#cal" hx-swap="outerHTML">{% include "calendar/range.html" %}<button class="x" type="submit" title="Delete event" aria-label="Delete event">×</button></form>{% endif %}</div>
+{%- endif %}

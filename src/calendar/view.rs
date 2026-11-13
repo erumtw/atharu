@@ -19,22 +19,60 @@ pub struct Item {
 
 pub struct Day {
     pub iso: String,
-    /// `Sun 8` in week view, `9` in month view.
-    pub head: String,
+    /// `Sun` · `8`: the header shows both, the month cell only the number.
+    pub wd: String,
+    pub num: String,
     pub now: bool,
     /// Month view: leading/trailing days of the neighbouring months.
     pub outside: bool,
     pub logged: i64,
-    pub items: Vec<Item>,
+    /// Due dates, epic targets, date-only events, meetings with no start time.
+    pub all_day: Vec<Item>,
+    /// In start order.
+    pub timed: Vec<Timed>,
+}
+
+impl Day {
+    /// Month cell: timed first (by time), then the all-day ones.
+    pub fn items(&self) -> Vec<&Item> {
+        self.timed
+            .iter()
+            .map(|t| &t.item)
+            .chain(&self.all_day)
+            .collect()
+    }
+}
+
+impl Timed {
+    pub fn i(&self) -> &Item {
+        &self.item
+    }
+}
+
+/// An item on the hour grid; minutes count from the grid's first hour.
+pub struct Timed {
+    pub item: Item,
+    pub top: u32,
+    pub len: u32,
+    /// Overlap layout (`domain::timegrid::columns`): column and column count of its cluster.
+    pub col: usize,
+    pub cols: usize,
 }
 
 /// The `#cal` section: the grid plus the last action's message. Every action swaps it whole.
 pub struct Cal {
-    pub month: bool,
-    /// Anchor date of the shown range, carried by every form so it answers for the same range.
-    pub week: String,
-    /// The tag filter (comma list), carried by every form like `week`.
+    /// `day` · `days` (N days, picked by width) · `week` · `month`.
+    pub view: &'static str,
+    pub n: u32,
+    /// Where the range is pointed, carried by every form so it answers for the same range.
+    pub d: String,
+    /// The tag filter (comma list), carried by every form like `d`.
     pub tag: String,
+    /// The hour grid's first and last hour: 07–21, widened to fit the range's items.
+    pub h0: u32,
+    pub h1: u32,
+    /// Minutes from `h0` to now, when today is in the range.
+    pub now_min: Option<u32>,
     pub days: Vec<Day>,
     pub notice: Option<Notice>,
 }
@@ -45,8 +83,27 @@ pub struct Notice {
 }
 
 impl Cal {
-    pub fn view(&self) -> &'static str {
-        if self.month { "month" } else { "week" }
+    pub fn month(&self) -> bool {
+        self.view == "month"
+    }
+
+    pub fn hours(&self) -> std::ops::Range<u32> {
+        self.h0..self.h1
+    }
+
+    /// How many of `n` items a cell shows: all of them in a one-day view or when ≤ 3, else 2 + "+N more".
+    pub fn cap(&self, n: usize) -> usize {
+        if self.days.len() == 1 || n <= 3 { n } else { 2 }
+    }
+
+    /// A day opens as the Day view (same tag filter).
+    pub fn day_href(&self, d: &Day) -> String {
+        let tag = if self.tag.is_empty() {
+            String::new()
+        } else {
+            format!("&tag={}", self.tag)
+        };
+        format!("/calendar?d={}&view=day{tag}", d.iso)
     }
 }
 
@@ -57,6 +114,8 @@ pub struct Page {
     pub title: String,
     pub prev: String,
     pub next: String,
+    /// `week`, `month`, `day` or `5 days`: the ‹ › labels.
+    pub unit: String,
     pub cal: Cal,
     pub has_ical: bool,
     pub filter: crate::layout::TagFilter,
