@@ -69,6 +69,9 @@ pub struct FileConfig {
     pub jira_token: Option<String>,
 }
 
+/// D9: where the owner makes a new Jira API token (Epics, Settings and the move menu link it).
+pub const JIRA_TOKEN_URL: &str = "https://id.atlassian.com/manage-profile/security/api-tokens";
+
 /// All three Jira keys, or none: a half-filled config is "off", not an error.
 pub struct Jira<'a> {
     pub base_url: &'a str,

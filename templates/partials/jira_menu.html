@@ -1,4 +1,4 @@
 {#- The Jira move menu (0.2.5 D1, D8): a popover whose trigger sets popovertarget="jm-{{ ju }}" + anchor --jm-{{ ju }}.
-    Needs `jk`, `ju`, `jurl`, `back`. It loads Jira's allowed moves when it opens; without JS it still opens Jira. It
+    Needs `jk`, `ju`, `jurl`, `back`. It reads Jira's allowed moves each time it opens (a move elsewhere changes them); without JS it still opens Jira. It
     often sits inside a page's form (the epic head), so it names its own target (hx-target inherits). -#}
-<div class="menu jmenu" id="jm-{{ ju }}" popover role="menu" aria-label="Move {{ jk }} in Jira" style="position-anchor: --jm-{{ ju }}" hx-get="/jira/{{ jk }}/moves?back={{ back|urlencode }}" hx-trigger="toggle once" hx-target="this" hx-swap="innerHTML"><div class="mh" role="presentation">Move {{ jk }} in Jira</div><a role="menuitem" href="{{ jurl }}" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a></div>
+<div class="menu jmenu" id="jm-{{ ju }}" popover role="menu" aria-label="Move {{ jk }} in Jira" style="position-anchor: --jm-{{ ju }}" hx-get="/jira/{{ jk }}/moves?back={{ back|urlencode }}" hx-trigger="toggle[newState=='open']" hx-target="this" hx-swap="innerHTML"><div class="mh" role="presentation">Move {{ jk }} in Jira</div><a role="menuitem" href="{{ jurl }}" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a></div>

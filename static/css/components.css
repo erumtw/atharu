@@ -66,10 +66,11 @@ a:hover>.chip{background:var(--sep)}
 .lchip.st>.cv{font-size:10px}
 /* A to-do's Jira link chip keeps its own ↗ link, with the ▾ as a joined second half (one pill visually). */
 .jchip{display:inline-flex;align-items:center;gap:0}
-/* Status chip by Jira category (never by name): new grey ink, in progress the accent, done muted with ✓. */
-.lchip.jc-new{color:var(--ink-2)}
-.lchip.jc-done{color:var(--muted)}
-.lchip.jc-done>span::before{content:"✓ "}
+/* Status chip by Jira category (never by name): new grey ink, in progress the accent, done muted with ✓. On a status
+   chip the category sits on its `.jst-KEY` span (a move swaps that span whole), so the pill follows via :has. */
+.lchip.jc-new,.lchip:has(>.jc-new){color:var(--ink-2)}
+.lchip.jc-done,.lchip:has(>.jc-done){color:var(--muted)}
+.lchip.st>.jc-done::before{content:"✓ "}
 /* The move menu's pills (Redesign.Jira.Status): done reads green there, it's where you pick it. --ok on --fill-2
    5.06:1, on the --sep hover 4.51:1. */
 .jmenu .lchip.jc-done{color:var(--ok)}

@@ -30,8 +30,10 @@ fn full(st: &AppState, conn: &rusqlite::Connection, db: view::Db) -> AppResult<v
         looks: &LOOKS,
         google: st.settings.ical_url.is_some(),
         jira: st.settings.jira().is_some(),
-        jira_dead: queries::get(conn, "jira_auth_failed")?.is_some(),
-        token_url: crate::jira::TOKEN_URL,
+        // A stored failure only speaks while Jira is set up: removing the token from the config silences it.
+        jira_dead: st.settings.jira().is_some()
+            && queries::get(conn, "jira_auth_failed")?.is_some(),
+        token_url: crate::config::JIRA_TOKEN_URL,
         version: build_info::TAG.map_or_else(
             || format!("{} · dev build", build_info::VERSION),
             str::to_string,

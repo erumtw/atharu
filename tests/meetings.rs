@@ -253,7 +253,7 @@ async fn migration_010_moves_notes_text_into_a_note() {
              ALTER TABLE jira_issues DROP COLUMN issue_type; ALTER TABLE jira_issues DROP COLUMN status_cat;
              ALTER TABLE jira_issues DROP COLUMN parent_key; ALTER TABLE jira_issues DROP COLUMN parent_summary;
              ALTER TABLE jira_issues DROP COLUMN due; ALTER TABLE jira_issues DROP COLUMN resolved_on;
-             ALTER TABLE jira_issues DROP COLUMN updated_at; ALTER TABLE jira_issues DROP COLUMN assigned_me;
+             ALTER TABLE jira_issues DROP COLUMN updated_at; ALTER TABLE jira_issues DROP COLUMN assigned_me; ALTER TABLE jira_issues DROP COLUMN level;
              PRAGMA user_version = 9;
              INSERT INTO meetings(id, day, name, notes, ended_at) VALUES
                (1, '2026-11-10', 'oms-sync', 'ship friday #cshub', '2026-11-10 10:00:00'),

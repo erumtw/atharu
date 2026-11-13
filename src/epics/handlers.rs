@@ -139,13 +139,15 @@ fn list_row(st: &AppState, e: queries::EpicRow, today: NaiveDate) -> view::ListR
 type Parented = (Option<(String, String)>, view::ListRow);
 
 /// D4: stories sit under their Jira parent. A parent that is a row here takes its children right under it; one that
-/// isn't gets a header row (its Jira title + status + "+ Track as epic"), first in the group. Rows keep key order.
+/// Atharu doesn't track at all gets a header row (its Jira title + status + "+ Track as epic"), first in the group; one
+/// tracked elsewhere (another OKR group, done, dropped) leaves its children as plain rows. Rows keep key order.
 fn by_parent(
     st: &AppState,
     conn: &Connection,
     rows: Vec<Parented>,
 ) -> AppResult<Vec<view::ListItem>> {
     let here: std::collections::HashSet<String> = rows.iter().map(|(_, r)| r.key.clone()).collect();
+    let tracked = queries::epic_keys(conn)?;
     let mut heads: Vec<(String, String, Vec<view::ListRow>)> = Vec::new();
     let mut under: std::collections::HashMap<String, Vec<view::ListRow>> = Default::default();
     let mut top = Vec::new();
@@ -155,6 +157,9 @@ fn by_parent(
                 row.child = true;
                 if here.contains(&p) {
                     under.entry(p).or_default().push(row);
+                } else if tracked.contains(&p) {
+                    row.child = false;
+                    top.push(row);
                 } else if let Some(h) = heads.iter_mut().find(|h| h.0 == p) {
                     h.2.push(row);
                 } else {
@@ -215,7 +220,7 @@ fn assigned(
                     .unwrap_or_default()
             );
             view::AssignedRow {
-                epic: a.issue_type == "Epic",
+                epic: a.epic,
                 due: due_date.map(|d| format!("due {}", crate::domain::plan::quiet(d, today))),
                 jira,
                 line,
@@ -321,8 +326,9 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
         groups,
         closed,
         assigned: assigned(&st, &conn, today)?,
-        dead_token: queries::jira_auth_failed(&conn)?.is_some(),
-        token_url: crate::jira::TOKEN_URL,
+        // Only while Jira is set up (a stored failure outlives a removed token).
+        dead_token: st.settings.jira().is_some() && queries::jira_auth_failed(&conn)?.is_some(),
+        token_url: crate::config::JIRA_TOKEN_URL,
         jira_on: st.settings.jira().is_some(),
         jira_failed: q.jira.as_deref() == Some("failed"),
         jira_done: q.jira.as_deref() == Some("ok"),

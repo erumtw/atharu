@@ -6,7 +6,7 @@
       "updated": "2026-11-13T16:42:10.123+0700"}},
     {"id": "10011", "key": "OPS-131", "fields": {"summary": "Alert at 6°C for 10 min",
       "status": {"name": "Done", "statusCategory": {"key": "done", "name": "Done"}},
-      "issuetype": {"name": "Story"},
+      "issuetype": {"name": "Story", "hierarchyLevel": 0},
       "parent": {"key": "OPS-130", "fields": {"summary": "Cold-chain delivery alerts"}},
       "resolutiondate": "2026-11-12T10:20:30.000+0700", "updated": "2026-11-12T10:20:30.000+0700"}}
   ],

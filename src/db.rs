@@ -23,6 +23,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/011_series_archive.sql"),
     include_str!("../migrations/012_mac_events.sql"),
     include_str!("../migrations/013_jira_fields.sql"),
+    include_str!("../migrations/014_jira_level.sql"),
 ];
 
 /// `user_version` after 006: the step that also fills `taggings` from text written before tags existed.

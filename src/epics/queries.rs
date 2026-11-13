@@ -93,10 +93,11 @@ pub fn set_jira_not_yet(conn: &Connection, key: &str, resolved: &str) -> rusqlit
     Ok(())
 }
 
-/// D2 "Mark done": Jira's resolution date becomes "done on".
+/// D2 "Mark done": Jira's resolution date becomes "done on". Only an active epic: a stale form never reopens
+/// a dropped one as done or rewrites an earlier done date.
 pub fn mark_done(conn: &Connection, key: &str, on: &str) -> rusqlite::Result<()> {
     conn.execute(
-        "UPDATE epics SET status = 'done', done_on = ?2 WHERE key = ?1",
+        "UPDATE epics SET status = 'done', done_on = ?2 WHERE key = ?1 AND status = 'active'",
         params![key, on],
     )?;
     Ok(())
@@ -112,6 +113,8 @@ pub struct Assigned {
     pub issue_type: String,
     pub due: Option<String>,
     pub tracked: bool,
+    /// D6/D16: Jira's epic level (hierarchyLevel 1); unknown level → the type name "Epic".
+    pub epic: bool,
 }
 
 /// Newest-updated first, as Jira returned them.
@@ -120,6 +123,7 @@ pub fn assigned(conn: &Connection) -> rusqlite::Result<Vec<Assigned>> {
         "SELECT j.key, j.summary, j.status, j.status_cat, j.issue_type, j.due,
                 EXISTS (SELECT 1 FROM epics WHERE key = j.key)
                 OR EXISTS (SELECT 1 FROM entries WHERE plan_state = 'open' AND link LIKE '%/browse/' || j.key)
+                , COALESCE(j.level = 1, j.issue_type = 'Epic')
            FROM jira_issues j WHERE j.assigned_me = 1 ORDER BY j.updated_at DESC, j.key",
     )?;
     stmt.query_map([], |r| {
@@ -131,6 +135,7 @@ pub fn assigned(conn: &Connection) -> rusqlite::Result<Vec<Assigned>> {
             issue_type: r.get(4)?,
             due: r.get(5)?,
             tracked: r.get(6)?,
+            epic: r.get(7)?,
         })
     })?
     .collect()
@@ -147,6 +152,12 @@ pub fn jira_issue(
         |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
     )
     .optional()
+}
+
+/// Every epic key here, any status (D4: a parent tracked in another group, or done / dropped, is not "not tracked").
+pub fn epic_keys(conn: &Connection) -> rusqlite::Result<std::collections::HashSet<String>> {
+    let mut stmt = conn.prepare("SELECT key FROM epics")?;
+    stmt.query_map([], |r| r.get(0))?.collect()
 }
 
 /// D9: when Jira last refused the token (None = fine).

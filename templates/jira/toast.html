@@ -1,5 +1,5 @@
 {#- What a Jira move did (0.2.5 D8): 5 s, with Undo while the move can be reversed. The chips of this key on the page
-    take the new status out-of-band. -#}
+    take the new status span whole (text + category) out-of-band. -#}
 <span class="jtoast-in">
 {%- if dead_token %}<span class="err">Token expired or revoked.</span> <a href="{{ token_url }}" target="_blank" rel="noopener noreferrer">Make a new one ↗</a>
 {%- else %}<span>{{ text }}</span>
@@ -7,4 +7,4 @@
 {%- else if status.is_none() %}{% if let Some(u) = url %} <a href="{{ u }}" target="_blank" rel="noopener noreferrer">↗</a>{% endif %}
 {%- endif %}
 {%- endif %}</span>
-{%- if let Some(s) = status %}<span hx-swap-oob="innerHTML:.jst-{{ key }}">{{ s }}</span>{% endif %}
+{%- if let Some(s) = status %}<span class="jst-{{ key }} jc-{{ cat }}" hx-swap-oob="outerHTML:.jst-{{ key }}">{{ s }}</span>{% endif %}

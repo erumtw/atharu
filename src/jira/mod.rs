@@ -4,7 +4,7 @@
 mod moves;
 mod queries;
 
-pub use moves::{Move, TOKEN_URL, parse_moves};
+pub use moves::{Move, parse_moves};
 pub use queries::Issue;
 
 use crate::{app::AppState, config::Jira, domain::plan::jira_key, error::AppResult, web};
@@ -44,7 +44,7 @@ struct RawFields {
     #[serde(default)]
     summary: String,
     status: Option<RawStatus>,
-    issuetype: Option<Named>,
+    issuetype: Option<RawType>,
     parent: Option<RawParent>,
     duedate: Option<String>,
     resolutiondate: Option<String>,
@@ -64,8 +64,11 @@ struct RawCategory {
 }
 
 #[derive(Deserialize)]
-struct Named {
+struct RawType {
     name: String,
+    /// 1 = the epic level (D16), whatever the team named the type.
+    #[serde(rename = "hierarchyLevel")]
+    level: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -106,6 +109,7 @@ pub fn parse(json: &str) -> Result<Vec<Issue>, String> {
                     .map(|c| c.key.clone())
                     .unwrap_or_default(),
                 status: f.status.map(|s| s.name).unwrap_or_default(),
+                level: f.issuetype.as_ref().and_then(|t| t.level),
                 issue_type: f.issuetype.map(|t| t.name).unwrap_or_default(),
                 parent_summary: f
                     .parent
@@ -280,6 +284,7 @@ mod tests {
                 summary: "Alert at 6°C for 10 min".into(),
                 status: "Done".into(),
                 issue_type: "Story".into(),
+                level: Some(0),
                 status_cat: "done".into(),
                 parent_key: Some("OPS-130".into()),
                 parent_summary: Some("Cold-chain delivery alerts".into()),
