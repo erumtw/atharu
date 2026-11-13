@@ -3,7 +3,7 @@
 <main class="doc wide">
 <header class="pghead"><h1 class="ptitle">Epics</h1><p class="fact">{{ fact }}</p></header>
 {%- if jira_on %}
-<form class="row small" method="post" action="/jira/refresh"><input type="hidden" name="back" value="/epics"><span class="muted">Jira status is read-only.</span><button class="btn ghost s" type="submit">Refresh</button>{% if jira_failed %}<span class="err">Couldn't reach Jira. Showing the last copy.</span>{% endif %}</form>
+<form class="row small" method="post" action="/jira/refresh" onsubmit="const b=this.querySelector('button');b.disabled=true;b.textContent='Refreshing…'"><input type="hidden" name="back" value="/epics"><span class="muted">Jira status is read-only{% if let Some(a) = jira_age %} · updated {{ a }}{% endif %}.</span><button class="btn ghost s" type="submit">Refresh</button>{% if jira_done %}<span class="muted">✓ Refreshed from Jira</span>{% endif %}{% if jira_failed %}<span class="err">Couldn't reach Jira. Showing the last copy.</span>{% endif %}</form>
 {%- endif %}
 {%- for g in groups %}
 

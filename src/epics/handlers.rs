@@ -162,6 +162,13 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
         closed,
         jira_on: st.settings.jira().is_some(),
         jira_failed: q.jira.as_deref() == Some("failed"),
+        jira_done: q.jira.as_deref() == Some("ok"),
+        jira_age: queries::jira_age_min(&conn)?.map(|m| match m {
+            ..=0 => "just now".to_string(),
+            1..=59 => format!("{m} min ago"),
+            60..=1439 => format!("{} h ago", m / 60),
+            _ => format!("{} d ago", m / 1440),
+        }),
     })
 }
 

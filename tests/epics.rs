@@ -327,3 +327,30 @@ async fn impact_line_text_exact() {
     );
     assert_eq!(get(&st, "/epics/NOPE-1").await.status, 404);
 }
+
+#[tokio::test]
+async fn jira_refresh_says_it_ran_and_how_old_the_copy_is() {
+    let mut st = state();
+    // Refresh only shows with Jira set up: a throwaway config file in the temp dir.
+    let path = std::env::temp_dir().join(format!("atharu-jira-{}.toml", std::process::id()));
+    std::fs::write(
+        &path,
+        "jira_base_url = \"https://acme.atlassian.net\"\njira_email = \"me@example.com\"\njira_token = \"tok\"\n",
+    )
+    .unwrap();
+    st.settings = std::sync::Arc::new(atharu::config::FileConfig::load(&path));
+    let _ = std::fs::remove_file(&path);
+    exec(
+        &st,
+        "INSERT INTO jira_issues(key, summary, status) VALUES ('OPS-1', 'One', 'Done')",
+    );
+    let b = get(&st, "/epics?jira=ok").await.body;
+    assert!(b.contains("✓ Refreshed from Jira"), "{b}");
+    assert!(b.contains("updated just now"));
+    assert!(
+        !get(&st, "/epics")
+            .await
+            .body
+            .contains("Refreshed from Jira")
+    );
+}

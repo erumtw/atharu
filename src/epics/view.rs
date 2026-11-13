@@ -59,6 +59,10 @@ pub struct List {
     /// Jira configured: show the Refresh button.
     pub jira_on: bool,
     pub jira_failed: bool,
+    /// The Refresh button just ran and Jira answered (`?jira=ok`): say so, even when nothing changed.
+    pub jira_done: bool,
+    /// "updated 3 min ago" beside Refresh, so the button's effect is visible.
+    pub jira_age: Option<String>,
     pub groups: Vec<OkrGroup>,
     pub closed: Vec<Closed>,
 }

@@ -284,3 +284,12 @@ pub fn tag_names(conn: &Connection) -> rusqlite::Result<Vec<String>> {
         conn.prepare("SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag")?;
     stmt.query_map([], |r| r.get(0))?.collect()
 }
+
+/// Minutes since the last Jira refresh wrote any issue (`fetched_at` is UTC), None before the first one.
+pub fn jira_age_min(conn: &Connection) -> rusqlite::Result<Option<i64>> {
+    conn.query_row(
+        "SELECT CAST((julianday('now') - julianday(MAX(fetched_at))) * 1440 AS INTEGER) FROM jira_issues",
+        [],
+        |r| r.get(0),
+    )
+}

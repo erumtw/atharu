@@ -161,7 +161,11 @@ async fn refresh_button(State(st): State<AppState>, Form(f): Form<Back>) -> AppR
             let sep = if back.contains('?') { '&' } else { '?' };
             web::back(&format!("{back}{sep}jira=failed"))
         }
-        Ok(_) => web::back(&back),
+        Ok(_) => {
+            // Say it ran: an unchanged list looked like a dead button.
+            let sep = if back.contains('?') { '&' } else { '?' };
+            web::back(&format!("{back}{sep}jira=ok"))
+        }
     })
 }
 
