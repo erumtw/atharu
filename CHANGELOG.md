@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.10 — 2026-11-13
+
+### Fixes
+
+- the `by ` date menu works in the follow-up and the To-dos box
+
 ## v0.1.9 — 2026-11-13
 
 ### Features
