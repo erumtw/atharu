@@ -9,7 +9,7 @@
 <p class="small muted" style="margin: 0">No meetings yet. Start one above; reuse a name to add to its series.</p>
 {%- else %}
 {#- One row per series (D14): its page lists the meetings. Archive is a plain POST, so it works without JS. #}
-<div class="tw"><table>
+<div class="tw"><table class="series">
 <tr><th>Series</th><th>Meetings</th><th>Last met</th><th>Open action items</th><th></th></tr>
 {%- for s in series %}
 <tr><td><a class="ink" href="/meetings?name={{ s.name }}"><b>{{ s.name }}</b></a></td><td>{{ s.meetings }}</td><td>{{ s.last }}</td><td>{% if s.open > 0 %}{{ s.open }}{% else %}<span class="muted">—</span>{% endif %}</td><td style="text-align: right"><form class="inline" method="post" action="/meetings/archive"><input type="hidden" name="name" value="{{ s.name }}"><input type="hidden" name="on" value="1"><button class="btn ghost s" type="submit" title="Hides it from Meetings and the Calendar. Its pages stay.">Archive</button></form></td></tr>

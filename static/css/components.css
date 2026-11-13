@@ -726,4 +726,20 @@ details.tg>summary .small{font-size:13px}
 .startm #meeting>.small,.startm #meeting>.err{padding:0 !important}
 .needs h3{margin:10px 0 6px}
 /* To-do rows: actions show on hover / keyboard focus where there is a pointer; phones keep the ⋯ sheet. */
-@media (hover: hover) and (min-width: 640px){.blk.ln:not(:hover):not(:focus-within) .acts>*{visibility:hidden}}
+/* Hidden actions must not keep their width (they squeezed the text to one word per line on real rows, 0.2.0): out of
+   the flow, they float over the row's right end as a small toolbar while the row is hovered or focused. */
+@media (hover: hover) and (min-width: 640px){
+  .blk.ln{position:relative}
+  .blk.ln .acts{position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:2;display:none;gap:6px;align-items:center;
+    padding:3px 4px 3px 10px;border-radius:9999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.06)}
+  .blk.ln:is(:hover,:focus-within) .acts{display:inline-flex}
+}
+/* Meetings: a long series slug wraps inside its cell instead of pushing Archive off the page (real names run 50+ chars). */
+table.series{width:100%;table-layout:fixed}
+table.series :is(th,td):nth-child(2){width:84px}table.series :is(th,td):nth-child(3){width:104px}
+table.series :is(th,td):nth-child(4){width:132px}table.series :is(th,td):nth-child(5){width:96px}
+table.series td:first-child{overflow-wrap:anywhere}
+/* Notes list: one note = one block (title line + preview line), a hairline between notes, so a preview never reads as
+   the next note's (real lists, 0.2.0). */
+.blk.nrow{flex-wrap:wrap;row-gap:2px;padding-block:9px}
+.blk.nrow+.blk.nrow{border-top:1px solid var(--fill-2);border-radius:0}
