@@ -568,6 +568,12 @@ async fn the_view_row_marks_the_current_pick_and_keeps_the_other_params() {
     assert!(
         b.contains("placeholder=\"Filter epics\"") && !b.contains("type=\"hidden\" name=\"group\"")
     );
+    // The live filter's script and what it reads on every row (lowercased key, title, Jira title, tags).
+    assert!(b.contains("<script src=\"/static/js/epicsfilter.js\" defer></script>"));
+    assert!(
+        b.contains("data-q=\"ops-1 checkout latency faster checkout perf,checkout\""),
+        "{b}"
+    );
 
     // A pick elsewhere: the current one is pressed, and each form carries the other two params.
     let b = get(&st, "/epics?q=expens&group=status&show=all&hide_tracked=1")

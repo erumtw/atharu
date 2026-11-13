@@ -17,6 +17,7 @@ const entries = {
   byfield: '/* atharu `by ` date menu on to-do fields (data-by), built by editor/build.mjs from editor/src/byfield.ts. */',
   datepicker: '/* atharu date popover, built by editor/build.mjs from editor/src/datepicker.ts. */',
   quick: '/* atharu menu-bar quick popover, built by editor/build.mjs from editor/src/quick.ts. */',
+  epicsfilter: '/* atharu live filter on /epics, built by editor/build.mjs from editor/src/epicsfilter.ts. */',
   suggest: '/* atharu suggestion menu for list= inputs, built by editor/build.mjs from editor/src/suggest.ts. */',
   motion: '/* atharu motion (FLIP rows, banner height, switch thumb), built by editor/build.mjs from editor/src/motion.ts. */',
   calendar: '/* atharu calendar: N days by width, hour grid opens at 08:00; built by editor/build.mjs from editor/src/calendar.ts. */',

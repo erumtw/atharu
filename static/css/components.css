@@ -83,6 +83,7 @@ a:hover>.chip{background:var(--sep)}
 /* "In Jira, assigned to you" (D5, D6): hairline rows; type · key · title left, status + due right, action last. */
 /* Fixed columns (0.2.6): a flex row let "Story" vs "Task", the due and "+ To-do" vs "✓ tracked" push the status chip
    sideways row by row (owner screenshot). Every row renders all six cells, so the columns line up. */
+.arow[hidden],.etab tr[hidden]{display:none}
 .arow{display:grid;grid-template-columns:52px 76px minmax(0,1fr) 172px 64px 132px;align-items:center;column-gap:10px;
   min-height:44px;padding:2px 0;border-top:1px solid var(--fill-2);font-size:14px}
 .arow:first-child{border-top:0}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block head %}<script src="/static/js/epicsfilter.js" defer></script>{% endblock %}
 {% block content %}
 <main class="doc wide" data-group="{{ p.group.key() }}" data-show="{{ p.show.key() }}">
 <header class="pghead"><h1 class="ptitle">Epics</h1><p class="fact">{{ fact }}</p></header>
