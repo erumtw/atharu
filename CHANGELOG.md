@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.2.9 — 2026-11-14
+
+### Features
+
+- Auto look follows macOS (Sumi by day, Yoru by night); the Mac app's windows and Dock icon follow the look
+- Yoru, a dark look that is one token block (night mesh, Apple-style dark glass, own icons)
+
+### Fixes
+
+- Ask macOS for dark mode only for the Auto look; Yoru's Reduce Transparency rule actually applies
+- Yoru checked on every page, popover and glass setting; drawings keep a white paper; each look has its own glass default
+
+### Under the hood
+
+- V0.2.9 release shots (Today in Yoru, Settings › Look with Yoru selected) from a fresh demo DB
+- Every colour in the CSS is a role token (CUBE token layer); scripts/color-lint.sh keeps it that way
+- Tag placement is a preference, not a ban (end is fine when nothing else reads naturally)
+- Agents put a #tag first or inside the sentence, never tacked on at the end (owner style)
+
 ## v0.2.8 — 2026-11-14
 
 ### Features
