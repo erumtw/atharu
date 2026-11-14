@@ -644,3 +644,72 @@ async fn a_timed_out_row_hides_try_again_while_the_install_still_runs() {
     assert!(b.contains("Try again") && !b.contains("hx-trigger=\"every 2s\""));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[tokio::test]
+async fn the_bar_walks_all_four_steps_never_back_and_speeds_up() {
+    // A fake install.sh that announces the four steps like the real one, each taking 2 s (whole-second elapsed in the model, so a step needs a few seconds to show a share); the history says 2 s each. A file DB
+    // (not in-memory) so the log and update-times.txt live in this test's own folder.
+    let dir = std::env::temp_dir().join(format!("atharu-bar-walk-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("scripts")).unwrap();
+    std::fs::write(
+        dir.join("scripts/install.sh"),
+        "for s in 'source' 'cli' 'app' 'swap'; do\n  case $s in source) n=1;; cli) n=2;; app) n=3;; swap) n=4;; esac\n  echo \"▸ step $n/4 $s\"\n  sleep 2\ndone\n",
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("update-times.txt"),
+        "source=2\ncli=2\napp=2\nswap=2\n",
+    )
+    .unwrap();
+    let st = atharu::app::AppState::new(atharu::db::open(&dir.join("atharu.db")).unwrap());
+    assert!(updater::start_with(
+        &st.update,
+        dir.clone(),
+        "v0.2.8".into(),
+        dir.join("update.log"),
+        std::time::Duration::from_secs(60)
+    ));
+    let mut series: Vec<(u32, u32)> = Vec::new(); // (step, pct) at each poll
+    let mut done = false;
+    for _ in 0..60 {
+        let b = get(&st, "/settings/update").await.body;
+        if b.contains("is installed") {
+            assert!(b.contains("aria-valuenow=\"100\""));
+            done = true;
+            break;
+        }
+        if let Some(pct) = b.split("aria-valuenow=\"").nth(1) {
+            let pct: u32 = pct.split('"').next().unwrap().parse().unwrap();
+            let step: u32 = b
+                .split("Step ")
+                .nth(1)
+                .and_then(|r| r.split(' ').next())
+                .unwrap()
+                .parse()
+                .unwrap();
+            series.push((step, pct));
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    }
+    assert!(done, "the run finished: {series:?}");
+    // Never backwards, never 100 before Done, every step seen.
+    assert!(series.windows(2).all(|w| w[1].1 >= w[0].1), "{series:?}");
+    assert!(series.iter().all(|(_, p)| *p <= 97), "{series:?}");
+    let last = |n: u32| {
+        series
+            .iter()
+            .rev()
+            .find(|(s, _)| *s == n)
+            .map(|(_, p)| *p)
+            .unwrap_or_else(|| panic!("no poll in step {n}: {series:?}"))
+    };
+    let ends = [0, last(1), last(2), last(3), last(4)];
+    // It accelerates: each step adds more to the bar than the one before (equal real work per step, a convex curve).
+    let rises: Vec<u32> = ends.windows(2).map(|w| w[1] - w[0]).collect();
+    assert!(
+        rises.windows(2).all(|w| w[1] > w[0]),
+        "rises {rises:?} from {series:?}"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
