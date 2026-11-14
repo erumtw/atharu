@@ -22,4 +22,4 @@ $ARGUMENTS
 6. If a line is rejected (exit 1), fix it per the message and retry once; otherwise report it.
 7. Finish with a short table of what was saved (id · kind · epic · text, plus evidence and notes) and anything you skipped.
 
-Tags: put a `#tag` as the first word or as a word inside the sentence (`> #comops set up the meeting on topic X by fri`, `> meet on topic X with the #comops team by fri`), never tacked on at the end (CLAUDE.md "Line grammar").
+Tags: prefer a `#tag` as the first word or as a word inside the sentence (`> #comops set up the meeting on topic X by fri`, `> meet on topic X with the #comops team by fri`), and avoid tacking it on at the end, unless neither reads naturally (CLAUDE.md "Line grammar").
