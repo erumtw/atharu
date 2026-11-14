@@ -18,6 +18,35 @@ html[data-look=wakaba]{--base:#94f7b6;--bloom:#d6ffe2;--wall:var(--veil),
   radial-gradient(circle 35vmax at 86% 92%,#45d4f0,transparent),radial-gradient(circle 31vmax at 51% 41%,#a4fcb4,transparent),#94f7b6}
 html[data-look=glass]{--base:#2466ea;--bloom:#cfe6ff;--wall:var(--veil),
   radial-gradient(circle 43vmax at 29% 25%,rgba(143,230,255,.75),transparent),linear-gradient(135deg,#5aa6ff,#2466ea 50%,#1340b5)}
+/* Yoru (夜, night): the dark look is this one block of values (every component reads role tokens, nothing below restates a colour except the
+   two commented exceptions). Palette, mesh and glass recipe are the approved boards (canvas "Next · Yoru dark look", Yoru.Kit + Yoru.Today).
+   Contrast measured (WCAG relative luminance): ink #ececf1 on the sheet #15181f 15.08, --muted #a3a6b4 7.33, --accent #5aa2ff 6.81, --err #ff7a7a 7.03,
+   --ok #5fd38a on --fill-2 7.63, --ctl-edge ring #7c8090 4.52 (non-text 3), ink on --surface 13.73, muted on --surface 6.68; text on the new
+   --on-accent #0d1222: over --accent 7.14, over --rec #ff453a 5.47; on the glass over the brightest veiled wallpaper stop (the teal #0f4a5a under
+   the 35 % veil, unblurred, even at 0 % glass): muted 5.78, --accent 5.37, --err 5.55, ink 11.90, so the whole slider is AA over the wallpaper.
+   Over scrolling content a fully inked pixel is the worst case instead: --lg-min 65 % keeps muted 5.28, --accent 4.90, --err 5.07 on a half-covered
+   ink pixel (the 60 % the light looks use gives 3.9). Dark glass the Apple way: a near-black tint at a low alpha so the mesh shows through,
+   saturation up, brightness down, a thin bright top edge, a deeper shadow; never a grey slab. */
+html[data-look=yoru]{color-scheme:dark;--base:#0d1222;--bloom:#cfd8ff;--wall-veil:rgba(0,0,0,.35);
+  --wall:var(--veil),radial-gradient(circle 46vmax at 86% 16%,#1f2c6e,transparent),radial-gradient(circle 42vmax at 12% 86%,#0f4a5a,transparent),
+  radial-gradient(circle 30vmax at 52% 48%,#33285e,transparent),#0d1222;
+  --ink:#ececf1;--ink-2:#d5d6de;--muted:#a3a6b4;--muted-look:#a3a6b4;--muted-tint:#a3a6b4;--muted-hc:#d5d6de;--accent:#5aa2ff;--accent-2:#7db6ff;
+  --accent-wash:#1b2a44;--line:#2c303b;--sep:#2c303b;--fill:#1c2030;--fill-2:#252a37;--fill-3:#191c24;--err:#ff7a7a;--err-tint:#ff7a7a;--ok:#5fd38a;
+  --ctl-edge:#7c8090;--faint:#4a4e5a;--now:#17213a;--dark:#0a0c12;--off:#3a3f4d;--hatch-a:#3a3f4d;--hatch-b:#252a37;
+  --heat-1:#1b2a44;--heat-2:#27407a;--heat-4:#a9d0ff;
+  --sheet:#15181f;--surface:#1c2030;--on-accent:#0d1222;--on-ink:#0d1222;--on-dark:#ececf1;--seg-on:#3a3f4d;--thumb:#f3f4f8;
+  --hi:rgba(255,255,255,.14);--rim:rgba(255,255,255,.14);--tint-c:#fff;--overlay:#000;--track:rgba(255,255,255,.08);--rec:#ff453a;
+  --glass-c:#05070d;--lg-sat:185%;--lg-min:65%;
+  --lg-filter:blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(.92);
+  --lg-rim:linear-gradient(135deg,rgba(255,255,255,.5),rgba(255,255,255,.07) 28%,transparent 50%,rgba(255,255,255,.07) 72%,rgba(255,255,255,.28));
+  --lg-light:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 14px rgba(255,255,255,.05),inset 0 -6px 12px -8px rgba(255,255,255,.10);
+  --lg-shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);--lg-float:0 1px 2px rgba(0,0,0,.45),0 14px 36px rgba(0,0,0,.5)}
+/* Exception 1: the dark banner / impact callout sits on a dark sheet, so it needs an edge to read as a card. */
+html[data-look=yoru] .callout.dark{border:1px solid var(--rim)}
+/* Reduce transparency: one flat colour, no mesh (and the hairline instead of the glass rim, looks.css above). */
+@media (prefers-reduced-transparency: reduce){html[data-look=yoru] body::before{background:var(--base)}}
+/* Increase contrast: ink pure white, lines lighter, muted text lighter (the borders already take --ink). */
+@media (prefers-contrast: more){html[data-look=yoru]{--ink:#fff;--ink-2:#fff;--line:#5a5f70;--sep:#5a5f70;--muted-hc:#e6e7ee}}
 /* color-lint:on */
 
 /* Reduce transparency: no mesh, one flat colour (veiled like the mesh so contrast holds). */

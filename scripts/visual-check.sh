@@ -4,6 +4,7 @@
 # every main page at 1180 / 900 / 390 px. Exit 1 = layout problems, one line each. Screenshots stay in the temp
 # dir it prints: they hold work data, never commit them.
 #   scripts/visual-check.sh [path/to/atharu.db]      (no argument: data/atharu.db, the real data)
+#   VC_LOOK=yoru scripts/visual-check.sh ...         the same, in that look (sumi sora wakaba glass yoru)
 #   scripts/visual-check.sh --db <file>              a seeded demo / long-data DB (scripts/long-seed.sh) instead; its copy also gets a
 #                                                    throwaway Jira config pointing at a closed local port, so Jira chips render
 set -euo pipefail
@@ -21,6 +22,8 @@ fi
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/atharu-visual-check.XXXXXX")
 DB="$TMP/atharu.db"
 sqlite3 "$SRC" ".backup '$DB'"
+# VC_LOOK=yoru runs every page in that look (the throwaway copy only; the source is never written).
+if [ -n "${VC_LOOK:-}" ]; then sqlite3 "$DB" "INSERT OR REPLACE INTO settings(key, value) VALUES ('look', '$VC_LOOK')"; fi
 # Chips only render with Jira configured (base URL + email + token); port 9 is closed, so nothing is ever contacted.
 if [ "$FAKE_JIRA" = 1 ]; then
   printf 'jira_base_url = "http://127.0.0.1:9"\njira_email = "demo@example.invalid"\njira_token = "demo"\n' >"$TMP/config.toml"

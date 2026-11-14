@@ -17,7 +17,7 @@ pub const GLASS_DEFAULT: u8 = 60;
 /// The Tinted preset's alpha (Apple: "tinted increases opacity").
 pub const GLASS_TINTED: u8 = 85;
 
-pub const LOOKS: [Look; 4] = [
+pub const LOOKS: [Look; 5] = [
     Look {
         slug: "sumi",
         name: "Sumi",
@@ -45,6 +45,15 @@ pub const LOOKS: [Look; 4] = [
         jp: "硝子",
         blurb: "Liquid Glass: a deep blue mesh behind clear glass.",
         glass_floor: 83,
+    },
+    Look {
+        slug: "yoru",
+        name: "Yoru",
+        jp: "夜",
+        blurb: "Night: indigo and teal under a dark veil, moonlit ink.",
+        // Light text on near-black glass is AA over the whole wallpaper even at 0 % (measured in looks.css); 38 is the board's
+        // "clear" setting, the clearest that still shows the mesh without hatching most of the slider.
+        glass_floor: 38,
     },
 ];
 
@@ -98,6 +107,7 @@ mod tests {
     #[test]
     fn unknown_falls_back_to_sumi() {
         assert_eq!(super::pick(Some("glass")).slug, "glass");
+        assert_eq!(super::pick(Some("yoru")).slug, "yoru");
         assert_eq!(super::pick(Some("neon")).slug, "sumi");
         assert_eq!(super::pick(None).slug, "sumi");
     }

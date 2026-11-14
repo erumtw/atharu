@@ -713,3 +713,24 @@ async fn the_bar_walks_all_four_steps_never_back_and_speeds_up() {
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[tokio::test]
+async fn yoru_is_a_look_with_its_icon_and_dark_block() {
+    let st = state();
+    // Saving it paints every page: the attribute, the favicon, the picker's radio, the icon file.
+    post(&st, "/settings", &form(&[("look", "yoru")]), false).await;
+    let b = get(&st, "/settings").await.body;
+    assert!(b.contains("data-look=\"yoru\""), "{b:.300}");
+    assert!(b.contains("href=\"/static/icon/yoru.svg\""));
+    assert!(
+        b.contains("<input type=\"radio\" name=\"look\" value=\"yoru\" checked>"),
+        "{b}"
+    );
+    assert_eq!(get(&st, "/static/icon/yoru.svg").await.status, 200);
+    // The look is one token block: the page's CSS carries it, dark colour scheme included.
+    let css = get(&st, "/static/css/looks.css").await.body;
+    assert!(
+        css.contains("html[data-look=yoru]{color-scheme:dark;"),
+        "Yoru block"
+    );
+}

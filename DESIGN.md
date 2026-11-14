@@ -128,9 +128,19 @@ wallpaper: ink ≥ 13.61, placeholder ≥ 7.35 (Glass Tinted; T33). Reduce Trans
 | Sora | blue `#63b6ff` mesh |
 | Wakaba | green `#94f7b6` mesh |
 | Glass | deep blue `#2466ea` gradient |
+| Yoru (夜, 0.2.9, dark) | night `#0d1222` mesh: indigo `#1f2c6e`, teal `#0f4a5a`, violet `#33285e`, under a 35 % black veil |
 
-Coloured meshes sit under a 45% white veil; sidebar text over the worst spot stays ≥ 4.6:1.
-Each look also carries `--bloom` (looks.css), the glow behind the icon in the launch animation: Sumi `#e9d9b6`, Sora `#bfe6ff`, Wakaba `#d6ffe2`, Glass `#cfe6ff`.
+Coloured meshes sit under a 45% white veil (`--wall-veil`); sidebar text over the worst spot stays ≥ 4.6:1.
+Each look also carries `--bloom` (looks.css), the glow behind the icon in the launch animation: Sumi `#e9d9b6`, Sora `#bfe6ff`, Wakaba `#d6ffe2`, Glass `#cfe6ff`, Yoru `#cfd8ff`.
+
+**Yoru (0.2.9)** is the one dark look and it is ONE token block (`html[data-look=yoru]` in looks.css, `color-scheme: dark`): ink `#ececf1`, sheet `#15181f`, surface `#1c2030`,
+muted `#a3a6b4`, accent `#5aa2ff`, with the role tokens of §1 (`--on-accent`/`--on-ink` become the dark `#0d1222`, `--seg-on` the elevated grey `#3a3f4d`, never white;
+`--hi` and `--tint-c` flip to white alphas). Every pair is measured in a comment above the block (ink 15.08, muted 7.33, accent 6.81, err 7.03, ring 4.52; text on
+the glass over the brightest veiled wallpaper stop ≥ 5.37 even at 0 %). Dark glass is the Apple way, not a grey slab: a near-black tint `#05070d` at a low alpha so
+the mesh shows, saturate 185 %, brightness .92, a thin bright top edge (`--lg-light` 22 %), a deeper shadow; the floating layers keep `--lg-min` 65 % (a half-covered ink pixel
+behind them: muted 5.28, accent 4.90). Glass floor 38 % (the board's Clear; the whole slider is AA over the wallpaper). Reduce Transparency → flat `--base`;
+Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.callout.dark` gets a `--rim` edge (a dark banner on a dark sheet). Icons: `static/icon/yoru.svg`
+(flat `#0d1222`, ensō `#f1ede4`) and `src-tauri/icons/looks/yoru.png` (night mesh, moon ensō, glass rim). The glass opacity default stays 60 % for every look.
 
 ## 6. Components (`components.css`)
 

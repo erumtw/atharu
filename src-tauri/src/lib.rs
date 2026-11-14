@@ -679,6 +679,7 @@ fn look_icon(look: &'static str) {
             "sora" => include_bytes!("../icons/looks/sora.png"),
             "wakaba" => include_bytes!("../icons/looks/wakaba.png"),
             "glass" => include_bytes!("../icons/looks/glass.png"),
+            "yoru" => include_bytes!("../icons/looks/yoru.png"),
             _ => include_bytes!("../icons/looks/sumi.png"),
         };
         set_icons(look, png);
