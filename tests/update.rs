@@ -68,6 +68,17 @@ fn chmod_x(p: &Path) {
 /// Runs `bash scripts/<name> args` in `repo` with no tty, `tools` first on PATH and git's global config
 /// blanked (no signing prompts, a fixed author). → (exit code, stdout, stderr).
 fn script(repo: &Path, name: &str, args: &[&str], tools: &Path) -> (i32, String, String) {
+    script_env(repo, name, args, tools, &[])
+}
+
+/// [`script`] with extra environment variables.
+fn script_env(
+    repo: &Path,
+    name: &str,
+    args: &[&str],
+    tools: &Path,
+    env: &[(&str, &str)],
+) -> (i32, String, String) {
     let path = format!("{}:{}", tools.display(), std::env::var("PATH").unwrap());
     let o = Command::new("bash")
         .arg(repo.join("scripts").join(name))
@@ -85,6 +96,7 @@ fn script(repo: &Path, name: &str, args: &[&str], tools: &Path) -> (i32, String,
         .env_remove("CARGO_TARGET_DIR")
         .env_remove("ATHARU_REPO")
         .env_remove("ATHARU_COAUTHOR")
+        .envs(env.iter().copied())
         .output()
         .unwrap();
     (
@@ -644,4 +656,83 @@ fn a_stale_lock_is_only_reclaimed_if_it_is_still_the_one_judged_stale() {
             .is_ok()
     );
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A fake cargo that also answers `cargo tauri --version` and `cargo tauri build` (an empty Atharu.app in the target dir).
+fn fake_cargo_app(repo: &Path) -> PathBuf {
+    let tools = fake_cargo(repo);
+    std::fs::write(
+        tools.join("cargo"),
+        r#"#!/bin/sh
+if [ "$1" = tauri ]; then
+  [ "$2" = build ] && mkdir -p "$CARGO_TARGET_DIR/release/bundle/macos/Atharu.app"
+  exit 0
+fi
+while [ "$1" != --path ]; do shift; done
+mkdir -p "$CARGO_INSTALL_ROOT/bin"
+printf '#!/bin/sh\necho "x"\n' > "$CARGO_INSTALL_ROOT/bin/atharu"
+chmod +x "$CARGO_INSTALL_ROOT/bin/atharu"
+"#,
+    )
+    .unwrap();
+    tools
+}
+
+#[test]
+fn install_prints_one_marker_per_step_for_the_progress_bar() {
+    let repo = temp_repo("markers");
+    add_script(&repo, "install.sh");
+    std::fs::create_dir_all(repo.join("src-tauri")).unwrap();
+    std::fs::write(repo.join("src-tauri/keep"), "x").unwrap();
+    git(&repo, &["add", "src-tauri"]);
+    git(&repo, &["commit", "-qm", "app dir"]);
+    git(&repo, &["tag", "-a", "v0.1.0", "-m", "x"]);
+    let tools = fake_cargo_app(&repo);
+    let dest = repo.with_extension("app-dest");
+    let dest_s = dest.join("Atharu.app");
+    let env = [
+        // The app is not running from here, and the swap goes to a temp dir: a fake run never touches /Applications.
+        ("ATHARU_UPDATE_FROM_APP", "1"),
+        ("ATHARU_APP_DEST", dest_s.to_str().unwrap()),
+    ];
+    std::fs::create_dir_all(&dest).unwrap();
+
+    // With --app: four markers, in order, each on its own line, the ⏱ timings still there.
+    let (code, _, err) = script_env(
+        &repo,
+        "install.sh",
+        &["--version", "v0.1.0", "--app"],
+        &tools,
+        &env,
+    );
+    assert_eq!(code, 0, "{err}");
+    let at = |m: &str| {
+        err.lines()
+            .position(|l| l == m)
+            .unwrap_or_else(|| panic!("no line {m:?} in {err}"))
+    };
+    let (a, b, c, d) = (
+        at("▸ step 1/4 source"),
+        at("▸ step 2/4 cli"),
+        at("▸ step 3/4 app"),
+        at("▸ step 4/4 swap"),
+    );
+    assert!(a < b && b < c && c < d, "{err}");
+    assert!(err.contains("⏱ cli:") && err.contains("⏱ app build:"));
+    assert!(
+        dest_s.exists(),
+        "the fake bundle landed in the temp destination"
+    );
+
+    // Without --app: two phases.
+    let (code, _, err) = script_env(&repo, "install.sh", &["--version", "v0.1.0"], &tools, &env);
+    assert_eq!(code, 0, "{err}");
+    assert!(
+        err.contains("▸ step 1/2 source") && err.contains("▸ step 2/2 cli"),
+        "{err}"
+    );
+    assert!(!err.contains("/4 "), "{err}");
+    let _ = std::fs::remove_dir_all(&tools);
+    let _ = std::fs::remove_dir_all(&dest);
+    let _ = std::fs::remove_dir_all(repo);
 }

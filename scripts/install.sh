@@ -36,6 +36,11 @@ fi
 
 repo=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo"
+# Step markers for Settings › Update's progress bar (0.2.8): one line when a phase starts, "▸ step N/M name". With --app there are
+# four phases (source, cli, app, swap), without it two (source, cli). The bar reads the last one from update.log.
+steps=2
+if [ "$app" = 1 ]; then steps=4; fi
+marker() { echo "▸ step $1/$steps $2"; }
 
 # Homebrew's rustup is keg-only: cargo is often not on PATH yet.
 if ! command -v cargo >/dev/null; then
@@ -107,6 +112,7 @@ take_lock
 # Only the owner reaches here; every EXIT trap below also lets the lock go (a second `trap … EXIT` replaces the first).
 trap 'rm -rf "$lock"' EXIT
 
+marker 1 source
 # A detached worktree, not `git archive`: build.rs reads the sha and tag from git.
 # Same path every run (inside target/, gitignored and kept out of Spotlight): cargo keys a local crate's
 # cache by its path, so a fresh temp dir each time rebuilt atharu + the app from scratch.
@@ -135,6 +141,7 @@ step() { echo "⏱ $1: $(mins $((SECONDS - t_step)))"; t_step=$SECONDS; }
 # One EXIT trap (a second `trap … EXIT` replaces the first): clean the worktree, then the total.
 trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; git -C "$repo" worktree prune; rm -rf "$lock"; echo "⏱ total: $(mins $((SECONDS - t0)))"' EXIT
 echo "building atharu $label from $repo …"
+marker 2 cli
 cargo install --path "$src" --locked --quiet
 new=$("$bin/atharu" version)
 echo "atharu: $old → $new"
@@ -152,12 +159,14 @@ if [ "$app" = 1 ]; then
   else
     echo "note: unsigned build, recording permissions reset on every install: run scripts/dev-cert.sh once"
   fi
+  marker 3 app
   # Speaker split (T56): the sha-pinned sherpa-onnx static lib; tags before 0.1.1 have no script and no need.
   if [ -x "$src/scripts/sherpa-onnx.sh" ]; then "$src/scripts/sherpa-onnx.sh"; fi
   (cd "$src/src-tauri" && cargo tauri build --bundles app)
   step "app build"
   built=$CARGO_TARGET_DIR/release/bundle/macos/Atharu.app
-  dest=/Applications/Atharu.app
+  # ATHARU_APP_DEST: where the app is replaced (the tests point it at a temp dir so a fake run never touches /Applications).
+  dest=${ATHARU_APP_DEST:-/Applications/Atharu.app}
   # Settings › Update (the app's own button) sets ATHARU_UPDATE_FROM_APP: this script runs as a child of the very app it is about
   # to replace, and the server inside it is what shows the progress and the Restart button, so quitting it here would kill the
   # install and its page. The running app is left alone: moving a running .app's bundle aside (mv) is safe on macOS, and the
@@ -170,6 +179,7 @@ if [ "$app" = 1 ]; then
       sleep 0.5
     done
   fi
+  marker 4 swap
   # Copy beside the old app, swap only once the copy is whole: a failed copy leaves the old one working.
   rm -rf "$dest.new"
   ditto "$built" "$dest.new"
