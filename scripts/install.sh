@@ -41,6 +41,11 @@ cd "$repo"
 steps=2
 if [ "$app" = 1 ]; then steps=4; fi
 marker() { echo "▸ step $1/$steps $2"; }
+# Build time per step + total on stderr (bash's SECONDS), so a slow run shows where the minutes went. The bar's estimate is made of
+# these lines: ⏱ source, ⏱ cli, ⏱ app build, ⏱ swap (update-times.txt keeps the last run's).
+t0=$SECONDS t_step=$SECONDS
+mins() { printf '%dm%02ds' $(($1 / 60)) $(($1 % 60)); }
+step() { echo "⏱ $1: $(mins $((SECONDS - t_step)))"; t_step=$SECONDS; }
 
 # Homebrew's rustup is keg-only: cargo is often not on PATH yet.
 if ! command -v cargo >/dev/null; then
@@ -130,14 +135,11 @@ if [ "$dev" = 1 ]; then
 fi
 # Baked in for `atharu update`: the build worktree is gone by the time it runs.
 export ATHARU_REPO=$repo
+step source
 
 bin=${CARGO_INSTALL_ROOT:-${CARGO_HOME:-$HOME/.cargo}}/bin
 # A binary from before `version` existed exits non-zero: that reads as "none".
 old=$("$bin/atharu" version 2>/dev/null || echo none)
-# Build time per step + total on stderr (bash's SECONDS), so a slow run shows where the minutes went.
-t0=$SECONDS t_step=$SECONDS
-mins() { printf '%dm%02ds' $(($1 / 60)) $(($1 % 60)); }
-step() { echo "⏱ $1: $(mins $((SECONDS - t_step)))"; t_step=$SECONDS; }
 # One EXIT trap (a second `trap … EXIT` replaces the first): clean the worktree, then the total.
 trap 'git -C "$repo" worktree remove --force "$src" >/dev/null 2>&1 || true; git -C "$repo" worktree prune; rm -rf "$lock"; echo "⏱ total: $(mins $((SECONDS - t0)))"' EXIT
 echo "building atharu $label from $repo …"
@@ -186,6 +188,7 @@ if [ "$app" = 1 ]; then
   if [ -e "$dest" ]; then mv "$dest" "$dest.old"; fi
   mv "$dest.new" "$dest"
   rm -rf "$dest.old"
+  step swap
   echo "Mac app replaced: $dest (open it again; data stays in ~/Library/Application Support/dev.atharu.desktop)"
 fi
 
