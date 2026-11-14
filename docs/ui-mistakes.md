@@ -16,6 +16,7 @@ in the same commit as the fix.
 | R4 | **Reviewed against the wrong reference.** Parity checks compared to boards drawn with short text; a design review used memory of DESIGN.md instead of reading it. Matching the reference proved nothing. |
 | R5 | **Environment not covered.** Only checked in headless Chrome with overlay scroll bars and a browser UA; the owner runs the Mac app with "always show scroll bars". |
 | R6 | **Pace over looking.** Five releases in two days; the master looked at the changed pages' screenshots, not every page on real data. |
+| R7 | **Layout structure.** Rows are flex boxes steered by exception lists (`.blk.ln>:not(.ltext,…,.chip,.lchip,.k)`: a new chip type missing from the list broke the row), 172 inline `style="…"` in templates, 114 hard px widths, and one `components.css` appended per release where rule order decides winners. Planned fix: 0.3.0 (row and table primitives, CSS layers, inline styles out). |
 
 ## Log
 
@@ -32,7 +33,7 @@ in the same commit as the fix.
 | 2026-11-14 · 0.2.7 | Meetings: series name printed over two columns | Fixed-layout table, first cell didn't clip | R1, R2, R3 | Same, for table cells | visual-check: text out of its `td` |
 | 2026-11-14 · 0.2.7 | Epics titles crushed to "[Dat…" | Five fixed columns summed to 650 px of a ~730 px table | R1, R3 | A table states its widths and which column gives way | visual-check: name clipped to a sliver (< 56 px) |
 | 2026-11-14 · 0.2.7 | Status chip sat mid-row with a gap | Empty due column + 132 px action column between status and action | R1 (demo rows all had due dates), R4 | Related items sit together (Gestalt proximity) | manual measure (gap ≤ 16 px) |
-| 2026-11-14 · 0.2.7 | Epics status chip: fixed-width pill, empty gap, other labels cut | Chip inside the Title cell with an 88 px min-width | R3, R1 (demo statuses were short) | Chips hug their text; status gets its own column | 0.2.8 T3c check |
+| 2026-11-14 · 0.2.7 | Epics status chip: fixed-width pill, empty gap, other labels cut | Chip inside the Title cell with an 88 px min-width | R3, R1 (demo statuses were short) | Chips hug their text; status gets its own column | tests/jira.rs: chip inside `<td class="stc">` (failed on the old templates) |
 | 2026-11-14 · 0.2.7 | To-do text one letter per line | Jira link chip shows the whole Jira title (606 px), line text squeezed to 0 px | R1, R2 (check skipped `w == 0`), R3 | Link chips clip; line text keeps ≥ 40 % | visual-check: squeezed line text incl. 0 px (0.2.8 T3d) |
 | 2026-11-14 · 0.2.7 | Blank sidebar column on long pages | `.side` sticky only in the 640–1023 rail; `position:static` at ≥ 1024 | R2 (check never scrolled), R1 (demo pages short) | The sidebar stays pinned | visual-check: `.side` at the viewport top after scrolling (0.2.8 T3d) |
 | 2026-11-14 · design | A design review proposed a legend row DESIGN.md forbids | Reviewer used memory of DESIGN.md | R4 | Read CLAUDE.md + DESIGN.md in the run, quote the rule per decision | `/design-evidence` skill: "Project rules" line per decision |
