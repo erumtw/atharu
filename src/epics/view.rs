@@ -182,6 +182,24 @@ impl Params {
     pub fn filtering(&self) -> bool {
         !self.q.is_empty()
     }
+    /// The query string of this view without the filter (`?group=status&show=all`, or empty): "Clear the filter" keeps the rest.
+    pub fn without_q(&self) -> String {
+        let mut parts = Vec::new();
+        if self.group != GroupBy::Okr {
+            parts.push(format!("group={}", self.group.key()));
+        }
+        if self.show != Show::Active {
+            parts.push(format!("show={}", self.show.key()));
+        }
+        if self.hide_tracked {
+            parts.push("hide_tracked=1".to_string());
+        }
+        if parts.is_empty() {
+            String::new()
+        } else {
+            format!("?{}", parts.join("&"))
+        }
+    }
 }
 
 pub struct Closed {
@@ -191,6 +209,8 @@ pub struct Closed {
     /// `done 20 Oct` or `dropped`.
     pub chip: String,
     pub jira: Option<String>,
+    /// What the filter reads (lowercased key, title, Jira title, tags): the live filter's `data-q`.
+    pub q: String,
 }
 
 #[derive(Template)]

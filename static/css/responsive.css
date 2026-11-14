@@ -82,7 +82,8 @@ pre{max-width:100%;overflow-x:auto}
   .blk.ln{--lh:44px}
   .blk.ln>:is(.ltext,.edit-line,span:not([class])){flex:1 1 calc(100% - 140px)}
   .blk.ln>:is(.end,.row){order:1;margin-left:auto}
-  .blk.ln>:not(.k,form:first-child,.ltext,.edit-line,span:not([class]),.end,.row){order:2;min-height:0;margin-top:0}
+  /* align-self:center: the chips (20 px) and the 44 px ⋯ / due beside them share one centre line (they hung from the top of the line). */
+  .blk.ln>:not(.k,form:first-child,.ltext,.edit-line,span:not([class]),.end,.row){order:2;min-height:0;margin-top:0;align-self:center}
   .blk.ln>:is(.via,a:has(>.chip:not(.key))){max-width:calc(100% - 90px)}
   .blk>.ltext{flex:1 1 0;min-width:0;overflow-wrap:anywhere}
   .cols{grid-template-columns:minmax(0,1fr)}

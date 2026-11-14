@@ -553,7 +553,8 @@ async fn assigned_is_filtered_hidden_when_tracked_and_grouped() {
         .match_indices("<summary class=\"small\">")
         .map(|(i, m)| b[i + m.len()..].split(" <span").next().unwrap())
         .collect();
-    assert_eq!(heads, ["OPS-91", "Platform · OPS-90", "No parent"]);
+    // Sorted by the parent's KEY (OPS-90 before OPS-91), not by its title.
+    assert_eq!(heads, ["Platform · OPS-90", "OPS-91", "No parent"]);
 }
 
 #[tokio::test]
@@ -664,4 +665,65 @@ async fn many_assigned_rows_start_folded_unless_filtering() {
             .body
             .contains("<details id=\"assigned\" open>")
     );
+}
+
+#[tokio::test]
+async fn empty_views_say_why_and_a_parent_group_is_keyed_by_its_key() {
+    let st = state();
+    exec(&st, VIEW_SEED);
+    // A filter with no match: both lists say so, and "Clear the filter" keeps the rest of the view.
+    let b = get(&st, "/epics?q=zzzz&group=status&show=all").await.body;
+    assert!(
+        b.contains(
+            "No epics match ‘zzzz’. <a href=\"/epics?group=status&#38;show=all\">Clear the filter</a>"
+        ),
+        "{b}"
+    );
+    assert!(b.contains("No assigned ticket matches ‘zzzz’."));
+    // Show = Done & dropped with nothing closed.
+    exec(&st, "DELETE FROM epics WHERE status != 'active'");
+    let b = get(&st, "/epics?show=closed").await.body;
+    assert!(b.contains("Nothing done or dropped yet."));
+    assert!(!b.contains("No epics match"));
+    // Everything assigned is tracked → Hide tracked leaves nothing, and says so.
+    exec(
+        &st,
+        "UPDATE jira_issues SET assigned_me = 0 WHERE key != 'OPS-1'",
+    );
+    let b = get(&st, "/epics?hide_tracked=1").await.body;
+    assert!(b.contains("Everything assigned to you is already tracked."));
+
+    // Parent groups: one group per parent KEY (a later row may know the title the first one lacked), sorted by key.
+    exec(
+        &st,
+        "INSERT INTO jira_issues(key, summary, status, status_cat, parent_key, parent_summary, assigned_me) VALUES
+           ('PA-1', 'a', 'To do', 'new', 'ZZ-9', '', 1), ('PA-2', 'b', 'To do', 'new', 'ZZ-9', 'Zulu programme', 1),
+           ('PA-3', 'c', 'To do', 'new', 'AA-1', 'Zulu programme', 1);",
+    );
+    let b = get(&st, "/epics?group=parent").await.body;
+    let heads: Vec<&str> = b
+        .match_indices("<summary class=\"small\">")
+        .map(|(i, m)| b[i + m.len()..].split(" <span").next().unwrap())
+        .collect();
+    assert_eq!(
+        heads,
+        [
+            "Zulu programme · AA-1",
+            "Platform · OPS-90",
+            "Zulu programme · ZZ-9"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn the_folded_closed_list_and_unnamed_carry_what_the_live_filter_reads() {
+    let st = state();
+    exec(&st, VIEW_SEED);
+    let b = get(&st, "/epics").await.body;
+    assert!(
+        b.contains("<div class=\"blk\" data-q=\"ops-4 old thing "),
+        "{b}"
+    );
+    // Unnamed: its count is its own span (the live filter updates it), the explanation another.
+    assert!(b.contains("Unnamed <span class=\"muted normal\">· 1</span><span class=\"normal\"> · keys you logged before naming them</span>"), "{b}");
 }

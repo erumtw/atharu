@@ -571,3 +571,77 @@ fn install_runs_one_at_a_time_and_reclaims_a_stale_lock() {
     let _ = std::fs::remove_dir_all(&tools);
     let _ = std::fs::remove_dir_all(repo);
 }
+
+/// Runs the lock function out of the real `scripts/install.sh` in a bash of its own, with `seam` defined as the test hook.
+fn lock_run(dir: &Path, seam: &str) -> (i32, String, String) {
+    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("scripts/install.sh");
+    let code = format!(
+        "set -euo pipefail\neval \"$(sed -n '/^take_lock()/,/^}}/p' '{}')\"\nlock='{}'\n{seam}\ntake_lock\necho took-it\n",
+        script.display(),
+        dir.join("l").display()
+    );
+    let o = Command::new("bash")
+        .arg("-c")
+        .arg(code)
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    (
+        o.status.code().unwrap(),
+        String::from_utf8(o.stdout).unwrap(),
+        String::from_utf8(o.stderr).unwrap(),
+    )
+}
+
+#[test]
+fn a_stale_lock_is_only_reclaimed_if_it_is_still_the_one_judged_stale() {
+    let dir = std::env::temp_dir().join(format!("atharu-lockrace-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("l")).unwrap();
+    let mut gone = Command::new("true").spawn().unwrap();
+    let dead = gone.id();
+    gone.wait().unwrap();
+    let me = std::process::id();
+
+    // A new owner replaces the pid after we judged the lock stale but before the rename: we give way and put its lock back.
+    std::fs::write(dir.join("l/pid"), dead.to_string()).unwrap();
+    let seam = format!("install_lock_seam() {{ echo {me} > \"$lock/pid\"; }}");
+    let (code, out, _) = lock_run(&dir, &seam);
+    assert_eq!(code, 1, "{out}");
+    assert!(
+        out.contains("another install is running") && !out.contains("took-it"),
+        "{out}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(dir.join("l/pid")).unwrap().trim(),
+        me.to_string()
+    );
+    let leftovers = std::fs::read_dir(&dir)
+        .unwrap()
+        .filter(|e| {
+            e.as_ref()
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .contains("stale")
+        })
+        .count();
+    assert_eq!(
+        leftovers, 0,
+        "the moved copy went back, nothing is left beside it"
+    );
+
+    // Nothing races: the stale lock is reclaimed and the pid file is the new owner's.
+    std::fs::write(dir.join("l/pid"), dead.to_string()).unwrap();
+    let (code, out, _) = lock_run(&dir, "");
+    assert_eq!(code, 0, "{out}");
+    assert!(out.contains("took-it"));
+    assert!(
+        std::fs::read_to_string(dir.join("l/pid"))
+            .unwrap()
+            .trim()
+            .parse::<u32>()
+            .is_ok()
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}

@@ -1,9 +1,10 @@
-// Live filter on /epics (0.2.7): typing in the Filter box hides the epic rows and the "assigned to you" rows whose `data-q`
+// Live filter on /epics (0.2.7): typing in the Filter box hides the epic rows, the "assigned to you" rows and the folded Done & dropped
+// list's rows whose `data-q`
 // (lowercased key, title, Jira title, tags) doesn't contain the text, hides a group once all its rows are hidden, and keeps
 // every count ("· 2 of 5 active") true. The server renders the same filter from `?q=` (Enter submits the GET form), so this is
 // only the speed of typing; without JS the form still works.
 const input = document.querySelector<HTMLInputElement>('form[role=search] input[name=q]')
-const ROWS = '.etab tr[data-q], .arow[data-q]'
+const ROWS = '.etab tr[data-q], .arow[data-q], .blocks .blk[data-q]'
 
 if (input) {
   const rows = Array.from(document.querySelectorAll<HTMLElement>(ROWS))

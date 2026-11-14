@@ -55,7 +55,7 @@ const draw = () => {
       o.dataset.name = n
       o.setAttribute('aria-selected', String(i === sel))
       const t = document.createElement('span')
-      t.className = 'ell'
+      t.className = 'clip'
       t.textContent = n
       o.append(t)
       return o

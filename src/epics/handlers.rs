@@ -233,8 +233,9 @@ fn assigned(
     let all = queries::assigned(conn)?;
     let total = all.len();
     let needle = p.needle();
-    // (rank, label) → rows, so BTreeMap order is the display order; parent groups sort by key, "No parent" last.
-    let mut groups: std::collections::BTreeMap<(u8, String), Vec<view::AssignedRow>> =
+    // (rank, sort key) → (label, rows), so BTreeMap order is the display order: statuses by name, parents by their KEY (like the
+    // tracked tables; a title can change or be missing, the key can't), "No parent" last.
+    let mut groups: std::collections::BTreeMap<(u8, String), (String, Vec<view::AssignedRow>)> =
         Default::default();
     let mut shown = 0;
     for a in all {
@@ -243,21 +244,24 @@ fn assigned(
             continue;
         }
         shown += 1;
-        let slot = if p.group == view::GroupBy::Parent {
+        let (slot, label) = if p.group == view::GroupBy::Parent {
             match &a.parent_key {
                 Some(k) => (
-                    0,
+                    (0, k.clone()),
                     match a.parent_summary.as_deref().filter(|s| !s.is_empty()) {
                         Some(t) => format!("{t} · {k}"),
                         None => k.clone(),
                     },
                 ),
-                None => (9, "No parent".to_string()),
+                None => ((9, String::new()), "No parent".to_string()),
             }
         } else if a.status.is_empty() {
-            (9, "No status".to_string())
+            ((9, String::new()), "No status".to_string())
         } else {
-            (status_rank(&a.cat, &a.status), a.status.clone())
+            (
+                (status_rank(&a.cat, &a.status), a.status.clone()),
+                a.status.clone(),
+            )
         };
         let jira = jira_link(st, &a.key, Some(&a.status));
         let due_date = date(a.due.as_deref());
@@ -271,7 +275,14 @@ fn assigned(
                 .map(|d| format!(" by {d}"))
                 .unwrap_or_default()
         );
-        groups.entry(slot).or_default().push(view::AssignedRow {
+        let group = groups
+            .entry(slot)
+            .or_insert_with(|| (label.clone(), Vec::new()));
+        // The first row may not know the parent's title but a later one does: take the fuller label.
+        if label.len() > group.0.len() {
+            group.0 = label;
+        }
+        group.1.push(view::AssignedRow {
             epic: a.epic,
             due: due_date.map(|d| format!("due {}", crate::domain::plan::quiet(d, today))),
             jira,
@@ -292,7 +303,7 @@ fn assigned(
     Ok((
         groups
             .into_iter()
-            .map(|((_, label), rows)| view::AssignedGroup { label, rows })
+            .map(|(_, (label, rows))| view::AssignedGroup { label, rows })
             .collect(),
         count,
         total > 0,
@@ -467,6 +478,7 @@ pub async fn list(State(st): State<AppState>, Query(q): Query<ListQuery>) -> App
                     jira: e.jira.filter(|_| e.title.is_empty()),
                     title: e.title,
                     done,
+                    q: qtext,
                 });
             }
             continue;

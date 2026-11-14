@@ -542,7 +542,7 @@ async fn epics_list_reads_jira_assigned_parents_and_flags() {
         .expect("parent header");
     assert!(head < b.find("<tr class=\"child\" data-q=\"ops-101 ").unwrap());
     assert!(b.contains(
-        "<b>Checkout platform</b><span class=\"small muted\">Jira epic · not tracked</span>"
+        "<b class=\"clip\" title=\"Checkout platform\">Checkout platform</b><span class=\"small muted\">Jira epic · not tracked</span>"
     ));
     // A parent tracked here (done, in another group) is not "not tracked": its story is a plain row.
     assert!(

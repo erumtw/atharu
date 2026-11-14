@@ -93,6 +93,9 @@ a:hover>.chip{background:var(--sep)}
 /* The Hide tracked switch floats right inside the assigned summary; a float left alone narrows the first row under it (a grid row
    is a formatting context and shrinks beside floats: found on the long seed at 390 px). Clear it inside the summary. */
 #assigned>summary::after{content:"";display:block;clear:both}
+/* Switch and words share one centre line (the 22 px switch sat above the text on a phone). */
+#assigned>summary>label{display:inline-flex;align-items:center;gap:6px}
+.blk[hidden]{display:none}
 .arow[hidden],.etab tr[hidden]{display:none}
 .heat td:first-child{max-width:16rem}
 /* A clipped name in a row (a series chip, a topic slug) gives way first but keeps half the row at most. */

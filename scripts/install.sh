@@ -74,21 +74,34 @@ fi
 # CARGO_TARGET_DIR and /Applications/Atharu.app.new. The lock is a directory (mkdir is atomic) holding the owner's pid; a dead
 # owner (crash, reboot) leaves a stale lock, which the next run reclaims.
 lock=$repo/target/install.lock
-mkdir -p "$repo/target"
-if ! mkdir "$lock" 2>/dev/null; then
-  holder=$(cat "$lock/pid" 2>/dev/null || true)
-  # The owner may be between its mkdir and writing the pid: give it a moment before calling that stale.
-  if [ -z "$holder" ]; then sleep 1; holder=$(cat "$lock/pid" 2>/dev/null || true); fi
-  if [ -n "$holder" ] && kill -0 "$holder" 2>/dev/null; then
-    echo "another install is running (pid $holder)"
-    exit 1
+take_lock() {
+  local holder
+  mkdir -p "$(dirname "$lock")"
+  if ! mkdir "$lock" 2>/dev/null; then
+    holder=$(cat "$lock/pid" 2>/dev/null || true)
+    # The owner may be between its mkdir and writing the pid: give it a moment before calling that stale.
+    if [ -z "$holder" ]; then sleep 1; holder=$(cat "$lock/pid" 2>/dev/null || true); fi
+    if [ -n "$holder" ] && kill -0 "$holder" 2>/dev/null; then
+      echo "another install is running (pid $holder)"
+      exit 1
+    fi
+    # A caller can define install_lock_seam to run something right here (the tests race a new owner in); never defined for real.
+    ! declare -F install_lock_seam >/dev/null || install_lock_seam
+    # Reclaim by renaming it away: of several runs that see the same stale lock only one wins the rename, the others stop here.
+    mv "$lock" "$lock.stale.$$" 2>/dev/null || { echo "another install is running"; exit 1; }
+    # Between our read and the rename a faster run may have replaced the lock with its own: what we hold must still be the one we
+    # judged stale. If not, put it back (unless yet another run has taken the name) and give way.
+    if [ "$(cat "$lock.stale.$$/pid" 2>/dev/null || true)" != "$holder" ]; then
+      [ -e "$lock" ] || mv "$lock.stale.$$" "$lock" 2>/dev/null || true
+      echo "another install is running"
+      exit 1
+    fi
+    rm -rf "$lock.stale.$$"
+    mkdir "$lock" 2>/dev/null || { echo "another install is running"; exit 1; }
   fi
-  # Reclaim by renaming it away: of several runs that see the same stale lock only one wins the rename, the others stop here.
-  mv "$lock" "$lock.stale.$$" 2>/dev/null || { echo "another install is running"; exit 1; }
-  rm -rf "$lock.stale.$$"
-  mkdir "$lock" 2>/dev/null || { echo "another install is running"; exit 1; }
-fi
-echo $$ >"$lock/pid"
+  echo $$ >"$lock/pid"
+}
+take_lock
 # Only the owner reaches here; every EXIT trap below also lets the lock go (a second `trap … EXIT` replaces the first).
 trap 'rm -rf "$lock"' EXIT
 

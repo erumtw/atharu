@@ -32,6 +32,10 @@
 </div>
 </details>
 {%- endfor %}
+{%- if assigned.is_empty() %}
+{%- if p.filtering() %}<p class="small muted" role="status">No assigned ticket matches ‘{{ p.q }}’.</p>
+{%- else %}<p class="small muted" role="status">Everything assigned to you is already tracked.</p>{% endif %}
+{%- endif %}
 </details>
 {%- endif %}
 {%- for g in groups %}
@@ -45,19 +49,26 @@
 </details>
 {%- endif %}
 {%- endfor %}
+{%- if groups.is_empty() && closed.is_empty() && untitled.is_empty() %}
+{%- if p.filtering() %}
+<p class="small muted" role="status">No epics match ‘{{ p.q }}’. <a href="/epics{{ p.without_q() }}">Clear the filter</a></p>
+{%- else if p.show == Show::Closed %}
+<p class="small muted" role="status">Nothing done or dropped yet.</p>
+{%- endif %}
+{%- endif %}
 {%- if !closed.is_empty() %}
 
 <details>
 <summary>Done &amp; dropped <span class="muted normal">· {{ closed.len() }}</span></summary>
 <div class="blocks small">
-{%- for c in closed %}<div class="blk"><a href="/epics/{{ c.key }}"><span class="chip key">{{ c.key }}</span></a><span{% if !c.done %} class="muted"{% endif %}>{{ c.title }}</span>{% if let Some(j) = c.jira %}<span class="small muted" title="From Jira">{{ j }}</span>{% endif %}<span class="chip">{{ c.chip }}</span></div>{% endfor -%}
+{%- for c in closed %}<div class="blk" data-q="{{ c.q }}"><a href="/epics/{{ c.key }}"><span class="chip key">{{ c.key }}</span></a><span{% if !c.done %} class="muted"{% endif %}>{{ c.title }}</span>{% if let Some(j) = c.jira %}<span class="small muted" title="From Jira">{{ j }}</span>{% endif %}<span class="chip">{{ c.chip }}</span></div>{% endfor -%}
 </div>
 </details>
 {%- endif %}
 {%- if !untitled.is_empty() %}
 
 <details open>
-<summary class="muted">Unnamed <span class="normal">· {{ untitled.len() }} · keys you logged before naming them</span></summary>
+<summary class="muted">Unnamed <span class="muted normal">· {{ untitled.len() }}</span><span class="normal"> · keys you logged before naming them</span></summary>
 <div class="tw"><table class="etab">{% include "epics/cols.html" %}
 {%- for e in untitled %}
 {% include "epics/row.html" %}

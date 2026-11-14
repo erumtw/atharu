@@ -7,7 +7,7 @@
 {%- when ListItem::Head(h) %}
 {#- D4: a Jira parent that isn't tracked: its stories sit under it; "+ Track as epic" makes it one. One cell per column (no
     colspan): a phone hides columns 3-5, and a cell spanning them would squeeze the title column. #}
-<tr class="jhead" data-q="{{ h.q }}"><td><span class="chip key">{{ h.key }}</span></td><td><span class="ettl"><b>{{ h.title }}</b><span class="small muted">Jira epic · not tracked</span>{% if let Some((s, u)) = h.jira %}{% let (jk, js, jc, jurl, ju, back) = (h.key.as_str(), s.as_str(), h.cat.as_str(), u.as_str(), "h{}"|format(h.key), "/epics") %}{% include "partials/jira_chip.html" %}{% endif %}</span></td><td></td><td></td><td></td><td><form class="inline" method="post" action="/epics/{{ h.key }}/track"><input type="hidden" name="back" value="/epics"><button class="btn ghost s" type="submit">+ Track as epic</button></form></td></tr>
+<tr class="jhead" data-q="{{ h.q }}"><td><span class="chip key">{{ h.key }}</span></td><td><span class="ettl"><b class="clip" title="{{ h.title }}">{{ h.title }}</b><span class="small muted">Jira epic · not tracked</span>{% if let Some((s, u)) = h.jira %}{% let (jk, js, jc, jurl, ju, back) = (h.key.as_str(), s.as_str(), h.cat.as_str(), u.as_str(), "h{}"|format(h.key), "/epics") %}{% include "partials/jira_chip.html" %}{% endif %}</span></td><td></td><td></td><td></td><td><form class="inline" method="post" action="/epics/{{ h.key }}/track"><input type="hidden" name="back" value="/epics"><button class="btn ghost s" type="submit">+ Track as epic</button></form></td></tr>
 {%- endmatch %}
 {%- endfor %}
 </table></div>
