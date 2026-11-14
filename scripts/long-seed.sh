@@ -34,6 +34,7 @@ L -2 "> reply to the supplier about the price feed delays and ask for the correc
 L -1 "> send the quarterly supplier scorecard review pack to procurement with the three open questions from the warehouse team by today"
 L 0  "OPS-201 > check that the nightly pipeline run finished before the first delivery cut-off and page the on-call if it did not by today"
 L 0  "> ติดตามผลการตรวจสอบคุณภาพสินค้าและส่งสรุปให้ทีมคลังสินค้าภาคเหนือก่อนเที่ยง by today"
+L 0  "OPS-204 > chase the platform team about the migration window https://acme.atlassian.net/browse/OPS-301 by today"
 L 3  "> book the cold-chain sensor demo with the vendor and the warehouse leads for the whole of next week by 2026-11-24"
 "$BIN" --db "$OUT" note "Notes from the quarterly supplier business review with procurement, the warehouse leads and the carriers for the whole region" --as claude >/dev/null <<'MD'
 A note with a long title. #supplier-scorecards-and-quarterly-review-process

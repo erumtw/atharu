@@ -85,6 +85,7 @@ pre{max-width:100%;overflow-x:auto}
   /* align-self:center: the chips (20 px) and the 44 px ⋯ / due beside them share one centre line (they hung from the top of the line). */
   .blk.ln>:not(.k,form:first-child,.ltext,.edit-line,span:not([class]),.end,.row){order:2;min-height:0;margin-top:0;align-self:center}
   .blk.ln>:is(.via,a:has(>.chip:not(.key))){max-width:calc(100% - 90px)}
+  .blk.ln>.jchip{max-width:calc(100% - 90px)}
   .blk>.ltext{flex:1 1 0;min-width:0;overflow-wrap:anywhere}
   .cols{grid-template-columns:minmax(0,1fr)}
   /* A name in a fixed slot shows two lines instead of one on a phone: its `title` tooltip can't be opened by touch or keyboard, so the

@@ -30,7 +30,7 @@ async fn groups_by_due_against_fixed_today() {
     assert!(pos("<h3>Later") < pos("plan q1"));
     assert!(pos("plan q1") < pos("<h3>No date"));
     assert!(pos("<h3>No date") < pos("renew parking"));
-    assert!(b.contains("Slack ↗"));
+    assert!(b.contains("<span class=\"clip\">Slack</span><span>↗</span>"));
     // Inline right after the title (desktop) and again on the phone's meta line (m-only).
     assert!(b.contains(
         r#"<span class="qdue m-hide late" title="Due Mon 9 Nov">Mon 9 Nov</span></span>"#
@@ -310,6 +310,12 @@ async fn link_shows_once_as_its_chip() {
            ('2026-11-12', 'plan', 'reply to vendor https://acme.slack.com/archives/C1/p2 today', 'https://acme.slack.com/archives/C1/p2', 'open', 'claude');",
     );
     let b = get(&st, "/todos").await.body;
+    // 0.2.8: the chip's label clips (a Jira title is 600 px) and the full label rides in `title`; the ↗ sits outside the clipped span.
+    assert!(
+        b.contains("<a class=\"lchip\"")
+            && b.contains("<span class=\"clip\">Slack</span><span>↗</span>"),
+        "{b}"
+    );
     // The URL rides in the ↗ chip only; the text around it stays.
     assert_eq!(
         b.matches("https://acme.slack.com/archives/C1/p2").count(),
@@ -317,7 +323,7 @@ async fn link_shows_once_as_its_chip() {
         "{b}"
     );
     assert!(b.contains("reply to vendor today"));
-    assert!(b.contains("Slack ↗"));
+    assert!(b.contains("<span class=\"clip\">Slack</span><span>↗</span>"));
     // An agent's to-do carries its @chip like any line (D1).
     assert!(b.contains(r#"<span class="chip tag at" title="Filed by claude">claude</span>"#));
 }

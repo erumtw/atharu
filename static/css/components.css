@@ -125,6 +125,11 @@ a:hover>.chip{background:var(--sep)}
 .tix .blk>:not(.ltext){flex:none}
 .tix .blk>a>.chip{max-width:none}
 .jchip>.lchip{border-top-right-radius:0;border-bottom-right-radius:0}
+/* 0.2.8 (owner screenshot): a Jira chip's label is the whole Jira title (606 px) and took the row, the to-do text printed one letter per
+   line. The label clips ("…", full text in title) at 32 % of the row / 15 rem (the line text keeps >= 200 px at 900); the ↗ and the ▾ never clip. */
+.blk.ln>.jchip{min-width:0;max-width:min(32%,15rem)}
+.jchip>.lchip{min-width:0;flex:0 1 auto}
+.jchip>.jmv{flex:none}
 .jmv{font:inherit;font-size:11px;line-height:1;height:20px;padding:0 6px;border:0;border-left:1px solid var(--line);border-radius:0 6px 6px 0;background:var(--fill-2);color:var(--accent);cursor:pointer}
 .jmv:hover{background:var(--sep)}
 .jmenu[popover]{position:fixed;inset:auto;margin:0;top:30%;left:50%;transform:translateX(-50%);width:260px}

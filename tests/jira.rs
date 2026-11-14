@@ -49,10 +49,12 @@ async fn cache_upserts_and_shows_where_our_title_is_empty() {
 
     // Link chip: the cached key, not OPS-70 (prefix) or a bare "Jira".
     let todos = get(&st, "/todos").await.body;
-    assert!(todos.contains("OPS-7 · Fix invoice rounding ↗"));
-    assert_eq!(todos.matches("OPS-7 · Fix invoice rounding").count(), 1);
+    // 0.2.8: the label is a clipped span (full text again in `title`), the ↗ outside it.
+    let label = "<span class=\"clip\">OPS-7 · Fix invoice rounding</span><span>↗</span>";
+    assert!(todos.contains(label));
+    assert_eq!(todos.matches(label).count(), 1);
     assert!(
-        todos.contains(">Jira ↗</a>"),
+        todos.contains("<span class=\"clip\">Jira</span><span>↗</span></a>"),
         "uncached OPS-70 keeps the host label"
     );
 }

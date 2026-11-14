@@ -14,6 +14,9 @@
 .side .lbl{font-size:12px;font-weight:600;color:var(--muted);padding:16px 10px 4px}
 /* Full height so the spacer can pin Settings to the bottom (.wl pads 12 top + bottom). */
 .side{min-height:calc(100vh - 24px)}
+/* Pinned (0.2.8; DESIGN.md says fixed, but the 0.2.7 sidebar was position:static at >= 1024 px and scrolled away on long pages, leaving a blank
+   glass column). align-self:flex-start (looks) lets sticky work in the .wl flex row; a tall nav scrolls inside itself. */
+@media (min-width:1024px){.side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto}}
 .side .gap{flex:1;min-height:24px}
 .side svg{flex:none;color:var(--muted)}
 .side a.on svg{color:var(--ink)}

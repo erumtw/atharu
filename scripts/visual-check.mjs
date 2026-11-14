@@ -94,8 +94,20 @@ const CHECK = `(() => {
   }
   const min = phone ? 120 : 200
   for (const t of document.querySelectorAll('.blk.ln .ltext')) {
+    // A box that isn't rendered (display:none, the copy for the other width) has no client rects; a 0-px one that is rendered does,
+    // and is the worst squeeze there is (a Jira chip took the row, the text printed one letter per line: 0.2.7), so 0 must fail too.
+    if (!t.getClientRects().length || !t.textContent.trim()) continue
     const w = t.getBoundingClientRect().width
-    if (w > 0 && w < min) out.push('squeezed line text: ' + Math.round(w) + ' px < ' + min + ': "' + t.textContent.trim().slice(0, 40) + '"')
+    if (w < min) out.push('squeezed line text: ' + Math.round(w) + ' px < ' + min + ': "' + t.textContent.trim().slice(0, 40) + '"')
+  }
+  // The sidebar stays pinned at desktop widths (DESIGN.md): after scrolling to the bottom of a long page it must still sit at the top
+  // of the viewport, not scroll away and leave a blank column (0.2.7 owner screenshot: computed position was static at >= 1024 px).
+  const side = document.querySelector('.side')
+  if (side && innerWidth >= 1024 && side.getClientRects().length && document.documentElement.scrollHeight > innerHeight + 200) {
+    scrollTo(0, document.documentElement.scrollHeight)
+    const top = side.getBoundingClientRect().top
+    scrollTo(0, 0)
+    if (top < -1 || top > 24) out.push('sidebar scrolled away: .side top at ' + Math.round(top) + ' px after scrolling to the bottom (want 0-24)')
   }
   const doc = document.querySelector('.doc')
   return { problems: out.slice(0, 8), doc: doc && { left: Math.round(doc.getBoundingClientRect().left), kind: doc.className } }
@@ -161,6 +173,11 @@ async function selfTest() {
   const sheetOk = await c.load(page('<div class="pg" style="overflow:clip;width:600px"><main><div style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis"><span>an ellipsised name that is far too long to fit in the sheet it sits in at all, really, truly, and then some more words to be sure it passes the right edge of the sheet by a mile</span></div></main></div>'), 900, 600)
   const cellBad = await c.load(page('<main class="doc"><table style="table-layout:fixed;width:200px"><tr><td style="white-space:nowrap">a long series name that prints over the next column</td><td>2</td></tr></table></main>'), 900, 600)
   const sliverBad = await c.load(page('<main class="doc"><div style="display:flex;width:200px"><span style="width:40px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">a long name squeezed to nothing</span><span style="width:150px">neighbour</span></div></main>'), 900, 600)
+  const zeroBad = await c.load(page('<main class="doc"><div class="blk ln" style="display:flex;width:600px"><span class="ltext" style="flex:0 1 0;min-width:0;overflow:hidden">text squeezed to nothing</span><span style="flex:none;width:700px">a long chip</span></div></main>'), 1180, 600)
+  const hiddenOk = await c.load(page('<main class="doc"><div class="blk ln"><span class="ltext" style="display:none">the copy for the other width</span><span class="ltext">readable text that has the whole row to itself and so is far wider than the minimum we ask for here</span></div></main>'), 1180, 600)
+  const tall = '<div style="height:3000px"></div>'
+  const sideBad = await c.load(page('<div style="display:flex"><nav class="side" style="width:200px;height:300px;align-self:flex-start">side</nav><main class="doc">' + tall + '</main></div>'), 1180, 600)
+  const sideOk = await c.load(page('<div style="display:flex"><nav class="side" style="width:200px;height:300px;align-self:flex-start;position:sticky;top:12px">side</nav><main class="doc">' + tall + '</main></div>'), 1180, 600)
   const cellOk = await c.load(page('<main class="doc"><table style="table-layout:fixed;width:200px"><tr><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">a long series name that is clipped with an ellipsis</td><td>2</td></tr></table></main>'), 900, 600)
   await c.close()
   const fail = []
@@ -168,6 +185,10 @@ async function selfTest() {
   if (sheetOk.problems.length) fail.push('flagged an ellipsised box inside the sheet: ' + JSON.stringify(sheetOk.problems))
   if (!cellBad.problems.some(p => p.startsWith('text passes its cell'))) fail.push('missed text past its cell: ' + JSON.stringify(cellBad.problems))
   if (!sliverBad.problems.some(p => p.startsWith('squeezed ellipsis'))) fail.push('missed a name squeezed to a sliver: ' + JSON.stringify(sliverBad.problems))
+  if (!zeroBad.problems.some(p => p.startsWith('squeezed line text: 0 px'))) fail.push('missed line text squeezed to 0 px: ' + JSON.stringify(zeroBad.problems))
+  if (hiddenOk.problems.length) fail.push('flagged a hidden or roomy line text: ' + JSON.stringify(hiddenOk.problems))
+  if (!sideBad.problems.some(p => p.startsWith('sidebar scrolled away'))) fail.push('missed a sidebar that scrolled away: ' + JSON.stringify(sideBad.problems))
+  if (sideOk.problems.length) fail.push('flagged a pinned sidebar: ' + JSON.stringify(sideOk.problems))
   if (cellOk.problems.length) fail.push('flagged a clipped cell: ' + JSON.stringify(cellOk.problems))
   if (!bad.problems.some(p => p.startsWith('overflow: div'))) fail.push('missed an overflowing div: ' + JSON.stringify(bad.problems))
   if (ok.problems.length) fail.push('flagged a clipped div: ' + JSON.stringify(ok.problems))
