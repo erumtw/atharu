@@ -100,7 +100,7 @@ pub fn run() {
                             return false;
                         }
                         if url.path() == "/app/screenshot" {
-                            screenshot(&h, url);
+                            screenshot(&h, url, false);
                             return false;
                         }
                         true
@@ -542,7 +542,7 @@ fn quick_nav(h: &AppHandle, url: &tauri::Url) -> bool {
     }
     match url.path() {
         "/quick/close" => hide_quick(h),
-        "/app/screenshot" => screenshot(h, url),
+        "/app/screenshot" => screenshot(h, url, true),
         "/quick" => return true,
         _ => {
             if let Some(m) = h.get_webview_window("main") {
@@ -558,7 +558,7 @@ fn quick_nav(h: &AppHandle, url: &tauri::Url) -> bool {
 /// Camera button on a running meeting (T89): macOS's own picker (`screencapture -i`: drag a region, Space for a
 /// window, Esc cancels), then the PNG goes to the meeting's screenshots. Off the main thread: the picker blocks
 /// until the user is done. The popover hides first so it isn't in the shot.
-fn screenshot(h: &AppHandle, url: &tauri::Url) {
+fn screenshot(h: &AppHandle, url: &tauri::Url, from_quick: bool) {
     let Some(id) = url
         .query_pairs()
         .find(|(k, _)| k == "meeting")
@@ -567,6 +567,13 @@ fn screenshot(h: &AppHandle, url: &tauri::Url) {
         return;
     };
     hide_quick(h);
+    // From the popover: showing it made Atharu the active app, so hiding only the popover brought the main window to
+    // the front, right over what the owner wanted to capture (owner report, 0.2.8). Hide the whole app instead; it
+    // comes back from the Dock or the menu-bar icon. The main window's own camera keeps Atharu visible on purpose.
+    #[cfg(target_os = "macos")]
+    if from_quick {
+        let _ = h.hide();
+    }
     let h = h.clone();
     std::thread::spawn(move || {
         let tmp = std::env::temp_dir().join(format!("atharu-shot-{}-{id}.png", std::process::id()));
