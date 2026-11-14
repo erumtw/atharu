@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.2.7 — 2026-11-14
+
+### Features
+
+- Long-data guard (scripts/long-seed.sh, visual-check --db, shared .clip class + titles on every fixed slot, DESIGN rule) and the fixes the audit found
+- Live filter on /epics (hides rows and empty groups as you type, counts stay true, Esc clears)
+- Epics view row (filter box, Group by, Show) in Today's control-row markup, Hide tracked and a folded assigned list
+- Epics lists filter and group (OKR, Jira status, parent, tag, none), Show active / done & dropped / all, Hide tracked on assigned
+
+### Fixes
+
+- Install.sh ignores an exported lock-test seam function
+- Gate and real-data look fixes (suggest menus use .clip, D4 header clips, Epics empty states, stale-lock pid re-check, live filter covers Done & dropped and Unnamed, assigned parents keyed by key, header / label / phone to-do alignment)
+- Epics title column keeps its room (new widths, chip yields), Hide tracked is a switch, assigned rows put due before status, long via chips and series names clip; visual-check flags text past the page edge or its cell
+- Install.sh reclaims a stale lock by renaming it away (only one run wins), not rm + mkdir
+
+### Under the hood
+
+- V0.2.7 release screenshots (Epics filtered, assigned grouped by status) from a fresh fictional demo copy
+- UI rules for long real data (ellipsis in fixed slots, long-data seed, every-page check before release)
+- One pass builds the Epics candidates (no second query or stub for the filter's group totals)
+- README Epics row mentions the filter, Group by, Show and Hide tracked
+
 ## v0.2.6 — 2026-11-14
 
 ### Features
