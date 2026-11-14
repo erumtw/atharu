@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.2.8 — 2026-11-14
+
+### Features
+
+- Epics gets a Status column, the capture hint shows the grammar, long names show two lines on a phone
+- A to-do's due date sits right after its title and tags (inline, no separator); the phone keeps it on the meta line
+- The Update row shows a progress bar with the step and the time left
+- Update progress model (per-step estimate from the last run, front-loaded curve, never backwards); install.sh also times source and swap
+- Install.sh prints one "▸ step N/M name" line per phase (the progress bar's markers)
+
+### Fixes
+
+- Update ETA counts the later steps when one overruns; a run that ends mid-poll renders its end state, not 0 %
+- A Jira link chip clips instead of squeezing the to-do text to 0 px, the sidebar stays pinned, and the check no longer skips 0-px text
+- The update bar accelerates (0.97 x real^1.6, slow start and fast finish) instead of front-loading 60 %
+- A screenshot from the popover hides Atharu, so the main window doesn't jump over what you capture
+
+### Under the hood
+
+- V0.2.8 release screenshot shows "Updating to v0.2.9" (was a v0.9.0 placeholder tag)
+- V0.2.8 release screenshot (Settings › Update mid-install, fresh demo DB, no names or paths)
+- Ui-mistakes root cause R7 (layout structure), fix planned for 0.3.0
+- Ui-mistakes log names the root causes (R1–R6) behind each row
+- UI mistakes log + rule (every reported UI bug gets a row and a check that fails on the old code)
+- The update bar walks the four steps of a fake install, never back, accelerating
+
 ## v0.2.7 — 2026-11-14
 
 ### Features
