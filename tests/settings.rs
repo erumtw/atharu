@@ -542,7 +542,8 @@ async fn update_row_says_each_state_in_plain_words() {
         b.contains("role=\"progressbar\"") && b.contains("Step 1 of 4 · Getting the source"),
         "{b}"
     );
-    // Step 3 of 4: the bar is past 60 % (the first 60 % covers the first 35 % of the work) and under 97, and says its step.
+    // Step 3 of 4 (70 of 165 s done by the defaults): the accelerating curve puts the bar near 0.97 × 0.42^1.6 ≈ 24 %, under 97, and
+    // the row says its step.
     std::fs::write(
         std::env::temp_dir().join("update.log"),
         "▸ step 1/4 source\n⏱ source: 0m09s\n▸ step 2/4 cli\n⏱ cli: 0m59s\n▸ step 3/4 app\n   Compiling a\n",
@@ -559,7 +560,7 @@ async fn update_row_says_each_state_in_plain_words() {
         .unwrap()
         .parse::<u32>()
         .unwrap();
-    assert!((60..=97).contains(&now), "{now}");
+    assert!((20..=30).contains(&now), "{now}");
     assert!(!b.contains(" left"), "no history → no time text: {b}");
     // With a history of the last run, the time left shows.
     std::fs::write(&times, "source=10\ncli=60\napp=90\nswap=5\n").unwrap();

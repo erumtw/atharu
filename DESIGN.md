@@ -281,8 +281,8 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
   `ATHARU_UPDATE_FROM_APP=1`, so install.sh does not quit the app it runs inside (the page and its Restart button live there); a
   Terminal `atharu update --app` still quits it first. The bar is real per step and shaped for the eye: install.sh prints `▸ step N/4 source · cli · app · swap` (2 steps without `--app`) and
   `⏱ <step>: XmYYs`; each step's share of the bar is how long it took the LAST whole run (`update-times.txt` next to the log; defaults
-  10 / 60 / 90 / 5 s, and no "left" text while there is no history), the first 35 % of the work fills the first 60 % of the bar (perceived
-  speed), the rest 60 → 97 %, it never moves backwards and is 100 % only on the Done row; "about N min left" ≥ 90 s, "less than a
+  10 / 60 / 90 / 5 s, and no "left" text while there is no history), the bar accelerates (slow start, fast finish: `0.97 × real^1.6`, because an
+  accelerating bar is judged faster than a steady one and an end slow-down worst), capped at 97 %, it never moves backwards and is 100 % only on the Done row; "about N min left" ≥ 90 s, "less than a
   minute left" 15–89 s, "taking longer than usual" past 1.5× the step's time. Past 20 minutes the row says "Took longer than 20 min; still running in the
   background, see the log": the install is left running, no Try again is offered and the row keeps polling until it ends (then it
   says how it went). One install at a time: `updater::start` is refused while one is alive, and install.sh itself holds

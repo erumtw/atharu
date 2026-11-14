@@ -251,8 +251,9 @@ fn run(repo: &Path, tag: &str, log: &Path) -> Result<(), String> {
 
 // ---- The progress bar (0.2.8) ------------------------------------------------------------------------------------------------
 // install.sh prints "▸ step N/M name" when a phase starts and "⏱ name: XmYYs" when it ends. The bar is real per step (each step's
-// share is how long it took LAST time, kept in update-times.txt next to the log) and shaped for the eye: the first 60 % of the bar
-// covers the first 35 % of the work ([`shown`]), it never moves backwards and never reaches 100 % before the install is done.
+// share is how long it took LAST time, kept in update-times.txt next to the log) and shaped for the eye: it starts slowly and
+// speeds up ([`shown`]: studies of progress bars find an accelerating bar is judged faster than a steady one, and a bar that
+// slows at the end worst), it never moves backwards and never reaches 100 % before the install is done.
 
 /// A phase as install.sh announced it.
 #[derive(Debug, PartialEq)]
@@ -395,15 +396,10 @@ pub fn real_fraction(done_secs: &[u32], cur_expected: u32, cur_elapsed: u32, tot
     ((done as f32 + cur) / total.max(1) as f32).clamp(0.0, 1.0)
 }
 
-/// What the bar shows for `real` work done (the perceived curve): the first 35 % of the work fills 60 % of the bar, the rest
-/// 60 % → 97 %. Never 100 % (that is the Done row).
+/// What the bar shows for `real` work done (the perceived curve, owner's choice): slow start, fast finish, `0.97 × real^1.6`.
+/// Never 100 % (that is the Done row).
 pub fn shown(real: f32) -> f32 {
-    let r = real.clamp(0.0, 1.0);
-    if r <= 0.35 {
-        r / 0.35 * 0.60
-    } else {
-        0.60 + (r - 0.35) / 0.65 * 0.37
-    }
+    0.97 * real.clamp(0.0, 1.0).powf(1.6)
 }
 
 /// "about 2 min left" / "less than a minute left" / "taking longer than usual" / nothing. Only with a history to go by.
@@ -711,20 +707,26 @@ mod tests {
     }
 
     #[test]
-    fn shown_front_loads_the_first_sixty_percent() {
+    fn shown_starts_slowly_and_finishes_fast() {
         for (real, want) in [
             (0.0, 0.0),
-            (0.175, 0.30),
-            (0.35, 0.60),
-            (0.675, 0.785),
+            (0.25, 0.106),
+            (0.5, 0.32),
+            (0.75, 0.61),
+            (0.9, 0.82),
             (1.0, 0.97),
         ] {
             assert!(
-                (shown(real) - want).abs() < 0.002,
+                (shown(real) - want).abs() < 0.005,
                 "{real} → {}",
                 shown(real)
             );
         }
+        // Accelerating: each equal step of real work adds more to the bar than the one before.
+        let rises: Vec<f32> = (0..4)
+            .map(|i| shown((i + 1) as f32 * 0.25) - shown(i as f32 * 0.25))
+            .collect();
+        assert!(rises.windows(2).all(|w| w[1] > w[0]), "{rises:?}");
         // Monotonic over the whole range, and never 1.0.
         let mut last = -1.0;
         for i in 0..=100 {
