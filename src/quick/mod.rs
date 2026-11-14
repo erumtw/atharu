@@ -64,6 +64,7 @@ mod tests {
         let live = || {
             Some(Live {
                 elapsed: "02:58".into(),
+                secs: 178,
                 me: [false; 6],
                 others: [false; 6],
                 me_n: 0,

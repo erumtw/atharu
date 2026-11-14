@@ -205,3 +205,18 @@ document.addEventListener('keydown', ev => {
     serShow(false)
   }
 }, true)
+
+// Recording timer: the popover renders the elapsed time once and doesn't poll (the main window's banner does), so it
+// ticks on here from the server's `data-secs` (owner report 0.2.9: the menu bar counted, the popover stood still).
+// Re-queried every tick: #qmeet is replaced after every start / stop and brings a fresh `data-secs`.
+const loaded = new WeakMap<HTMLElement, number>()
+const clock = (s: number) => s < 3600
+  ? `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  : `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+setInterval(() => {
+  for (const el of document.querySelectorAll<HTMLElement>('.rect[data-secs]')) {
+    if (!loaded.has(el)) loaded.set(el, Date.now())
+    const base = Number(el.dataset.secs) || 0
+    el.textContent = clock(base + Math.floor((Date.now() - loaded.get(el)!) / 1000))
+  }
+}, 1000)

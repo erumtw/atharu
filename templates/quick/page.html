@@ -75,7 +75,7 @@
 <h2 class="qlbl vh" id="qm">Meeting</h2>
 <div class="q2run"><span class="dot{% if meeting.capturing() %} rec{% endif %}" aria-hidden="true"></span><a class="nm clip" href="/meetings/{{ m.id }}" title="{{ m.name }}">{{ m.name }}</a>
 {%- if meeting.rec.live.is_some() && meeting.rec.blocked %}<a class="ask" href="/meetings/{{ m.id }}" title="Open the steps in Atharu">Allow recording</a>
-{%- else if let Some(l) = meeting.rec.live %}<span class="rect" title="Recording">{{ l.elapsed }}</span>
+{%- else if let Some(l) = meeting.rec.live %}<span class="rect" title="Recording" data-secs="{{ l.secs }}">{{ l.elapsed }}</span>
 {%- else if meeting.rec.finishing %}<span class="rect">Transcribing…</span>
 {%- else if !since.is_empty() %}<span class="rect">{{ since }}</span>{% endif %}<span class="sp"></span>
 {%- if meeting.rec.mac %}<a class="q2cam" href="/app/screenshot?meeting={{ m.id }}" aria-label="Screenshot into this meeting" title="Screenshot into this meeting"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0a3.5 3.5 0 1 1 7 0"/></svg></a>{% endif %}

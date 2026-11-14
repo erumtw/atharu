@@ -660,7 +660,9 @@ async fn popover_meeting_row_idle_and_running() {
     assert!(
         b.contains(">End meeting</button>") && b.contains("href=\"/app/screenshot?meeting=1\"")
     );
-    assert!(b.contains("<span class=\"rect\" title=\"Recording\">00:"));
+    // The popover ticks the timer on from data-secs (it doesn't poll): the seconds ride along with the first render.
+    assert!(b.contains("<span class=\"rect\" title=\"Recording\" data-secs=\""));
+    assert!(b.contains("\">00:"));
     // Stopped: the tail is transcribing: the time says so, no mic, no red dot.
     post(&st, "/meetings/1/record/stop", "", false).await;
     let b = get(&st, "/quick").await.body;

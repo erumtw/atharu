@@ -280,6 +280,8 @@ pub struct Rec {
 
 pub struct Live {
     pub elapsed: String,
+    /// Seconds recorded so far: the popover ticks its timer on from this (it doesn't poll the server).
+    pub secs: i64,
     /// Six bars per meter: lit or not (`.lvl i.on`).
     pub me: [bool; 6],
     pub others: [bool; 6],
@@ -305,6 +307,7 @@ impl Rec {
         let bars = |n: u8| std::array::from_fn(|i| (i as u8) < n);
         rec.live = Some(Live {
             elapsed: elapsed(secs_between(&started, &now())),
+            secs: secs_between(&started, &now()).max(0),
             me: bars(me),
             others: bars(others),
             me_n: me,
