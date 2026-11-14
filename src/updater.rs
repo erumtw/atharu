@@ -410,11 +410,12 @@ pub fn eta(known: bool, done_secs: u32, cur_expected: u32, cur_elapsed: u32, tot
     if cur_elapsed as f32 > 1.5 * cur_expected as f32 {
         return "taking longer than usual".into();
     }
-    match total.saturating_sub(done_secs + cur_elapsed) {
-        90.. => format!(
-            "about {} min left",
-            total.saturating_sub(done_secs + cur_elapsed).div_ceil(60)
-        ),
+    // What's left of this step plus the steps after it: an overrun of this step must not eat into the later
+    // steps' time (gate 0.2.8: 85 s into a 60 s step said "less than a minute" with 95 s still to go).
+    let left =
+        cur_expected.saturating_sub(cur_elapsed) + total.saturating_sub(done_secs + cur_expected);
+    match left {
+        90.. => format!("about {} min left", left.div_ceil(60)),
         15..=89 => "less than a minute left".into(),
         _ => String::new(),
     }
@@ -759,6 +760,8 @@ mod tests {
         assert_eq!(eta(true, 70, 90, 90, 165), String::new()); // 5 s left: nothing
         assert_eq!(eta(true, 70, 90, 140, 165), "taking longer than usual"); // 140 > 1.5 × 90
         assert_eq!(eta(false, 0, 60, 10, 165), String::new()); // no history, no time
+        // 85 s into the 60 s cli step (under 1.5×): 0 s of it + app 90 + swap 5 = 95 s left, not 70.
+        assert_eq!(eta(true, 10, 60, 85, 165), "about 2 min left");
     }
 
     #[test]

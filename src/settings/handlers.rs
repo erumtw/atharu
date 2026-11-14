@@ -425,16 +425,22 @@ fn update_log(conn: &rusqlite::Connection) -> PathBuf {
 }
 
 fn update_part(st: &AppState, conn: &rusqlite::Connection) -> view::Update {
-    let state = updater::snapshot(&st.update);
+    let mut state = updater::snapshot(&st.update);
     let log = update_log(conn);
+    let mut progress = match state {
+        UpdateState::Running { .. } => updater::progress(&st.update, &log),
+        _ => None,
+    };
+    // The run finished between the snapshot and `progress`: render what it ended as, not an empty 0 % bar
+    // (gate 0.2.8: the bar must never go back).
+    if progress.is_none() && matches!(state, UpdateState::Running { .. }) {
+        state = updater::snapshot(&st.update);
+        progress = None;
+    }
     // The progress line is the log's tail, read when the row polls (the build writes the file itself, no pipe).
     let last = match state {
         UpdateState::Running { .. } => updater::tail(&log),
         _ => String::new(),
-    };
-    let progress = match state {
-        UpdateState::Running { .. } => updater::progress(&st.update, &log),
-        _ => None,
     };
     view::Update::new(
         &state,
