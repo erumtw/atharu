@@ -31,7 +31,11 @@ async fn groups_by_due_against_fixed_today() {
     assert!(pos("plan q1") < pos("<h3>No date"));
     assert!(pos("<h3>No date") < pos("renew parking"));
     assert!(b.contains("Slack ↗"));
-    assert!(b.contains(r#"<span class="qdue late" title="Due Mon 9 Nov">Mon 9 Nov</span>"#));
+    // Inline right after the title (desktop) and again on the phone's meta line (m-only).
+    assert!(b.contains(
+        r#"<span class="qdue m-hide late" title="Due Mon 9 Nov">Mon 9 Nov</span></span>"#
+    ));
+    assert!(b.contains(r#"<span class="qdue m-only late" title="Due Mon 9 Nov">Mon 9 Nov</span>"#));
 }
 
 #[tokio::test]
