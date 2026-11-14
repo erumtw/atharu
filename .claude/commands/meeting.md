@@ -26,3 +26,5 @@ Write up meeting $ARGUMENTS (a meeting number, or `latest` when empty) in atharu
    Never write SQL. Never paste the transcript anywhere else.
 5. Finish with: the note's id and title, a table of what was logged (id · kind · epic · text), and anything you
    skipped as unclear.
+
+Tags: put a `#tag` as the first word or as a word inside the sentence (`> #comops set up the meeting on topic X by fri`, `> meet on topic X with the #comops team by fri`), never tacked on at the end (CLAUDE.md "Line grammar").

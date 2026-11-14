@@ -54,6 +54,9 @@ name → `/meetings?name=X`, else nothing (a dead link).
 - `n ` (n + space) at the start of the capture box (Today or the menu-bar popover) saves a **note**, not a line
   (`nginx fixed` stays a line). `atharu log` is unchanged: agents write notes with `atharu note`.
 - `#tag` anywhere in the text (`#[a-z0-9][a-z0-9-]*`, case folded) tags the line or note: `booked e2e review #expense`.
+- **Where an agent puts the tag** (owner's style, 2026-11-14): as the first word, or as a word inside the sentence,
+  never tacked on at the end. `> #comops set up the meeting with the team on topic X by fri` ·
+  `> meet on topic X with the #comops team by fri`, not `> meet on topic X by fri #comops`.
   Not a tag: `#` alone, `#123`, a `#` mid-word or in a URL, inside `code`, a markdown heading `# x`.
 
 ## Write rules
