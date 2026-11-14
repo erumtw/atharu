@@ -10,7 +10,7 @@
 <form class="seg" role="group" aria-label="Sort" method="get" action="/tags">{% if !q.is_empty() %}<input type="hidden" name="q" value="{{ q }}">{% endif %}{% for (v, label) in [("used", "Most used"), ("recent", "Recent"), ("name", "A–Z")] %}<button{% if sort == *v %} class="on" aria-pressed="true"{% endif %} type="submit" name="sort" value="{{ v }}">{{ label }}</button>{% endfor %}</form></div>
 <div class="tw"><table class="ttab"><tr><th>Tag</th><th>Lines</th><th>Open to-dos</th><th>Last used</th><th>Tagged by</th></tr>
 {%- for r in rows %}
-<tr><td><a class="chip tag" href="/tags/{{ r.tag }}" title="{{ r.tag }}">{{ r.tag }}</a></td><td>{% if r.lines == 0 %}<span class="muted">0</span>{% else %}{{ r.lines }}{% endif %}</td><td>{% if r.open_todos == 0 %}<span class="muted">0</span>{% else %}{{ r.open_todos }}{% endif %}</td><td class="muted">{{ last(r) }}</td><td class="small muted">{{ r.tagged_by.join(", ") }}</td></tr>
+<tr><td><a class="chip tag clip i" href="/tags/{{ r.tag }}" title="{{ r.tag }}">{{ r.tag }}</a></td><td>{% if r.lines == 0 %}<span class="muted">0</span>{% else %}{{ r.lines }}{% endif %}</td><td>{% if r.open_todos == 0 %}<span class="muted">0</span>{% else %}{{ r.open_todos }}{% endif %}</td><td class="muted">{{ last(r) }}</td><td class="small muted">{{ r.tagged_by.join(", ") }}</td></tr>
 {%- endfor %}
 </table></div>
 <p class="small muted" style="margin: 0">{% if q.is_empty() %}{{ total }} tag{% if total != 1 %}s{% endif %}{% else %}{{ rows.len() }} of {{ total }} tags match ‘{{ q }}’{% endif %}. Counts include lines that inherit a tag from their epic.</p>

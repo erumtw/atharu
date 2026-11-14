@@ -620,6 +620,13 @@ holds every timing; `launch.ts` only prepares the SVG. Setting `launch` = `ink` 
    flagged epics only · Logged today with its tag filter + Group by row · the capture bar.
 9. **Archive** (0.2.0 D4): a meeting series' ⋯ or row Archive hides it from Meetings and the Calendar (folded "Archived · n" under the
    list); its series and meeting pages stay, a rename carries it.
+10. **Long text in a fixed slot** (0.2.7; CLAUDE.md "Long real data"): the owner's data is long (60-character series names, 90-character
+   Jira titles, 30 assigned tickets, Thai), the demo data is short. Text in a fixed-width slot (a table cell, a grid column, a chip, a
+   row) ends in `…` and carries its full text as `title`: put **`.clip`** (`base.css`, `.clip.i` for chips) on it, never a one-off
+   ellipsis rule. Nothing prints over a neighbour or past its card. A new table or grid states its column widths and says which column
+   gives way (Epics: the title; Series, Topics, Tags: the name; the assigned rows: the title), and the status chip is never the one
+   that yields to nothing (88 px floor). Check a UI change on `scripts/long-seed.sh` (`scripts/visual-check.sh --db <file>`), whose
+   rules flag anything past the sheet's right edge, text past its own cell, and a name clipped to a sliver, not only on the short demo.
 
 ## 8. Responsive (`responsive.css`)
 

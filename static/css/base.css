@@ -9,6 +9,13 @@ h4{font-size:15px;font-weight:600;margin:8px 0 0;display:flex;gap:8px;align-item
 .normal{font-weight:400}
 .mid{font-weight:500}
 .mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:0}
+/* Text in a fixed slot (table cell, grid column, chip, row) ends in an ellipsis and carries its full text as `title`; it never prints
+   over a neighbour or past its card (CLAUDE.md "Long real data": five overflow bugs in a day, all long text in a fixed slot). The ONE
+   cut-off class: use it, with the title, instead of writing the four declarations again. `.i` = inline (chips). */
+.clip{display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clip.i{display:inline-block;vertical-align:bottom}
+/* A link around a clipped chip hands it the room (else the link, an inline box, is as wide as the full name). */
+a:has(>.chip.clip){display:inline-flex;max-width:100%;min-width:0}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:8px 10px;border-bottom:1px solid var(--fill-2);white-space:nowrap}

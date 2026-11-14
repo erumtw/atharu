@@ -37,7 +37,7 @@
 <dt>Series</dt><dd class="small"><span>{{ s }}</span><a href="/meetings?name={{ tag }}">All {{ tag }} meetings →</a></dd>
 {%- endif %}
 {%- if !tagged_by.is_empty() %}
-<dt>Tagged by</dt><dd class="small">{% for (ty, id) in tagged_by %}{% if ty == "epic" %}<a href="/epics/{{ id }}"><span class="chip key">{{ id }}</span></a>{% else if ty == "series" %}<a href="/meetings?name={{ id }}" title="{{ id }}"><span class="chip">{{ id }}</span></a>{% else %}<a class="mono" href="/learn/{{ id }}">{{ id }}</a>{% endif %}{% endfor %}<span class="muted">· their lines count here</span></dd>
+<dt>Tagged by</dt><dd class="small">{% for (ty, id) in tagged_by %}{% if ty == "epic" %}<a href="/epics/{{ id }}"><span class="chip key">{{ id }}</span></a>{% else if ty == "series" %}<a href="/meetings?name={{ id }}" title="{{ id }}"><span class="chip clip i">{{ id }}</span></a>{% else %}<a class="mono clip i" href="/learn/{{ id }}" title="{{ id }}">{{ id }}</a>{% endif %}{% endfor %}<span class="muted">· their lines count here</span></dd>
 {%- endif %}
 </dl>
 {%- endif %}
@@ -91,12 +91,12 @@
 <div class="cols">
 <details class="tg" open><summary>Meetings <span class="small muted normal">· {{ meetings.len() }}</span></summary><div class="blocks small">
 {%- for m in meetings %}
-<a class="blk ink" href="/meetings?name={{ m.name }}" title="{{ m.name }}"><span class="chip">{{ m.name }}</span><span>{{ m.text }}</span></a>
+<a class="blk ink" href="/meetings?name={{ m.name }}" title="{{ m.name }}"><span class="chip clip i">{{ m.name }}</span><span>{{ m.text }}</span></a>
 {%- endfor %}
 </div></details>
 <details class="tg" open><summary>Topics <span class="small muted normal">· {{ topics.len() }}</span></summary><div class="blocks small">
 {%- for t in topics %}
-<a class="blk ink" href="/learn/{{ t.slug }}"><span class="mono">{{ t.slug }}</span><span class="muted">{% if t.tags_it %}tags it{% else %}same name{% endif %}</span><span class="meter" aria-label="{% if t.depth == 0 %}Not rated{% else %}Depth {{ t.depth }} of 4{% endif %}">{% for i in 1..=4 %}<i{% if i <= t.depth %} class="on"{% endif %}></i>{% endfor %}</span></a>
+<a class="blk ink" href="/learn/{{ t.slug }}" title="{{ t.slug }}"><span class="mono clip i">{{ t.slug }}</span><span class="muted">{% if t.tags_it %}tags it{% else %}same name{% endif %}</span><span class="meter" aria-label="{% if t.depth == 0 %}Not rated{% else %}Depth {{ t.depth }} of 4{% endif %}">{% for i in 1..=4 %}<i{% if i <= t.depth %} class="on"{% endif %}></i>{% endfor %}</span></a>
 {%- endfor %}
 </div></details>
 </div>

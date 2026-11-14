@@ -8,9 +8,9 @@
 .side a.sub{padding-block:0;padding-left:32px;font-size:13px;color:var(--muted);min-height:28px;gap:6px}
 .side a.sub .mono{font-size:12px;flex:none}
 /* The series count stays beside its (clipped) name instead of dropping to a line of its own. */
-.side a.sub>:not(.ell,.t){flex:none}
+.side a.sub>:not(.clip,.t){flex:none}
 /* One line per epic: a long title ellipsizes instead of doubling the row (full title in the tooltip). */
-.side a.sub .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The name is a .clip (base.css); the anchor carries the full title. */
 .side .lbl{font-size:12px;font-weight:600;color:var(--muted);padding:16px 10px 4px}
 /* Full height so the spacer can pin Settings to the bottom (.wl pads 12 top + bottom). */
 .side{min-height:calc(100vh - 24px)}

@@ -112,7 +112,7 @@ async fn lines_logged_during_a_meeting_get_its_id() {
     // One row per series: name, meetings, last met, open action items.
     assert!(
         b.contains(
-            r#"<a class="ink" href="/meetings?name=oms-sync" title="oms-sync"><b>oms-sync</b></a></td><td>1</td>"#
+            r#"<a class="ink clip" href="/meetings?name=oms-sync" title="oms-sync"><b>oms-sync</b></a></td><td>1</td>"#
         ),
         "{b}"
     );

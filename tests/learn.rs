@@ -161,9 +161,9 @@ async fn report_heatmap_and_depth_changes() {
     assert!(b.contains("<th>Sep</th><th>Oct</th><th>Nov</th>"));
     // Oct = latest as of 31 Oct (3, not 2); kafka blank before its first rating.
     assert!(b.contains(
-        "<td class=\"mono\">vector-search</td><td class=\"heat1\">1</td><td class=\"heat3\">3</td>"
+        "<td class=\"mono\"><span class=\"clip\" title=\"vector-search\">vector-search</span></td><td class=\"heat1\">1</td><td class=\"heat3\">3</td>"
     ));
-    assert!(b.contains("<td class=\"mono\">kafka</td><td class=\"muted\">–</td>"));
+    assert!(b.contains("<td class=\"mono\"><span class=\"clip\" title=\"kafka\">kafka</span></td><td class=\"muted\">–</td>"));
 
     let b = get(&st, "/report").await.body; // week of 9 Nov
     assert!(b.contains("<li>vector-search: depth 3 → 4 (can teach)</li>"));

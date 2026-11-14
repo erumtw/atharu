@@ -64,9 +64,9 @@
 <div style="flex: 1 1 200px"><div class="small muted">Impact lines per week</div><div class="bars" aria-hidden="true">{% for p in weeks.pct %}<span style="height: {{ p }}%"></span>{% endfor %}</div><div class="row between small muted"><span>{{ weeks.first }}</span>{% if weeks.pct.len() > 1 %}<span>{{ weeks.last }}</span>{% endif %}</div></div>
 <div style="flex: 1 1 220px"><div class="small muted">Depth by month</div><div class="small muted">1 heard of it · 2 can explain · 3 can build without AI · 4 can teach</div>
 {%- if heat.is_empty() %}<div class="small muted" style="margin-top: 6px">No topics rated yet.</div>{% else %}
-<table class="small" style="margin-top: 4px"><tr><th>Topic</th>{% for m in heat_months %}<th>{{ m }}</th>{% endfor %}</tr>
+<table class="small heat" style="margin-top: 4px"><tr><th>Topic</th>{% for m in heat_months %}<th>{{ m }}</th>{% endfor %}</tr>
 {%- for h in heat %}
-<tr><td class="mono">{{ h.topic }}</td>{% for c in h.cells %}{% if *c == 0 %}<td class="muted">–</td>{% else %}<td class="{{ crate::report::view::heat_class(c) }}">{{ c }}</td>{% endif %}{% endfor %}</tr>
+<tr><td class="mono"><span class="clip" title="{{ h.topic }}">{{ h.topic }}</span></td>{% for c in h.cells %}{% if *c == 0 %}<td class="muted">–</td>{% else %}<td class="{{ crate::report::view::heat_class(c) }}">{{ c }}</td>{% endif %}{% endfor %}</tr>
 {%- endfor %}</table>{% endif %}</div>
 </div>
 </details>

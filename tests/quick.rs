@@ -143,8 +143,11 @@ async fn todos_are_today_and_overdue_overdue_first_capped_at_five() {
     );
     let b = get(&st, "/quick").await.body;
     let rows: Vec<&str> = b
-        .match_indices("<span class=\"qtx\">")
-        .map(|(i, m)| b[i + m.len()..].split('<').next().unwrap())
+        .match_indices("<span class=\"qtx clip\" title=\"")
+        .map(|(i, m)| {
+            let rest = &b[i + m.len()..];
+            rest.split_once("\">").unwrap().1.split('<').next().unwrap()
+        })
         .collect();
     assert_eq!(
         rows,
@@ -193,7 +196,9 @@ async fn start_and_end_meeting_come_back_to_the_popover() {
     assert_eq!(r.status, 303);
     assert_eq!(r.headers["location"], "/quick");
     let b = get(&st, "/quick").await.body;
-    assert!(b.contains("<a class=\"nm\" href=\"/meetings/1\" title=\"oms-sync\">oms-sync</a>"));
+    assert!(
+        b.contains("<a class=\"nm clip\" href=\"/meetings/1\" title=\"oms-sync\">oms-sync</a>")
+    );
     assert!(b.contains("<span class=\"rect\">0 min</span>"));
     assert!(b.contains("action=\"/meetings/1/end\""));
     assert!(!b.contains("Start a meeting"));

@@ -34,7 +34,6 @@ select.pin{cursor:pointer}
 .chip.tag.at,.chip.key{flex:none;max-width:none}
 .blk>span:not(.chip){min-width:0}
 /* One-line clip for a long name inside a flex row (sidebar series, crumbs). */
-.ell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip.key{font-family:ui-monospace,'SF Mono',Menlo,monospace}
 /* Line rows (.blk.ln: a log line, a to-do, a decision; T91). The text takes the room and wraps; chips and actions
    keep their width in one right-hand column, top-aligned to the first text line, so a wrapped row neither squeezes
@@ -60,7 +59,6 @@ select.pin{cursor:pointer}
    and under the note icon (owner screenshot, 0.2.7): .via is a clipping flex row, the link shrinks, the chip ellipsizes. */
 .blk.ln>.via{display:flex;align-items:center;gap:.3em;min-width:0;overflow:hidden;white-space:nowrap}
 .via>a{display:inline-flex;min-width:0;overflow:hidden}
-.via>a>.chip{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 /* Pin and Unpin take one width so the Drop column stays put when a row is pinned. */
 .blk.ln>.row .btn.ghost.s{min-width:58px;justify-content:center}
 /* A chip inside a link (epic key, note row) answers the hover too, not just the underline. */
@@ -82,9 +80,9 @@ a:hover>.chip{background:var(--sep)}
 /* Epics table: the status chip stays on the title's line; the title gives way (ellipsis), never the chip. */
 .ettl{display:flex;align-items:center;gap:8px;min-width:0}
 .ettl>*{flex:none}
-.ettl>:is(a,b,form){flex:0 1 auto;min-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* The status chip gives way before the title does (real titles are long): it may shrink to an ellipsis, but never below 60 px (a bare ▾ says nothing). */
-.ettl>.lchip{flex:0 100 auto;min-width:60px;overflow:hidden}
+.ettl>:is(a,b,form){flex:0 1 auto;min-width:72px}
+/* The status chip gives way before the title does (real titles are long): it may shrink to an ellipsis, but never below 88 px (a bare ▾ says nothing). */
+.ettl>.lchip{flex:0 100 auto;min-width:88px;overflow:hidden}
 .ettl>.lchip>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
 /* Its muted note ("from Jira", "Jira epic · not tracked") gives way before the title. */
 .ettl>.small{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -92,12 +90,17 @@ a:hover>.chip{background:var(--sep)}
    sits next to its action (owner, 0.2.7). */
 /* Fixed columns (0.2.6): a flex row let "Story" vs "Task", the due and "+ To-do" vs "✓ tracked" push the status chip
    sideways row by row (owner screenshot). Every row renders all six cells, so the columns line up. */
+/* The Hide tracked switch floats right inside the assigned summary; a float left alone narrows the first row under it (a grid row
+   is a formatting context and shrinks beside floats: found on the long seed at 390 px). Clear it inside the summary. */
+#assigned>summary::after{content:"";display:block;clear:both}
 .arow[hidden],.etab tr[hidden]{display:none}
+.heat td:first-child{max-width:16rem}
+/* A clipped name in a row (a series chip, a topic slug) gives way first but keeps half the row at most. */
+.blk>.clip{flex:0 1 auto;max-width:50%}
 .arow{display:grid;grid-template-columns:52px 76px minmax(0,1fr) 64px 172px 124px;align-items:center;column-gap:10px;
   min-height:44px;padding:2px 0;border-top:1px solid var(--fill-2);font-size:14px}
 .arow:first-child{border-top:0}
 .arow>.jtype,.arow>.chip.key{justify-self:start}
-.arow>.t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .arow>.ast{justify-self:end;display:flex;min-width:0;max-width:100%}
 .arow>.ast .lchip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .arow>.adue{white-space:nowrap}
@@ -585,7 +588,8 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .hi{background:var(--fill);border-radius:12px;padding:8px 14px}
 .hi .blk:hover{background:rgba(0,0,0,.04)}
 .via{font-size:12px;color:var(--muted);white-space:nowrap;display:inline-flex;gap:4px;align-items:center}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 28px}
+/* minmax(0, …): a bare 1fr has an automatic minimum, so one unbreakable name grew the column past the page (long seed, tag hub at 390). */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 28px}
 /* Hub ⋯ menu: a native popover (top layer), anchored under the crumb's ⋯; without anchor positioning it sits
    fixed at the same spot for the usual layout. */
 .menu [role=menuitem]{padding:0 10px;min-height:32px;display:flex;align-items:center;gap:10px;border-radius:8px;color:var(--ink);text-decoration:none}
@@ -868,9 +872,13 @@ table.series :is(th,td):nth-child(2){width:84px}table.series :is(th,td):nth-chil
 table.series :is(th,td):nth-child(4){width:132px}table.series :is(th,td):nth-child(5){width:96px}
 /* A long first-column name clips with an ellipsis (the full name is the link's title), never over the next column
    (a fixed-layout cell doesn't clip by itself: owner screenshot of /meetings, 0.2.7). */
+/* Topics and Tags state their columns like Epics and Series do (found on the long-data seed: an auto-layout table grew past its card
+   with a 70-character topic): the first column (name) gives way, the others have a width, and every cell clips. */
+.ltab,.ttab{table-layout:fixed;width:100%}
+.ltab th:nth-child(2){width:112px}.ltab th:nth-child(3){width:96px}.ltab th:nth-child(4){width:168px}.ltab th:nth-child(5){width:104px}
+.ttab th:nth-child(2){width:64px}.ttab th:nth-child(3){width:112px}.ttab th:nth-child(4){width:120px}.ttab th:nth-child(5){width:150px}
+:is(.ltab,.ttab) td{overflow:hidden;text-overflow:ellipsis}
 :is(table.series,.ltab,.ttab) td:first-child{overflow:hidden}
-:is(table.series,.ltab) td:first-child>a{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ttab td:first-child>a{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 /* Notes list: one note = one block (title line + preview line), a hairline between notes, so a preview never reads as
    the next note's (real lists, 0.2.0). */
 .blk.nrow{flex-wrap:wrap;row-gap:2px;padding-block:9px}

@@ -519,7 +519,7 @@ async fn assigned_is_filtered_hidden_when_tracked_and_grouped() {
     let st = state();
     exec(&st, VIEW_SEED);
     let rows = |b: &str| -> Vec<String> {
-        b.match_indices("<span class=\"t\" title=\"")
+        b.match_indices("<span class=\"t clip\" title=\"")
             .map(|(i, m)| b[i + m.len()..].split('"').next().unwrap().to_string())
             .collect()
     };

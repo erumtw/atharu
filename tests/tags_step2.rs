@@ -127,18 +127,20 @@ async fn series_topic_and_event_tags() {
 
     let hub = get(&st, "/tags/expense").await.body;
     assert!(
-        hub.contains(r#"via <a href="/meetings?name=expense-sync" title="expense-sync: the series"><span class="chip">expense-sync</span></a>"#),
+        hub.contains(r#"via <a href="/meetings?name=expense-sync" title="expense-sync: the series"><span class="chip clip i">expense-sync</span></a>"#),
         "{hub}"
     );
     assert!(hub.contains("approve claims over 5k by hand"));
     assert!(hub.contains(
-        r#"<a href="/meetings?name=expense-sync" title="expense-sync"><span class="chip">expense-sync</span></a>"#
+        r#"<a href="/meetings?name=expense-sync" title="expense-sync"><span class="chip clip i">expense-sync</span></a>"#
     ));
     assert!(
         hub.contains("series · tags it · 1 meeting, last Wed 11 Nov"),
         "{hub}"
     );
-    assert!(hub.contains(r#"<a class="mono" href="/learn/vat-rules">vat-rules</a>"#));
+    assert!(hub.contains(
+        r#"<a class="mono clip i" href="/learn/vat-rules" title="vat-rules">vat-rules</a>"#
+    ));
     assert!(hub.contains("<summary>Topics"));
     assert!(
         hub.contains("Coming up <span class=\"small muted normal\">· 2</span>"),
