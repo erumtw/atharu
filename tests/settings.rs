@@ -526,12 +526,56 @@ async fn update_row_says_each_state_in_plain_words() {
     })
     .await;
     assert!(b.contains("Updating to v0.2.7 · 0 s"), "{b}");
-    assert!(b.contains("<span class=\"mono upd-last\">Compiling atharu v0.2.7 &#60;x&#62;</span>"));
+    assert!(b.contains("<span class=\"mono upd-last clip\" title=\"Compiling atharu v0.2.7 &#60;x&#62;\">Compiling atharu v0.2.7 &#60;x&#62;</span>"));
     assert!(b.contains("hx-get=\"/settings/update\" hx-trigger=\"every 2s\""));
     assert!(!b.contains("action=\"/settings/update/start\""));
 
+    // The bar (0.2.8): no markers yet → step 1, bar at the start; the step text, no "left" without a history.
+    let times = std::env::temp_dir().join("update-times.txt");
+    let _ = std::fs::remove_file(&times);
+    let running = || UpdateState::Running {
+        to: "v0.2.7".into(),
+        started: Instant::now(),
+    };
+    let b = row(running()).await;
+    assert!(
+        b.contains("role=\"progressbar\"") && b.contains("Step 1 of 4 · Getting the source"),
+        "{b}"
+    );
+    // Step 3 of 4: the bar is past 60 % (the first 60 % covers the first 35 % of the work) and under 97, and says its step.
+    std::fs::write(
+        std::env::temp_dir().join("update.log"),
+        "▸ step 1/4 source\n⏱ source: 0m09s\n▸ step 2/4 cli\n⏱ cli: 0m59s\n▸ step 3/4 app\n   Compiling a\n",
+    )
+    .unwrap();
+    let b = row(running()).await;
+    assert!(b.contains("Step 3 of 4 · Building the Mac app"), "{b}");
+    let now = b
+        .split("aria-valuenow=\"")
+        .nth(1)
+        .unwrap()
+        .split('"')
+        .next()
+        .unwrap()
+        .parse::<u32>()
+        .unwrap();
+    assert!((60..=97).contains(&now), "{now}");
+    assert!(!b.contains(" left"), "no history → no time text: {b}");
+    // With a history of the last run, the time left shows.
+    std::fs::write(&times, "source=10\ncli=60\napp=90\nswap=5\n").unwrap();
+    let b = row(running()).await;
+    assert!(
+        b.contains("Step 3 of 4 · Building the Mac app · about 2 min left"),
+        "{b}"
+    );
+    let _ = std::fs::remove_file(&times);
+
     let b = row(UpdateState::Done("v0.2.7".into())).await;
     assert!(b.contains("✓ v0.2.7 is installed"));
+    assert!(
+        b.contains("aria-valuenow=\"100\""),
+        "the bar is full on the Done row: {b}"
+    );
     assert!(b.contains("<a class=\"btn\" href=\"/app/restart\">Restart Atharu</a>"));
 
     let b = row(UpdateState::Failed {

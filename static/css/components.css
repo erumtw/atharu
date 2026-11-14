@@ -656,7 +656,13 @@ a.chip.tag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .cmd .btn{height:26px;padding:0 10px}
 /* Settings › Update, the app's row (0.2.6): the install's last line under the title, muted mono, one line with an ellipsis.
    --muted 5.07 on --fill. The row is `.mac-only` (looks.css reverts it to a block, its `.gi` keeps the flex). */
-.upd-last{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upd-last{font-size:12px}
+/* The progress bar (0.2.8): 6 px, the accent on --fill-2. AA: the fill is non-text, --accent on --fill-2 4.88:1 (≥ 3). It glides
+   between the row's 2 s polls (1.9 s linear), and sits still under Reduce Motion. */
+.upd-bar{height:6px;border-radius:9999px;background:var(--fill-2);overflow:hidden;width:min(360px,100%);margin:6px 0 2px}
+.upd-bar>i{display:block;height:100%;background:var(--accent);border-radius:inherit;transition:width 1.9s linear}
+@media (prefers-reduced-motion:reduce){.upd-bar>i{transition:none}}
+@media (prefers-contrast:more){.upd-bar{box-shadow:inset 0 0 0 1px var(--ink)}}
 
 /* Line notes (D49, DESIGN.md §6 "Line notes"). Note button on every list of lines: 28 like .x so rows stay 32.
    No note = --muted outline (4.66 on the --fill row hover), hidden like × until the row is hovered or holds focus.

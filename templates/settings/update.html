@@ -14,9 +14,12 @@
 <div class="t"><b>{{ tag }} is available</b><span>Builds it from the release tag; your data stays.</span></div>
 <form class="inline" method="post" action="/settings/update/start" hx-post="/settings/update/start" hx-target="#update" hx-swap="outerHTML"><button class="btn" type="submit">Update</button></form>
 {%- when Phase::Running %}
-<div class="t"><b>Updating to {{ tag }} · {{ elapsed }}</b>{% if !last.is_empty() %}<span class="mono upd-last">{{ last }}</span>{% endif %}</div>
+<div class="t"><b>Updating to {{ tag }} · {{ elapsed }}</b>
+<div class="upd-bar" role="progressbar" aria-label="Update progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ pct }}"><i style="width: {{ pct }}%"></i></div>
+<span class="small">Step {{ step_n }} of {{ step_of }} · {{ step_label }}{% if !eta.is_empty() %} · {{ eta }}{% endif %}</span>
+{%- if !last.is_empty() %}<span class="mono upd-last clip" title="{{ last }}">{{ last }}</span>{% endif %}</div>
 {%- when Phase::Done %}
-<div class="t"><b>✓ {{ tag }} is installed</b><span>Restart Atharu to use it.</span></div>
+<div class="t"><b>✓ {{ tag }} is installed</b><div class="upd-bar" role="progressbar" aria-label="Update progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ pct }}"><i style="width: {{ pct }}%"></i></div><span>Restart Atharu to use it.</span></div>
 <a class="btn" href="/app/restart">Restart Atharu</a>
 {%- when Phase::Failed %}
 <div class="t"><b class="err">{% if check_failed %}Couldn’t check for updates{% else %}Couldn’t install {{ tag }}{% endif %}</b><span>{{ why }}</span>{% if !check_failed %}<span>Log: <span class="mono">{{ log }}</span></span>{% endif %}</div>

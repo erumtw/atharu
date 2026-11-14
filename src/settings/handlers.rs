@@ -432,11 +432,16 @@ fn update_part(st: &AppState, conn: &rusqlite::Connection) -> view::Update {
         UpdateState::Running { .. } => updater::tail(&log),
         _ => String::new(),
     };
+    let progress = match state {
+        UpdateState::Running { .. } => updater::progress(&st.update, &log),
+        _ => None,
+    };
     view::Update::new(
         &state,
         log.display().to_string(),
         last,
         updater::busy(&st.update),
+        progress,
     )
 }
 

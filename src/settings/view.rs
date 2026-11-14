@@ -133,11 +133,23 @@ pub struct Update {
     pub busy: bool,
     /// Where the full output of the last run is.
     pub log: String,
+    /// The progress bar: 0..100 (Done = 100), the step it is in ("Step 3 of 4 · Building the Mac app") and the time left, if known.
+    pub pct: u32,
+    pub step_n: u8,
+    pub step_of: u8,
+    pub step_label: &'static str,
+    pub eta: String,
 }
 
 impl Update {
-    /// `last` = the install's last log line (only read while it runs).
-    pub fn new(s: &crate::updater::UpdateState, log: String, last: String, busy: bool) -> Update {
+    /// `last` = the install's last log line, `progress` = the bar (both only read while it runs).
+    pub fn new(
+        s: &crate::updater::UpdateState,
+        log: String,
+        last: String,
+        busy: bool,
+        progress: Option<crate::updater::Progress>,
+    ) -> Update {
         use crate::updater::UpdateState as S;
         let mut u = Update {
             phase: Phase::Idle,
@@ -148,6 +160,11 @@ impl Update {
             check_failed: false,
             busy,
             log,
+            pct: 0,
+            step_n: 1,
+            step_of: 4,
+            step_label: "",
+            eta: String::new(),
         };
         match s {
             S::Idle => {}
@@ -158,13 +175,21 @@ impl Update {
                 u.phase = Phase::Running;
                 u.tag = to.clone();
                 u.last = last;
+                if let Some(p) = progress {
+                    (u.pct, u.step_n, u.step_of, u.step_label, u.eta) =
+                        (p.pct, p.n, p.of, p.label, p.eta);
+                }
                 u.elapsed = if secs < 60 {
                     format!("{secs} s")
                 } else {
                     format!("{} min", secs / 60)
                 };
             }
-            S::Done(t) => (u.phase, u.tag) = (Phase::Done, t.clone()),
+            // The bar is full for that one render, then the Restart button is all there is.
+            S::Done(t) => {
+                (u.phase, u.tag) = (Phase::Done, t.clone());
+                u.pct = 100;
+            }
             S::Failed { to, why } => {
                 u.phase = Phase::Failed;
                 u.check_failed = to.is_empty();

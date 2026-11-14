@@ -271,14 +271,19 @@ Each look also carries `--bloom` (looks.css), the glow behind the icon in the la
   sync, `.pill`).
 - **Settings › About › Update** (0.2.6, `settings/update.html`): the browser keeps the Terminal row ("Run in Terminal" + the `.cmd` chip
   `atharu update` + Copy). In Atharu.app a second `.gi` row (`#update`, `.mac-only`) walks one update: **Check for updates** (ghost) →
-  "✓ v0.2.6 is the newest" + Check again, or "v0.2.7 is available" + the one primary **Update** → "Updating to v0.2.7 · 1 min" with the
-  install's last line under it (12 px mono `--muted`, one line, ellipsis; the row polls itself every 2 s only in this state) → "✓ v0.2.7
+  "✓ v0.2.6 is the newest" + Check again, or "v0.2.7 is available" + the one primary **Update** → "Updating to v0.2.7 · 1 min" with a **progress bar** (`.upd-bar`, 6 px,
+  `--accent` on `--fill-2` 4.88:1 non-text, gliding 1.9 s between the 2 s polls, still under Reduce Motion), "Step 3 of 4 · Building the Mac app ·
+  about 2 min left" and the install's last line under it (12 px mono `--muted`, one line, ellipsis; the row polls itself every 2 s only in this state) → "✓ v0.2.7
   is installed" + primary **Restart Atharu** (the app's `/app/restart`). A failure is an `.err` title + the reason + "Log: …/update.log" +
   Try again; a failed check says "Couldn’t check for updates". It runs `scripts/install.sh --version <tag> --app` (fixed arguments, the tag
   from `git tag --list` that passed semver; no request value reaches the command line), one at a time, output written straight to `update.log` next to the
   database (a file, not a pipe: the progress line is that file's tail, read when the row polls). The app runs it with
   `ATHARU_UPDATE_FROM_APP=1`, so install.sh does not quit the app it runs inside (the page and its Restart button live there); a
-  Terminal `atharu update --app` still quits it first. Past 20 minutes the row says "Took longer than 20 min; still running in the
+  Terminal `atharu update --app` still quits it first. The bar is real per step and shaped for the eye: install.sh prints `▸ step N/4 source · cli · app · swap` (2 steps without `--app`) and
+  `⏱ <step>: XmYYs`; each step's share of the bar is how long it took the LAST whole run (`update-times.txt` next to the log; defaults
+  10 / 60 / 90 / 5 s, and no "left" text while there is no history), the first 35 % of the work fills the first 60 % of the bar (perceived
+  speed), the rest 60 → 97 %, it never moves backwards and is 100 % only on the Done row; "about N min left" ≥ 90 s, "less than a
+  minute left" 15–89 s, "taking longer than usual" past 1.5× the step's time. Past 20 minutes the row says "Took longer than 20 min; still running in the
   background, see the log": the install is left running, no Try again is offered and the row keeps polling until it ends (then it
   says how it went). One install at a time: `updater::start` is refused while one is alive, and install.sh itself holds
   `target/install.lock` (a directory with its pid; a dead owner's lock is reclaimed), so a second one from the Terminal or after an
