@@ -43,8 +43,6 @@ html[data-look=yoru]{color-scheme:dark;--base:#0d1222;--bloom:#cfd8ff;--wall-vei
   --lg-shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);--lg-float:0 1px 2px rgba(0,0,0,.45),0 14px 36px rgba(0,0,0,.5)}
 /* Exception 1: the dark banner / impact callout sits on a dark sheet, so it needs an edge to read as a card. */
 html[data-look=yoru] .callout.dark{border:1px solid var(--rim)}
-/* Reduce transparency: one flat colour, no mesh (and the hairline instead of the glass rim, looks.css above). */
-@media (prefers-reduced-transparency: reduce){html[data-look=yoru] body::before{background:var(--base)}}
 /* Increase contrast: ink pure white, lines lighter, muted text lighter (the borders already take --ink). */
 @media (prefers-contrast: more){html[data-look=yoru]{--ink:#fff;--ink-2:#fff;--line:#5a5f70;--sep:#5a5f70;--muted-hc:#e6e7ee}}
 /* color-lint:on */
@@ -52,7 +50,7 @@ html[data-look=yoru] .callout.dark{border:1px solid var(--rim)}
 /* Reduce transparency: no mesh, one flat colour (veiled like the mesh so contrast holds). */
 @media (prefers-reduced-transparency: reduce){
   html[data-look] body::before{background:var(--veil),var(--base)}
-  html[data-look=sumi] body::before,html[data-look=auto] body::before{background:var(--base)}
+  html[data-look=sumi] body::before,html[data-look=auto] body::before,html[data-look=yoru] body::before{background:var(--base)}
 }
 
 /* Glass (D17, T24): one alpha, --glass-a (inline on <html>, from domain::look::glass_alpha; the owner may

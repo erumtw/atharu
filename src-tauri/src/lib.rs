@@ -220,7 +220,8 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
     if let Some(dir) = db_path.parent() {
         state.settings = Arc::new(FileConfig::load(&dir.join("config.toml")));
     }
-    look_icon(current_look(&state), system_dark());
+    let look = current_look(&state);
+    look_icon(look, look == "auto" && system_dark());
     // The tray menu reads the running meeting and recent series through it.
     handle.manage(state.clone());
     #[cfg(target_os = "macos")]
@@ -276,7 +277,7 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
                 if look_saved {
                     // Read the look here, off the main thread; only the AppKit calls hop.
                     let look = current_look(&st);
-                    let dark = system_dark();
+                    let dark = look == "auto" && system_dark();
                     let h2 = h.clone();
                     let _ = h.run_on_main_thread(move || {
                         apply_theme(&h2, look);
@@ -710,10 +711,11 @@ fn apply_theme(h: &AppHandle, look: &str) {
 fn apply_look(h: &AppHandle) {
     let look = current_look(&h.state::<app::AppState>());
     apply_theme(h, look);
-    look_icon(look, system_dark());
+    look_icon(look, look == "auto" && system_dark());
 }
 
-/// macOS is in dark appearance: `defaults` prints "Dark" then and fails in light. Only an Auto look asks.
+/// macOS is in dark appearance: `defaults` prints "Dark" then and fails in light. Callers ask only for the Auto look
+/// (`look == "auto" && system_dark()`): it spawns a process, and on POST /settings that blocks a tokio worker.
 fn system_dark() -> bool {
     #[cfg(target_os = "macos")]
     {
