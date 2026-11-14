@@ -7,6 +7,8 @@
 #   --app also replaces /Applications/Atharu.app (its data dir is untouched), --docker rebuilds the container
 # Never edits shell rc files: it prints the lines to add instead.
 set -euo pipefail
+# The lock test's seam (tests/update.rs) must never come in from an exported parent-shell function.
+unset -f install_lock_seam 2>/dev/null || true
 # All output is for humans; stdout stays free for `atharu update`'s JSON.
 exec 1>&2
 
