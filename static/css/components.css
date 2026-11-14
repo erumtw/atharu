@@ -463,7 +463,7 @@ button.ev.own{border:1px dashed var(--faint)}
 .note-body .page{color:var(--accent)}
 
 /* Drawing block (DESIGN.md §6, boards Drawing.*): content, so white and no glass; the SVG is an <img> (D24). */
-.note-body .drawing{position:relative;margin:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:16px;display:flex;justify-content:center}
+.note-body .drawing{position:relative;margin:0;border:1px solid var(--line);border-radius:12px;background:var(--paper);padding:16px;display:flex;justify-content:center}
 .drawing img{display:block;max-width:100%;height:auto;max-height:480px}
 .drawing .edit{position:absolute;top:8px;right:8px;opacity:0}
 .drawing:is(:hover,:focus-within) .edit{opacity:1}
@@ -472,7 +472,7 @@ button.ev.own{border:1px dashed var(--faint)}
 .drawing.empty{border:1px dashed var(--faint);min-height:160px;box-sizing:border-box;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
 .drawing.empty .ic{width:28px;height:28px;color:var(--muted)}
 /* Editor sheet: opaque (it is content), Excalidraw fills it; our bar floats top-right where Library was. */
-.drawsheet{position:fixed;inset:0;z-index:50;background:var(--sheet);font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+.drawsheet{position:fixed;inset:0;z-index:50;background:var(--paper);font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
 .drawhost{position:absolute;inset:0}
 .drawbar{--s:25%;--g:color-mix(in srgb,var(--glass-c) max(var(--lg-min),min(100%,var(--glass-a) + var(--s))),transparent);--muted:var(--muted-tint);--err:var(--err-tint);
   position:absolute;top:12px;right:16px;z-index:5;display:flex;align-items:center;gap:6px;height:44px;box-sizing:border-box;padding:0 4px 0 14px;border-radius:9999px;border:1px solid transparent;

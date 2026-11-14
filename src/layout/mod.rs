@@ -59,7 +59,7 @@ impl Layout {
             glass_all: get("glass_all") == Some("1"),
             tinted: get("glass_tint") == Some("tinted"),
             text_blur: get("text_blur") == Some("1"),
-            glass_a: crate::domain::look::glass_alpha(get("glass_opacity")),
+            glass_a: crate::domain::look::glass_alpha(get("glass_opacity"), look),
         })
     }
 }

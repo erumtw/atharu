@@ -722,6 +722,8 @@ async fn yoru_is_a_look_with_its_icon_and_dark_block() {
     let b = get(&st, "/settings").await.body;
     assert!(b.contains("data-look=\"yoru\""), "{b:.300}");
     assert!(b.contains("href=\"/static/icon/yoru.svg\""));
+    // Nothing stored: the look's own glass default (clear enough for the night mesh), not the light looks' 60 %.
+    assert!(b.contains("style=\"--glass-a:38%\""), "{b:.400}");
     assert!(
         b.contains("<input type=\"radio\" name=\"look\" value=\"yoru\" checked>"),
         "{b}"

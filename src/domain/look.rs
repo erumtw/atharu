@@ -10,6 +10,9 @@ pub struct Look {
     /// Lowest glass alpha (%) that keeps muted and link text ≥ 4.5:1 on the weakest glass surface (sheet, a − 5)
     /// over this look's darkest veiled wallpaper stop, unblurred (worst case). Measured for T24; see the plan's evidence.
     pub glass_floor: u8,
+    /// Glass alpha (%) while the owner hasn't set one: the light looks share `GLASS_DEFAULT`; Yoru's near-black glass starts at its
+    /// floor so the night mesh shows through (the approved board's 38 %), a heavier default would read as a grey slab.
+    pub glass_default: u8,
 }
 
 /// Slider default before anyone touches it (D17).
@@ -24,6 +27,7 @@ pub const LOOKS: [Look; 6] = [
         jp: "墨",
         blurb: "Black ink on plain washi. The default.",
         glass_floor: 18,
+        glass_default: GLASS_DEFAULT,
     },
     Look {
         slug: "sora",
@@ -31,6 +35,7 @@ pub const LOOKS: [Look; 6] = [
         jp: "空",
         blurb: "Sky: blue washi with mint and cyan, navy ink.",
         glass_floor: 69,
+        glass_default: GLASS_DEFAULT,
     },
     Look {
         slug: "wakaba",
@@ -38,6 +43,7 @@ pub const LOOKS: [Look; 6] = [
         jp: "若葉",
         blurb: "Young leaves: green washi with teal and sky blue, pine ink.",
         glass_floor: 57,
+        glass_default: GLASS_DEFAULT,
     },
     Look {
         slug: "glass",
@@ -45,6 +51,7 @@ pub const LOOKS: [Look; 6] = [
         jp: "硝子",
         blurb: "Liquid Glass: a deep blue mesh behind clear glass.",
         glass_floor: 83,
+        glass_default: GLASS_DEFAULT,
     },
     Look {
         slug: "yoru",
@@ -54,6 +61,7 @@ pub const LOOKS: [Look; 6] = [
         // Light text on near-black glass is AA over the whole wallpaper even at 0 % (measured in looks.css); 38 is the board's
         // "clear" setting, the clearest that still shows the mesh without hatching most of the slider.
         glass_floor: 38,
+        glass_default: 38,
     },
     Look {
         slug: "auto",
@@ -62,6 +70,7 @@ pub const LOOKS: [Look; 6] = [
         blurb: "Follows macOS: Sumi by day, Yoru by night.",
         // Both looks' floors must hold: the higher one (Yoru's).
         glass_floor: 38,
+        glass_default: 38,
     },
 ];
 
@@ -72,11 +81,11 @@ pub fn pick(slug: Option<&str>) -> &'static Look {
 }
 
 /// The alpha (%) every page renders: the stored slider value as set (owner decision 2026-11-13: the look's AA floor
-/// is a marked baseline, not a stop; going clearer is allowed). Junk → the default.
-pub fn glass_alpha(stored: Option<&str>) -> u8 {
+/// is a marked baseline, not a stop; going clearer is allowed). Junk or nothing stored → the look's default.
+pub fn glass_alpha(stored: Option<&str>, look: &Look) -> u8 {
     stored
         .and_then(|v| v.parse::<u8>().ok())
-        .unwrap_or(GLASS_DEFAULT)
+        .unwrap_or(look.glass_default)
         .min(100)
 }
 
@@ -96,12 +105,17 @@ pub fn launch(stored: Option<&str>) -> &'static str {
 mod tests {
     #[test]
     fn glass_alpha_goes_below_the_looks_floor() {
-        assert_eq!(super::glass_alpha(Some("20")), 20);
-        assert_eq!(super::glass_alpha(Some("0")), 0);
-        assert_eq!(super::glass_alpha(Some("100")), 100);
-        assert_eq!(super::glass_alpha(Some("250")), 100);
-        assert_eq!(super::glass_alpha(Some("x")), 60, "junk → default");
-        assert_eq!(super::glass_alpha(None), 60);
+        let sumi = super::pick(Some("sumi"));
+        assert_eq!(super::glass_alpha(Some("20"), sumi), 20);
+        assert_eq!(super::glass_alpha(Some("0"), sumi), 0);
+        assert_eq!(super::glass_alpha(Some("100"), sumi), 100);
+        assert_eq!(super::glass_alpha(Some("250"), sumi), 100);
+        assert_eq!(super::glass_alpha(Some("x"), sumi), 60, "junk → default");
+        assert_eq!(super::glass_alpha(None, sumi), 60);
+        // Yoru starts clear enough for the night mesh to show; a stored value still wins.
+        let yoru = super::pick(Some("yoru"));
+        assert_eq!(super::glass_alpha(None, yoru), 38);
+        assert_eq!(super::glass_alpha(Some("70"), yoru), 70);
     }
 
     #[test]

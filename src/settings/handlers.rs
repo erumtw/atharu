@@ -340,17 +340,15 @@ pub async fn save_glass(
     Form(f): Form<GlassForm>,
 ) -> AppResult<Response> {
     let conn = st.conn();
-    let floor = look::pick(queries::get(&conn, "look")?.as_deref()).glass_floor;
+    let cur = look::pick(queries::get(&conn, "look")?.as_deref());
+    let floor = cur.glass_floor;
     let (tint, alpha) = match f.preset.as_deref() {
         Some("clear") => (Some("clear"), floor),
         Some("tinted") => (Some("tinted"), look::GLASS_TINTED.max(floor)),
         Some(_) => {
             return Ok((StatusCode::UNPROCESSABLE_ENTITY, "Pick Clear or Tinted.").into_response());
         }
-        None => (
-            None,
-            f.glass_opacity.unwrap_or(look::GLASS_DEFAULT).min(100),
-        ),
+        None => (None, f.glass_opacity.unwrap_or(cur.glass_default).min(100)),
     };
     queries::set(
         &conn,

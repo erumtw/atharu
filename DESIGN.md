@@ -49,6 +49,7 @@ on 22 pages in 10 look variants identical before and after).
 | `--sheet` | `#fff` | the page sheet `.pg`, the drawing sheet, the preview tile's sheet |
 | `--surface` | `#fff` | raised content: cards, controls, pills, rings, calendar grid, the glass base `--glass-c` |
 | `--on-accent` / `--on-ink` / `--on-dark` | `#fff` | text, ticks and strokes on `--accent`·`--rec`·`--heat-4` / on an `--ink` fill / on `--dark` (and fills-by-alpha on it) |
+| `--paper` | `#fff` | drawing paper: scenes are drawn dark ink on white, so it stays white in every look |
 | `--seg-on` / `--thumb` | `#fff` | the selected segment's thumb / switch and slider knobs (light in every look) |
 | `--hi` | `#fff` | highlights, with an alpha: the lit top edge of glass, hover lifts on glass |
 | `--rim` | `rgba(255,255,255,.7)` | the glass edge (`--glass-edge`) |
@@ -147,7 +148,7 @@ the glass over the brightest veiled wallpaper stop ≥ 5.37 even at 0 %). Dark g
 the mesh shows, saturate 185 %, brightness .92, a thin bright top edge (`--lg-light` 22 %), a deeper shadow; the floating layers keep `--lg-min` 65 % (a half-covered ink pixel
 behind them: muted 5.28, accent 4.90). Glass floor 38 % (the board's Clear; the whole slider is AA over the wallpaper). Reduce Transparency → flat `--base`;
 Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.callout.dark` gets a `--rim` edge (a dark banner on a dark sheet). Icons: `static/icon/yoru.svg`
-(flat `#0d1222`, ensō `#f1ede4`) and `src-tauri/icons/looks/yoru.png` (night mesh, moon ensō, glass rim). The glass opacity default stays 60 % for every look.
+(flat `#0d1222`, ensō `#f1ede4`) and `src-tauri/icons/looks/yoru.png` (night mesh, moon ensō, glass rim). Each look has its own glass-opacity default (`Look.glass_default`): the light looks 60 %, Yoru and Auto 38 %, so the night mesh shows through the near-black glass; a stored slider value always wins.
 
 ## 6. Components (`components.css`)
 

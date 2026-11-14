@@ -61,5 +61,6 @@
   --wall-veil: rgba(255, 255, 255, .45); /* the wash between a look's wallpaper and the glass */
   --chrome-glow: #0066cc;    /* the two soft glows behind the sheet when no look is set (used with an alpha) */
   --track: rgba(120, 120, 128, .12); /* segmented control track */
+  --paper: #fff;             /* drawing paper: scenes are drawn dark ink on white, so it stays white in every look (Yoru included) */
   --rec: #ff3b30;            /* microphone on: white on it 3.55:1 (non-text 3:1; the icon is a 2 px stroke) */
 }
