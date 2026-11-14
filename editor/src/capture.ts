@@ -28,6 +28,27 @@ if (input && tnote && ttext && lineForm) {
   })
 }
 
+// The grammar in the hint pill (0.2.8, owner's design review): while the line is focused and empty (or one character), the pill above the
+// capsule (#hint, where "→ will save as …" appears later) shows the prefixes. The placeholder's example vanishes on the first keystroke and
+// recognition beats recall; DESIGN.md says no legend row under the floating bar, so it is the existing pill, and the capsule never moves.
+const hint = document.getElementById('hint')
+if (input && hint && document.querySelector('.capture')) {
+  const GRAMMAR =
+    '<span class="gram"><span class="mono">!</span> decision · <span class="mono">x</span> blocker · <span class="mono">+</span> impact · <span class="mono">?</span> learn · <span class="mono">&gt;</span> to-do · <span class="mono">n</span> note</span>'
+  const show = () => {
+    if (document.activeElement === input && input.value.trim().length <= 1 && !hint.textContent?.trim()) hint.innerHTML = GRAMMAR
+  }
+  const clear = () => hint.querySelector('.gram')?.remove()
+  input.addEventListener('focus', show)
+  input.addEventListener('blur', clear)
+  // Past one character the preview (or nothing) is the hint's to say; back to empty, the grammar returns.
+  input.addEventListener('input', () => (input.value.trim().length > 1 ? clear() : show()))
+  document.body.addEventListener('htmx:afterSwap', ev => {
+    if ((ev.target as Element | null)?.id === 'hint') show()
+  })
+  show()
+}
+
 if (input && box && skip) {
   const by = byMenu(input, document.getElementById('bysug'), document.getElementById('bydate') as HTMLInputElement | null)
   const opts = () => Array.from(box.querySelectorAll<HTMLElement>('[role=option]'))

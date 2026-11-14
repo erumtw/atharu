@@ -81,9 +81,13 @@ a:hover>.chip{background:var(--sep)}
 .ettl{display:flex;align-items:center;gap:8px;min-width:0}
 .ettl>*{flex:none}
 .ettl>:is(a,b,form){flex:0 1 auto;min-width:72px}
-/* The status chip gives way before the title does (real titles are long): it may shrink to an ellipsis, but never below 88 px (a bare ▾ says nothing). */
-.ettl>.lchip{flex:0 100 auto;min-width:88px;overflow:hidden}
-.ettl>.lchip>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* The Status column (0.2.8, owner screenshot: "Done ▾" sat in a fixed pill with an empty gap while "Waiting f…" was cut): the chip has its
+   own 132 px column (112 of it chip), left-aligned, as wide as its words, ellipsis only past that; the Title cell keeps the rest (≥ 220 px at 1180). On a phone that column
+   is hidden and the title cell carries a copy of the chip (.m-only), which yields to the title there. */
+.stc .lchip{max-width:112px;overflow:hidden}
+.lchip.st>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ettl>.m-only{flex:0 100 auto;min-width:0;max-width:100%}
+.ettl>.m-only .lchip{max-width:100%;overflow:hidden}
 /* Its muted note ("from Jira", "Jira epic · not tracked") gives way before the title. */
 .ettl>.small{flex:0 100 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* "In Jira, assigned to you" (D5, D6): hairline rows; type · key · title, then due, status and the action, so the status chip
@@ -277,6 +281,9 @@ input[list]::-webkit-calendar-picker-indicator{display:none !important}
 /* Block, not .row's flex: the partial is a run of text + <b>, and flex gaps split it into islands. */
 .capture .hint{display:block;padding:5px 14px;color:var(--accent-2)}
 .capture .hint:has(.tagask){padding:2px 4px 2px 14px}
+/* The grammar line (capture.ts): the same pill, 12 px, --muted (= --muted-tint here, 7.3+ on the pill) with the marks in mono --ink-2. */
+.capture .hint .gram{font-size:12px;color:var(--muted)}
+.capture .hint .gram .mono{font-size:12px;color:var(--ink-2);font-weight:600}
 .capture .above>:empty{display:none}
 html[data-tint=tinted] .capture :is(.toast,.hint){border-color:var(--glass-edge)}
 html:not([data-glass=all]) .pg .capture :is(.toast,.hint){border-color:var(--line)}

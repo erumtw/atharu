@@ -101,6 +101,11 @@ async fn off_without_all_three_keys() {
     // configured site (trailing / dropped).
     let chip = r#"<button class="lchip st" type="button" popovertarget="jm-eOPS-101" style="anchor-name: --jm-eOPS-101" title="Move OPS-101 in Jira"><span class="jst-OPS-101 jc-">In Progress</span><span class="cv" aria-hidden="true">▾</span></button>"#;
     assert!(b.contains(chip), "{b}");
+    // 0.2.8: the chip has its own Status column (a hugging chip, not a pill inside the title cell); the title cell only carries the phone copy.
+    assert!(
+        b.contains("<th>Status</th>") && b.contains(&format!("<td class=\"stc\">{chip}")),
+        "{b}"
+    );
     let open = r#"<a role="menuitem" href="https://acme.atlassian.net/browse/OPS-101" target="_blank" rel="noopener noreferrer">Open in Jira ↗</a>"#;
     assert!(b.contains(open));
     let page = get(&st, "/epics/OPS-101").await.body;

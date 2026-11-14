@@ -87,6 +87,10 @@ pre{max-width:100%;overflow-x:auto}
   .blk.ln>:is(.via,a:has(>.chip:not(.key))){max-width:calc(100% - 90px)}
   .blk>.ltext{flex:1 1 0;min-width:0;overflow-wrap:anywhere}
   .cols{grid-template-columns:minmax(0,1fr)}
+  /* A name in a fixed slot shows two lines instead of one on a phone: its `title` tooltip can't be opened by touch or keyboard, so the
+     page itself has to show more of it (the full name is one tap away on the row's own page). Desktop keeps one line + title. */
+  .clip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;overflow-wrap:anywhere}
+  .clip.i{display:-webkit-inline-box}
 
   /* Capture bar: full width minus 12px gutters (.doc pads 16), clear of the home indicator; capture.ts sets --kb (keyboard height
      from visualViewport) and .kb, so the bar rides 8px above the keyboard, which already covers the indicator. */
@@ -177,7 +181,7 @@ pre{max-width:100%;overflow-x:auto}
   .props dd.dates{flex-direction:column;align-items:flex-start;gap:4px}
   /* List tables fit the phone (0.2.3 D6): the identifying column + the one fact that matters, the rest lives
      on the row's own page. Epics Key · Title · Flag; Meetings Series · Last met; Learn Topic · Depth; Tags Tag · Lines. */
-  .etab col,.etab :is(th,td):is(:nth-child(3),:nth-child(4),:nth-child(5)),
+  .etab col,.etab :is(th,td):is(:nth-child(3),:nth-child(4),:nth-child(5),:nth-child(6)),
   table.series :is(th,td):not(:nth-child(1),:nth-child(3)),
   .ltab :is(th,td):nth-child(n+3),
   .ttab :is(th,td):nth-child(n+3){display:none}
@@ -189,7 +193,7 @@ pre{max-width:100%;overflow-x:auto}
   .epview .fld{width:auto !important}
   .epview .row.small{margin-left:0 !important;flex-wrap:nowrap}
   .epview .seg{overflow-x:auto;max-width:100%}
-  .etab :is(th,td):first-child{width:92px}.etab :is(th,td):nth-child(6){width:34%}
+  .etab :is(th,td):first-child{width:92px}.etab :is(th,td):nth-child(7){width:34%}
   table.series :is(th,td):nth-child(3){width:96px}
   .ltab :is(th,td):nth-child(2){width:112px}
   .ttab :is(th,td):nth-child(2){width:64px}
