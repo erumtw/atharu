@@ -43,4 +43,23 @@
   --muted-tint: #48484d;     /* --muted with Tinted glass */
   --muted-hc: #3a3a3c;       /* --muted under Increase Contrast */
   --err-tint: #a32019;       /* --err with Tinted glass: #b3261e drops to 4.48:1 on the Glass look's tinted glass sheet, this is 5.18 */
+  /* Colour ROLES (0.2.9, CUBE token layer): named by what they do, never by their colour, so a look (Yoru) is one block of values and no
+     component restates a colour. Light values below are the exact colours the components hard-coded before. scripts/color-lint.sh fails
+     the visual check on any raw colour outside this file and the per-look blocks of looks.css. */
+  --sheet: #fff;             /* the page sheet (.pg), the drawing sheet, the preview tile's sheet */
+  --surface: #fff;           /* raised content: cards, controls, pills, rings, calendar grid, glass base (--glass-c) */
+  --on-accent: #fff;         /* text, ticks and strokes on --accent / --rec / --heat-4 */
+  --on-ink: #fff;            /* text on an --ink fill (the flag "over", the "ok" pill, the blocker mark) */
+  --on-dark: #fff;           /* text and fills-by-alpha on --dark (meeting banner, impact callout) */
+  --seg-on: #fff;            /* the selected segment's thumb */
+  --thumb: #fff;             /* switch and slider knobs: light in every look */
+  --hi: #fff;                /* highlights: the lit top edge of glass, hover lifts on glass (used with an alpha) */
+  --rim: rgba(255, 255, 255, .7); /* the glass edge */
+  --shadow-c: #000;          /* shadows (used with an alpha) */
+  --tint-c: #000;            /* hover / pressed / hairline overlays: darkens a light surface, lightens a dark one (used with an alpha) */
+  --overlay: #14141e;        /* scrim behind the phone sheets (used with an alpha) */
+  --wall-veil: rgba(255, 255, 255, .45); /* the wash between a look's wallpaper and the glass */
+  --chrome-glow: #0066cc;    /* the two soft glows behind the sheet when no look is set (used with an alpha) */
+  --track: rgba(120, 120, 128, .12); /* segmented control track */
+  --rec: #ff3b30;            /* microphone on: white on it 3.55:1 (non-text 3:1; the icon is a 2 px stroke) */
 }

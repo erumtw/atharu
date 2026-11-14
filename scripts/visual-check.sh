@@ -8,6 +8,8 @@
 #                                                    throwaway Jira config pointing at a closed local port, so Jira chips render
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Raw colours outside tokens.css and the per-look blocks fail the run before anything is served (0.2.9, D3).
+scripts/color-lint.sh
 FAKE_JIRA=0
 if [ "${1:-}" = --db ]; then
   [ -n "${2:-}" ] || { echo "usage: scripts/visual-check.sh --db <file>" >&2; exit 2; }

@@ -26,7 +26,7 @@ body{margin:0}
 /* Overlays sit on the tile's rounded square (100..924 of 1024 = 9.8%..90.2%). */
 .launch :is(.sheen,.ring,.glow){position:absolute;inset:9.8%;border-radius:22%;pointer-events:none}
 .launch .sheen{overflow:hidden;opacity:0}
-.launch .sheen::before{content:"";position:absolute;inset:-40%;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.75) 50%,transparent 60%);transform:translateX(-70%)}
+.launch .sheen::before{content:"";position:absolute;inset:-40%;background:linear-gradient(105deg,transparent 40%,color-mix(in srgb,var(--hi) 75%,transparent) 50%,transparent 60%);transform:translateX(-70%)}
 .launch .ring{border:2px solid color-mix(in srgb,var(--ink) 35%,transparent);opacity:0}
 .launch .glow{background:var(--bloom);filter:blur(calc(28px * var(--k)));opacity:0}
 .launch .dab circle{transform-box:fill-box;transform-origin:center}

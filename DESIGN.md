@@ -40,9 +40,26 @@ Approved wireframes: canvas https://claude.ai/artifact/SJY9VrvtZb5r6iZzRzLjSZ, H
 | `--muted-look` / `--muted-tint` / `--muted-hc` | `#5e5e63` / `#48484d` / `#3a3a3c` | `--muted` on a look / with Tinted glass / under Increase Contrast |
 | `--err-tint` | `#a32019` | `--err` with Tinted glass (`#b3261e` falls to 4.48:1 on the Glass look's tinted sheet) |
 
-Colour literals live only in `tokens.css`, with three exemptions: the looks' wallpaper stops in `looks.css` (§5, brand), the SVG icons, and
-material that isn't a palette colour: `#fff` (sheet, knob, text on blue/ink) and `rgba()` black/white for shadows, glass edges and hover tints
-(plus the iOS segmented track `rgba(120,120,128,.12)`).
+**Role tokens (0.2.9, the CUBE token layer).** Every colour a component uses is a token named by its role, so a look is one block of values and no
+component restates a colour. Light values are the exact colours the components hard-coded before (proved: computed colours of every element
+on 22 pages in 10 look variants identical before and after).
+
+| Token | Light | Role |
+|---|---|---|
+| `--sheet` | `#fff` | the page sheet `.pg`, the drawing sheet, the preview tile's sheet |
+| `--surface` | `#fff` | raised content: cards, controls, pills, rings, calendar grid, the glass base `--glass-c` |
+| `--on-accent` / `--on-ink` / `--on-dark` | `#fff` | text, ticks and strokes on `--accent`·`--rec`·`--heat-4` / on an `--ink` fill / on `--dark` (and fills-by-alpha on it) |
+| `--seg-on` / `--thumb` | `#fff` | the selected segment's thumb / switch and slider knobs (light in every look) |
+| `--hi` | `#fff` | highlights, with an alpha: the lit top edge of glass, hover lifts on glass |
+| `--rim` | `rgba(255,255,255,.7)` | the glass edge (`--glass-edge`) |
+| `--shadow-c` | `#000` | shadows, with an alpha |
+| `--tint-c` | `#000` | hover / pressed / hairline overlays, with an alpha: darkens a light surface, lightens a dark one |
+| `--overlay` · `--wall-veil` · `--chrome-glow` · `--track` · `--rec` | `#14141e` · `rgba(255,255,255,.45)` · `#0066cc` · `rgba(120,120,128,.12)` · `#ff3b30` | phone-sheet scrim · the wash between wallpaper and glass · the glows behind the sheet with no look · segmented track · microphone on |
+
+A colour with an alpha is written `color-mix(in srgb, var(--hi) 60%, transparent)`, never `rgba()`. **`scripts/color-lint.sh` (run first by
+`scripts/visual-check.sh`) fails on any `#hex`, `rgb()/rgba()/hsl()`, `white` or `black` in `static/css` outside `tokens.css` and the per-look
+blocks of `looks.css` (between `color-lint:off` / `color-lint:on`; those hold a look's own wallpaper and base colours).** Exempt by nature:
+SVG icons (`currentColor`) and data colours that come from the user's calendars (`style="background: {{ c.color }}"` on the calendar dot).
 
 No second accent. State is shown with ink weight, not colour: stale = grey fill, at risk = ink outline, overdue = solid ink.
 

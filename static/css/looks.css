@@ -3,11 +3,12 @@
    AA check (evidence T20): sidebar text over the worst wallpaper spot through the glass ≥ 4.6:1, which is why
    the wallpaper has a white veil, the sidebar glass is --glass-a + 5% (see Glass below), --muted is a step darker, and Glass drops the
    icon's deepest blob. */
-html[data-look]{--muted:var(--muted-look);--veil:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,.45))}
+html[data-look]{--muted:var(--muted-look);--veil:linear-gradient(var(--wall-veil),var(--wall-veil))}
 html[data-look] .wl{background:transparent}
 html[data-look] body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--wall)}
 
 /* --bloom: the glow behind the icon in the launch animation (launch.css), tuned by eye per look. */
+/* color-lint:off (a look's own colours: the values every role token resolves against; scripts/color-lint.sh) */
 html[data-look=sumi]{--base:#f6f1e6;--bloom:#e9d9b6;--wall:radial-gradient(circle 60vmax at 90% 10%,#ece3cf,transparent),#f6f1e6}
 html[data-look=sora]{--base:#63b6ff;--bloom:#bfe6ff;--wall:var(--veil),
   radial-gradient(circle 45vmax at 84% 18%,#8ef5b8,transparent),radial-gradient(circle 41vmax at 86% 88%,#4fd6f2,transparent),
@@ -17,6 +18,7 @@ html[data-look=wakaba]{--base:#94f7b6;--bloom:#d6ffe2;--wall:var(--veil),
   radial-gradient(circle 35vmax at 86% 92%,#45d4f0,transparent),radial-gradient(circle 31vmax at 51% 41%,#a4fcb4,transparent),#94f7b6}
 html[data-look=glass]{--base:#2466ea;--bloom:#cfe6ff;--wall:var(--veil),
   radial-gradient(circle 43vmax at 29% 25%,rgba(143,230,255,.75),transparent),linear-gradient(135deg,#5aa6ff,#2466ea 50%,#1340b5)}
+/* color-lint:on */
 
 /* Reduce transparency: no mesh, one flat colour (veiled like the mesh so contrast holds). */
 @media (prefers-reduced-transparency: reduce){
@@ -27,7 +29,7 @@ html[data-look=glass]{--base:#2466ea;--bloom:#cfe6ff;--wall:var(--veil),
 /* Glass (D17, T24): one alpha, --glass-a (inline on <html>, from domain::look::glass_alpha; the owner may
    set it below the look's AA floor, the settings slider marks that range), drives every glass surface; --s is each surface's fixed step from it.
    Floors were measured against the weakest surface (the glass sheet, a - 5%), so every other step only adds contrast. */
-:root{--glass-a:60%;--glass-c:#fff;--glass-edge:rgba(255,255,255,.7)}
+:root{--glass-a:60%;--glass-c:var(--surface);--glass-edge:var(--rim)}
 .side{--s:5%}.crumb{--s:0%}.newline{--s:10%}.menu,.acts{--s:25%}
 /* Controls set their own --s in components.css: glass pills +10% (hover +25%, pressed +35%), fields and text boxes +12%. */
 .side,.crumb,.newline,.menu,.acts:popover-open,.btn.ghost,.fld,.dnav,.ta,.note-md{--g:color-mix(in srgb,var(--glass-c) min(100%,var(--glass-a) + var(--s)),transparent);background:var(--g)}
@@ -36,11 +38,11 @@ html[data-look=glass]{--base:#2466ea;--bloom:#cfe6ff;--wall:var(--veil),
    Mac app) gets the whole look; edge lensing is a Chromium-only extra at the end. Clear (default) blurs 4px so what
    is behind stays readable; Tinted is Apple's Regular: 12px, saturated. */
 :root{--lg-blur:4px;--lg-sat:140%;--lg-filter:blur(var(--lg-blur)) saturate(var(--lg-sat)) brightness(1.04);
-  --lg-rim:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,.15) 72%,rgba(255,255,255,.6));
-  --lg-light:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 14px rgba(255,255,255,.55),inset 0 -6px 12px -8px rgba(255,255,255,.8);
-  --lg-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.12);
+  --lg-rim:linear-gradient(135deg,color-mix(in srgb,var(--hi) 95%,transparent),color-mix(in srgb,var(--hi) 15%,transparent) 28%,transparent 50%,color-mix(in srgb,var(--hi) 15%,transparent) 72%,color-mix(in srgb,var(--hi) 60%,transparent));
+  --lg-light:inset 0 1px 1px color-mix(in srgb,var(--hi) 90%,transparent),inset 0 0 14px color-mix(in srgb,var(--hi) 55%,transparent),inset 0 -6px 12px -8px color-mix(in srgb,var(--hi) 80%,transparent);
+  --lg-shadow:0 1px 2px color-mix(in srgb,var(--shadow-c) 8%,transparent),0 8px 24px color-mix(in srgb,var(--shadow-c) 12%,transparent);
   /* The floating capture bar only (T78): --lg-shadow's 24px .12 got lost over busy text. */
-  --lg-float:0 1px 2px rgba(0,0,0,.1),0 12px 32px rgba(0,0,0,.16);
+  --lg-float:0 1px 2px color-mix(in srgb,var(--shadow-c) 10%,transparent),0 12px 32px color-mix(in srgb,var(--shadow-c) 16%,transparent);
   /* 4px blur leaves text behind half-sharp, so glass that floats over content never drops below this (AA: worst
      backdrop = a half-covered ink pixel; err-tint 4.70 on Wakaba Tinted is the lowest pair, evidence T30). */
   --lg-min:60%}
@@ -54,7 +56,7 @@ html[data-tint=tinted]{--lg-blur:12px;--lg-sat:180%}
   --g:color-mix(in srgb,var(--glass-c) max(var(--lg-min),min(100%,var(--glass-a) + var(--s))),transparent)}
 /* Tinted: the look's colour in the glass, stronger edges, full-ink chrome, and muted/links a step darker
    (measured: the tint alone drops the Glass look's links to 3.7:1, #0055b3 brings them back to 4.9). */
-html[data-tint=tinted]{--glass-c:color-mix(in srgb,var(--base) 15%,#fff);--glass-edge:rgba(0,0,0,.14);--muted:var(--muted-tint);--accent:var(--accent-2);--err:var(--err-tint)}
+html[data-tint=tinted]{--glass-c:color-mix(in srgb,var(--base) 15%,var(--surface));--glass-edge:color-mix(in srgb,var(--tint-c) 14%,transparent);--muted:var(--muted-tint);--accent:var(--accent-2);--err:var(--err-tint)}
 /* :not(focus/bad): the focus ring and the 422 red must win in every look. */
 html[data-tint=tinted] :is(.side,.crumb,.newline,.menu):not(:focus-within):not(.bad){border-color:var(--glass-edge)}
 /* On the solid sheet (Glass everywhere off) the white glass edge vanishes, so controls take the line border. */
@@ -68,7 +70,7 @@ html[data-glass=all] .pg :is(.card,.stat,.cg,.callout:not(.dark)){--s:10%;backgr
 /* The dark callout stays solid: at the board's 85% its #2997ff link drops to 3.1:1 over a light sheet. */
 html[data-glass=all] .pg .callout.dark{background:var(--dark)}
 /* On glass a grey hover/edge reads as dirt; lift with white like the sidebar rows. */
-html[data-glass=all] .pg :is(.blk,.props dd):hover{background:rgba(255,255,255,.6)}
+html[data-glass=all] .pg :is(.blk,.props dd):hover{background:color-mix(in srgb,var(--hi) 60%,transparent)}
 html[data-glass=all] .pg :is(.card,.cg){border-color:var(--glass-edge)}
 /* "Blur text boxes" (D25, off by default): text boxes take the glass material too. Off they are tint only, because
    blurring what sits behind long-form writing costs paint for no legibility gain. AA (T33) at each look's floor over its

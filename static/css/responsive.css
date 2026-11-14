@@ -58,21 +58,21 @@ pre{max-width:100%;overflow-x:auto}
 
   /* Drawer: the sidebar in the top layer. */
   .side:popover-open{position:fixed;inset:8px auto 8px 8px;width:min(300px,calc(100vw - 32px));max-width:none;overflow-y:auto;z-index:5;padding:8px;display:flex;
-    --s:12%;box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
-  .side::backdrop{background:rgba(20,20,30,.28)}
+    --s:12%;box-shadow:var(--lg-light),0 20px 50px color-mix(in srgb,var(--shadow-c) 18%,transparent)}
+  .side::backdrop{background:color-mix(in srgb,var(--overlay) 28%,transparent)}
   .side .ws{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px 12px;font-size:17px}
   .side a{min-height:48px;padding:0 12px;border-radius:12px;font-size:16px}
   .side a.sub{min-height:44px;font-size:14px;padding-left:24px}
 
   /* ⋯ menu: the row's actions as a bottom action sheet. */
   .acts:popover-open{position:fixed;inset:auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;z-index:6;display:flex;flex-direction:column;gap:6px;padding:10px;
-    border-radius:22px;border:1px solid transparent;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
-  .acts::backdrop{background:rgba(20,20,30,.2)}
+    border-radius:22px;border:1px solid transparent;backdrop-filter:var(--lg-filter);-webkit-backdrop-filter:var(--lg-filter);box-shadow:var(--lg-light),0 20px 50px color-mix(in srgb,var(--shadow-c) 18%,transparent)}
+  .acts::backdrop{background:color-mix(in srgb,var(--overlay) 20%,transparent)}
   /* !important: the forms carry an inline margin-left:auto for the desktop row. */
   .acts>*{margin:0 !important;display:flex}
   .acts *{box-sizing:border-box}
   .blk .acts .x,.acts .btn,.acts .linkbtn,.acts input{flex:1;min-height:48px;height:auto;width:100%;justify-content:center;align-items:center;border-radius:14px;opacity:1}
-  .acts .x{gap:6px;background:#fff;border:1px solid var(--line);color:var(--err);font-size:16px;height:auto}
+  .acts .x{gap:6px;background:var(--surface);border:1px solid var(--line);color:var(--err);font-size:16px;height:auto}
   .blk{min-height:44px;flex-wrap:wrap}
   .blk .x{opacity:1;width:44px;height:44px}
   .blk label.row{flex-wrap:nowrap;align-items:flex-start}
@@ -135,8 +135,8 @@ pre{max-width:100%;overflow-x:auto}
   .mo .dn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:44px;font-size:13px;color:var(--ink);align-self:stretch;padding:0}
   .mo .mc:has(.ev) .dn::after{content:"";width:5px;height:5px;border-radius:9999px;background:var(--accent)}
   .mo .now{background:var(--accent)}
-  .mo .now .dn{color:#fff;background:none}
-  .mo .now .dn::after{background:#fff}
+  .mo .now .dn{color:var(--on-accent);background:none}
+  .mo .now .dn::after{background:var(--on-accent)}
   .mo .out .dn{color:var(--muted)}
 }
 
@@ -145,10 +145,10 @@ pre{max-width:100%;overflow-x:auto}
 /* Phone (< 640): a bottom sheet like the ⋯ sheet: grabber, 44 px days, 17 px type, Done commits (a tap only selects). */
 @media (max-width:639px){
   .dp{position:fixed;inset:auto 8px calc(8px + env(safe-area-inset-bottom)) 8px;margin:0;z-index:6;border-radius:22px;padding:8px 12px 12px;gap:8px;
-    box-shadow:var(--lg-light),0 20px 50px rgba(0,0,0,.18)}
-  .dp::backdrop{background:rgba(20,20,30,.24)}
+    box-shadow:var(--lg-light),0 20px 50px color-mix(in srgb,var(--shadow-c) 18%,transparent)}
+  .dp::backdrop{background:color-mix(in srgb,var(--overlay) 24%,transparent)}
   /* Grabber: decoration (the sheet also closes on a backdrop tap, Esc, or a swipe down). */
-  .dp::before{content:"";align-self:center;width:36px;height:5px;border-radius:9999px;background:rgba(0,0,0,.2);margin-bottom:2px}
+  .dp::before{content:"";align-self:center;width:36px;height:5px;border-radius:9999px;background:color-mix(in srgb,var(--tint-c) 20%,transparent);margin-bottom:2px}
   .dp .dph h2{font-size:17px}
   /* display:table: responsive.css makes phone tables scroll blocks. */
   .dp table{display:table;width:calc(100% + 4px);table-layout:fixed}
