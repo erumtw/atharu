@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 {#- Mac app marker before first paint: the window buttons need the room looks.css leaves (data-app). #}
 <script>/AtharuMac/.test(navigator.userAgent)&&(document.documentElement.dataset.app="mac")</script>
+{#- Auto (0.2.9): the look is "whatever macOS is": resolved here before first paint (and again when the system flips) to Sumi or Yoru, so every
+    rule below stays one source per look; data-pref keeps the choice. Without JS the page stays Sumi (looks.css). #}
+<script>(function(d,m){if(d.dataset.look!="auto")return;d.dataset.pref="auto";m=matchMedia("(prefers-color-scheme: dark)");function f(){d.dataset.look=m.matches?"yoru":"sumi"}f();m.addEventListener("change",f)})(document.documentElement)</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Atharu · {{ layout.title }}</title>
 <link rel="stylesheet" href="/static/css/tokens.css">
@@ -12,7 +15,7 @@
 <link rel="stylesheet" href="/static/css/components.css">
 <link rel="stylesheet" href="/static/css/looks.css">
 <link rel="stylesheet" href="/static/css/responsive.css">
-<link rel="icon" type="image/svg+xml" href="/static/icon/{{ layout.look }}.svg">
+{% if layout.look == "auto" %}<link rel="icon" type="image/svg+xml" href="/static/icon/sumi.svg" media="(prefers-color-scheme: light)"><link rel="icon" type="image/svg+xml" href="/static/icon/yoru.svg" media="(prefers-color-scheme: dark)">{% else %}<link rel="icon" type="image/svg+xml" href="/static/icon/{{ layout.look }}.svg">{% endif %}
 {#- 422 = "your input needs fixing": swap it (the hint) like a success instead of dropping it. #}
 <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":false}]}'>
 <script src="/static/js/htmx.min.js" defer></script>

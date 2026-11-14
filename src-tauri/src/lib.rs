@@ -116,13 +116,27 @@ pub fn run() {
                 .build()?;
             // A menu-bar app: closing hides, the tray / shortcut / Dock click bring it back.
             let w = win.clone();
-            win.on_window_event(move |e| {
-                if let WindowEvent::CloseRequested { api, .. } = e {
+            let h = app.handle().clone();
+            win.on_window_event(move |e| match e {
+                WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
                     let _ = w.hide();
                 }
+                // macOS flipped light/dark: an Auto look swaps its Dock icon (Sumi by day, Yoru by night).
+                WindowEvent::ThemeChanged(theme) => {
+                    let (h, dark) = (h.clone(), *theme == tauri::Theme::Dark);
+                    // The DB read stays off the main thread; only the AppKit call hops.
+                    std::thread::spawn(move || {
+                        let look = current_look(&h.state::<app::AppState>());
+                        if look == "auto" {
+                            let _ = h.run_on_main_thread(move || look_icon(look, dark));
+                        }
+                    });
+                }
+                _ => {}
             });
             quick(app.handle(), &url)?;
+            apply_look(app.handle());
             let m = tray_data(app.handle());
             tray(app.handle(), &m)?;
             tray_state(app.handle(), tray_summary(&m));
@@ -206,7 +220,7 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
     if let Some(dir) = db_path.parent() {
         state.settings = Arc::new(FileConfig::load(&dir.join("config.toml")));
     }
-    look_icon(current_look(&state));
+    look_icon(current_look(&state), system_dark());
     // The tray menu reads the running meeting and recent series through it.
     handle.manage(state.clone());
     #[cfg(target_os = "macos")]
@@ -262,7 +276,12 @@ fn serve(handle: &AppHandle) -> Result<tauri::Url, Box<dyn std::error::Error>> {
                 if look_saved {
                     // Read the look here, off the main thread; only the AppKit calls hop.
                     let look = current_look(&st);
-                    let _ = h.run_on_main_thread(move || look_icon(look));
+                    let dark = system_dark();
+                    let h2 = h.clone();
+                    let _ = h.run_on_main_thread(move || {
+                        apply_theme(&h2, look);
+                        look_icon(look, dark);
+                    });
                 }
                 if meetings {
                     // The DB read stays off the main thread (see `tray_data`); only the AppKit calls hop.
@@ -501,8 +520,6 @@ fn quick(app: &AppHandle, base: &tauri::Url) -> Result<(), Box<dyn std::error::E
         // Opens on the current Space instead of jumping to the one it was built on.
         .visible_on_all_workspaces(true)
         .visible(false)
-        // Our glass is light-only: keep the material light under a dark menu bar.
-        .theme(Some(tauri::Theme::Light))
         .effects(
             EffectsBuilder::new()
                 .effect(Effect::Popover)
@@ -672,7 +689,50 @@ fn current_look(state: &app::AppState) -> &'static str {
     Layout::load(&state.conn(), "", "", vec![]).map_or("sumi", |l| l.look)
 }
 
-fn look_icon(look: &'static str) {
+/// The windows' material under the glass follows the look: Yoru is dark, Auto follows macOS, every other look is light.
+fn window_theme(look: &str) -> Option<tauri::Theme> {
+    match look {
+        "yoru" => Some(tauri::Theme::Dark),
+        "auto" => None,
+        _ => Some(tauri::Theme::Light),
+    }
+}
+
+fn apply_theme(h: &AppHandle, look: &str) {
+    for label in ["main", "quick"] {
+        if let Some(w) = h.get_webview_window(label) {
+            let _ = w.set_theme(window_theme(look));
+        }
+    }
+}
+
+/// Once the windows exist: theme them (and the Dock icon) for the saved look.
+fn apply_look(h: &AppHandle) {
+    let look = current_look(&h.state::<app::AppState>());
+    apply_theme(h, look);
+    look_icon(look, system_dark());
+}
+
+/// macOS is in dark appearance: `defaults` prints "Dark" then and fails in light. Only an Auto look asks.
+fn system_dark() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("defaults")
+            .args(["read", "-g", "AppleInterfaceStyle"])
+            .output()
+            .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).trim() == "Dark")
+    }
+    #[cfg(not(target_os = "macos"))]
+    false
+}
+
+/// `dark` only matters for Auto, which wears Sumi's icon by day and Yoru's by night.
+fn look_icon(look: &'static str, dark: bool) {
+    let look = match (look, dark) {
+        ("auto", true) => "yoru",
+        ("auto", false) => "sumi",
+        _ => look,
+    };
     #[cfg(target_os = "macos")]
     {
         let png: &[u8] = match look {

@@ -9,7 +9,7 @@ html[data-look] body::before{content:"";position:fixed;inset:0;z-index:-1;backgr
 
 /* --bloom: the glow behind the icon in the launch animation (launch.css), tuned by eye per look. */
 /* color-lint:off (a look's own colours: the values every role token resolves against; scripts/color-lint.sh) */
-html[data-look=sumi]{--base:#f6f1e6;--bloom:#e9d9b6;--wall:radial-gradient(circle 60vmax at 90% 10%,#ece3cf,transparent),#f6f1e6}
+html[data-look=sumi],html[data-look=auto]{--base:#f6f1e6;--bloom:#e9d9b6;--wall:radial-gradient(circle 60vmax at 90% 10%,#ece3cf,transparent),#f6f1e6}
 html[data-look=sora]{--base:#63b6ff;--bloom:#bfe6ff;--wall:var(--veil),
   radial-gradient(circle 45vmax at 84% 18%,#8ef5b8,transparent),radial-gradient(circle 41vmax at 86% 88%,#4fd6f2,transparent),
   radial-gradient(circle 47vmax at 16% 55%,#3d8ff0,transparent),radial-gradient(circle 29vmax at 51% 51%,#7fd0ff,transparent),#63b6ff}
@@ -52,7 +52,7 @@ html[data-look=yoru] .callout.dark{border:1px solid var(--rim)}
 /* Reduce transparency: no mesh, one flat colour (veiled like the mesh so contrast holds). */
 @media (prefers-reduced-transparency: reduce){
   html[data-look] body::before{background:var(--veil),var(--base)}
-  html[data-look=sumi] body::before{background:var(--base)}
+  html[data-look=sumi] body::before,html[data-look=auto] body::before{background:var(--base)}
 }
 
 /* Glass (D17, T24): one alpha, --glass-a (inline on <html>, from domain::look::glass_alpha; the owner may

@@ -734,3 +734,40 @@ async fn yoru_is_a_look_with_its_icon_and_dark_block() {
         "Yoru block"
     );
 }
+
+#[tokio::test]
+async fn auto_follows_the_system_with_two_favicons_and_a_resolver() {
+    let st = state();
+    post(&st, "/settings", &form(&[("look", "auto")]), false).await;
+    for path in ["/settings", "/quick", "/launch"] {
+        let b = get(&st, path).await.body;
+        // Server side the page says "auto"; the head script resolves it to Sumi / Yoru before first paint and on every system flip.
+        assert!(b.contains("data-look=\"auto\""), "{path}");
+        assert!(
+            b.contains("matchMedia(\"(prefers-color-scheme: dark)\")"),
+            "{path}"
+        );
+        assert!(
+            b.contains("href=\"/static/icon/sumi.svg\" media=\"(prefers-color-scheme: light)\"")
+                && b.contains(
+                    "href=\"/static/icon/yoru.svg\" media=\"(prefers-color-scheme: dark)\""
+                ),
+            "{path}: both favicons"
+        );
+        assert!(
+            !b.contains("href=\"/static/icon/auto.svg\""),
+            "{path}: the picker's icon is not the favicon"
+        );
+    }
+    // The picker offers it, with its own icon file; every other look keeps a single favicon and no resolver work.
+    let b = get(&st, "/settings").await.body;
+    assert!(b.contains("value=\"auto\" checked"), "{b}");
+    assert!(b.contains("src=\"/static/icon/auto.svg\""));
+    assert_eq!(get(&st, "/static/icon/auto.svg").await.status, 200);
+    post(&st, "/settings", &form(&[("look", "yoru")]), false).await;
+    let b = get(&st, "/settings").await.body;
+    assert!(
+        b.contains("href=\"/static/icon/yoru.svg\">")
+            && !b.contains("prefers-color-scheme: light)\"")
+    );
+}

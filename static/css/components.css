@@ -514,7 +514,7 @@ button.ev.own{border:1px dashed var(--faint)}
 .gi .t.between{flex-direction:row;align-items:center}
 .gi.col{flex-direction:column;align-items:stretch;gap:12px}
 /* Look: app-icon tiles, the picked one ringed in accent like macOS Appearance. The radio stays a real form field. */
-.looks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.looks{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:12px}
 .lk{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;cursor:pointer;position:relative;text-align:center}
 .lk input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
 .lk img{width:64px;height:64px;border-radius:15px;box-shadow:0 2px 6px color-mix(in srgb,var(--shadow-c) 12%,transparent);outline:3px solid transparent;outline-offset:3px}

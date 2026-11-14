@@ -129,9 +129,16 @@ wallpaper: ink ≥ 13.61, placeholder ≥ 7.35 (Glass Tinted; T33). Reduce Trans
 | Wakaba | green `#94f7b6` mesh |
 | Glass | deep blue `#2466ea` gradient |
 | Yoru (夜, 0.2.9, dark) | night `#0d1222` mesh: indigo `#1f2c6e`, teal `#0f4a5a`, violet `#33285e`, under a 35 % black veil |
+| Auto (自動, 0.2.9) | Sumi by day, Yoru by night: follows macOS |
 
 Coloured meshes sit under a 45% white veil (`--wall-veil`); sidebar text over the worst spot stays ≥ 4.6:1.
 Each look also carries `--bloom` (looks.css), the glow behind the icon in the launch animation: Sumi `#e9d9b6`, Sora `#bfe6ff`, Wakaba `#d6ffe2`, Glass `#cfe6ff`, Yoru `#cfd8ff`.
+
+**Auto (0.2.9)** has no values of its own: a head script (`base.html`, `/quick`, `/launch`) resolves `data-look="auto"` to `sumi` or `yoru` before first paint and again
+whenever the system flips (`matchMedia('(prefers-color-scheme: dark)')`; `data-pref="auto"` keeps the choice), so every rule stays one source per look; without JS the page is
+Sumi (`looks.css` lists `auto` with Sumi). Favicon: two `<link rel="icon">` with `media="(prefers-color-scheme: …)"` (sumi.svg / yoru.svg); the picker shows `auto.svg`
+(Sumi's day half, Yoru's night half). In Atharu.app the window and popover follow the system (`set_theme(None)`), and the Dock icon swaps with `ThemeChanged`. The glass floor is
+the higher of the two (38 %). The Look picker is an auto-fit grid (84 px minimum), six looks in a row on desktop.
 
 **Yoru (0.2.9)** is the one dark look and it is ONE token block (`html[data-look=yoru]` in looks.css, `color-scheme: dark`): ink `#ececf1`, sheet `#15181f`, surface `#1c2030`,
 muted `#a3a6b4`, accent `#5aa2ff`, with the role tokens of §1 (`--on-accent`/`--on-ink` become the dark `#0d1222`, `--seg-on` the elevated grey `#3a3f4d`, never white;
@@ -467,8 +474,7 @@ the log scrolls under it.
   opacity slider (`--glass-a` + 5%, the sidebar's step, so Wakaba reads green), Glass everywhere (panel −5%, each section a 12-radius
   card at +10% with the `--glass-edge`, 8 apart), RT/IC. Blur text boxes has nothing to act on here (no `.ta`/`.note-md`), as on Today.
   In Atharu.app the native Popover material is the base layer, the look's wallpaper paints over it at .8 (as in the main window,
-  rounded 18) and the glass on top; the CSS blur is dropped (a smooth mesh gains nothing). The window stays forced light: every look is
-  light. App-only floor **35%** (`--lg-min`): the 20% left to the material is modelled as black, and Sumi's 18% floor would put the
+  rounded 18) and the glass on top; the CSS blur is dropped (a smooth mesh gains nothing). The window's material follows the look (0.2.9, `apply_theme` in src-tauri): Yoru dark, Auto the system, every other look light. App-only floor **35%** (`--lg-min`): the 20% left to the material is modelled as black, and Sumi's 18% floor would put the
   hint at 3.88 there. In the panel, links take `--accent-2` (`--accent` is 4.44
   over black) and the to-do check ring `--muted` (`--ctl-edge` is 2.12 there); fields and pills keep a `--line` edge.
 - **Layout**, 360 × 480, 12 side padding, sections split by hairlines, in this order: **header** (40: dry-brush mark · **Atharu** ·
