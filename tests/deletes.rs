@@ -256,7 +256,7 @@ async fn line_edit_reparses_and_keeps_identity() {
         get(&st, "/?day=2026-11-10&edit=7")
             .await
             .body
-            .contains("aria-label=\"Edit line\"")
+            .contains("aria-label=\"Edit line\" data-by=\"line\"")
     );
 }
 

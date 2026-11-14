@@ -1,6 +1,6 @@
 import { byMenu } from './bymenu'
 
-// Plain to-do fields (To-dos box, the follow-up after a tick) opt in with `data-by`: bound on first focus, so a field
+// Plain to-do fields (To-dos box, the follow-up after a tick) and the edit-line field opt in with `data-by`: bound on first focus, so a field
 // htmx swaps in later gets it too. The menu is fixed on <body> under the field: the To-dos box is glass (.newline's
 // backdrop-filter is a Backdrop Root, so a menu inside it would blur only the capsule) and a row is too short to hold it.
 const bound = new WeakSet<HTMLInputElement>()
@@ -28,7 +28,8 @@ document.addEventListener('focusin', ev => {
     box.style.top = `${r.bottom + 4}px`
   }
   input.addEventListener('input', place)
-  const by = byMenu(input, box, carrier, true, null)
+  // `data-by="line"` (editing any logged line) needs the `>` like the capture bar; bare `data-by` fields only take to-dos.
+  const by = byMenu(input, box, carrier, input.dataset.by !== 'line', null)
   // Runs after the field's own hx-on keydown, which leaves Esc alone while the menu is open (aria-expanded).
   input.addEventListener('keydown', e => { if (by.key(e)) e.stopImmediatePropagation() })
   // The field went away (follow-up answered, list re-rendered): its menu goes too.
