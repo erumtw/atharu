@@ -28,7 +28,7 @@ Tables (`author` = `'me'` for the owner, else the agent slug that wrote the row)
 | `taggings` | lookup of `#tags`, rebuilt from the text / tags field on every save (never write it) | `tag`, `item_type` (entry · note · epic · …), `item_id` |
 | `entry_tags` (view) | a line's tags incl. inherited from its epic / meeting series | `entry_id`, `tag`, `via` (NULL = in the text) |
 
-`[[X]]` in a note resolves in this order: an existing epic's key (`OPS-101`) → `/epics/X`, a tag in use → `/tags/X` (its hub,
+`[[note:N]]` links note N (shown by its title; N's page lists the linker under "Mentioned in"). Any other `[[X]]` in a note resolves in this order: an existing epic's key (`OPS-101`) → `/epics/X`, a tag in use → `/tags/X` (its hub,
 which also shows the topic and series of the same name), existing topic slug → `/learn/X`, existing meeting
 name → `/meetings?name=X`, else nothing (a dead link).
 
@@ -67,22 +67,27 @@ name → `/meetings?name=X`, else nothing (a dead link).
 | write `entries`, `epics`, `evidence` and your own `notes` **only through the `atharu` CLI**, as yourself (`--as <your name>`) | write any table with raw SQL |
 | update a note you wrote (`atharu note … --id N`) or a line you wrote (`atharu edit N "<line>"`) | edit or delete rows with `author = 'me'`, or another agent's note / line |
 | suggest `[[X]]` links in chat for the owner's notes | delete anything, or edit the owner's lines: those are the owner's, on the web only |
+| attach any line to a note (`atharu link`) and close any to-do (`atharu done`), the owner's too (owner, 2026-11-17) | drop, reopen, pin or reword the owner's to-dos |
 | | rate depth or write "own words": depth only means something if it is the owner's |
 
-Asked for something the CLI can't do yet (to-do done/pin/drop, meetings, topics, events, report):
-say "atharu has no command for that yet", suggest the command (e.g. `atharu plan done 42 --as claude`),
+Asked for something the CLI can't do yet (to-do pin/drop/reopen, meetings, topics, events, report):
+say "atharu has no command for that yet", suggest the command (e.g. `atharu drop 42 --as claude`),
 and stop. Never fall back to SQL writes.
 
 ## CLI
 
-Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No server needed; it writes the same
-`data/atharu.db` (`--db PATH` before the command, or `ATHARU_DB`, picks another file).
+Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No server needed; it writes the same DB as the app:
+`./data/atharu.db` if it exists, else `~/atharu/data/atharu.db` from any folder (`--db PATH` before the command, or
+`ATHARU_DB`, picks another file).
 
 ```sh
 atharu log "<line>" [--day YYYY-MM-DD] [--note N] [--meeting N] --as claude  # one line, same grammar as above
 atharu edit <N> "<line>" --as claude                        # rewrite a line YOU wrote (same grammar); others' refused
 atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as claude  # upsert; key from …/browse/ABC-123
 atharu note "<title>" [--file PATH] [--links a,b] [--id N] --as claude  # agent note; body from stdin without --file
+atharu note show <N>                                        # one note: body (images summarised), meeting, links (read-only)
+atharu link <N> --note <M|none> --as claude                # attach line N (the owner's too) to note M, or detach it
+atharu done <N> --as claude                                 # mark to-do N done, the owner's too
 atharu evidence <KEY|jira-url> <url> [--label …] --as claude  # impact link on an existing epic, http(s) only
 atharu today [--day YYYY-MM-DD]                             # that day's lines + open plans
 atharu show <KEY|jira-url>                                  # epic + evidence + timeline
@@ -102,14 +107,15 @@ atharu help                                                 # this table (also -
 - `edit N "<line>"` rewrites line N (kind, epic, text, due, link, tags) keeping its day, meeting, note and author;
   refused (exit 1) unless that line's author is you. For fixing your own mistakes, e.g. a misheard owner from /meeting.
 - `log --note N` links the line to existing note N (its detail page; refused with exit 1 if there is no such note).
-- `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]`. Names that resolve to nothing are saved anyway (a `[[slug]]` can invite a topic); the JSON lists them in
+- `note` saves a new note under your name (shown under "Written by LLM"); `--links a,b` appends `Links: [[a]] · [[b]]` (`note:7` links note 7). Names that resolve to nothing are saved anyway (a `[[slug]]` can invite a topic); the JSON lists them in
   `deadLinks` and stderr warns `Not linked yet: ‘x’`.
   `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
-- A drawing in a note is one body line `![Drawing](data:image/svg+xml;base64,…)` (editable Excalidraw scene inside):
+- A drawing in a note is one body line `![Drawing](data:image/svg+xml;base64,…)`, or `![Drawing · caption](…)` for a
+  caption (editable Excalidraw scene inside; Mermaid isn't supported, draw it as a board):
   build it with `scripts/drawing.py` (`Drawing().box/arrow/text`, then `.line()`), put the line in the body, save with
   `note … --file` (new note, or `--id N` on your own). Never in the owner's notes.
 - An image in a note is one body line `![caption](data:image/png;base64,…)` (also jpeg, gif, webp, svg+xml), alone on
-  its line; an inline image does not render, and only the alt `Drawing` makes it an editable board. Pasted images live in
+  its line; an inline image does not render, and only the alt `Drawing` / `Drawing · caption` makes it an editable board. Pasted images live in
   `data/attachments/notes/<id>/`; `atharu dump` doesn't copy that folder.
 - `evidence` needs the epic to exist (file it with `epic` first) and an `http://` / `https://` link.
 - Output: one JSON document on stdout (camelCase keys; a referenced epic is nested as `epic{key, …}`, a line's
