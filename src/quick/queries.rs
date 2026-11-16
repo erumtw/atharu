@@ -15,14 +15,15 @@ pub struct DuePlan {
     pub note: Option<NoteRef>,
 }
 
-/// Open to-dos due today or earlier, overdue first.
-pub fn due_plans(conn: &Connection, today: &str) -> rusqlite::Result<Vec<DuePlan>> {
+/// Open dated to-dos, soonest first: overdue, then today, then upcoming falls out of the date order. The popover fills its rows
+/// from the top, so free rows show the soonest upcoming ones; undated to-dos never fill (they are "+N more").
+pub fn dated_plans(conn: &Connection) -> rusqlite::Result<Vec<DuePlan>> {
     let mut stmt = conn.prepare(
         "SELECT e.id, e.text, e.due, n.id, n.title FROM entries e LEFT JOIN notes n ON n.id = e.note_id
-         WHERE e.kind = 'plan' AND e.plan_state = 'open' AND e.due <= ?1
+         WHERE e.kind = 'plan' AND e.plan_state = 'open' AND e.due IS NOT NULL AND e.due != ''
          ORDER BY e.due, e.id",
     )?;
-    stmt.query_map([today], |r| {
+    stmt.query_map([], |r| {
         Ok(DuePlan {
             id: r.get(0)?,
             text: r.get(1)?,

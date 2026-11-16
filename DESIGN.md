@@ -545,7 +545,7 @@ the log scrolls under it.
   stops the recording and the meeting keeps running; not live, click starts one; blocked → disabled and the name row reads **Allow
   recording**, linking the meeting page in the main window; finishing → time "Transcribing…", no mic) · **End meeting** (text button,
   `rgba(255,255,255,.14)`). Ended → "✓ Ended **X** · Open meeting" above the idle row.
-- **To-dos** (0.2.6): today + overdue only, overdue first. Header "To-dos **2 overdue** · 1 today" (the overdue part in `--err`, only
+- **To-dos** (0.2.6; 0.2.10: free rows fill with the soonest upcoming): overdue first, then today, then the soonest upcoming to fill the rows up to the cap; undated to-dos never fill (they are in "+N more"). An upcoming row is quiet (no late / today colour, the due words `Tomorrow` · `Fri` · `Fri 20 Nov`); the header counts overdue and today only. Header "To-dos **2 overdue** · 1 today" (the overdue part in `--err`, only
   when > 0). Rows are 32: check 20 · text on one line with ellipsis · the note button · the **quiet due date** on the right (the To-dos
   list's words: `Today` in `--accent-2` 6.2:1, a late one `--err` 600 with its day, `Fri 6 Nov`, else `--muted`). **No inner scroll**: at most
   **5** rows, the window's height comes from the content, and five rows fit the 480 at rest (idle, recording, and the no-speech-model

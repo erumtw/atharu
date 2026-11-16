@@ -122,6 +122,50 @@ async fn kind_tile_sets_the_prefix_and_a_typed_one_wins() {
     assert_eq!(count(&st, "SELECT COUNT(*) FROM entries"), 1);
 }
 
+/// Owner 2026-11-17: "there's more space on to-do why it only show 2?" Two overdue and nothing today left three free rows.
+#[tokio::test]
+async fn free_rows_fill_with_the_soonest_upcoming_todos() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO entries(day, kind, text, plan_state, due) VALUES
+           ('2026-11-01', 'plan', 'up later', 'open', '2026-11-20'),
+           ('2026-11-01', 'plan', 'late b', 'open', '2026-11-10'),
+           ('2026-11-01', 'plan', 'no date', 'open', NULL),
+           ('2026-11-01', 'plan', 'up tomorrow', 'open', '2026-11-12'),
+           ('2026-11-01', 'plan', 'late a', 'open', '2026-11-09'),
+           ('2026-11-01', 'plan', 'up fri', 'open', '2026-11-13'),
+           ('2026-11-01', 'plan', 'up far', 'open', '2026-12-01'),
+           ('2026-11-01', 'plan', 'done soon', 'done', '2026-11-12');",
+    );
+    let b = get(&st, "/quick").await.body;
+    let rows: Vec<&str> = b
+        .match_indices("<span class=\"qtx clip\" title=\"")
+        .map(|(i, m)| {
+            let rest = &b[i + m.len()..];
+            rest.split_once("\">").unwrap().1.split('<').next().unwrap()
+        })
+        .collect();
+    // Overdue, then (nothing today) the soonest upcoming up to the cap of 5, in due order.
+    assert_eq!(
+        rows,
+        ["late a", "late b", "up tomorrow", "up fri", "up later"]
+    );
+    // The header counts overdue and today only: upcoming rows are not "today".
+    assert!(
+        b.contains("To-dos<span class=\"late\">2 overdue</span></h2>"),
+        "{b}"
+    );
+    assert!(!b.contains("· 0 today") && !b.contains("class=\"qd today\""));
+    // Upcoming rows are quiet: no late / today class, the words of the To-dos list.
+    assert!(b.contains("<span class=\"qd\">Tomorrow</span>"));
+    assert!(b.contains("<span class=\"qd\">Fri</span>"));
+    assert!(b.contains("<span class=\"qd\">Fri 20 Nov</span>"));
+    // Undated never fills a row: it and the one past the cap are the "more".
+    assert!(!b.contains("no date") && !b.contains("done soon"));
+    assert!(b.contains("+ 2 more · Open Atharu"), "7 open, 5 shown");
+}
+
 #[tokio::test]
 async fn todos_are_today_and_overdue_overdue_first_capped_at_five() {
     let st = state();

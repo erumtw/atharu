@@ -77,8 +77,15 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         .as_ref()
         .and_then(|r| r.started_at.as_deref())
         .map_or_else(String::new, |s| since(s, now));
-    let all = queries::due_plans(&conn, &dates::iso(today))?;
-    let overdue = all.iter().filter(|p| p.due < dates::iso(today)).count();
+    let all = queries::dated_plans(&conn)?;
+    let (today_iso, mut overdue, mut due_today) = (dates::iso(today), 0, 0);
+    for p in &all {
+        match p.due.as_str().cmp(today_iso.as_str()) {
+            std::cmp::Ordering::Less => overdue += 1,
+            std::cmp::Ordering::Equal => due_today += 1,
+            std::cmp::Ordering::Greater => {}
+        }
+    }
     let layout = Layout::load(&conn, "quick", "Quick", vec![])?;
     let ended = match q.ended {
         Some(id) => queries::meeting_name(&conn, id)?.map(|n| (id, n)),
@@ -124,7 +131,7 @@ pub async fn page(State(st): State<AppState>, Query(q): Query<PageQuery>) -> App
         since,
         ended,
         overdue,
-        due_today: all.len() - overdue,
+        due_today,
         more: layout.open_plans - todos.len() as i64,
         todos,
         layout,
