@@ -108,6 +108,9 @@ atharu help                                                 # this table (also -
 - A drawing in a note is one body line `![Drawing](data:image/svg+xml;base64,…)` (editable Excalidraw scene inside):
   build it with `scripts/drawing.py` (`Drawing().box/arrow/text`, then `.line()`), put the line in the body, save with
   `note … --file` (new note, or `--id N` on your own). Never in the owner's notes.
+- An image in a note is one body line `![caption](data:image/png;base64,…)` (also jpeg, gif, webp, svg+xml), alone on
+  its line; an inline image does not render, and only the alt `Drawing` makes it an editable board. Pasted images live in
+  `data/attachments/notes/<id>/`; `atharu dump` doesn't copy that folder.
 - `evidence` needs the epic to exist (file it with `epic` first) and an `http://` / `https://` link.
 - Output: one JSON document on stdout (camelCase keys; a referenced epic is nested as `epic{key, …}`, a line's
   note as `note{id, title}` or `null`).

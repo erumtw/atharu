@@ -3,3 +3,6 @@ data/
 /atharu
 .DS_Store
 editor/node_modules/
+
+# Pre-release screenshots for the owner to look at (may hold real work data; never commit)
+/release-verify/
