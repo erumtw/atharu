@@ -5,6 +5,8 @@ import type { ChainedCommands } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { Details, DetailsContent, DetailsSummary } from '@tiptap/extension-details'
+import { Link } from '@tiptap/extension-link'
+import { Table, TableCell, TableHeader, TableRow, renderTableToMarkdown } from '@tiptap/extension-table'
 import { Markdown } from '@tiptap/markdown'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionKeyDownProps, SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
@@ -365,6 +367,33 @@ const Menus = Extension.create({
   },
 })
 
+// A bare URL in the markdown parses as a link whose text is its href; writing it back as `[url](url)` would rewrite every
+// agent note on its first edit. Same render, so say it the way it was said.
+const NoteLink = Link.extend({
+  // The manager renders a placeholder to learn a mark's opening and closing text, and passes the real text as `meta.markText`.
+  renderMarkdown: (node, h, ctx) => {
+    const href = (node.attrs?.href ?? '') as string
+    const title = (node.attrs?.title ?? '') as string
+    const text = h.renderChildren(node)
+    if (!title && ctx?.meta?.markText === href) return text
+    return title ? `[${text}](${href} "${title}")` : `[${text}](${href})`
+  },
+}).configure({ openOnClick: false, autolink: true, linkOnPaste: true, defaultProtocol: 'https' })
+
+// Tiptap pads table columns to equal width (`| a    | b |`, `| ---- |`); agents write `| a | b |` and `|---|---|`. Both are the same
+// table, but only the compact form leaves an agent's note byte-identical after an edit. Cells never hold a raw ` | ` (a pipe in a
+// cell is `\|`), so splitting the padded line on it is safe.
+const compactTable = (md: string) => md.split('\n').map(line => {
+  if (!line.startsWith('| ') || !line.endsWith(' |')) return line
+  const cells = line.slice(2, -2).split(' | ').map(c => c.trimEnd())
+  return cells.every(c => /^:?-{3,}:?$/.test(c))
+    ? '|' + cells.map(c => (c.startsWith(':') ? ':' : '') + '---' + (c.endsWith(':') ? ':' : '')).join('|') + '|'
+    : '|' + cells.map(c => (c ? ` ${c} ` : ' ')).join('|') + '|'
+}).join('\n')
+const NoteTable = Table.extend({
+  renderMarkdown: (node, h) => compactTable(renderTableToMarkdown(node, h).trim()),
+})
+
 const el = document.getElementById('editor')
 const md = document.getElementById('note-md') as HTMLTextAreaElement | null
 if (el && md) {
@@ -377,8 +406,10 @@ if (el && md) {
         heading: { levels: [1, 2, 3] },
         // No markdown form for underline, so it would not survive a save.
         underline: false,
-        link: { openOnClick: false, autolink: true, linkOnPaste: true, defaultProtocol: 'https' },
+        // Our own Link below: StarterKit's would write a bare URL back as `[url](url)`.
+        link: false,
       }),
+      NoteLink,
       TaskList,
       TaskItem.configure({ nested: true }),
       Details,
@@ -386,6 +417,11 @@ if (el && md) {
       DetailsContent,
       Callout,
       PageLink,
+      // Tables: the read view renders GFM pipe tables (agents write them), so the editor must hold them or an edit deletes them.
+      NoteTable,
+      TableRow,
+      TableHeader,
+      TableCell,
       Drawing,
       NoteImage,
       Menus,

@@ -286,6 +286,17 @@ Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.
   (a remote `<img>` would make every view of the note fetch it).
 - Known gaps: `atharu dump` skips the attachments folder; deleting an image block leaves its file.
 
+**Tables in notes** (read view and editor, one rule in `.note-body`): 14 px, `--line` 1px cell borders, 6 / 10 padding, the header row on `--fill`
+at 600, top-aligned, cells wrap (`overflow-wrap:anywhere`: a long URL or Thai run gives way, the table stays inside the sheet), no row hover;
+a selected cell takes `--accent-wash`.
+
+**What the editor must carry (0.2.10).** The read view renders GFM pipe tables (agents write them), so the editor has table nodes
+(`@tiptap/extension-table`, no insert UI yet): opening a note and typing must never drop a block the read view shows. A table is written
+back in the agents' compact form (`| a | b |`, `|---|---|`, an empty cell `| |`), and a bare URL back as a bare URL. Text the library
+escapes on save (`a_b` → `a\_b`) and blank lines may change on the first edit; what the page shows does not. `scripts/editor-roundtrip.sh`
+types one character into a fixture note in headless Chrome and fails unless the stored markdown differs by exactly that character
+(`RT_DB=… RT_NOTES="14 8"` does the same on a copy of a real DB, comparing the rendered read view).
+
 ### Meeting recording (canvas row "Meeting recording", T51; D26, D27)
 
 - **Mac app only.** The browser and phone never capture; they show transcripts, and a running recording as "Recording on the Mac"

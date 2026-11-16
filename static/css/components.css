@@ -448,6 +448,14 @@ button.ev.own{border:1px dashed var(--faint)}
 .note-body code{font-family:ui-monospace,'SF Mono',Menlo,monospace;background:var(--fill);padding:1px 5px;border-radius:4px}
 .note-body pre{background:var(--fill);padding:10px 14px;border-radius:8px;overflow-x:auto}
 .note-body pre code{padding:0;background:none}
+/* Tables (read view and editor): cells wrap, so a long URL or Thai run never pushes the table past the sheet; the global table rule
+   (base.css) gives rows hairlines and a whole-row hover, which a note table doesn't want. */
+.note-body table{table-layout:auto;width:100%;border-collapse:collapse;font-size:14px;line-height:1.5}
+.note-body :is(th,td){border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top;white-space:normal;overflow-wrap:anywhere}
+.note-body th{background:var(--fill);font-weight:600;font-size:14px;color:var(--ink)}
+.note-body tr:hover td{background:none}
+.note-body :is(th,td) p{margin:0}
+.note-body .selectedCell{background:var(--accent-wash)}
 .note-body blockquote{border-left:3px solid var(--line);padding-left:14px;color:var(--ink-2)}
 .note-body .callout{padding:10px 14px;flex-direction:column;gap:6px}
 .note-body ul[data-type=taskList],.note-body li:has(>input[type=checkbox]){list-style:none}
