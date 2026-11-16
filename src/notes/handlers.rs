@@ -8,6 +8,7 @@ use crate::{
 };
 use axum::{
     Json,
+    body::Bytes,
     extract::{Form, Path, Query, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -383,6 +384,65 @@ pub async fn update(
         return Ok(web::back(&format!("/notes/{id}")));
     }
     web::html(&view::Saved)
+}
+
+/// A pasted or dropped image for note `id` (the raw file as the body): stored beside the DB, answered with the URL the editor
+/// puts in the note. The type comes from the bytes, so a lying `Content-Type` buys nothing (D2); SVG is refused (D1).
+pub async fn upload_image(
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+    body: Bytes,
+) -> AppResult<Response> {
+    // Guard dropped before `save`: it writes up to 25 MB and would hold the global DB lock meanwhile.
+    let root = {
+        let conn = st.conn();
+        queries::note(&conn, id)?.ok_or(AppError::NotFound)?;
+        super::images::root(&conn)
+    };
+    let Some(root) = root else {
+        return Ok((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "No folder next to the database.",
+        )
+            .into_response());
+    };
+    let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
+    Ok(match super::images::save(&root, id, &body, &stamp) {
+        Ok(name) => Json(serde_json::json!({
+            "data": { "image": { "url": format!("/attachments/notes/{id}/{name}") } }
+        }))
+        .into_response(),
+        Err(e) if e == super::images::REFUSED => {
+            (StatusCode::UNSUPPORTED_MEDIA_TYPE, e).into_response()
+        }
+        Err(e) => (StatusCode::BAD_REQUEST, e).into_response(),
+    })
+}
+
+/// One note image. Only names `images::save` writes are served, so no path can leave the note's folder; `nosniff` keeps a
+/// browser from reading anything else into the bytes.
+pub async fn image_file(
+    State(st): State<AppState>,
+    Path((id, file)): Path<(i64, String)>,
+) -> AppResult<Response> {
+    let kind = super::images::content_type(&file)
+        .filter(|_| super::images::valid_name(&file))
+        .ok_or(AppError::NotFound)?;
+    let root = super::images::root(&st.conn()).ok_or(AppError::NotFound)?;
+    let bytes =
+        std::fs::read(root.join(id.to_string()).join(&file)).map_err(|_| AppError::NotFound)?;
+    Ok((
+        [
+            (axum::http::header::CONTENT_TYPE, kind),
+            (
+                axum::http::header::CACHE_CONTROL,
+                "private, max-age=31536000, immutable",
+            ),
+            (axum::http::header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
+        ],
+        bytes,
+    )
+        .into_response())
 }
 
 #[derive(Deserialize)]
