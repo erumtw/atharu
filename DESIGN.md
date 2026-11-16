@@ -277,8 +277,14 @@ Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.
 - **Why SVG data URIs render but an SVG upload is refused** (D1): an SVG shown through `<img>` runs no script and fetches nothing
   (D24), while an uploaded `.svg` served from our origin and opened directly would. Uploads are PNG, JPEG, GIF or WebP up to 25 MB,
   typed by magic bytes, not by the client's header (D2).
-- **Editor**: paste (⌘V) or drop an image file into a note or the meeting notes; it uploads, then an image block appears at the cursor.
-  Known gaps: `atharu dump` skips the attachments folder; deleting an image block leaves its file.
+- **Editor**: paste (⌘V) or drop an image file into a note or the meeting notes; it uploads, then an image block appears at the
+  cursor (at the drop point for a drop). The block is a bare `<img>` in `.note-body`, styled like the read view; selected = the
+  drawing's 2px `--accent` ring. Progress and errors use the crumb's autosave slot `#saved`: "Uploading image…", "Image added", then
+  the autosave's "✓ saved"; a refused file shows the server's words ("Paste a PNG, JPEG, GIF or WebP image.", "Image is too big (25 MB
+  at most).") in `--err` (`.saved.err`, cleared by the next autosave). Every `image/*` file is claimed, so a dropped SVG never makes the
+  browser open it; text and link pastes keep the default path. Pasted HTML keeps only `/attachments/notes/` and `data:image/` images
+  (a remote `<img>` would make every view of the note fetch it).
+- Known gaps: `atharu dump` skips the attachments folder; deleting an image block leaves its file.
 
 ### Meeting recording (canvas row "Meeting recording", T51; D26, D27)
 

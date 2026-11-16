@@ -9,6 +9,7 @@ import { Markdown } from '@tiptap/markdown'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionKeyDownProps, SuggestionOptions, SuggestionProps } from '@tiptap/suggestion'
 import { PluginKey } from '@tiptap/pm/state'
+import { NoteImage } from './images'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -386,6 +387,7 @@ if (el && md) {
       Callout,
       PageLink,
       Drawing,
+      NoteImage,
       Menus,
       Markdown,
     ],
