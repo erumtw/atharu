@@ -528,7 +528,7 @@ async fn note_show_summarises_images_resolves_links_and_keeps_titles_working() {
     );
     let b64 = "A".repeat(2800); // 2100 bytes → 3 KB
     let body = format!(
-        "See [[OPS-1]] and [[nope]].\n\n![Drawing](data:image/svg+xml;base64,{b64})\n\n![รูป 1 · flow](data:image/png;base64,{b64})\n\nend"
+        "See [[OPS-1]], [[nope]] and [[note:1]].\n\n![Drawing](data:image/svg+xml;base64,{b64})\n\n![รูป 1 · flow](data:image/png;base64,{b64})\n\n![image](/attachments/notes/1/20261117-101500.png)\n\nend"
     );
     let (code, out, _) = cli_in(&st, &["note", "Diagrams"], Some("claude"), &body);
     assert_eq!(code, 0, "{out}");
@@ -557,6 +557,7 @@ async fn note_show_summarises_images_resolves_links_and_keeps_titles_working() {
         serde_json::json!([
             {"alt": "Drawing", "kind": "drawing", "kb": 3},
             {"alt": "รูป 1 · flow", "kind": "image", "kb": 3},
+            {"alt": "image", "kind": "image", "kb": null, "file": "/attachments/notes/1/20261117-101500.png"},
         ])
     );
     assert_eq!(
@@ -564,6 +565,7 @@ async fn note_show_summarises_images_resolves_links_and_keeps_titles_working() {
         serde_json::json!([
             {"label": "OPS-1", "href": "/epics/OPS-1"},
             {"label": "nope", "href": null},
+            {"label": "Diagrams", "href": "/notes/1"},
         ])
     );
     assert_eq!(
@@ -652,6 +654,23 @@ async fn link_and_done_work_on_the_owners_rows_and_nothing_else_changes() {
     assert_eq!((code, json(&out)["unchanged"].as_bool()), (0, Some(true)));
 
     // Refusals.
+    exec(
+        &st,
+        "INSERT INTO entries(id, day, kind, text, plan_state, closed_day, author) VALUES (3, '2026-11-10', 'plan', 'old idea', 'dropped', '2026-11-11', 'me')",
+    );
+    let (code, _, err) = cli(&st, &["done", "3", "--as", "claude"], None);
+    assert_eq!(
+        (code, err.trim()),
+        (1, "Line 3 was dropped; reopen it on the web.")
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM entries WHERE id = 3 AND plan_state = 'dropped' AND closed_day = '2026-11-11'"
+        ),
+        1,
+        "a dropped to-do is left exactly as it was"
+    );
     let (code, _, err) = cli(&st, &["done", "2", "--as", "claude"], None);
     assert_eq!((code, err.trim()), (1, "Line 2 isn't a to-do."));
     let (code, _, err) = cli(&st, &["done", "99", "--as", "claude"], None);

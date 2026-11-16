@@ -4,6 +4,7 @@
 # every main page at 1180 / 900 / 390 px. Exit 1 = layout problems, one line each. Screenshots stay in the temp
 # dir it prints: they hold work data, never commit them.
 #   scripts/visual-check.sh [path/to/atharu.db]      (no argument: data/atharu.db, the real data)
+#   (it also runs scripts/editor-roundtrip.sh, and fails when that does)
 #   VC_LOOK=yoru scripts/visual-check.sh ...         the same, in that look (sumi sora wakaba glass yoru)
 #   scripts/visual-check.sh --db <file>              a seeded demo / long-data DB (scripts/long-seed.sh) instead; its copy also gets a
 #                                                    throwaway Jira config pointing at a closed local port, so Jira chips render
@@ -63,4 +64,9 @@ TAG=$(q "SELECT tag FROM taggings GROUP BY tag ORDER BY COUNT(*) DESC, tag LIMIT
 STAG=$(q "SELECT tag FROM taggings WHERE item_type = 'series' ORDER BY tag LIMIT 1")
 [ -n "$STAG" ] && PAGES+=("/tags/$(enc "$STAG")")
 
-node scripts/visual-check.mjs "http://127.0.0.1:$PORT" "$TMP/shots" "${PAGES[@]}"
+status=0
+node scripts/visual-check.mjs "http://127.0.0.1:$PORT" "$TMP/shots" "${PAGES[@]}" || status=1
+# The editor must carry what the read view shows (0.2.10: an edit deleted tables): one typed character into a fixture note must change
+# nothing else. Its own throwaway DB, not the copy above.
+scripts/editor-roundtrip.sh || status=1
+exit $status

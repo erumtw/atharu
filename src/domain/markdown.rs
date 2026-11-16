@@ -93,6 +93,38 @@ fn drawing(line: &str) -> Option<(Option<&str>, &str)> {
     ok.then_some((caption, src))
 }
 
+/// Tracks a fenced code block (``` or ~~~) line by line. Inside one, an image or drawing line is code the author is showing, not a
+/// block to render, and a `:::` line is just text.
+#[derive(Default)]
+struct CodeFence(Option<(char, usize)>);
+
+impl CodeFence {
+    /// True when `line` belongs to a fenced block (its fences included): nothing special applies to it.
+    fn takes(&mut self, line: &str) -> bool {
+        let t = line.trim_start_matches(' ');
+        let run = |c: char| t.chars().take_while(|&x| x == c).count();
+        let marker = if line.len() - t.len() <= 3 {
+            ['`', '~'].into_iter().find(|&c| run(c) >= 3)
+        } else {
+            None
+        };
+        match (self.0, marker) {
+            // The closing fence: the same character, at least as long, nothing after it.
+            (Some((c, n)), Some(m)) if m == c && run(m) >= n && t[run(m)..].trim().is_empty() => {
+                self.0 = None;
+                true
+            }
+            (Some(_), _) => true,
+            // An opening fence (a backtick fence's info string can't hold a backtick: that is inline code).
+            (None, Some(m)) if m != '`' || !t[run(m)..].contains('`') => {
+                self.0 = Some((m, run(m)));
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
 /// An image on its own line, `![alt](src)`: `Some((alt, src))` only for the two forms we can serve safely. `src` is a base64
 /// `data:image/{png,jpeg,gif,webp,svg+xml}` URI (agents write these; an SVG shown through `<img>` runs no script, D24) or a
 /// pasted file under `/attachments/notes/<id>/<name>`. Both charsets rule out `"`, `<`, `)` and `:` in the src, so it can't
@@ -148,8 +180,13 @@ pub struct ImageInfo {
 pub fn summarize_images(md: &str) -> (String, Vec<ImageInfo>) {
     let mut out = Vec::new();
     let mut images = Vec::new();
+    let mut code = CodeFence::default();
     for line in md.lines() {
         let t = line.trim();
+        if code.takes(line) {
+            out.push(line.to_string());
+            continue;
+        }
         let (alt, src, kind) = match (drawing(t), image(t)) {
             (Some((caption, src)), _) if !src.is_empty() => (
                 if caption.is_some() {
@@ -192,7 +229,13 @@ pub fn to_html(md: &str) -> String {
     let mut out = String::new();
     let mut chunk = String::new();
     let mut open: Vec<&'static str> = Vec::new();
+    let mut code = CodeFence::default();
     for line in md.lines() {
+        if code.takes(line) {
+            chunk.push_str(line);
+            chunk.push('\n');
+            continue;
+        }
         let t = line.trim();
         if let Some((caption, src)) = drawing(t) {
             render(&std::mem::take(&mut chunk), &mut out);
@@ -420,6 +463,44 @@ mod tests {
                 "drawing"
             )
         );
+    }
+
+    #[test]
+    fn an_image_line_inside_a_code_fence_stays_code() {
+        let png = "![x](data:image/png;base64,AA==)";
+        let drawing = "![Drawing](data:image/svg+xml;base64,AA==)";
+        for fence in ["```", "~~~", "````"] {
+            let md = format!(
+                "before\n\n{fence}md\n{png}\n{drawing}\n:::callout\n{fence}\n\n![y](data:image/png;base64,BB==)\n\nafter"
+            );
+            let h = to_html(&md);
+            // The shown lines are text in a <pre>; only the real one after the fence is a figure; the prose is not swallowed.
+            assert!(
+                h.contains("<pre><code class=\"language-md\">"),
+                "{fence}: {h}"
+            );
+            assert!(
+                h.contains(&format!("{png}\n{drawing}\n:::callout\n")),
+                "{fence}: {h}"
+            );
+            assert_eq!(h.matches("<figure").count(), 1, "{fence}: {h}");
+            assert!(h.contains("src=\"data:image/png;base64,BB==\""), "{h}");
+            assert!(
+                h.starts_with("<p>before</p>") && h.ends_with("<p>after</p>\n"),
+                "{h}"
+            );
+            let (body, imgs) = super::summarize_images(&md);
+            assert!(
+                body.contains(png) && body.contains(drawing),
+                "code lines are kept verbatim"
+            );
+            assert_eq!(imgs.len(), 1, "{fence}: only the real image is listed");
+        }
+        // A shorter closing run doesn't close it; an unclosed fence runs to the end (as in markdown); inline backticks aren't a fence.
+        let h = to_html(&format!("````\n```\n{png}\nstill code"));
+        assert!(!h.contains("<figure"), "{h}");
+        let h = to_html(&format!("```code``` here\n\n{png}"));
+        assert_eq!(h.matches("<figure").count(), 1, "{h}");
     }
 
     #[test]

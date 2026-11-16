@@ -22,17 +22,17 @@ impl Config {
     ) -> Result<(Command, Config), String> {
         let env = |k: &str, d: &str| std::env::var(k).unwrap_or_else(|_| d.to_string());
         let home = std::env::var_os("HOME").map(PathBuf::from);
-        // `ATHARU_DB` (set and non-empty) wins; else `default_db` looks at the folder we were started in.
-        let db = std::env::var_os("ATHARU_DB")
-            .map(PathBuf::from)
-            .filter(|p| !p.as_os_str().is_empty())
-            .unwrap_or_else(|| default_db(Path::new(REPO_DB).is_file(), home.as_deref()));
+        // `ATHARU_DB` (set and non-empty) is the default; `--db` overrides it. With neither, `pick_db` decides once the command is known.
+        let mut explicit = std::env::var_os("ATHARU_DB").map(PathBuf::from);
+        let pick = |explicit: Option<PathBuf>, cli: bool| {
+            pick_db(explicit, cli, Path::new(REPO_DB).is_file(), home.as_deref())
+        };
         let mut cfg = Config {
             host: env("ATHARU_HOST", "127.0.0.1"),
             port: env("ATHARU_PORT", "7070")
                 .parse()
                 .map_err(|_| "ATHARU_PORT must be a port number".to_string())?,
-            db,
+            db: PathBuf::new(),
         };
         let mut cmd = Command::Serve;
         let mut args = args;
@@ -44,13 +44,17 @@ impl Config {
                     break;
                 }
                 "dump" => cmd = Command::Dump,
-                "help" | "-h" | "--help" => return Ok((Command::Help, cfg)),
-                "-db" | "--db" => cfg.db = args.next().ok_or("--db needs a path")?.into(),
+                "help" | "-h" | "--help" => {
+                    cfg.db = pick(explicit, false);
+                    return Ok((Command::Help, cfg));
+                }
+                "-db" | "--db" => explicit = Some(args.next().ok_or("--db needs a path")?.into()),
                 other => {
                     return Err(format!("unknown argument {other:?}\n{}", crate::cli::HELP));
                 }
             }
         }
+        cfg.db = pick(explicit, matches!(cmd, Command::Cli(_)));
         Ok((cmd, cfg))
     }
 
@@ -129,6 +133,22 @@ const REPO_DB: &str = "data/atharu.db";
 fn shared_db(home: Option<&Path>) -> Option<PathBuf> {
     home.map(|h| h.join("atharu/data/atharu.db"))
         .filter(|p| p.is_file())
+}
+
+/// The DB for this run: `--db` / `ATHARU_DB` (non-empty) first. Without either, a CLI command may fall back to the shared DB
+/// (`default_db`); the server and `dump` keep `data/atharu.db` relative to where they start, so `cargo run` in a worktree can
+/// never open (and migrate) the real DB by accident.
+pub fn pick_db(
+    explicit: Option<PathBuf>,
+    cli: bool,
+    cwd_has: bool,
+    home: Option<&Path>,
+) -> PathBuf {
+    match explicit.filter(|p| !p.as_os_str().is_empty()) {
+        Some(p) => p,
+        None if cli => default_db(cwd_has, home),
+        None => REPO_DB.into(),
+    }
 }
 
 /// The DB when neither `--db` nor `ATHARU_DB` says (0.2.10): `./data/atharu.db` if that file exists (run from the checkout) >
@@ -271,6 +291,32 @@ mod tests {
             "the checkout's own file wins"
         );
         assert_eq!(default_db(false, None), fresh);
+    }
+
+    #[test]
+    fn only_cli_commands_fall_back_to_the_shared_db() {
+        let home = tmp("pick");
+        let shared = home.join("atharu/data/atharu.db");
+        std::fs::create_dir_all(shared.parent().unwrap()).unwrap();
+        std::fs::write(&shared, "").unwrap();
+        let fresh = PathBuf::from("data/atharu.db");
+        // Another folder, no --db / ATHARU_DB: the CLI finds the shared DB, the server (and dump) stay on ./data.
+        assert_eq!(pick_db(None, true, false, Some(&home)), shared);
+        assert_eq!(
+            pick_db(None, false, false, Some(&home)),
+            fresh,
+            "serve never reaches into ~/atharu"
+        );
+        assert_eq!(
+            pick_db(Some("".into()), false, false, Some(&home)),
+            fresh,
+            "empty ATHARU_DB is unset"
+        );
+        // An explicit path wins for both; the checkout's own file wins for the CLI.
+        let mine = PathBuf::from("/x/y.db");
+        assert_eq!(pick_db(Some(mine.clone()), true, false, Some(&home)), mine);
+        assert_eq!(pick_db(Some(mine.clone()), false, false, Some(&home)), mine);
+        assert_eq!(pick_db(None, true, true, Some(&home)), fresh);
     }
 
     #[test]

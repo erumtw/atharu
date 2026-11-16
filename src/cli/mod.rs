@@ -374,6 +374,13 @@ fn done(conn: &Connection, today_: NaiveDate, pos: &[String], by: &str) -> Resul
     if card.kind != "plan" {
         return Err(Fail(1, format!("Line {id} isn't a to-do.")));
     }
+    // A dropped to-do was set aside on purpose; closing it as done would rewrite that decision. Reopening is the web's.
+    if card.plan_state.as_deref() == Some("dropped") {
+        return Err(Fail(
+            1,
+            format!("Line {id} was dropped; reopen it on the web."),
+        ));
+    }
     let mut v = card_json(id, &card, by);
     if card.plan_state.as_deref() == Some("done") {
         v["unchanged"] = true.into();
@@ -604,7 +611,7 @@ fn note_show(conn: &Connection, arg: &str) -> Result<Value, Fail> {
     let known = notes::known_pages(conn).map_err(db)?;
     let links: Vec<Value> = links::mentions(&n.body)
         .into_iter()
-        .map(|x| json!({"label": x, "href": known.href(x)}))
+        .map(|x| json!({"label": known.label(x), "href": known.href(x)}))
         .collect();
     let (body, images) = markdown::summarize_images(&n.body);
     let root = crate::notes::images::root(conn);
@@ -622,7 +629,12 @@ fn note_show(conn: &Connection, arg: &str) -> Result<Value, Fail> {
                     .len();
                 Some((len as usize).div_ceil(1024).max(1))
             });
-            json!({"alt": i.alt, "kind": i.kind, "kb": kb})
+            let mut v = json!({"alt": i.alt, "kind": i.kind, "kb": kb});
+            // A pasted file: where it is served, so an agent can fetch it (a data: image has no file).
+            if !i.file.is_empty() {
+                v["file"] = i.file.into();
+            }
+            v
         })
         .collect();
     Ok(json!({"note": {
