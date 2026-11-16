@@ -21,12 +21,18 @@ impl Config {
         args: impl Iterator<Item = String>,
     ) -> Result<(Command, Config), String> {
         let env = |k: &str, d: &str| std::env::var(k).unwrap_or_else(|_| d.to_string());
+        let home = std::env::var_os("HOME").map(PathBuf::from);
+        // `ATHARU_DB` (set and non-empty) wins; else `default_db` looks at the folder we were started in.
+        let db = std::env::var_os("ATHARU_DB")
+            .map(PathBuf::from)
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or_else(|| default_db(Path::new(REPO_DB).is_file(), home.as_deref()));
         let mut cfg = Config {
             host: env("ATHARU_HOST", "127.0.0.1"),
             port: env("ATHARU_PORT", "7070")
                 .parse()
                 .map_err(|_| "ATHARU_PORT must be a port number".to_string())?,
-            db: PathBuf::from(env("ATHARU_DB", "data/atharu.db")),
+            db,
         };
         let mut cmd = Command::Serve;
         let mut args = args;
@@ -116,6 +122,25 @@ impl FileConfig {
     }
 }
 
+/// The DB of a repo checkout, relative to where the binary runs.
+const REPO_DB: &str = "data/atharu.db";
+
+/// The shared DB every checkout, the browser, the CLI and agents use: `~/atharu/data/atharu.db`, when that file exists.
+fn shared_db(home: Option<&Path>) -> Option<PathBuf> {
+    home.map(|h| h.join("atharu/data/atharu.db"))
+        .filter(|p| p.is_file())
+}
+
+/// The DB when neither `--db` nor `ATHARU_DB` says (0.2.10): `./data/atharu.db` if that file exists (run from the checkout) >
+/// the shared `~/atharu/data/atharu.db` > `data/atharu.db` (a fresh install creates it). Without the middle step `atharu log`
+/// run from another repo silently made a new empty DB there (2026-11-12).
+pub fn default_db(cwd_has: bool, home: Option<&Path>) -> PathBuf {
+    match shared_db(home) {
+        Some(shared) if !cwd_has => shared,
+        _ => REPO_DB.into(),
+    }
+}
+
 /// Env var the Mac app sets to its pointer file's path; Settings › About offers "Change" only when it is set.
 pub const DB_POINTER_ENV: &str = "ATHARU_DB_POINTER";
 /// The pointer's name in the Mac app's data dir: one line, the DB path Settings › About picked.
@@ -133,10 +158,7 @@ pub fn resolve_db(env: Option<PathBuf>, app_dir: &Path, home: Option<&Path>) -> 
     {
         return s.trim().into();
     }
-    match home.map(|h| h.join("atharu/data/atharu.db")) {
-        Some(shared) if shared.is_file() => shared,
-        _ => app_dir.join("atharu.db"),
-    }
+    shared_db(home).unwrap_or_else(|| app_dir.join("atharu.db"))
 }
 
 /// A DB path typed into Settings: absolute (a leading `~` expands), ends in `.db`, and is an existing file or
@@ -223,6 +245,32 @@ mod tests {
             picked,
             "empty env ignored"
         );
+    }
+
+    #[test]
+    fn default_db_finds_the_shared_one_from_any_folder() {
+        let home = tmp("default");
+        let fresh = PathBuf::from("data/atharu.db");
+        assert_eq!(
+            default_db(false, Some(&home)),
+            fresh,
+            "nothing anywhere: a fresh install"
+        );
+        assert_eq!(default_db(false, None), fresh, "no HOME");
+        let shared = home.join("atharu/data/atharu.db");
+        std::fs::create_dir_all(shared.parent().unwrap()).unwrap();
+        std::fs::write(&shared, "").unwrap();
+        assert_eq!(
+            default_db(false, Some(&home)),
+            shared,
+            "another folder: the shared DB"
+        );
+        assert_eq!(
+            default_db(true, Some(&home)),
+            fresh,
+            "the checkout's own file wins"
+        );
+        assert_eq!(default_db(false, None), fresh);
     }
 
     #[test]

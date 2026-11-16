@@ -123,7 +123,7 @@ Today's capture bar too.
 |---|---|---|
 | `ATHARU_HOST` | `127.0.0.1` | bind address |
 | `ATHARU_PORT` | `7070` | port |
-| `ATHARU_DB` | `data/atharu.db` | SQLite file |
+| `ATHARU_DB` | `./data/atharu.db` if it exists, else `~/atharu/data/atharu.db` if it exists, else `data/atharu.db` | SQLite file (the CLI run from another folder finds the shared one) |
 | `ATHARU_AGENT` | — | CLI writer name, e.g. `claude` |
 
 Optionally, add `data/config.toml` next to the database with `ical_url = "…"`, Google Calendar's secret iCal address. It's shown read-only on
