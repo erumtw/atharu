@@ -41,6 +41,8 @@ const CHECK = `(() => {
   for (const el of document.querySelectorAll('body *')) {
     const r = el.getBoundingClientRect()
     if (r.width === 0 || r.height === 0 || getComputedStyle(el).position === 'fixed') continue
+    // A fenced code block scrolls sideways inside its card by design (0.2.10: note 8's wide snippet).
+    if (el.closest('pre')) continue
     let p = el.parentElement
     while (p && !flagged.has(p)) p = p.parentElement
     if (p) continue
@@ -179,6 +181,7 @@ async function selfTest() {
   const sideBad = await c.load(page('<div style="display:flex"><nav class="side" style="width:200px;height:300px;align-self:flex-start">side</nav><main class="doc">' + tall + '</main></div>'), 1180, 600)
   const sideOk = await c.load(page('<div style="display:flex"><nav class="side" style="width:200px;height:300px;align-self:flex-start;position:sticky;top:12px">side</nav><main class="doc">' + tall + '</main></div>'), 1180, 600)
   const cellOk = await c.load(page('<main class="doc"><table style="table-layout:fixed;width:200px"><tr><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">a long series name that is clipped with an ellipsis</td><td>2</td></tr></table></main>'), 900, 600)
+  const preOk = await c.load(page('<main class="doc"><pre style="overflow-x:auto;width:200px"><code>a code line that is far wider than the card it scrolls in, on purpose, to be read by scrolling</code></pre></main>'), 900, 600)
   await c.close()
   const fail = []
   if (!sheetBad.problems.some(p => p.startsWith('passes the page edge'))) fail.push('missed a chip past the sheet edge: ' + JSON.stringify(sheetBad.problems))
@@ -189,6 +192,7 @@ async function selfTest() {
   if (hiddenOk.problems.length) fail.push('flagged a hidden or roomy line text: ' + JSON.stringify(hiddenOk.problems))
   if (!sideBad.problems.some(p => p.startsWith('sidebar scrolled away'))) fail.push('missed a sidebar that scrolled away: ' + JSON.stringify(sideBad.problems))
   if (sideOk.problems.length) fail.push('flagged a pinned sidebar: ' + JSON.stringify(sideOk.problems))
+  if (preOk.problems.length) fail.push('flagged a code block that scrolls in its card: ' + JSON.stringify(preOk.problems))
   if (cellOk.problems.length) fail.push('flagged a clipped cell: ' + JSON.stringify(cellOk.problems))
   if (!bad.problems.some(p => p.startsWith('overflow: div'))) fail.push('missed an overflowing div: ' + JSON.stringify(bad.problems))
   if (ok.problems.length) fail.push('flagged a clipped div: ' + JSON.stringify(ok.problems))

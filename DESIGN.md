@@ -217,6 +217,7 @@ Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.
 | Date picker | `.menu.dp` | shared date popover on every `input[type=date]`; glass = `.menu` with an 85% floor; Sunday first (D48); phone = bottom sheet. See "Date picker" below |
 | Notes body | `.note-body` | Tiptap content as the board draws it (code on `--fill`, task lists, toggles, `.page` links) |
 | Drawing | `.drawing`, `.drawing.empty`, `.drawsheet` + `.drawbar` | see "Drawing block" below |
+| Image | `figure.image` (`img` + `figcaption`) | see "Image block" below |
 | Tables | `table th td` | head 12/500 muted on a line rule, rows hairline, hover `--fill-3`; scroll in `.tw`. A long first-column name (series, topic, tag) clips with an ellipsis and carries its full text as the link's `title`, never printing over the next column; a "via <series>" chip on a line clips the same way inside its row |
 | Recording banner | `.callout.dark.recb` > `.dot.rec` + `.rect` + `.lvl` ×2 | meeting banner while recording: pulsing dot, elapsed, one level meter per stream, Stop recording + End meeting |
 | Transcript | `.tx` > `.txhead` (+ `.txspk`) + `.txbody` > `.txrow` | white 12-radius box (content, no glass); search `.fld.s` + Copy in the head; `.txspk` names split voices |
@@ -261,6 +262,23 @@ Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.
   reads it), and the UI font to the system stack (so its Assistant webfont is never fetched). Hint text takes `--muted` for AA.
   The colours *inside* a drawing (Excalidraw's stroke palette) are the user's content, not UI, so the one-blue rule doesn't apply there.
 - Text in a drawing uses Excalifont (vendored, inlined into the stored SVG at Done), so the read view needs no webfont.
+
+### Image block (notes, 0.2.10)
+
+- **Stored as** one markdown line alone in the note body, in either of two forms: `![caption](data:image/png;base64,…)` (also jpeg,
+  gif, webp, svg+xml; what an agent writes with `atharu note`) or `![image](/attachments/notes/<id>/<name>)` (what a paste or drop
+  stores; the file lives in `data/attachments/notes/<id>/`). `![Drawing](…)` stays the Drawing block above and wins. An inline
+  image, or any other `data:` type, stays an ordinary markdown image and renders dead (`#`). `domain::markdown` checks the charset of
+  the src (base64, or `[A-Za-z0-9._-]` with no `..` and no leading `.`), so it can't break out of the attribute.
+- **Read view** `figure.image` in `.note-body`: the `<img>` at natural size capped to the sheet (`max-width:100%`, `height:auto`),
+  centred, 8 radius, `--paper` behind it (a transparent dark-ink SVG stays readable in Yoru), no border, no glass (content).
+  A served file is wrapped in a link that opens full size in a new tab; a `data:` image is not (browsers block top-level `data:`
+  navigation). The caption is `<figcaption>` (13 px, `--muted`, centred, wraps); none when the alt is empty or `image`.
+- **Why SVG data URIs render but an SVG upload is refused** (D1): an SVG shown through `<img>` runs no script and fetches nothing
+  (D24), while an uploaded `.svg` served from our origin and opened directly would. Uploads are PNG, JPEG, GIF or WebP up to 25 MB,
+  typed by magic bytes, not by the client's header (D2).
+- **Editor**: paste (⌘V) or drop an image file into a note or the meeting notes; it uploads, then an image block appears at the cursor.
+  Known gaps: `atharu dump` skips the attachments folder; deleting an image block leaves its file.
 
 ### Meeting recording (canvas row "Meeting recording", T51; D26, D27)
 
