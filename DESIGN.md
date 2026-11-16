@@ -50,6 +50,7 @@ on 22 pages in 10 look variants identical before and after).
 | `--surface` | `#fff` | raised content: cards, controls, pills, rings, calendar grid, the glass base `--glass-c` |
 | `--on-accent` / `--on-ink` / `--on-dark` | `#fff` | text, ticks and strokes on `--accent`·`--rec`·`--heat-4` / on an `--ink` fill / on `--dark` (and fills-by-alpha on it) |
 | `--paper` | `#fff` | drawing paper: scenes are drawn dark ink on white, so it stays white in every look |
+| `--paper-ink` / `--paper-muted` / `--paper-accent` / `--paper-accent-2` / `--paper-accent-wash` | = `--ink` / `--muted` / `--accent` / `--accent-2` / `--accent-wash` | the drawing editor's UI colours: the look's own, except Yoru sets the light values (`#1d1d1f` / `#6e6e73` / `#0066cc` / `#0055b3` / `#e8f1fb`), since the editor sits on white paper in every look |
 | `--seg-on` / `--thumb` | `#fff` | the selected segment's thumb / switch and slider knobs (light in every look) |
 | `--hi` | `#fff` | highlights, with an alpha: the lit top edge of glass, hover lifts on glass |
 | `--rim` | `rgba(255,255,255,.7)` | the glass edge (`--glass-edge`) |
@@ -260,9 +261,12 @@ Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.
   `--muted-tint` / `--err-tint`); Reduce Transparency → white + `--line` hairline.
 - **Autosave**: the scene saves into the note 1 s after a change; the bar says "Saving…" → "✓ saved just now" (same copy as the
   crumb) or "Couldn’t save · retrying" in `--err`; Done never waits on the network.
-- **Excalidraw is themed, not restyled**: on its container set `--color-primary` `--accent`, `--color-primary-darker` and
-  `--color-on-primary-container` `--accent-2`, `--color-primary-light` `--accent-wash`, `--color-selection` `--accent` (the canvas
-  reads it), and the UI font to the system stack (so its Assistant webfont is never fetched). Hint text takes `--muted` for AA.
+- **Excalidraw is themed, not restyled, and always light** (owner, 2026-11-17: "always white for now"): `theme: 'light'` is passed explicitly and `.drawsheet` is
+  `color-scheme:light`, so no look (Yoru, Auto → dark, Glass) tints or inverts the sheet or canvas (measured: canvas pixel `#ffffff`). On its
+  container set `--color-primary` `--paper-accent`, `--color-primary-darker` and `--color-on-primary-container` `--paper-accent-2`,
+  `--color-primary-light` `--paper-accent-wash`, `--color-selection` `--paper-accent` (the canvas reads it), and the UI font to the system
+  stack (so its Assistant webfont is never fetched). Hint text takes `--paper-muted` for AA (`.drawsheet .excalidraw .HintViewer`: the
+  shorter selector lost to Excalidraw's own grey `#b8b8b8`, 1.9:1, in every look until 0.2.10).
   The colours *inside* a drawing (Excalidraw's stroke palette) are the user's content, not UI, so the one-blue rule doesn't apply there.
 - Text in a drawing uses Excalifont (vendored, inlined into the stored SVG at Done), so the read view needs no webfont.
 

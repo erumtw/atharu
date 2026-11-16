@@ -62,5 +62,12 @@
   --chrome-glow: #0066cc;    /* the two soft glows behind the sheet when no look is set (used with an alpha) */
   --track: rgba(120, 120, 128, .12); /* segmented control track */
   --paper: #fff;             /* drawing paper: scenes are drawn dark ink on white, so it stays white in every look (Yoru included) */
+  /* The drawing editor's UI (Excalidraw) sits on --paper in every look, so it reads these, not --ink / --accent. Equal to the look's own
+     colours except in a dark look, which sets them to the light values (Yoru: dark navy on a white sheet would be unreadable). */
+  --paper-ink: var(--ink);
+  --paper-muted: var(--muted);
+  --paper-accent: var(--accent);
+  --paper-accent-2: var(--accent-2);
+  --paper-accent-wash: var(--accent-wash);
   --rec: #ff3b30;            /* microphone on: white on it 3.55:1 (non-text 3:1; the icon is a 2 px stroke) */
 }

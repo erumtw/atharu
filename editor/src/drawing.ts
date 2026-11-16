@@ -32,6 +32,8 @@ export async function open(host: HTMLElement, src: string, changed: () => void):
   root.render(createElement(Excalidraw, {
     excalidrawAPI: (a: ExcalidrawImperativeAPI) => { api = a },
     autoFocus: true,
+    // Always light for now (owner, 2026-11-17): the sheet is white paper in every look, and the stored SVG is exported without dark mode.
+    theme: 'light',
     initialData: { elements: scene?.elements ?? [], files: scene?.files, appState: { viewBackgroundColor: '#ffffff' }, scrollToContent: true },
     UIOptions: {
       canvasActions: { loadScene: false, saveToActiveFile: false, export: false, saveAsImage: false, toggleTheme: false },

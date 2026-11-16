@@ -489,7 +489,7 @@ button.ev.own{border:1px dashed var(--faint)}
 .note-body>img{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:8px;background:var(--paper)}
 .note-body>img.ProseMirror-selectednode{outline:2px solid var(--accent);outline-offset:2px}
 /* Editor sheet: opaque (it is content), Excalidraw fills it; our bar floats top-right where Library was. */
-.drawsheet{position:fixed;inset:0;z-index:50;background:var(--paper);font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+.drawsheet{position:fixed;inset:0;z-index:50;background:var(--paper);color-scheme:light;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
 .drawhost{position:absolute;inset:0}
 .drawbar{--s:25%;--g:color-mix(in srgb,var(--glass-c) max(var(--lg-min),min(100%,var(--glass-a) + var(--s))),transparent);--muted:var(--muted-tint);--err:var(--err-tint);
   position:absolute;top:12px;right:16px;z-index:5;display:flex;align-items:center;gap:6px;height:44px;box-sizing:border-box;padding:0 4px 0 14px;border-radius:9999px;border:1px solid transparent;
@@ -507,11 +507,12 @@ button.ev.own{border:1px dashed var(--faint)}
   .drawsheet .App-top-bar{margin-top:52px}
 }
 @media (prefers-reduced-transparency: reduce){.drawbar{background:var(--sheet);border-color:var(--line);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:var(--lg-shadow)}}
-/* Excalidraw themed, not restyled: the one blue + system type through the variables it reads (beats its .excalidraw rule). */
-.drawsheet .excalidraw{--color-primary:var(--accent);--color-primary-darker:var(--accent-2);--color-primary-darkest:var(--accent-2);--color-primary-hover:var(--accent-2);
-  --color-primary-light:var(--accent-wash);--color-on-primary-container:var(--accent-2);--color-selection:var(--accent);
+/* Excalidraw themed, not restyled: the one blue + system type through the variables it reads (beats its .excalidraw rule). Always the light
+   palette (--paper-*, 0.2.10): the sheet is white in every look, so a dark look's ink and accent must not reach it. */
+.drawsheet .excalidraw{--color-primary:var(--paper-accent);--color-primary-darker:var(--paper-accent-2);--color-primary-darkest:var(--paper-accent-2);--color-primary-hover:var(--paper-accent-2);
+  --color-primary-light:var(--paper-accent-wash);--color-on-primary-container:var(--paper-accent-2);--color-selection:var(--paper-accent);
   --ui-font:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
-.drawsheet .HintViewer{color:var(--muted)}
+.drawsheet .excalidraw .HintViewer{color:var(--paper-muted)}
 
 /* Settings (canvas "Settings · appearance", D18): Apple grouped inset list, Notion label + help left, one control right.
    Help text = --muted on --fill: 4.66 (plain), 5.92 (look), 8.35 (tinted). */
