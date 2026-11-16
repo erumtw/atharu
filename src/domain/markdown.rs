@@ -83,6 +83,45 @@ fn drawing(line: &str) -> Option<&str> {
     ok.then_some(src)
 }
 
+/// An image on its own line, `![alt](src)`: `Some((alt, src))` only for the two forms we can serve safely. `src` is a base64
+/// `data:image/{png,jpeg,gif,webp,svg+xml}` URI (agents write these; an SVG shown through `<img>` runs no script, D24) or a
+/// pasted file under `/attachments/notes/<id>/<name>`. Both charsets rule out `"`, `<`, `)` and `:` in the src, so it can't
+/// break out of the attribute; alt is escaped by the caller. Anything else stays an ordinary (dead) image.
+fn image(line: &str) -> Option<(&str, &str)> {
+    let (alt, src) = line.strip_prefix("![")?.split_once("](")?;
+    let src = src.strip_suffix(')')?;
+    let ok = match src.strip_prefix("data:image/") {
+        Some(rest) => {
+            let (kind, b64) = rest.split_once(";base64,")?;
+            matches!(kind, "png" | "jpeg" | "gif" | "webp" | "svg+xml")
+                && b64
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='))
+        }
+        None => src
+            .strip_prefix("/attachments/notes/")
+            .and_then(|r| r.split_once('/'))
+            .is_some_and(|(id, name)| {
+                !id.is_empty()
+                    && id.bytes().all(|b| b.is_ascii_digit())
+                    && !name.starts_with('.')
+                    && !name.contains("..")
+                    && !name.is_empty()
+                    && name
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+            }),
+    };
+    (ok && !alt.contains([']', '\n'])).then_some((alt, src))
+}
+
+fn escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
 pub fn to_html(md: &str) -> String {
     let mut out = String::new();
     let mut chunk = String::new();
@@ -98,6 +137,25 @@ pub fn to_html(md: &str) -> String {
                 out.push_str(src);
                 out.push_str("\" alt=\"Drawing\"></figure>");
             }
+            continue;
+        }
+        if let Some((alt, src)) = image(t) {
+            render(&std::mem::take(&mut chunk), &mut out);
+            let alt = escape(alt);
+            let img = format!("<img src=\"{src}\" alt=\"{alt}\" loading=\"lazy\">");
+            out.push_str("<figure class=\"image\">");
+            // Browsers block top-level navigation to a data: URL, so only a served file gets the click-to-open link.
+            if src.starts_with("data:") {
+                out.push_str(&img);
+            } else {
+                out.push_str(&format!(
+                    "<a href=\"{src}\" target=\"_blank\" rel=\"noopener\">{img}</a>"
+                ));
+            }
+            if !alt.is_empty() && alt != "image" {
+                out.push_str(&format!("<figcaption>{alt}</figcaption>"));
+            }
+            out.push_str("</figure>");
             continue;
         }
         // `:::details {open="true"}` → only the block name matters here.
@@ -228,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn drawing_block_is_the_only_data_image() {
+    fn drawing_and_image_blocks_only_on_their_own_line() {
         let h = to_html(
             "before\n\n![Drawing](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)\n\n![Drawing]()\nafter",
         );
@@ -241,15 +299,66 @@ mod tests {
             "![Drawing](data:text/html;base64,PHNjcmlwdD4=)",
             "![Drawing](data:image/svg+xml,<svg onload=alert(1)>)",
             "![Drawing](data:image/svg+xml;base64,PH\"onerror=alert(1))",
-            "![x](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)",
             "a ![Drawing](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)",
+            "![x](data:text/html;base64,PHNjcmlwdD4=)",
+            "![x](data:image/svg+xml,<svg onload=alert(1)>)",
+            "![x](data:image/png;base64,AA\"onerror=1)",
+            "![x](data:image/bmp;base64,AA==)",
+            "a ![x](data:image/png;base64,AA==) b",
         ] {
             let h = to_html(bad);
             assert!(
-                !h.contains("=\"data:") && !h.contains("=\"javascript:") && !h.contains("figure"),
+                !h.contains("=\"data:") && !h.contains("=\"/attachments") && !h.contains("figure"),
                 "{bad} → {h}"
             );
         }
+    }
+
+    #[test]
+    fn only_clean_attachment_paths_become_figures() {
+        // The fallback is the old behaviour (a plain relative <img>); what matters is no figure and no link to a traversal.
+        for bad in [
+            "![x](/attachments/notes/1/../x.png)",
+            "![x](/attachments/notes/1/.hidden.png)",
+            "![x](/attachments/notes/a/x.png)",
+            "![x](/attachments/notes/1/a/b.png)",
+            "![x](/attachments/notes/1/)",
+            "![x](https://x.io/a.png)",
+        ] {
+            let h = to_html(bad);
+            assert!(!h.contains("figure") && !h.contains("<a "), "{bad} → {h}");
+        }
+    }
+
+    #[test]
+    fn image_block_renders_data_and_attachment_sources() {
+        // note 14's shape: agent diagram, Thai alt, svg+xml
+        let h = to_html("![รูป 1 · flow](data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=)");
+        assert_eq!(
+            h,
+            "<figure class=\"image\"><img src=\"data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=\" alt=\"รูป 1 · flow\" loading=\"lazy\"><figcaption>รูป 1 · flow</figcaption></figure>"
+        );
+        let h = to_html("![x](data:image/png;base64,iVBORw0KGgo=)");
+        assert!(
+            h.contains("<img src=\"data:image/png;base64,iVBORw0KGgo=\""),
+            "{h}"
+        );
+        // a pasted file: linked to full size, and `image` (the editor's default alt) gets no caption
+        let h = to_html("![image](/attachments/notes/14/20261117-101500.png)");
+        assert_eq!(
+            h,
+            "<figure class=\"image\"><a href=\"/attachments/notes/14/20261117-101500.png\" target=\"_blank\" rel=\"noopener\"><img src=\"/attachments/notes/14/20261117-101500.png\" alt=\"image\" loading=\"lazy\"></a></figure>"
+        );
+        // alt can't break out of its attribute
+        let h = to_html("![x\"onerror=1](data:image/png;base64,AA==)");
+        assert!(h.contains("alt=\"x&quot;onerror=1\""), "{h}");
+        assert!(!h.contains("\"onerror"), "{h}");
+        // prose around it still renders
+        let h = to_html("before\n![x](data:image/gif;base64,R0lG)\nafter");
+        assert!(
+            h.starts_with("<p>before</p>") && h.ends_with("<p>after</p>\n"),
+            "{h}"
+        );
     }
 
     #[test]
