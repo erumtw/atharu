@@ -40,7 +40,13 @@ fn targets(body: &str) -> impl Iterator<Item = (usize, &str, usize)> {
     })
 }
 
-/// Where `[[X]]` points: epic key → epic (only one that exists: `[[OPS-999]]` with no such epic is dead), else a tag in use → its hub (D45: one name, one hub, which also
+/// `note:7` → `7`: a link to another note by its number (an epic key or tag can't hold `:`, so it never collides).
+pub fn note_id(x: &str) -> Option<&str> {
+    x.strip_prefix("note:")
+        .filter(|n| !n.is_empty() && n.len() <= 18 && n.bytes().all(|b| b.is_ascii_digit()))
+}
+
+/// Where `[[X]]` points: `note:N` → that note (only one that exists), else epic key → epic (only one that exists: `[[OPS-999]]` with no such epic is dead), else a tag in use → its hub (D45: one name, one hub, which also
 /// shows the topic + series of that name), else an existing topic, else an existing meeting series.
 /// `None` = renders as plain text (a dead link the page can point out).
 pub fn href(
@@ -49,8 +55,11 @@ pub fn href(
     is_topic: impl Fn(&str) -> bool,
     is_meeting: impl Fn(&str) -> bool,
     is_tag: impl Fn(&str) -> bool,
+    is_note: impl Fn(&str) -> bool,
 ) -> Option<String> {
-    if is_epic_key(x) {
+    if let Some(n) = note_id(x) {
+        is_note(n).then(|| format!("/notes/{n}"))
+    } else if is_epic_key(x) {
         is_epic(x).then(|| format!("/epics/{x}"))
     } else if is_tag(x) {
         Some(format!("/tags/{x}"))
@@ -63,14 +72,15 @@ pub fn href(
     }
 }
 
-/// `[[X]]` → `[X](href)` or plain `X`, so the markdown renderer only sees standard links.
-pub fn rewrite(body: &str, resolve: impl Fn(&str) -> Option<String>) -> String {
+/// `[[X]]` → `[label](href)` or plain `X`, so the markdown renderer only sees standard links. `resolve` gives (href, label), the
+/// label already markdown-safe (a note link shows the note's title, not `note:7`).
+pub fn rewrite(body: &str, resolve: impl Fn(&str) -> Option<(String, String)>) -> String {
     let mut out = String::with_capacity(body.len());
     let mut last = 0;
     for (start, x, end) in targets(body) {
         out.push_str(&body[last..start]);
         match resolve(x) {
-            Some(h) => out.push_str(&format!("[{x}]({h})")),
+            Some((h, label)) => out.push_str(&format!("[{label}]({h})")),
             None => out.push_str(x),
         }
         last = end;
@@ -92,6 +102,7 @@ mod tests {
             |s| ["vector-search", "oms-sync", "infra"].contains(&s),
             |s| ["oms-sync", "standup", "infra"].contains(&s),
             |s| ["expense", "infra", "OPS-101"].contains(&s),
+            |n| ["7", "12"].contains(&n),
         )
     }
 
@@ -107,6 +118,11 @@ mod tests {
             ("chekout", None),
             ("ops-101", None),
             ("OPS-999", None),
+            ("note:7", Some("/notes/7")),
+            ("note:99", None),
+            ("note:", None),
+            ("note:7x", None),
+            ("Note:7", None),
         ] {
             assert_eq!(resolve(x).as_deref(), want, "{x}");
         }
@@ -115,11 +131,29 @@ mod tests {
     #[test]
     fn rewrite_and_mentions() {
         let body = "p95 on [[OPS-101]], see [[standup]] and [[chekout]]; [[OPS-101]] again. [[]] [[a\nb]] [x]";
+        let resolve = |x: &str| resolve(x).map(|h| (h, x.to_string()));
         assert_eq!(
             rewrite(body, resolve),
             "p95 on [OPS-101](/epics/OPS-101), see [standup](/meetings?name=standup) and chekout; \
              [OPS-101](/epics/OPS-101) again. [[]] [[a\nb]] [x]"
         );
         assert_eq!(mentions(body), ["OPS-101", "standup", "chekout"]);
+        // A note link shows the label the resolver gives (the note's title).
+        let titled = |x: &str| {
+            resolve(x).map(|(h, l)| {
+                (
+                    h,
+                    if note_id(x).is_some() {
+                        "Retro".into()
+                    } else {
+                        l
+                    },
+                )
+            })
+        };
+        assert_eq!(
+            rewrite("see [[note:7]] and [[note:99]]", titled),
+            "see [Retro](/notes/7) and note:99"
+        );
     }
 }

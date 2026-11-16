@@ -232,7 +232,7 @@ Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.
 | Page menu | `.menu.pmenu#pmenu` + `partials/pmenu_btn.html` | the ⋯ at the crumb's right end (`.crumb .pend`, after `.saved`): Copy link · page actions (Open in Jira ↗, Archive, Rename…) · **Delete…** in `--err` last, a form button styled as a menu item (plain POST without JS, Undo toast after). Native popover anchored under the ⋯; fixed fallback where anchor positioning is missing. Replaced the hub's `.acts-menu` and every page-bottom Delete button |
 | Add property | `details.addp > summary.addprop` | empty props are hidden (0.2.0 D2); "+ Add property · OKR dates metric" names what's missing and reveals them in place. JS-free: the empty fields stay inside the page's autosave form, so a PATCH still carries them |
 | Toggled section | `details.tg > summary` | a page section at h3 size with its count inline (`Open to-dos · 2`, `Timeline · 6 days`, `Evidence · 1`); open by default, closed when it would only say "none" |
-| Linked references | `section.refs` (`partials/refs.html`) | last on every entity page: notes that point here, grouped by how (`h4` Mentioned in · On its lines · Tagged), one `.ref` row each with the @chip; empty = one line naming how to link (`[[name]]`). A note's own refs are its lines (`#lnh`, the white `.lnh` box inside) |
+| Linked references | `section.refs` (`partials/refs.html`) | last on every entity page: notes that point here, grouped by how (`h4` Mentioned in · On its lines · Tagged), one `.ref` row each with the @chip; empty = one line naming how to link (`[[name]]`). A note's own refs are its lines (`#lnh`, the white `.lnh` box inside); 0.2.10: and the notes that link to it with `[[note:N]]` ("Mentioned in", self-links left out; the panel is shown only when there is one, since its empty copy talks about lines) |
 | Same name | `partials/same_name.html` | a prop on topic, meeting and series pages linking the tag hub / topic / series of the same name, so "one name, one hub" reads both ways |
 | Start meeting row | `#meeting:has(>#start-meeting)` | Today and Meetings (0.2.5, back in the page as before 0.2.0; the 0.2.0 crumb pill + popover hid the series list under its own text): one row = name field (series list below it, help in its `title`) · Record audio switch; the consent line and errors wrap under it. A running meeting's banner swaps in at the same place |
 | Log view row | `.row` + tag filter + Group by `.seg` | under "Logged today", always visible (no menu, owner 2026-11-13): tag filter left, Group by Epic · Tag · Type right, the same row as To-dos |
@@ -288,6 +288,10 @@ Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.
   browser open it; text and link pastes keep the default path. Pasted HTML keeps only `/attachments/notes/` and `data:image/` images
   (a remote `<img>` would make every view of the note fetch it).
 - Known gaps: `atharu dump` skips the attachments folder; deleting an image block leaves its file.
+
+**Note links** (0.2.10): `[[note:7]]` in a note is a link to note 7, shown with that note's title (Untitled when empty; markdown characters in the
+title are escaped), plain text when no such note exists; `atharu note … --links note:7` writes it. It is checked before the epic / tag / topic /
+series order (no epic key or tag holds a `:`). The target lists its linkers under Linked references › Mentioned in.
 
 **Tables in notes** (read view and editor, one rule in `.note-body`): 14 px, `--line` 1px cell borders, 6 / 10 padding, the header row on `--fill`
 at 600, top-aligned, cells wrap (`overflow-wrap:anywhere`: a long URL or Thai run gives way, the table stays inside the sheet), no row hover;

@@ -61,6 +61,9 @@ pub struct Page {
     pub links: Vec<Link>,
     pub ago: String,
     pub head: Lines,
+    /// Notes that link here with `[[note:N]]`, for the Linked references panel.
+    pub refs: Vec<crate::layout::Ref>,
+    pub ref_name: String,
 }
 
 /// One line in the note's header.

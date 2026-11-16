@@ -213,6 +213,8 @@ pub struct Known {
     topics: HashSet<String>,
     meetings: HashSet<String>,
     tags: HashSet<String>,
+    /// Note id (as `[[note:N]]` spells it) → its title, `Untitled` when empty.
+    notes: std::collections::HashMap<String, String>,
 }
 
 impl Known {
@@ -224,7 +226,28 @@ impl Known {
             |s| self.topics.contains(s),
             |s| self.meetings.contains(s),
             |s| self.tags.contains(s),
+            |n| self.notes.contains_key(n),
         )
+    }
+
+    /// What a link shows: a note link its note's title, any other the name itself.
+    pub fn label<'a>(&'a self, x: &'a str) -> &'a str {
+        crate::domain::links::note_id(x)
+            .and_then(|n| self.notes.get(n))
+            .map_or(x, String::as_str)
+    }
+
+    /// `(href, label)` for the markdown rewrite; the label is escaped, since a title can hold `]`, `*` or `_`.
+    pub fn link(&self, x: &str) -> Option<(String, String)> {
+        let label: String = self
+            .label(x)
+            .chars()
+            .flat_map(|c| {
+                let esc = "\\`*_[]<>~|".contains(c).then_some('\\');
+                esc.into_iter().chain(std::iter::once(c))
+            })
+            .collect();
+        self.href(x).map(|h| (h, label))
     }
 }
 
@@ -237,6 +260,10 @@ pub fn known_pages(conn: &Connection) -> rusqlite::Result<Known> {
         topics: set("SELECT slug FROM topics")?,
         meetings: set("SELECT DISTINCT name FROM meetings")?,
         tags: set("SELECT DISTINCT tag FROM taggings")?,
+        notes: conn
+            .prepare("SELECT id, CASE WHEN title = '' THEN 'Untitled' ELSE title END FROM notes")?
+            .query_map([], |r| Ok((r.get::<_, i64>(0)?.to_string(), r.get(1)?)))?
+            .collect::<rusqlite::Result<_>>()?,
     })
 }
 

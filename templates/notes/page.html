@@ -27,6 +27,10 @@
 <noscript><button class="btn" type="submit" style="align-self: flex-start">Save</button></noscript>
 </form>
 </div>
+{#- Only when another note links here: the panel's empty copy talks about lines, which a note has none of. #}
+{%- if !refs.is_empty() %}
+{% include "partials/refs.html" %}
+{%- endif %}
 {{ head|safe }}
 </main>
 {% endblock %}

@@ -266,27 +266,26 @@ pub async fn create_text(
     })
 }
 
-fn resolver(conn: &Connection) -> rusqlite::Result<impl Fn(&str) -> Option<String>> {
-    let known = queries::known_pages(conn)?;
-    Ok(move |x: &str| known.href(x))
-}
-
 pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<Response> {
     let conn = st.conn();
     let n = queries::note(&conn, id)?.ok_or(AppError::NotFound)?;
-    let resolve = resolver(&conn)?;
+    let known = queries::known_pages(&conn)?;
     let links = links::mentions(&n.body)
         .into_iter()
         .map(|x| view::Link {
-            label: x.to_string(),
-            href: resolve(x),
+            label: known.label(x).to_string(),
+            href: known.href(x),
         })
         .collect();
+    // Notes that link here (`[[note:N]]`); a note that mentions itself is not a reference.
+    let ref_name = format!("note:{id}");
+    let mut refs = crate::layout::refs(&conn, Some(&ref_name), None)?;
+    refs.retain(|r| r.id != id);
     let title = title_or_untitled(&n.title);
     web::html(&view::Page {
         layout: Layout::load(&conn, "notes", title, vec![crumb("Notes", "/notes")])?,
         head: head(&st, &conn, id)?,
-        html: markdown::to_html(&links::rewrite(&n.body, &resolve)),
+        html: markdown::to_html(&links::rewrite(&n.body, |x| known.link(x))),
         agent: agent(&n.author),
         meeting: queries::meeting_of(&conn, id)?.map(|(mid, name, day)| {
             let day = chrono::NaiveDate::parse_from_str(&day, "%Y-%m-%d")
@@ -299,6 +298,8 @@ pub async fn page(State(st): State<AppState>, Path(id): Path<i64>) -> AppResult<
         title: n.title,
         body: n.body,
         links,
+        refs,
+        ref_name,
     })
 }
 

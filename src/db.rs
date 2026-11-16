@@ -126,6 +126,8 @@ pub fn still_resolves(conn: &Connection, x: &str, renamed: &str) -> bool {
         |s| has("SELECT EXISTS (SELECT 1 FROM topics WHERE slug = ?1)", s),
         |s| renamed != "series" && has("SELECT EXISTS (SELECT 1 FROM meetings WHERE name = ?1)", s),
         |s| renamed != "tag" && has("SELECT EXISTS (SELECT 1 FROM taggings WHERE tag = ?1)", s),
+        // A tag or series is never called `note:N`, so a rename can't change what a note link lands on.
+        |_| false,
     )
     .is_some()
 }
