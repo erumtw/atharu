@@ -78,7 +78,8 @@ and stop. Never fall back to SQL writes.
 
 Run as `cargo run -q -- <command> …` (or `target/release/atharu …`). No server needed; it writes the same DB as the app:
 `./data/atharu.db` if it exists, else `~/atharu/data/atharu.db` from any folder (`--db PATH` before the command, or
-`ATHARU_DB`, picks another file).
+`ATHARU_DB`, picks another file). In a git worktree (no `./data/`) that means the owner's real DB: pass `--db` there
+when testing. Bare `atharu` (serve) never falls back; it uses `data/atharu.db` under the cwd.
 
 ```sh
 atharu log "<line>" [--day YYYY-MM-DD] [--note N] [--meeting N] --as claude  # one line, same grammar as above
