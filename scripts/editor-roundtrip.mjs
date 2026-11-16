@@ -40,6 +40,10 @@ for (const id of ids) {
   await cdp('Page.navigate', { url: `${base}/notes/${id}` })
   for (let i = 0; i < 40 && !(await ev("!!document.querySelector('.ProseMirror')")); i++) await sleep(250)
   await sleep(500)
+  // A captioned drawing must open as a DRAWING (editable, caption shown), not fall back to a plain image that merely round-trips.
+  const want = Number(process.env.RT_DRAWING_CAPTIONS ?? 0)
+  const got = await ev("document.querySelectorAll('.ProseMirror figure.drawing figcaption').length")
+  if (got !== want) problems.push(`note ${id}: ${got} captioned drawings in the editor, want ${want}`)
   await ev("document.querySelector('.ProseMirror').focus()")
   await cdp('Input.insertText', { text: 'Z' })
   await sleep(3500) // htmx's 1 s autosave debounce + the round trip

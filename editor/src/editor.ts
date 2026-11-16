@@ -66,7 +66,8 @@ const PageLink = Node.create({
 
 // Drawing block (D23/D24): `![Drawing](data:image/svg+xml;base64,…)` on its own line, scene embedded in the SVG.
 // Markdown.rs shows exactly that form as an <img>, so the note reads (and works without JS) with no Excalidraw at all.
-const DRAWING_LINE = /^!\[Drawing\]\((data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+)?\)[ \t]*(?:\n|$)/
+// A caption rides in the alt (`![Drawing · caption](…)`), only on a drawn one; the server shows it as a figcaption.
+const DRAWING_LINE = /^!\[Drawing(?: · ([^\]\n]+))?\]\((data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+)?\)[ \t]*(?:\n|$)/
 // A variable, not a literal: esbuild leaves import(x) alone, so the island stays out of this iife.
 const ISLAND = '/static/js/drawing/drawing.js'
 // Set by the `/` menu so the block it inserts opens the canvas at once (DESIGN.md §6 Insert).
@@ -170,37 +171,41 @@ const Drawing = Node.create({
   group: 'block',
   atom: true,
   draggable: true,
-  addAttributes: () => ({ src: { default: '' } }),
-  parseHTML: () => [{ tag: 'figure.drawing', getAttrs: (el: HTMLElement) => ({ src: el.querySelector('img')?.getAttribute('src') ?? '' }) }],
-  renderHTML: ({ node }) => ['figure', { class: 'drawing' }, ['img', { src: node.attrs.src, alt: 'Drawing' }]],
+  addAttributes: () => ({ src: { default: '' }, caption: { default: '' } }),
+  parseHTML: () => [{ tag: 'figure.drawing', getAttrs: (el: HTMLElement) => ({ src: el.querySelector('img')?.getAttribute('src') ?? '', caption: el.querySelector('figcaption')?.textContent ?? '' }) }],
+  renderHTML: ({ node }) => ['figure', { class: 'drawing' }, ['img', { src: node.attrs.src, alt: 'Drawing' }], ...(node.attrs.caption ? [['figcaption', node.attrs.caption]] : [])],
   markdownTokenizer: {
     name: 'drawing',
     level: 'block',
-    start: (src: string) => src.indexOf('![Drawing]('),
+    start: (src: string) => src.indexOf('![Drawing'),
     tokenize: (src: string) => {
       const m = DRAWING_LINE.exec(src)
-      if (m) return { type: 'drawing', raw: m[0], src: m[1] ?? '' }
+      // A caption on an undrawn one is not our form (the server refuses it too): leave it to the image node.
+      if (m && !(m[1] && !m[2])) return { type: 'drawing', raw: m[0], src: m[2] ?? '', caption: m[1] ?? '' }
     },
   },
-  parseMarkdown: (token, h) => h.createNode('drawing', { src: token.src }),
-  renderMarkdown: node => `![Drawing](${node.attrs?.src ?? ''})`,
+  parseMarkdown: (token, h) => h.createNode('drawing', { src: token.src, caption: token.caption ?? '' }),
+  renderMarkdown: node => `![Drawing${node.attrs?.caption ? ` · ${node.attrs.caption}` : ''}](${node.attrs?.src ?? ''})`,
   addNodeView() {
     return ({ node, getPos, editor }) => {
       const dom = document.createElement('figure')
       let src = ''
+      let caption = ''
       const set = (next: string) => {
         const pos = getPos()
         if (typeof pos === 'number') editor.view.dispatch(editor.state.tr.setNodeAttribute(pos, 'src', next))
       }
       const edit = () => void editDrawing(src, set)
-      const draw = (next: string) => {
+      const draw = (next: string, cap: string) => {
         src = next
+        caption = cap
         dom.className = src ? 'drawing' : 'drawing empty'
         if (src) {
           const img = document.createElement('img')
           img.src = src
           img.alt = 'Drawing'
-          dom.replaceChildren(img, button('Edit drawing', 'btn ghost s edit', edit))
+          const note = caption ? Object.assign(document.createElement('figcaption'), { textContent: caption }) : null
+          dom.replaceChildren(...[img, note, button('Edit drawing', 'btn ghost s edit', edit)].filter(x => x !== null))
         } else {
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
           svg.setAttribute('class', 'ic')
@@ -215,13 +220,13 @@ const Drawing = Node.create({
           dom.replaceChildren(svg, label, button('Draw', 'btn ghost s', edit))
         }
       }
-      draw(node.attrs.src as string)
+      draw(node.attrs.src as string, node.attrs.caption as string)
       if (openNew && !src) { openNew = false; queueMicrotask(edit) }
       return {
         dom,
         update: n => {
           if (n.type.name !== 'drawing') return false
-          if (n.attrs.src !== src) draw(n.attrs.src as string)
+          if (n.attrs.src !== src || n.attrs.caption !== caption) draw(n.attrs.src as string, n.attrs.caption as string)
           return true
         },
         selectNode: () => dom.classList.add('sel'),

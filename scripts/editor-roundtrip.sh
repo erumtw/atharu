@@ -1,7 +1,7 @@
 #!/bin/bash
 # The web editor must carry what the read view renders (0.2.10: opening a note with a markdown table and typing one character deleted
 # the table). Types one character into a note in headless Chrome and asserts the stored markdown changed by that character only.
-#   scripts/editor-roundtrip.sh                                  a fresh fixture note: table (agent style), bare URLs, image, drawing, callout
+#   scripts/editor-roundtrip.sh                                  a fresh fixture note: table (agent style), bare URLs, image, drawing (+ captioned), callout
 #   RT_DB=data/atharu.db RT_NOTES="14 8" scripts/editor-roundtrip.sh   those notes of a .backup COPY of a real DB (the source is only read);
 #                                                                     compares what the read view shows, not the bytes (RT_MODE=render)
 set -euo pipefail
@@ -29,11 +29,14 @@ Intro with a bare link https://example.com/a/b?c=1 and `code` and **bold** and [
 
 ![Drawing](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciLz4=)
 
+![Drawing · รูป 2 · flow](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciLz4=)
+
 - first point
 - second point
 MD
   target/debug/atharu --db "$DB" note "Round trip fixture" --file "$TMP/fixture.md" --as claude >/dev/null
   IDS=1
+  export RT_DRAWING_CAPTIONS=1
 fi
 PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
 ATHARU_HOST=127.0.0.1 ATHARU_PORT=$PORT target/debug/atharu --db "$DB" >"$TMP/server.log" 2>&1 &

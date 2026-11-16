@@ -69,18 +69,28 @@ fn render(md: &str, out: &mut String) {
 }
 
 /// The editor's drawing block, one line: `![Drawing](data:image/svg+xml;base64,…)`, or `![Drawing]()` before anything is
-/// drawn. `Some(src)` only for that exact form: base64 has no `"`, `<` or `:`, so the src can't break out of the attribute,
-/// and an SVG shown through `<img>` runs no script and fetches nothing (D24). Anything else stays an ordinary image.
-fn drawing(line: &str) -> Option<&str> {
-    let src = line.strip_prefix("![Drawing](")?.strip_suffix(')')?;
+/// drawn. A caption rides in the alt, `![Drawing · caption](…)`, only on a drawn one: the drawing stays editable (the SVG
+/// carries its scene) and still says what it shows. `Some((caption, src))` only for those exact forms: base64 has no `"`, `<`
+/// or `:`, so the src can't break out of the attribute, and an SVG shown through `<img>` runs no script and fetches nothing
+/// (D24). The caption has no `]` or newline and is escaped by the caller. Anything else stays an ordinary image.
+fn drawing(line: &str) -> Option<(Option<&str>, &str)> {
+    let (alt, src) = line.strip_prefix("![")?.split_once("](")?;
+    let src = src.strip_suffix(')')?;
+    let caption = match alt.strip_prefix("Drawing") {
+        Some("") => None,
+        Some(rest) => Some(rest.strip_prefix(" · ").filter(|c| !c.trim().is_empty())?),
+        None => return None,
+    };
     let b64 = src
         .strip_prefix("data:image/svg+xml;base64,")
         .unwrap_or(src);
     let ok = (src.is_empty() || b64.len() < src.len())
+        && (caption.is_none() || !src.is_empty())
+        && !alt.contains([']', '\n'])
         && b64
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='));
-    ok.then_some(src)
+    ok.then_some((caption, src))
 }
 
 /// An image on its own line, `![alt](src)`: `Some((alt, src))` only for the two forms we can serve safely. `src` is a base64
@@ -141,7 +151,15 @@ pub fn summarize_images(md: &str) -> (String, Vec<ImageInfo>) {
     for line in md.lines() {
         let t = line.trim();
         let (alt, src, kind) = match (drawing(t), image(t)) {
-            (Some(src), _) if !src.is_empty() => ("Drawing", src, "drawing"),
+            (Some((caption, src)), _) if !src.is_empty() => (
+                if caption.is_some() {
+                    &t[2..t.find("](").unwrap_or(2)]
+                } else {
+                    "Drawing"
+                },
+                src,
+                "drawing",
+            ),
             (None, Some((alt, src))) => (alt, src, "image"),
             _ => {
                 out.push(line.to_string());
@@ -176,14 +194,18 @@ pub fn to_html(md: &str) -> String {
     let mut open: Vec<&'static str> = Vec::new();
     for line in md.lines() {
         let t = line.trim();
-        if let Some(src) = drawing(t) {
+        if let Some((caption, src)) = drawing(t) {
             render(&std::mem::take(&mut chunk), &mut out);
             if src.is_empty() {
                 out.push_str("<figure class=\"drawing empty\"><span class=\"small muted\">Empty drawing</span></figure>");
             } else {
                 out.push_str("<figure class=\"drawing\"><img src=\"");
                 out.push_str(src);
-                out.push_str("\" alt=\"Drawing\"></figure>");
+                out.push_str("\" alt=\"Drawing\">");
+                if let Some(c) = caption {
+                    out.push_str(&format!("<figcaption>{}</figcaption>", escape(c)));
+                }
+                out.push_str("</figure>");
             }
             continue;
         }
@@ -360,6 +382,44 @@ mod tests {
                 "{bad} → {h}"
             );
         }
+    }
+
+    #[test]
+    fn a_caption_rides_in_the_drawings_alt_and_the_drawing_stays_a_drawing() {
+        let svg = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=";
+        let h = to_html(&format!("![Drawing · รูป 1 &\"x\"]({svg})"));
+        assert_eq!(
+            h,
+            format!(
+                "<figure class=\"drawing\"><img src=\"{svg}\" alt=\"Drawing\"><figcaption>รูป 1 &amp;&quot;x&quot;</figcaption></figure>"
+            )
+        );
+        // Raw HTML in a caption is text, never markup.
+        let h = to_html(&format!("![Drawing · <script>alert(1)</script>]({svg})"));
+        assert!(
+            h.contains("&lt;script&gt;") && !h.contains("<script>"),
+            "{h}"
+        );
+        // Not a captioned drawing: `]` in the caption, an empty caption, a caption on the empty drawing, another word.
+        for bad in [
+            format!("![Drawing · a]b]({svg})"),
+            format!("![Drawing · ]({svg})"),
+            "![Drawing · c]()".to_string(),
+            format!("![Drawing: c]({svg})"),
+        ] {
+            let h = to_html(&bad);
+            assert!(!h.contains("class=\"drawing\""), "{bad} → {h}");
+        }
+        // Agents read the caption in `note show`.
+        let (body, imgs) = super::summarize_images(&format!("![Drawing · flow]({svg})"));
+        assert_eq!(
+            (body.as_str(), imgs[0].alt.as_str(), imgs[0].kind),
+            (
+                "![Drawing · flow](data:… 1 KB)",
+                "Drawing · flow",
+                "drawing"
+            )
+        );
     }
 
     #[test]

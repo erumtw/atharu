@@ -243,8 +243,11 @@ Increase Contrast → ink `#fff`, lighter lines. The one component exception: `.
 - **Stored as** one markdown line in the note body, `![Drawing](data:image/svg+xml;base64,…)`: the exported SVG with the
   Excalidraw scene embedded in it (`exportEmbedScene`), so one block is both the picture and the editable scene; `![Drawing]()`
   = an empty drawing. The server sanitiser (`domain::markdown`) turns only that exact form, alone on its line with a base64
-  payload, into the figure; anything else stays an ordinary markdown image.
-- **Read view** `.drawing`: a figure in `.note-body`, white, `--line` border, 12 radius, 16 padding; the stored SVG centred,
+  payload, into the figure; anything else stays an ordinary markdown image. **Caption** (0.2.10): `![Drawing · caption](data:…)` on a
+  drawn one (no `]` or newline, never on the empty form): the same figure plus a `<figcaption>` (13 px, `--muted`, centred, wraps, same rule as
+  the image block's); the editor keeps it in a `caption` attr and writes it back unchanged, so the drawing stays editable and says what it
+  shows. There is no caption-editing UI: an agent or the markdown sets it, Edit drawing → Done leaves it.
+- **Read view** `.drawing`: a figure in `.note-body` (a column: picture, then the caption), white, `--line` border, 12 radius, 16 padding; the stored SVG centred,
   `max-width:100%`, `max-height:480px`. It is content, so no glass. The SVG is shown as an `<img>` (no script, no fetches) and works
   without JS. **Edit drawing** = `.btn.ghost.s` top-right, shown on hover / focus-within (always on touch).
 - **Selected** (one click; Backspace deletes it like any block): 2px `--accent` outline, offset 2.
