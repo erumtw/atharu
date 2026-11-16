@@ -6,7 +6,7 @@ use crate::{
     domain::{
         dates,
         entry::{NoteRef, is_epic_key, is_slug},
-        links,
+        links, markdown,
         parse::{ParseError, parse},
         tags::{parse_list, tags as tags_in},
     },
@@ -39,6 +39,7 @@ pub const HELP: &str = "usage: atharu [--db PATH] [command]
   atharu edit <id> \"<line>\" --as <agent>   rewrite a line you wrote (same grammar; the owner's stay web-only)
   atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as <agent>
   atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
+  atharu note show <id>                    one note: body (images summarised), meeting, resolved links, images (read-only)
   atharu evidence <KEY|jira-url> <url> [--label …] --as <agent>
   atharu today [--day YYYY-MM-DD]
   atharu show <KEY|jira-url>
@@ -104,6 +105,8 @@ pub fn run(
                 flag("tags").unwrap_or(""),
                 agent(flag("as"), env_agent)?,
             ),
+            // `note show 12` reads; `note "show me"` (one word group) is still a title.
+            "note" if pos.len() == 2 && pos[0] == "show" => note_show(conn, &pos[1]),
             "note" => note(
                 conn,
                 &pos,
@@ -513,6 +516,48 @@ fn note(
     Ok(
         json!({"id": id, "title": title, "author": author, "updated": updated, "tags": tags_in(&body), "deadLinks": dead, "path": format!("/notes/{id}")}),
     )
+}
+
+/// One note for an agent to read (T8): the body with base64 images summarised, the meeting it is the notes of, where each
+/// `[[X]]` points, and the images listed. Read-only, so no `--as`.
+fn note_show(conn: &Connection, arg: &str) -> Result<Value, Fail> {
+    let id: i64 = arg
+        .parse()
+        .map_err(|_| usage(format!("note show takes a note number, got ‘{arg}’")))?;
+    let n = notes::note(conn, id)
+        .map_err(db)?
+        .ok_or_else(|| Fail(1, format!("No note {id}.")))?;
+    let meeting = notes::meeting_of(conn, id)
+        .map_err(db)?
+        .map(|(mid, name, day)| json!({"id": mid, "name": name, "day": day}));
+    let known = notes::known_pages(conn).map_err(db)?;
+    let links: Vec<Value> = links::mentions(&n.body)
+        .into_iter()
+        .map(|x| json!({"label": x, "href": known.href(x)}))
+        .collect();
+    let (body, images) = markdown::summarize_images(&n.body);
+    let root = crate::notes::images::root(conn);
+    let images: Vec<Value> = images
+        .into_iter()
+        .map(|i| {
+            // A served file's size is the file's; an unreadable one (deleted by hand) is null, not a guess.
+            let kb = i.kb.or_else(|| {
+                let (nid, name) = i
+                    .file
+                    .strip_prefix("/attachments/notes/")?
+                    .split_once('/')?;
+                let len = std::fs::metadata(root.as_ref()?.join(nid).join(name))
+                    .ok()?
+                    .len();
+                Some((len as usize).div_ceil(1024).max(1))
+            });
+            json!({"alt": i.alt, "kind": i.kind, "kb": kb})
+        })
+        .collect();
+    Ok(json!({"note": {
+        "id": n.id, "title": n.title, "author": n.author, "updatedAt": n.updated_at,
+        "body": body, "meeting": meeting, "links": links, "images": images,
+    }}))
 }
 
 fn evidence(conn: &Connection, pos: &[String], label: &str, author: &str) -> Result<Value, Fail> {

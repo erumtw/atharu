@@ -517,3 +517,74 @@ async fn names_list_saves_and_reaches_atharu_meeting() {
     assert_eq!(v["people"][0]["said"], "แฟรง");
     assert_eq!(v["people"][1]["who"], "Off, PM");
 }
+
+#[tokio::test]
+async fn note_show_summarises_images_resolves_links_and_keeps_titles_working() {
+    let st = state();
+    cli(
+        &st,
+        &["epic", "OPS-1", "--title", "Checkout"],
+        Some("claude"),
+    );
+    let b64 = "A".repeat(2800); // 2100 bytes → 3 KB
+    let body = format!(
+        "See [[OPS-1]] and [[nope]].\n\n![Drawing](data:image/svg+xml;base64,{b64})\n\n![รูป 1 · flow](data:image/png;base64,{b64})\n\nend"
+    );
+    let (code, out, _) = cli_in(&st, &["note", "Diagrams"], Some("claude"), &body);
+    assert_eq!(code, 0, "{out}");
+    exec(
+        &st,
+        "INSERT INTO meetings(day, name, note_id) VALUES ('2026-11-10', 'oms-sync', 1)",
+    );
+
+    // Read-only: no --as, no ATHARU_AGENT.
+    let (code, out, err) = cli(&st, &["note", "show", "1"], None);
+    assert_eq!(code, 0, "{err}");
+    let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+    let n = &v["note"];
+    assert_eq!(
+        (n["id"].as_i64(), n["title"].as_str(), n["author"].as_str()),
+        (Some(1), Some("Diagrams"), Some("claude"))
+    );
+    let body = n["body"].as_str().unwrap();
+    assert!(
+        body.contains("![Drawing](data:… 3 KB)") && body.contains("![รูป 1 · flow](data:… 3 KB)"),
+        "{body}"
+    );
+    assert!(!body.contains("AAAA"), "base64 is gone");
+    assert_eq!(
+        n["images"],
+        serde_json::json!([
+            {"alt": "Drawing", "kind": "drawing", "kb": 3},
+            {"alt": "รูป 1 · flow", "kind": "image", "kb": 3},
+        ])
+    );
+    assert_eq!(
+        n["links"],
+        serde_json::json!([
+            {"label": "OPS-1", "href": "/epics/OPS-1"},
+            {"label": "nope", "href": null},
+        ])
+    );
+    assert_eq!(
+        n["meeting"],
+        serde_json::json!({"id": 1, "name": "oms-sync", "day": "2026-11-10"})
+    );
+
+    let (code, _, err) = cli(&st, &["note", "show", "99"], None);
+    assert_eq!((code, err.trim()), (1, "No note 99."));
+    assert_eq!(
+        cli(&st, &["note", "show", "x"], None).0,
+        2,
+        "not a number is a usage error"
+    );
+
+    // A title that starts with "show" is still a title: one word group, so it files a note.
+    let (code, out, err) = cli_in(&st, &["note", "show me"], Some("claude"), "body");
+    assert_eq!(code, 0, "{err}");
+    assert!(out.contains("\"title\":\"show me\""), "{out}");
+    assert_eq!(
+        count(&st, "SELECT COUNT(*) FROM notes WHERE title = 'show me'"),
+        1
+    );
+}

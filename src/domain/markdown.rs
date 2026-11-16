@@ -122,6 +122,54 @@ fn escape(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// An image or drawing line of a note body, as `atharu note show` lists it.
+pub struct ImageInfo {
+    pub alt: String,
+    /// `drawing` or `image`.
+    pub kind: &'static str,
+    /// The src of a served file (`/attachments/notes/…`), empty for a `data:` image.
+    pub file: String,
+    /// Decoded size in KB (rounded up) of a `data:` image; `None` for a served file (the caller stats it).
+    pub kb: Option<usize>,
+}
+
+/// The body for an agent to read: each `data:` image / drawing line keeps its alt and loses its base64 (`![alt](data:… 54 KB)`),
+/// since one diagram is 50 KB of characters that mean nothing as text. The images are listed alongside, in order.
+pub fn summarize_images(md: &str) -> (String, Vec<ImageInfo>) {
+    let mut out = Vec::new();
+    let mut images = Vec::new();
+    for line in md.lines() {
+        let t = line.trim();
+        let (alt, src, kind) = match (drawing(t), image(t)) {
+            (Some(src), _) if !src.is_empty() => ("Drawing", src, "drawing"),
+            (None, Some((alt, src))) => (alt, src, "image"),
+            _ => {
+                out.push(line.to_string());
+                continue;
+            }
+        };
+        if let Some((_, b64)) = src.split_once(";base64,") {
+            let kb = (b64.len() * 3 / 4).div_ceil(1024).max(1);
+            out.push(format!("![{alt}](data:… {kb} KB)"));
+            images.push(ImageInfo {
+                alt: alt.into(),
+                kind,
+                file: String::new(),
+                kb: Some(kb),
+            });
+        } else {
+            out.push(line.to_string());
+            images.push(ImageInfo {
+                alt: alt.into(),
+                kind,
+                file: src.into(),
+                kb: None,
+            });
+        }
+    }
+    (out.join("\n"), images)
+}
+
 pub fn to_html(md: &str) -> String {
     let mut out = String::new();
     let mut chunk = String::new();
@@ -358,6 +406,37 @@ mod tests {
         assert!(
             h.starts_with("<p>before</p>") && h.ends_with("<p>after</p>\n"),
             "{h}"
+        );
+    }
+
+    #[test]
+    fn summary_drops_the_base64_and_lists_the_images() {
+        let b64 = "A".repeat(2800); // 2100 bytes → 3 KB
+        let md = format!(
+            "intro\n\n![Drawing](data:image/svg+xml;base64,{b64})\n![รูป 1](data:image/png;base64,{b64})\n![image](/attachments/notes/7/20261117-101500.png)\n![Drawing]()\ntail"
+        );
+        let (body, imgs) = super::summarize_images(&md);
+        assert_eq!(
+            body,
+            "intro\n\n![Drawing](data:… 3 KB)\n![รูป 1](data:… 3 KB)\n![image](/attachments/notes/7/20261117-101500.png)\n![Drawing]()\ntail"
+        );
+        let got: Vec<_> = imgs
+            .iter()
+            .map(|i| (i.alt.as_str(), i.kind, i.kb, i.file.as_str()))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                ("Drawing", "drawing", Some(3), ""),
+                ("รูป 1", "image", Some(3), ""),
+                (
+                    "image",
+                    "image",
+                    None,
+                    "/attachments/notes/7/20261117-101500.png"
+                ),
+            ],
+            "an empty drawing is not an image"
         );
     }
 
