@@ -198,6 +198,39 @@ pub fn entry_author(conn: &Connection, id: i64) -> rusqlite::Result<Option<Strin
     .optional()
 }
 
+/// A line as `atharu link` / `atharu done` echo it back.
+pub struct EntryCard {
+    pub kind: String,
+    pub text: String,
+    pub day: String,
+    pub epic_key: Option<String>,
+    pub plan_state: Option<String>,
+    pub closed_day: Option<String>,
+    pub author: String,
+    pub note: Option<NoteRef>,
+}
+
+pub fn entry_card(conn: &Connection, id: i64) -> rusqlite::Result<Option<EntryCard>> {
+    conn.query_row(
+        "SELECT e.kind, e.text, e.day, e.epic_key, e.plan_state, e.closed_day, e.author, n.id, n.title
+           FROM entries e LEFT JOIN notes n ON n.id = e.note_id WHERE e.id = ?1",
+        [id],
+        |r| {
+            Ok(EntryCard {
+                kind: r.get(0)?,
+                text: r.get(1)?,
+                day: r.get(2)?,
+                epic_key: r.get(3)?,
+                plan_state: r.get(4)?,
+                closed_day: r.get(5)?,
+                author: r.get(6)?,
+                note: NoteRef::from_cols(r.get(7)?, r.get(8)?),
+            })
+        },
+    )
+    .optional()
+}
+
 /// The line as grammar text, for the inline edit box: (day, line).
 pub fn entry_line(conn: &Connection, id: i64) -> rusqlite::Result<Option<(String, String)>> {
     conn.query_row(

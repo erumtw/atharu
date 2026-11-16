@@ -1,6 +1,7 @@
 //! `/todos`: every open `>` line grouped by due date, plus the plan actions (done · drop · pin · due) every page posts to.
 mod handlers;
-mod queries;
+// The agent CLI closes a to-do through the same set_state the web uses.
+pub(crate) mod queries;
 mod view;
 
 use crate::app::AppState;

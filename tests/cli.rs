@@ -588,3 +588,95 @@ async fn note_show_summarises_images_resolves_links_and_keeps_titles_working() {
         1
     );
 }
+
+#[tokio::test]
+async fn link_and_done_work_on_the_owners_rows_and_nothing_else_changes() {
+    let st = state();
+    exec(
+        &st,
+        "INSERT INTO notes(id, title, body, author) VALUES (3, 'Vendor call', 'x', 'me');
+         INSERT INTO entries(id, day, kind, text, plan_state, due, author) VALUES
+           (1, '2026-11-10', 'plan', 'reply to vendor', 'open', '2026-11-12', 'me'),
+           (2, '2026-11-10', 'decision', 'keep sync path', NULL, NULL, 'me');",
+    );
+    let json = |s: &str| serde_json::from_str::<serde_json::Value>(s).unwrap();
+
+    // link: the owner's to-do and the owner's decision both attach; author stays `me`, `by` says who acted.
+    let (code, out, err) = cli(&st, &["link", "1", "--note", "3", "--as", "claude"], None);
+    assert_eq!(code, 0, "{err}");
+    let v = json(&out);
+    assert_eq!(
+        v["note"],
+        serde_json::json!({"id": 3, "title": "Vendor call"})
+    );
+    assert_eq!(
+        (v["author"].as_str(), v["by"].as_str()),
+        (Some("me"), Some("claude"))
+    );
+    assert_eq!(
+        cli(&st, &["link", "2", "--note", "3", "--as", "claude"], None).0,
+        0
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM entries WHERE note_id = 3 AND author = 'me'"
+        ),
+        2
+    );
+    // `--note none` detaches.
+    let (code, out, _) = cli(
+        &st,
+        &["link", "2", "--note", "none", "--as", "claude"],
+        None,
+    );
+    assert_eq!((code, json(&out)["note"].is_null()), (0, true));
+
+    // done: closes the owner's to-do with today as its closed day (the web's set_state), nothing else moves.
+    let (code, out, err) = cli(&st, &["done", "1", "--as", "claude"], None);
+    assert_eq!(code, 0, "{err}");
+    let v = json(&out);
+    assert_eq!(
+        (v["planState"].as_str(), v["closedDay"].as_str()),
+        (Some("done"), Some(TODAY))
+    );
+    assert_eq!(
+        count(
+            &st,
+            "SELECT COUNT(*) FROM entries WHERE id = 1 AND text = 'reply to vendor' AND day = '2026-11-10' AND due = '2026-11-12' AND author = 'me' AND note_id = 3 AND pinned = 0"
+        ),
+        1
+    );
+    // Again: exit 0, unchanged, closed day not rewritten.
+    let (code, out, _) = cli(&st, &["done", "1", "--as", "claude"], None);
+    assert_eq!((code, json(&out)["unchanged"].as_bool()), (0, Some(true)));
+
+    // Refusals.
+    let (code, _, err) = cli(&st, &["done", "2", "--as", "claude"], None);
+    assert_eq!((code, err.trim()), (1, "Line 2 isn't a to-do."));
+    let (code, _, err) = cli(&st, &["done", "99", "--as", "claude"], None);
+    assert_eq!((code, err.trim()), (1, "No line 99."));
+    let (code, _, err) = cli(&st, &["link", "1", "--note", "99", "--as", "claude"], None);
+    assert_eq!(code, 1);
+    assert!(err.starts_with("No note 99."), "{err}");
+    assert_eq!(
+        cli(&st, &["link", "99", "--note", "3", "--as", "claude"], None).0,
+        1
+    );
+    for args in [
+        &["done", "1", "--as", "me"][..],
+        &["link", "1", "--note", "3", "--as", "me"][..],
+        &["done", "1"][..],
+        &["link", "1", "--note", "3"][..],
+        &["link", "1", "--as", "claude"][..],
+        &["done", "x", "--as", "claude"][..],
+    ] {
+        assert_eq!(cli(&st, args, None).0, 2, "{args:?}");
+    }
+    // The help names both.
+    let (_, _, help) = cli(&st, &["nope"], None);
+    assert!(
+        help.contains("atharu link <id>") && help.contains("atharu done <id>"),
+        "{help}"
+    );
+}

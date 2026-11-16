@@ -27,9 +27,9 @@ use std::{
 pub mod update;
 
 /// `version` and `update` need no DB: main hands them to `update::run` before opening one.
-pub const COMMANDS: [&str; 11] = [
-    "log", "edit", "epic", "note", "evidence", "today", "show", "meeting", "tags", "version",
-    "update",
+pub const COMMANDS: [&str; 13] = [
+    "log", "edit", "link", "done", "epic", "note", "evidence", "today", "show", "meeting", "tags",
+    "version", "update",
 ];
 
 /// The command table for `atharu help` and every usage error (CLI and `config`), so they can't drift.
@@ -37,6 +37,8 @@ pub const HELP: &str = "usage: atharu [--db PATH] [command]
   atharu                                   serve http://127.0.0.1:7070 (ATHARU_HOST / ATHARU_PORT)
   atharu log \"<line>\" [--day YYYY-MM-DD] [--note N] [--meeting N] --as <agent>
   atharu edit <id> \"<line>\" --as <agent>   rewrite a line you wrote (same grammar; the owner's stay web-only)
+  atharu link <id> --note <N|none> --as <agent>   attach any line (the owner's too) to a note, or detach it
+  atharu done <id> --as <agent>            mark a to-do done, the owner's too (no drop, reopen, pin or delete)
   atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as <agent>
   atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
   atharu note show <id>                    one note: body (images summarised), meeting, resolved links, images (read-only)
@@ -74,7 +76,8 @@ pub fn run(
         let (pos, flags) = split_args(rest)?;
         let allowed: &[&str] = match cmd.as_str() {
             "log" => &["as", "day", "note", "meeting"],
-            "edit" => &["as"],
+            "edit" | "done" => &["as"],
+            "link" => &["as", "note"],
             "epic" => &["as", "title", "okr", "tags"],
             "note" => &["as", "file", "links", "id"],
             "evidence" => &["as", "label"],
@@ -97,6 +100,8 @@ pub fn run(
                 agent(flag("as"), env_agent)?,
             ),
             "edit" => edit(conn, today, &pos, agent(flag("as"), env_agent)?),
+            "link" => link(conn, &pos, flag("note"), agent(flag("as"), env_agent)?),
+            "done" => done(conn, today, &pos, agent(flag("as"), env_agent)?),
             "epic" => epic(
                 conn,
                 &pos,
@@ -311,6 +316,72 @@ fn edit(
         "epic": e.epic_key.map(|k| json!({"key": k})),
         "author": author,
     }))
+}
+
+/// A line's id from the one positional, with the line known to exist ("No line N." = exit 1).
+fn line_id(conn: &Connection, pos: &[String], what: &str) -> Result<(i64, today::EntryCard), Fail> {
+    let arg = one(pos, what)?;
+    let id: i64 = arg
+        .parse()
+        .map_err(|_| usage(format!("{what}: a line number, got ‘{arg}’")))?;
+    let card = today::entry_card(conn, id)
+        .map_err(db)?
+        .ok_or_else(|| Fail(1, format!("No line {id}.")))?;
+    Ok((id, card))
+}
+
+/// The line as `link` and `done` echo it: its own author stays (the owner's line is still the owner's), `by` is who acted.
+fn card_json(id: i64, c: &today::EntryCard, by: &str) -> Value {
+    json!({
+        "id": id,
+        "kind": c.kind,
+        "text": c.text,
+        "day": c.day,
+        "epic": c.epic_key.as_ref().map(|k| json!({"key": k})),
+        "planState": c.plan_state,
+        "closedDay": c.closed_day,
+        "note": c.note.as_ref().map(|n| json!({"id": n.id, "title": n.title})),
+        "author": c.author,
+        "by": by,
+    })
+}
+
+/// Attaches line `id` (any kind, any author: the one thing besides `done` an agent may do to the owner's rows, D6) to note
+/// `--note N`, or detaches it with `--note none`. Nothing else about the line changes.
+fn link(conn: &Connection, pos: &[String], note: Option<&str>, by: &str) -> Result<Value, Fail> {
+    let (id, _) = line_id(conn, pos, "link takes a line number")?;
+    let note = note.ok_or_else(|| usage("link takes --note N (a note number) or --note none"))?;
+    let note = if note == "none" {
+        None
+    } else {
+        let n: i64 = note
+            .parse()
+            .map_err(|_| usage(format!("--note takes a note number or none, got ‘{note}’")))?;
+        notes::note(conn, n)
+            .map_err(db)?
+            .ok_or_else(|| Fail(1, format!("No note {n}. Write it first (atharu note).")))?;
+        Some(n)
+    };
+    today::set_note(conn, id, note).map_err(db)?;
+    let card = today::entry_card(conn, id).map_err(db)?.expect("checked");
+    Ok(card_json(id, &card, by))
+}
+
+/// Marks to-do `id` done with today as its closed day: the same `set_state` the web's checkbox calls. An already-done one is
+/// left alone (`unchanged`). The owner's to-dos too (D6); dropping, reopening, pinning and deleting stay on the web.
+fn done(conn: &Connection, today_: NaiveDate, pos: &[String], by: &str) -> Result<Value, Fail> {
+    let (id, card) = line_id(conn, pos, "done takes a line number")?;
+    if card.kind != "plan" {
+        return Err(Fail(1, format!("Line {id} isn't a to-do.")));
+    }
+    let mut v = card_json(id, &card, by);
+    if card.plan_state.as_deref() == Some("done") {
+        v["unchanged"] = true.into();
+        return Ok(v);
+    }
+    crate::todos::queries::set_state(conn, id, "done", &dates::iso(today_)).map_err(db)?;
+    let card = today::entry_card(conn, id).map_err(db)?.expect("checked");
+    Ok(card_json(id, &card, by))
 }
 
 /// `N` or `latest` → an existing meeting's id (checked before anything is written).
