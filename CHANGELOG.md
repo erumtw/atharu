@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.2.10 — 2026-11-17
+
+### Features
+
+- Agent notes refuse mermaid blocks and plain SVG images; drawing.py takes a caption
+- `atharu link <id> --note N|none` and `atharu done <id>` let agents attach a line to a note and close a to-do, the owner's too
+- Notes can link to notes, [[note:7]], and the target lists its backlinks
+- A drawing can carry a caption, `![Drawing · caption](data:…)`, and stays editable
+- `atharu note show <id>` prints one note for an agent, with the base64 images summarised
+- Paste or drop an image into a note; the editor keeps image lines instead of dropping them
+- Upload and serve note images (POST /notes/{id}/images, GET /attachments/notes/{id}/{file})
+- Style the note image block; visual-check visits a note with images and lets a code block scroll in its card
+- Notes render an image on its own line (data: URI or a pasted attachment path), not just the Drawing block
+
+### Fixes
+
+- Final-gate lows: fenced code stays code, the shared-DB fallback is CLI-only, done refuses a dropped to-do, note show names links and files
+- The drawing editor is always the light palette, in every look
+- The CLI and server find the shared DB from any folder instead of creating an empty one
+- The note editor keeps markdown tables and bare URLs; one typed character no longer deletes an agent's table
+- The popover's to-dos fill free rows with the soonest upcoming ones, not just overdue and today
+- The popover's recording timer counts up live (ticks client-side from the server's seconds)
+- The by-date menu opens while editing a line too; Esc closes the menu before it cancels the edit
+
+### Under the hood
+
+- Note refuses non-board diagrams; stop tracking __pycache__
+- V0.2.10 release shot (a note with a captioned board, an image and a table) from a fresh fictional seed
+- CLI commands in a worktree hit the real DB unless --db; serve never falls back
+- CLAUDE.md for 0.2.10's CLI: note show, link, done, [[note:N]], captioned drawings, the shared DB from any folder
+- How agents put an image in a note; ignore release-verify/ (pre-release shots for the owner)
+- Ui-mistakes rows for note 14's broken images and the popover's two-row to-do list
+
 ## v0.2.9 — 2026-11-14
 
 ### Features
