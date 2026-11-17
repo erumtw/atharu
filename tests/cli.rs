@@ -699,3 +699,84 @@ async fn link_and_done_work_on_the_owners_rows_and_nothing_else_changes() {
         "{help}"
     );
 }
+
+#[tokio::test]
+async fn agent_notes_refuse_mermaid_and_plain_svg_but_take_boards() {
+    let st = state();
+    let svg = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=";
+    let notes = |st: &atharu::app::AppState| count(st, "SELECT COUNT(*) FROM notes");
+
+    // New note: refused, exit 1, the message names the way out and the line, nothing saved.
+    for (body, line) in [
+        ("intro\n\n```mermaid\ngraph TD\n```".to_string(), 3),
+        (format!("a\nb\n![flow]({svg})"), 3),
+        (format!("see ![flow]({svg}) inline"), 1),
+    ] {
+        let (code, out, err) = cli_in(&st, &["note", "Flow"], Some("claude"), &body);
+        assert_eq!((code, out.as_str()), (1, ""), "{body}");
+        assert!(
+            err.contains("Diagrams are Excalidraw boards in Atharu"),
+            "{err}"
+        );
+        assert!(
+            err.contains("~/atharu/scripts/drawing.py") && err.contains("d.line(caption="),
+            "{err}"
+        );
+        assert!(
+            err.contains(&format!("on line {line} of the body; nothing was saved.")),
+            "{err}"
+        );
+    }
+    assert_eq!(notes(&st), 0, "refused bodies leave the DB unchanged");
+    // The same through --file and --links (the check sees the final body).
+    let path = std::env::temp_dir().join(format!("atharu-t14-{}.md", std::process::id()));
+    std::fs::write(&path, "```mermaid\nA-->B\n```").unwrap();
+    let (code, _, _) = cli(
+        &st,
+        &["note", "Flow", "--file", path.to_str().unwrap()],
+        Some("claude"),
+    );
+    assert_eq!((code, notes(&st)), (1, 0));
+    let _ = std::fs::remove_file(&path);
+
+    // A board, a captioned board, a PNG and the word "mermaid" in prose all go through.
+    let ok = format!(
+        "Mermaid is what we avoid.\n\n![Drawing · request path]({svg})\n\n![Drawing]({svg})\n\n![shot](data:image/png;base64,AA==)"
+    );
+    let (code, out, err) = cli_in(&st, &["note", "Board"], Some("claude"), &ok);
+    assert_eq!(code, 0, "{err}");
+    let id = serde_json::from_str::<serde_json::Value>(&out).unwrap()["id"]
+        .as_i64()
+        .unwrap();
+    let page = get(&st, &format!("/notes/{id}")).await.body;
+    assert!(
+        page.contains("<figcaption>request path</figcaption>")
+            && page.matches("class=\"drawing\"").count() == 2,
+        "{page}"
+    );
+
+    // --id: rewriting your own note with a mermaid block is refused, and the note keeps its old body.
+    let (code, _, _) = cli_in(
+        &st,
+        &["note", "Board", "--id", &id.to_string()],
+        Some("claude"),
+        "```mermaid\nA-->B\n```",
+    );
+    assert_eq!(code, 1);
+    assert_eq!(
+        count(
+            &st,
+            &format!(
+                "SELECT COUNT(*) FROM notes WHERE id = {id} AND body = '{}'",
+                ok.replace('\'', "''")
+            )
+        ),
+        1
+    );
+    // The help carries the board example.
+    let (_, _, help) = cli(&st, &["nope"], None);
+    assert!(
+        help.contains("a diagram is a board") && help.contains("scripts"),
+        "{help}"
+    );
+}

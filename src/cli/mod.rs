@@ -41,6 +41,10 @@ pub const HELP: &str = "usage: atharu [--db PATH] [command]
   atharu done <id> --as <agent>            mark a to-do done, the owner's too (no drop, reopen, pin or delete)
   atharu epic <KEY|jira-url> [--title …] [--okr …] [--tags a,b] --as <agent>
   atharu note \"<title>\" [--file PATH] [--links a,b] [--id N] --as <agent>   (body from stdin without --file)
+      a diagram is a board (mermaid and plain SVG images are refused): build its line with
+        python3 -c 'import os,sys; sys.path.insert(0, os.path.expanduser(\"~/atharu/scripts\")); from drawing import Drawing
+        d = Drawing(); a = d.box(0, 0, 200, 56, \"API\"); b = d.box(300, 0, 200, 56, \"DB\"); d.arrow(a, b); print(d.line(caption=\"request path\"))'
+      and paste that line into the note body
   atharu note show <id>                    one note: body (images summarised), meeting, resolved links, images (read-only)
   atharu evidence <KEY|jira-url> <url> [--label …] --as <agent>
   atharu today [--day YYYY-MM-DD]
@@ -547,6 +551,15 @@ fn note(
         }
     }
     body.truncate(body.trim_end().len());
+    // Diagrams are Excalidraw boards (owner, 2026-11-17): refused before anything is written.
+    if let Some((n, what)) = markdown::diagram_problem(&body) {
+        return Err(Fail(
+            1,
+            format!(
+                "Diagrams are Excalidraw boards in Atharu. Build one with ~/atharu/scripts/drawing.py (d.box / d.arrow, then d.line(caption=\"…\")) and put that line in the note.\nFound {what} on line {n} of the body; nothing was saved."
+            ),
+        ));
+    }
     let names: Vec<&str> = links
         .unwrap_or("")
         .split(',')

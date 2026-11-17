@@ -1,11 +1,12 @@
 """Build a note drawing an agent can write with `atharu note`: one markdown line
-`![Drawing](data:image/svg+xml;base64,…)` whose SVG renders as-is and carries an editable Excalidraw scene.
+`![Drawing](data:image/svg+xml;base64,…)` (or `![Drawing · caption](…)`) whose SVG renders as-is and carries an editable Excalidraw scene.
+Diagrams in Atharu notes are always these boards: `atharu note` refuses mermaid blocks and plain SVG images.
 
-    import sys; sys.path.insert(0, "scripts"); from drawing import Drawing
+    import os, sys; sys.path.insert(0, os.path.expanduser("~/atharu/scripts")); from drawing import Drawing   # any cwd
     d = Drawing()
     a = d.box(40, 80, 200, 56, "Draft"); b = d.box(40, 180, 200, 56, "Review", d.BLUE, "#e7f5ff")
     d.arrow(a, b)
-    print(d.line())          # paste on its own line in the note body
+    print(d.line(caption="how a draft ships"))   # paste on its own line in the note body; caption is optional
 
 `python3 scripts/drawing.py [out.svg]` prints the example below (and writes the SVG to look at, e.g. `rsvg-convert`).
 """
@@ -97,9 +98,15 @@ class Drawing:
                 f'<!-- payload-version:1 --><!-- payload-start -->{payload}<!-- payload-end --></metadata>'
                 f'<g font-family="Excalifont, Helvetica Neue, Helvetica, Arial, sans-serif">{"".join(self.svg)}</g></svg>')
 
-    def line(self):
-        """The note-body line; editor.ts DRAWING_LINE and markdown.rs both expect exactly this shape."""
-        return "![Drawing](data:image/svg+xml;base64," + base64.b64encode(self.to_svg().encode()).decode() + ")"
+    def line(self, caption=None):
+        """The note-body line; editor.ts DRAWING_LINE and markdown.rs both expect exactly this shape. The caption rides in the alt
+        (`![Drawing · caption](…)`): no `]` or newline, and it is shown under the board."""
+        if caption is not None:
+            caption = str(caption).strip()
+            if not caption or "]" in caption or "\n" in caption or "\r" in caption:
+                raise ValueError("caption must be non-empty text with no ']' and no line break")
+        alt = f"Drawing · {caption}" if caption else "Drawing"
+        return f"![{alt}](data:image/svg+xml;base64," + base64.b64encode(self.to_svg().encode()).decode() + ")"
 
 
 if __name__ == "__main__":
@@ -112,4 +119,4 @@ if __name__ == "__main__":
     d.arrow(b, c, d.GREY, dashed=True)
     if len(sys.argv) > 1:
         open(sys.argv[1], "w").write(d.to_svg())
-    print(d.line())
+    print(d.line(caption="OPS-101 rollout"))

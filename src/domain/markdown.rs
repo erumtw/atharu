@@ -164,6 +164,33 @@ fn escape(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// Why an agent's note body is refused (0.2.10, owner: diagrams are always Excalidraw boards): the first place a diagram is drawn some
+/// other way, as `(line number, what it is)`. A ```mermaid / ~~~mermaid opener counts anywhere; an SVG image counts unless it is an
+/// editable board line (`Drawing` / `Drawing · caption`), whole-line or inline. Code the note is only showing (an SVG line inside a
+/// fence) and PNG / JPEG / GIF / WebP images pass. The web editor is not checked: it is the owner's own hand.
+pub fn diagram_problem(body: &str) -> Option<(usize, &'static str)> {
+    let mut code = CodeFence::default();
+    for (i, line) in body.lines().enumerate() {
+        let opener = line.trim_start().trim_start_matches(['`', '~']);
+        let fenced = line.trim_start().len() - opener.len() >= 3;
+        if fenced
+            && opener
+                .trim_start()
+                .to_ascii_lowercase()
+                .starts_with("mermaid")
+        {
+            return Some((i + 1, "a mermaid block"));
+        }
+        if code.takes(line) {
+            continue;
+        }
+        if drawing(line.trim()).is_none() && line.contains("](data:image/svg+xml") {
+            return Some((i + 1, "an SVG image that is not an Excalidraw board"));
+        }
+    }
+    None
+}
+
 /// An image or drawing line of a note body, as `atharu note show` lists it.
 pub struct ImageInfo {
     pub alt: String,
@@ -349,7 +376,7 @@ pub fn quick_note(line: &str) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
-    use super::{quick_note, to_html, to_text};
+    use super::{diagram_problem, quick_note, to_html, to_text};
 
     #[test]
     fn n_space_starts_a_quick_note() {
@@ -501,6 +528,61 @@ mod tests {
         assert!(!h.contains("<figure"), "{h}");
         let h = to_html(&format!("```code``` here\n\n{png}"));
         assert_eq!(h.matches("<figure").count(), 1, "{h}");
+    }
+
+    #[test]
+    fn agents_diagrams_must_be_boards() {
+        let svg = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=";
+        let refused = |md: &str| diagram_problem(md);
+        // Refused, with the line number.
+        assert_eq!(
+            refused("intro\n\n```mermaid\ngraph TD\n```"),
+            Some((3, "a mermaid block"))
+        );
+        assert_eq!(
+            refused("~~~ Mermaid\nA-->B\n~~~").map(|p| p.0),
+            Some(1),
+            "~~~ and case don't matter"
+        );
+        assert_eq!(refused("  ```mermaid").map(|p| p.0), Some(1));
+        assert_eq!(
+            refused(&format!("a\n![flow]({svg})")),
+            Some((2, "an SVG image that is not an Excalidraw board"))
+        );
+        assert_eq!(
+            refused(&format!("see ![flow]({svg}) here")).map(|p| p.0),
+            Some(1),
+            "inline SVG"
+        );
+        assert_eq!(
+            refused(&format!("![Drawing · x]({svg}) trailing")).map(|p| p.0),
+            Some(1),
+            "a board line with junk is not a board"
+        );
+        assert_eq!(
+            refused("![Drawing](data:image/svg+xml;base64,PH\"onerror=1)").map(|p| p.0),
+            Some(1)
+        );
+        assert_eq!(
+            refused("![x](data:image/svg+xml,<svg onload=alert(1)>)").map(|p| p.0),
+            Some(1)
+        );
+        // A mermaid fence is refused even inside another fence (the agent is still handing us a mermaid block).
+        assert_eq!(refused("````md\n```mermaid\n````").map(|p| p.0), Some(2));
+        // Allowed.
+        for ok in [
+            format!("![Drawing]({svg})"),
+            format!("![Drawing · a flow]({svg})"),
+            "![Drawing]()".to_string(),
+            "![shot](data:image/png;base64,AA==)".to_string(),
+            "![shot](data:image/jpeg;base64,AA==)\n\n![](data:image/webp;base64,AA==)".to_string(),
+            "Mermaid is what we avoid; a diagram is a board.".to_string(),
+            "```rust\nlet mermaid = 1;\n```".to_string(),
+            "```\nnot mermaid\n```".to_string(),
+            format!("```md\n![flow]({svg})\n```"),
+        ] {
+            assert_eq!(refused(&ok), None, "{ok}");
+        }
     }
 
     #[test]
