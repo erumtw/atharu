@@ -112,7 +112,8 @@ atharu help                                                 # this table (also -
   `deadLinks` and stderr warns `Not linked yet: ‘x’`.
   `--id N` rewrites title + body of a note **you** wrote; any other note is refused (exit 1).
 - A drawing in a note is one body line `![Drawing](data:image/svg+xml;base64,…)`, or `![Drawing · caption](…)` for a
-  caption (editable Excalidraw scene inside; Mermaid isn't supported, draw it as a board):
+  caption (editable Excalidraw scene inside). Diagrams are always boards: `note` refuses a mermaid block or an SVG image
+  that isn't a `Drawing` line (exit 1, nothing saved); `d.line(caption="…")` writes the captioned form:
   build it with `scripts/drawing.py` (`Drawing().box/arrow/text`, then `.line()`), put the line in the body, save with
   `note … --file` (new note, or `--id N` on your own). Never in the owner's notes.
 - An image in a note is one body line `![caption](data:image/png;base64,…)` (also jpeg, gif, webp, svg+xml), alone on
