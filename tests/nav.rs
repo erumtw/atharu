@@ -78,6 +78,27 @@ async fn foreign_host_is_refused() {
 }
 
 #[tokio::test]
+async fn allowed_hosts_pass_exactly() {
+    let mut st = state();
+    st.allow_hosts = vec!["mac.tail4a.ts.net".into()];
+    let app = || atharu::app::router(st.clone());
+    for ok in ["mac.tail4a.ts.net", "MAC.tail4a.ts.net:8443"] {
+        assert_eq!(send(app(), req("POST", ok, None)).await.status, 303, "{ok}");
+    }
+    for bad in [
+        "tail4a.ts.net",
+        "evil.mac.tail4a.ts.net",
+        "mac.tail4a.ts.net.evil.com",
+    ] {
+        assert_eq!(
+            send(app(), req("POST", bad, None)).await.status,
+            403,
+            "{bad}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn cross_site_write_is_refused() {
     let st = state();
     let app = || atharu::app::router(st.clone());

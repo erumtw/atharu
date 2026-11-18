@@ -54,6 +54,12 @@ async fn main() -> anyhow::Result<()> {
         config::Command::Serve => {
             let mut state = app::AppState::new(conn);
             state.bind_host = cfg.host.clone();
+            state.allow_hosts = std::env::var("ATHARU_ALLOW_HOSTS")
+                .unwrap_or_default()
+                .split(',')
+                .map(|h| h.trim().to_string())
+                .filter(|h| !h.is_empty())
+                .collect();
             state.settings = std::sync::Arc::new(config::FileConfig::load(
                 &cfg.data_dir().join("config.toml"),
             ));

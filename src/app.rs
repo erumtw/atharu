@@ -26,6 +26,9 @@ pub struct AppState {
     pub settings: Arc<FileConfig>,
     /// `ATHARU_HOST`: a Host header naming it passes the guard as well as the loopback names.
     pub bind_host: String,
+    /// `ATHARU_ALLOW_HOSTS` (comma list): more Host names that pass the guard, e.g. the Mac's Tailscale name when
+    /// `tailscale serve` proxies the phone to 127.0.0.1. Exact names only; a rebinding page can't send one it doesn't own.
+    pub allow_hosts: Vec<String>,
     /// Lines deleted while they had a note: the note's header offers their Undo for a while (D49).
     /// In memory, like the Undo toast itself: a restart ends the window.
     gone: Arc<Mutex<Vec<GoneLine>>>,
@@ -58,6 +61,7 @@ impl AppState {
             fixed_today: None,
             settings: Arc::default(),
             bind_host: "127.0.0.1".into(),
+            allow_hosts: Vec::new(),
             gone: Arc::default(),
             mac: None,
             mac_cals: None,
@@ -135,20 +139,23 @@ pub fn router(state: AppState) -> Router {
 /// CSRF: browsers mark a write from another site `Sec-Fetch-Site: cross-site`; there are no cookies
 /// to steal, but the form posts alone could log and delete lines.
 async fn guard(State(st): State<AppState>, req: Request, next: Next) -> Response {
-    if !allowed(&req, &st.bind_host) {
+    if !allowed(&req, &st.bind_host, &st.allow_hosts) {
         return StatusCode::FORBIDDEN.into_response();
     }
     next.run(req).await
 }
 
-fn allowed(req: &Request, bind_host: &str) -> bool {
+fn allowed(req: &Request, bind_host: &str, allow_hosts: &[String]) -> bool {
     let header = |name: &str| req.headers().get(name).and_then(|v| v.to_str().ok());
     if let Some(host) = header("host") {
         let name = match host.strip_prefix('[') {
             Some(v6) => v6.split(']').next().unwrap_or(""),
             None => host.split(':').next().unwrap_or(""),
         };
-        if !matches!(name, "127.0.0.1" | "localhost" | "::1") && name != bind_host {
+        if !matches!(name, "127.0.0.1" | "localhost" | "::1")
+            && name != bind_host
+            && !allow_hosts.iter().any(|h| h.eq_ignore_ascii_case(name))
+        {
             return false;
         }
     }
