@@ -117,7 +117,7 @@ dependencies = [
 
 [[package]]
 name = "atharu"
-version = "0.2.10"
+version = "0.2.11"
 dependencies = [
  "anyhow",
  "askama",
@@ -139,7 +139,7 @@ dependencies = [
 
 [[package]]
 name = "atharu-app"
-version = "0.2.10"
+version = "0.2.11"
 dependencies = [
  "atharu",
  "axum",

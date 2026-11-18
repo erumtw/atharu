@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.11 — 2026-11-18
+
+### Features
+
+- ATHARU_ALLOW_HOSTS lets extra exact Host names past the rebinding guard (Tailscale serve to the phone)
+
+### Fixes
+
+- ATHARU_ALLOW_HOSTS entries ignore a :port; listed in atharu help
+
 ## v0.2.10 — 2026-11-17
 
 ### Features
