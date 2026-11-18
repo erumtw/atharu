@@ -57,7 +57,8 @@ async fn main() -> anyhow::Result<()> {
             state.allow_hosts = std::env::var("ATHARU_ALLOW_HOSTS")
                 .unwrap_or_default()
                 .split(',')
-                .map(|h| h.trim().to_string())
+                // Name only, as the guard compares it: `mac.ts.net:8443` → `mac.ts.net`.
+                .map(|h| h.trim().split(':').next().unwrap_or("").to_string())
                 .filter(|h| !h.is_empty())
                 .collect();
             state.settings = std::sync::Arc::new(config::FileConfig::load(

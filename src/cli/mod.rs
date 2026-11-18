@@ -34,7 +34,7 @@ pub const COMMANDS: [&str; 13] = [
 
 /// The command table for `atharu help` and every usage error (CLI and `config`), so they can't drift.
 pub const HELP: &str = "usage: atharu [--db PATH] [command]
-  atharu                                   serve http://127.0.0.1:7070 (ATHARU_HOST / ATHARU_PORT)
+  atharu                                   serve http://127.0.0.1:7070 (ATHARU_HOST / ATHARU_PORT; ATHARU_ALLOW_HOSTS=a.ts.net,… lets those Host names in, e.g. tailscale serve)
   atharu log \"<line>\" [--day YYYY-MM-DD] [--note N] [--meeting N] --as <agent>
   atharu edit <id> \"<line>\" --as <agent>   rewrite a line you wrote (same grammar; the owner's stay web-only)
   atharu link <id> --note <N|none> --as <agent>   attach any line (the owner's too) to a note, or detach it
