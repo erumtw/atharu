@@ -2,7 +2,7 @@
 // Run after changing src/ or package versions: `npm ci && npm run check && node build.mjs` from editor/.
 // esbuild only strips types; `npm run check` (tsc) is what type-checks.
 import { build } from 'esbuild'
-import { cpSync, rmSync } from 'node:fs'
+import { cpSync, readFileSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const dir = fileURLToPath(new URL('.', import.meta.url))
@@ -33,6 +33,21 @@ await Promise.all(Object.entries(entries).map(([name, banner]) => build({
   banner: { js: banner },
 })))
 
+// Owner, 2026-11-23: the toolbar hints show the letter keys like excalidraw.com (V R D O A L P T E), not 0.18.1's
+// numbers. Both keys already work; only the label's preference flips. Pinned to 0.18.1's minified text, so a version
+// bump that changes it fails the build here instead of silently going back to numbers.
+const letterHints = {
+  name: 'excalidraw-letter-hints',
+  setup(b) {
+    b.onLoad({ filter: /@excalidraw[\\/]excalidraw[\\/]dist[\\/]prod[\\/]index\.js$/ }, args => {
+      const src = readFileSync(args.path, 'utf8')
+      const from = 'keyBindingLabel:u||x'
+      if (src.split(from).length !== 2) throw new Error(`excalidraw-letter-hints: expected one "${from}" in ${args.path}`)
+      return { contents: src.replace(from, 'keyBindingLabel:x||u'), loader: 'js' }
+    })
+  },
+}
+
 // Drawing island (D24): ESM + splitting, because one iife would inline every lazy chunk (8.5 MB). Hashed chunk names
 // change with versions, so the folder is rebuilt from empty rather than left to collect stale files.
 rmSync('../static/js/drawing', { recursive: true, force: true })
@@ -47,6 +62,7 @@ await build({
   define: { 'process.env.NODE_ENV': '"production"', 'import.meta.env': '{}' },
   // Mermaid-to-Excalidraw is ~3.6 MB of lazy chunks for a dialog we never open.
   alias: { '@excalidraw/mermaid-to-excalidraw': './src/mermaid-stub.js' },
+  plugins: [letterHints],
   banner: { js: '/* atharu drawing editor, built by editor/build.mjs. Bundles Excalidraw, React (MIT). */' },
 })
 
