@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.12 — 2026-11-23
+
+### Features
+
+- The drawing toolbar shows letter keys like excalidraw.com (V R D O A L P T E), not 0.18.1's numbers
+
 ## v0.2.11 — 2026-11-18
 
 ### Features
