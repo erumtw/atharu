@@ -68,8 +68,11 @@ async fn another_tabs_write_is_other_its_own_is_not() {
 
 #[tokio::test]
 async fn a_write_from_another_process_moves_the_version() {
-    let path = std::env::temp_dir().join(format!("atharu-sync-{}.db", std::process::id()));
-    let _ = std::fs::remove_file(&path);
+    // Its own folder: uploads land in attachments/ next to the DB.
+    let dir = std::env::temp_dir().join(format!("atharu-sync-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("atharu.db");
     let st = atharu::app::AppState::new(atharu::db::open(&path).unwrap());
     st.conn()
         .execute(
@@ -85,6 +88,19 @@ async fn a_write_from_another_process_moves_the_version() {
         "own writes keep it"
     );
 
+    // An image upload is a plain fetch with no page id; the autosave after it is the real change.
+    let req = Request::post("/notes/1/images")
+        .header("content-type", "image/png")
+        .body(Body::from(&b"\x89PNG\r\n\x1a\nx"[..]))
+        .unwrap();
+    let up = send(atharu::app::router(st.clone()), req).await;
+    assert!(up.status.is_success(), "upload: {} {}", up.status, up.body);
+    assert_eq!(
+        ask(&st, "tab=a&since=0").await["other"],
+        false,
+        "an upload is not someone else's write"
+    );
+
     // The CLI / an agent / the other server: its own connection.
     let cli = atharu::db::open(&path).unwrap();
     cli.execute(
@@ -97,7 +113,5 @@ async fn a_write_from_another_process_moves_the_version() {
     assert_eq!(after["note"]["updatedAt"], "2099-01-01 00:00:00");
     assert_eq!(ask(&st, "tab=a&note=99").await["note"], Value::Null);
     drop(cli);
-    for ext in ["", "-wal", "-shm"] {
-        let _ = std::fs::remove_file(format!("{}{ext}", path.display()));
-    }
+    let _ = std::fs::remove_dir_all(&dir);
 }

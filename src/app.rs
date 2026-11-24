@@ -187,10 +187,13 @@ async fn guard(State(st): State<AppState>, req: Request, next: Next) -> Response
     next.run(req).await
 }
 
-/// Logs each answered write for `/api/sync`. The `*preview` posts only parse what is typed.
+/// Logs each answered write for `/api/sync`. The `*preview` posts only parse what is typed; an image upload is a plain
+/// `fetch` (no page id) whose note change arrives with the autosave after it, so it would read as someone else's.
 async fn note_writes(State(st): State<AppState>, req: Request, next: Next) -> Response {
+    let path = req.uri().path();
     let write = !matches!(*req.method(), Method::GET | Method::HEAD)
-        && !req.uri().path().ends_with("preview");
+        && !path.ends_with("preview")
+        && !path.ends_with("/images");
     let tab = req
         .headers()
         .get("x-atharu-tab")

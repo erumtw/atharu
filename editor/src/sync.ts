@@ -65,7 +65,8 @@ async function check() {
     const a = (await r.json()) as Answer
     const prev = last
     last = { version: a.version, seq: a.seq, noteAt: a.note?.updatedAt }
-    if (!prev || (a.version === prev.version && !a.other)) return
+    // seq going back = the server restarted and its write log is gone: assume something changed.
+    if (!prev || (a.version === prev.version && !a.other && a.seq >= prev.seq)) return
     // ponytail: our own autosave landing in the same 15 s as an unrelated outside write reads as "note changed";
     // rare, and the cost is one needless Reload offer. Send the save's updatedAt back if it ever bites.
     if (noteId && prev.noteAt !== last.noteAt) offer()
