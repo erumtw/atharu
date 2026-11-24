@@ -11,6 +11,7 @@ use chrono::NaiveDate;
 use rusqlite::Connection;
 use rust_embed::RustEmbed;
 use std::{
+    collections::VecDeque,
     future::Future,
     sync::{Arc, Mutex, MutexGuard},
     time::{Duration, Instant},
@@ -38,7 +39,20 @@ pub struct AppState {
     pub mac_cals: Option<Arc<crate::recording::MacCalendars>>,
     /// Settings › Update (0.2.6): where the Mac app's Update button is, one update at a time.
     pub update: crate::updater::Shared,
+    /// Writes this server answered, for `/api/sync` (0.2.13): did one come from another tab or device?
+    writes: Arc<Mutex<Writes>>,
 }
+
+/// The last few writes, each with the page id (`X-Atharu-Tab`) that sent it; `None` = not an Atharu page
+/// (a plain form, the Mac popover, a script), which always counts as "other".
+#[derive(Default)]
+struct Writes {
+    seq: u64,
+    recent: VecDeque<(u64, Option<String>)>,
+}
+
+// ponytail: a page polls every 15 s, so 64 writes is plenty; one that missed more just hears "other".
+const WRITES_KEPT: usize = 64;
 
 /// A deleted line as its note's header shows it: the text, and the snapshot Undo posts back.
 #[derive(Clone)]
@@ -66,6 +80,7 @@ impl AppState {
             mac: None,
             mac_cals: None,
             update: Arc::default(),
+            writes: Arc::default(),
         }
     }
 
@@ -104,6 +119,31 @@ impl AppState {
             .collect()
     }
 
+    fn wrote(&self, tab: Option<String>) {
+        let mut w = self.writes.lock().unwrap_or_else(|e| e.into_inner());
+        w.seq += 1;
+        let seq = w.seq;
+        w.recent.push_back((seq, tab));
+        if w.recent.len() > WRITES_KEPT {
+            w.recent.pop_front();
+        }
+    }
+
+    /// (latest seq, whether a write after `since` came from anyone but page `tab`).
+    pub fn writes_since(&self, since: u64, tab: &str) -> (u64, bool) {
+        let w = self.writes.lock().unwrap_or_else(|e| e.into_inner());
+        let dropped = w
+            .recent
+            .front()
+            .is_some_and(|(s, _)| *s > since.saturating_add(1));
+        let other = since < w.seq
+            && (dropped
+                || w.recent
+                    .iter()
+                    .any(|(s, t)| *s > since && t.as_deref() != Some(tab)));
+        (w.seq, other)
+    }
+
     pub fn conn(&self) -> MutexGuard<'_, Connection> {
         // A panic mid-handler poisons the lock; the connection itself is still fine to use.
         self.db.lock().unwrap_or_else(|e| e.into_inner())
@@ -129,7 +169,9 @@ pub fn router(state: AppState) -> Router {
         .merge(crate::jira::routes())
         .merge(crate::settings::routes())
         .merge(crate::quick::routes())
+        .merge(crate::sync::routes())
         .route("/static/{*path}", get(static_file))
+        .layer(middleware::from_fn_with_state(state.clone(), note_writes))
         .layer(middleware::from_fn_with_state(state.clone(), guard))
         .with_state(state)
 }
@@ -143,6 +185,23 @@ async fn guard(State(st): State<AppState>, req: Request, next: Next) -> Response
         return StatusCode::FORBIDDEN.into_response();
     }
     next.run(req).await
+}
+
+/// Logs each answered write for `/api/sync`. The `*preview` posts only parse what is typed.
+async fn note_writes(State(st): State<AppState>, req: Request, next: Next) -> Response {
+    let write = !matches!(*req.method(), Method::GET | Method::HEAD)
+        && !req.uri().path().ends_with("preview");
+    let tab = req
+        .headers()
+        .get("x-atharu-tab")
+        .and_then(|v| v.to_str().ok())
+        .filter(|t| !t.is_empty())
+        .map(str::to_owned);
+    let res = next.run(req).await;
+    if write && (res.status().is_success() || res.status().is_redirection()) {
+        st.wrote(tab);
+    }
+    res
 }
 
 fn allowed(req: &Request, bind_host: &str, allow_hosts: &[String]) -> bool {

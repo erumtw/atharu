@@ -18,6 +18,7 @@ pub mod quick;
 pub mod recording;
 pub mod report;
 pub mod settings;
+pub mod sync;
 pub mod tags;
 pub mod today;
 pub mod todos;

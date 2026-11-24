@@ -21,6 +21,7 @@ const entries = {
   suggest: '/* atharu suggestion menu for list= inputs, built by editor/build.mjs from editor/src/suggest.ts. */',
   motion: '/* atharu motion (FLIP rows, banner height, switch thumb), built by editor/build.mjs from editor/src/motion.ts. */',
   calendar: '/* atharu calendar: N days by width, hour grid opens at 08:00; built by editor/build.mjs from editor/src/calendar.ts. */',
+  sync: '/* atharu page sync: re-fetch live parts or offer a reload after a change elsewhere; built by editor/build.mjs from editor/src/sync.ts. */',
   launch: '/* atharu launch animation on /launch + its Settings preview, built by editor/build.mjs from editor/src/launch.ts. */',
 }
 
