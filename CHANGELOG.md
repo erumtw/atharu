@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.13 — 2026-11-25
+
+### Features
+
+- The sidebar's To-dos count and Active epics follow changes made elsewhere
+- Pages follow changes made elsewhere (CLI, agents, other server, another tab or the phone)
+
+### Fixes
+
+- Page sync ignores image uploads and catches changes across a server restart
+
+### Under the hood
+
+- V0.2.13 release screenshot (fresh fictional seed)
+
 ## v0.2.12 — 2026-11-23
 
 ### Features
