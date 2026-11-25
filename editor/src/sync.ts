@@ -7,6 +7,8 @@ document.body.addEventListener('htmx:configRequest', ev => {
   ;(ev as CustomEvent<{ headers: Record<string, string> }>).detail.headers['X-Atharu-Tab'] = tab
 })
 
+declare const htmx: { ajax(verb: string, path: string, ctx: { target: string; select: string; swap: string }): Promise<void> }
+
 type Answer = { version: number; seq: number; other: boolean; note: { id: number; updatedAt: string } | null }
 const noteId = document.querySelector<HTMLFormElement>('form#note')?.getAttribute('action')?.match(/^\/notes\/(\d+)$/)?.[1]
 let last: { version: number; seq: number; noteAt?: string } | null = null
@@ -32,6 +34,12 @@ function refresh() {
   if (!pending) document.body.dispatchEvent(new CustomEvent('atharu-sync'))
 }
 document.addEventListener('focusout', () => pending && setTimeout(refresh))
+
+// The sidebar's To-dos count and Active epics: this page's own copy of #side, swapped whole. Not while the phone
+// drawer is open (the swap would close it under the finger); the next change catches up.
+function side() {
+  if (!document.querySelector('#side:popover-open')) htmx.ajax('GET', location.href, { target: '#side', select: '#side', swap: 'outerHTML' })
+}
 
 function offer() {
   stale = true
@@ -69,6 +77,7 @@ async function check() {
     if (!prev || (a.version === prev.version && !a.other && a.seq >= prev.seq)) return
     // ponytail: our own autosave landing in the same 15 s as an unrelated outside write reads as "note changed";
     // rare, and the cost is one needless Reload offer. Send the save's updatedAt back if it ever bites.
+    side()
     if (noteId && prev.noteAt !== last.noteAt) offer()
     if (listeners().length) refresh()
     else if (!noteId) offer()
